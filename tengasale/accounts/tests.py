@@ -38,6 +38,12 @@ class LoginTemplateTests(TestCase):
         self.assertContains(response, "Forgot password?")
         self.assertContains(response, reverse("password_reset"))
 
+    def test_login_page_contains_back_to_home_link(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertContains(response, "Back to Home")
+        self.assertContains(response, 'href="/"')
+
     def test_login_page_contains_only_one_password_eye_toggle_button(self):
         response = self.client.get(reverse("login"))
         content = response.content.decode()
@@ -441,12 +447,12 @@ class LogoutTests(TestCase):
             password="test-pass-123",
         )
 
-    def test_logout_via_post_redirects_to_login(self):
+    def test_logout_via_post_redirects_to_home(self):
         self.client.login(username="merchant", password="test-pass-123")
 
         response = self.client.post(reverse("logout"))
 
-        self.assertRedirects(response, reverse("login"))
+        self.assertRedirects(response, "/")
 
     def test_logout_via_get_returns_method_not_allowed(self):
         self.client.login(username="merchant", password="test-pass-123")

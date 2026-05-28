@@ -22,7 +22,7 @@
 <nav class="sitenav" role="navigation" aria-label="Main navigation">
   <div class="sitenav__inner">
     <!-- Brand / Logo — compact T icon + wordmark -->
-    <a href="{% url 'website_landing' %}" class="sitenav__brand logo-compact" aria-label="TengaSale home">
+    <a href="/" class="sitenav__brand logo-compact" aria-label="TengaSale home">
       <img
         src="{% static 'images/brand/tengasale-logo-full.svg' %}"
         alt="TengaSale"
@@ -72,7 +72,7 @@
         Malawi
       </span>
       <a href="{% url 'portal_search' %}" class="sitenav__cta sitenav__cta--primary">Make Payment</a>
-      <a href="{% url 'login' %}" class="sitenav__cta sitenav__cta--ghost">Merchant Login</a>
+      <a href="{% url 'login' %}" class="sitenav__cta sitenav__cta--ghost">Login</a>
     </div>
 
     <!-- Mobile menu toggle -->
@@ -93,7 +93,7 @@
     <a href="#faq" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">FAQ</a>
     <a href="{% url 'website_careers' %}" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Careers</a>
     <a href="{% url 'portal_search' %}" class="sitenav__mobile-link sitenav__mobile-link--cta">Make Payment</a>
-    <a href="{% url 'login' %}" class="sitenav__mobile-link">Merchant Login</a>
+    <a href="{% url 'login' %}" class="sitenav__mobile-link">Login</a>
   </div>
 </nav>
 
@@ -121,7 +121,7 @@
     <div class="sitefooter__col">
       <div class="sitefooter__col-heading">Platform</div>
       <a href="{% url 'portal_search' %}" class="sitefooter__link">Make a Payment</a>
-      <a href="{% url 'login' %}" class="sitefooter__link">Merchant Login</a>
+      <a href="{% url 'login' %}" class="sitefooter__link">Login</a>
       <a href="#how-it-works" class="sitefooter__link">How It Works</a>
       <a href="#for-merchants" class="sitefooter__link">For Merchants</a>
       <a href="#trust" class="sitefooter__link">Platform</a>

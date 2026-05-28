@@ -23,34 +23,41 @@ class HomePageTests(TestCase):
         self.assertContains(response, "That area is not available for your role.", status_code=403)
         self.assertContains(response, "Go to my dashboard", status_code=403)
 
-    def test_home_redirects_unauthenticated_users_to_login(self):
+    def test_root_renders_public_landing_page(self):
         response = self.client.get("/")
 
-        self.assertRedirects(response, "/accounts/login/?next=/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "website/landing.html")
+        self.assertContains(response, "Login")
 
-    def test_root_redirects_merchant_to_merchant_portal(self):
+    def test_home_redirects_unauthenticated_users_to_login(self):
+        response = self.client.get("/home/")
+
+        self.assertRedirects(response, "/accounts/login/?next=/home/")
+
+    def test_home_redirects_merchant_to_merchant_portal(self):
         self.create_user("merchant", "Merchant")
         self.client.login(username="merchant", password="test-pass-123")
 
-        response = self.client.get("/")
+        response = self.client.get("/home/")
 
         self.assertRedirects(response, reverse("merchant_dashboard"))
 
-    def test_root_redirects_underwriter_to_underwriter_portal(self):
+    def test_home_redirects_underwriter_to_underwriter_portal(self):
         self.create_user("underwriter", "Underwriter")
         self.client.login(username="underwriter", password="test-pass-123")
 
-        response = self.client.get("/")
+        response = self.client.get("/home/")
 
-        # The root redirects to underwriter_dashboard (/tengasale/underwriter/)
+        # The home route redirects to underwriter_dashboard (/tengasale/underwriter/)
         # which itself redirects to /sales/ — just verify first hop, don't fetch target
         self.assertRedirects(response, reverse("underwriter_dashboard"), fetch_redirect_response=False)
 
-    def test_root_redirects_hq_to_hq_portal(self):
+    def test_home_redirects_hq_to_hq_portal(self):
         self.create_user("hq", "HQ")
         self.client.login(username="hq", password="test-pass-123")
 
-        response = self.client.get("/")
+        response = self.client.get("/home/")
 
         self.assertRedirects(response, reverse("hq_dashboard"))
 
@@ -264,7 +271,7 @@ class HomePageTests(TestCase):
 
 class DashboardUrlTests(TestCase):
     def test_home_url_name_resolves(self):
-        self.assertEqual(reverse("home"), "/")
+        self.assertEqual(reverse("home"), "/home/")
 
     def test_portal_url_names_resolve(self):
         self.assertEqual(reverse("merchant_dashboard"), "/tengasale/merchant/")

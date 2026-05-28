@@ -4,15 +4,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
 from earnings.views import payments_home
+from website import views as website_views
 
 urlpatterns = [
+    path("", website_views.landing, name="public_home"),
     path("admin/", admin.site.urls),
 
     # New clean app routing
     path("sales/", include("sales.urls")),
     path("pay/", include("portal.urls")),
 
-    # Public website (must be last to not swallow other routes)
     path("", include("dashboard.urls")),
     path("accounts/", include("accounts.urls")),
     path("applications/", include("applications.urls")),
@@ -31,7 +32,7 @@ urlpatterns = [
     # Tech Support portal
     path("tengasale/support/", include("support.urls")),
 
-    # Public website (after all app routes so /admin/, /sales/, /pay/ etc. take priority)
+    # Public website secondary URLs.
     path("site/", include("website.urls")),
 
     # PWA offline fallback
