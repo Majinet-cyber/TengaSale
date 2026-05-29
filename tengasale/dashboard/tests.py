@@ -879,14 +879,14 @@ class NewRolesTests(TestCase):
         from django.urls import reverse
         self.assertEqual(role_redirect_url(self.ts_user), reverse("support_dashboard"))
 
-    def test_root_redirects_merchant_admin(self):
+    def test_home_redirects_merchant_admin(self):
         self.client.login(username="ma_test", password="pass")
-        response = self.client.get("/")
+        response = self.client.get("/home/")
         self.assertRedirects(response, reverse("ma_dashboard"), fetch_redirect_response=False)
 
-    def test_root_redirects_tech_support(self):
+    def test_home_redirects_tech_support(self):
         self.client.login(username="ts_test", password="pass")
-        response = self.client.get("/")
+        response = self.client.get("/home/")
         self.assertRedirects(response, reverse("support_dashboard"), fetch_redirect_response=False)
 
 

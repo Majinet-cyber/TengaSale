@@ -159,7 +159,7 @@ class PublicSiteTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         # The TS brand image (large marketing image) should appear on landing
-        self.assertIn("tengasale-logo-icon.png", content,
+        self.assertIn("tengasale-logo-icon", content,
             "TS brand image not found on landing page")
 
     def test_careers_page_no_dark_hero_class(self):

@@ -16,6 +16,15 @@ class DeviceBrand(models.Model):
 
 
 class DeviceDeal(models.Model):
+    CONDITION_NEW = "new"
+    CONDITION_USED = "used"
+    CONDITION_REFURBISHED = "refurbished"
+    CONDITION_CHOICES = [
+        (CONDITION_NEW, "New"),
+        (CONDITION_USED, "Used"),
+        (CONDITION_REFURBISHED, "Refurbished"),
+    ]
+
     STOCK_IN = "in_stock"
     STOCK_LIMITED = "limited"
     STOCK_OUT = "out_of_stock"
@@ -49,6 +58,7 @@ class DeviceDeal(models.Model):
     brand = models.ForeignKey(DeviceBrand, on_delete=models.CASCADE, related_name="deals")
     model_name = models.CharField(max_length=120)
     specs = models.CharField(max_length=80)
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default=CONDITION_NEW)
     country = models.CharField(max_length=10, default="MW")
 
     cash_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -68,6 +78,7 @@ class DeviceDeal(models.Model):
     total_12_month_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
+    popularity_score = models.PositiveIntegerField(default=0)
 
     # Commission rates
     merchant_commission_rate = models.DecimalField(
@@ -85,7 +96,9 @@ class DeviceDeal(models.Model):
 
     # Operations
     stock_status = models.CharField(max_length=20, choices=STOCK_CHOICES, default=STOCK_IN)
+    is_lock_ready = models.BooleanField(default=True)
     lock_provider = models.CharField(max_length=20, blank=True, default="")
+    catalog_source = models.CharField(max_length=60, blank=True, default="", db_index=True)
     notes = models.TextField(blank=True)
 
     # Audit

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from io import StringIO
 from importlib import import_module
 
 from django.contrib import admin
@@ -154,3 +155,69 @@ class SeedTengaSaleCommandTests(TestCase):
 
         self.assertEqual(DeviceBrand.objects.count(), first_brand_count)
         self.assertEqual(DeviceDeal.objects.count(), first_deal_count)
+
+
+class SeedDeviceCatalogCommandTests(TestCase):
+    def test_dry_run_does_not_create_catalog_records(self):
+        out = StringIO()
+
+        call_command("seed_device_catalog", "--dry-run", stdout=out)
+
+        self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), 0)
+        self.assertIn("DRY RUN summary", out.getvalue())
+
+    def test_seed_device_catalog_creates_expected_catalog(self):
+        call_command("seed_device_catalog", stdout=StringIO())
+
+        self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), 40)
+        samsung = DeviceDeal.objects.get(
+            brand__name="Samsung",
+            model_name="Galaxy A15",
+            specs="4GB RAM / 128GB storage",
+            condition=DeviceDeal.CONDITION_NEW,
+        )
+        self.assertEqual(samsung.stock_status, DeviceDeal.STOCK_IN)
+        self.assertTrue(samsung.is_active)
+        self.assertTrue(samsung.is_lock_ready)
+        self.assertEqual(samsung.deposit_percent, Decimal("13.00"))
+        self.assertEqual(samsung.term_months, 12)
+        self.assertGreater(samsung.popularity_score, 0)
+
+    def test_seed_device_catalog_is_idempotent(self):
+        call_command("seed_device_catalog", stdout=StringIO())
+        first_count = DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count()
+
+        call_command("seed_device_catalog", stdout=StringIO())
+
+        self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), first_count)
+
+    def test_update_only_skips_missing_records(self):
+        out = StringIO()
+
+        call_command("seed_device_catalog", "--update-only", stdout=out)
+
+        self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), 0)
+        self.assertIn("40 skipped", out.getvalue())
+
+    def test_clear_deletes_only_seeded_catalog_records(self):
+        brand = DeviceBrand.objects.create(name="Custom")
+        DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Owner Created",
+            specs="4GB RAM / 128GB storage",
+            cash_price=Decimal("100000.00"),
+            min_cash_price=Decimal("95000.00"),
+            max_cash_price=Decimal("110000.00"),
+            default_cash_price=Decimal("100000.00"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("250000.00"),
+            catalog_source="",
+        )
+        call_command("seed_device_catalog", stdout=StringIO())
+
+        call_command("seed_device_catalog", "--clear", stdout=StringIO())
+
+        self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), 0)
+        self.assertTrue(DeviceDeal.objects.filter(model_name="Owner Created").exists())

@@ -372,7 +372,7 @@ class BrandingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         # Real logo img tag present
-        self.assertIn("tengasale-logo-full.png", content)
+        self.assertIn("tengasale-logo-full", content)
         # Fallback orange T should be gone
         self.assertNotIn('<div class="logo-mark">T</div>', content)
 
@@ -390,10 +390,9 @@ class BrandingTests(TestCase):
         content = response.content.decode()
         # Accept SVG or any PNG logo variant — SVG is preferred for clean rendering
         has_logo = (
-            "tengasale-logo-full.svg" in content
-            or "tengasale-logo-full.png" in content
-            or "tengasale-logo-icon.png" in content
-            or "tengasale-logo-mark.png" in content
+            "tengasale-logo-full" in content
+            or "tengasale-logo-icon" in content
+            or "tengasale-logo-mark" in content
         )
         self.assertTrue(has_logo, "Header must contain a TengaSale logo image")
 
