@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import underwriter_required
-from applications.models import ApplicationFieldReview, FinancingApplication
+from applications.models import ApplicationCorrection, ApplicationFieldReview, FinancingApplication
 from applications.models import ApplicationCorrectionToken
 from approvals.models import CallEvidence, UnderwriterReview
 from approvals.views import (
@@ -653,6 +653,10 @@ def sales_mark_field(request, app_id):
     if not field_label:
         field_label = field_key.replace("_", " ").title()
 
+    valid_reasons = {choice[0] for choice in ApplicationFieldReview.REASON_CHOICES}
+    if reason not in valid_reasons:
+        reason = ApplicationFieldReview.REASON_MISSING
+
     review_obj, _ = ApplicationFieldReview.objects.get_or_create(
         application=app,
         field_key=field_key,
@@ -675,6 +679,33 @@ def sales_mark_field(request, app_id):
         review_obj.marked_by = request.user
         review_obj.status = ApplicationFieldReview.STATUS_MARKED
         review_obj.save()
+
+    reason_label = dict(ApplicationFieldReview.REASON_CHOICES).get(reason, "Needs review")
+    correction_note = reason_label
+    if comment:
+        correction_note = f"{reason_label}: {comment}"
+    ApplicationCorrection.objects.update_or_create(
+        application=app,
+        field_name=field_key,
+        resolved=False,
+        defaults={
+            "section": section,
+            "label": field_label,
+            "note": correction_note,
+            "created_by": request.user,
+        },
+    )
+    app.sync_correction_summary()
+    app.save(
+        update_fields=[
+            "correction_fields",
+            "correction_notes",
+            "correction_customer_face_image",
+            "correction_id_front_image",
+            "correction_id_back_image",
+            "correction_customer_phone_image",
+        ]
+    )
 
     _audit(request.user, AuditLog.ACTION_KYC_CHANGE, "ApplicationFieldReview", review_obj.pk,
            {"field_key": field_key, "reason": reason, "app": app.application_number}, request)
@@ -710,6 +741,22 @@ def sales_dismiss_field_review(request, review_id):
         return response
     review_obj.status = ApplicationFieldReview.STATUS_DISMISSED
     review_obj.save(update_fields=["status", "updated_at"])
+    ApplicationCorrection.objects.filter(
+        application=review_obj.application,
+        field_name=review_obj.field_key,
+        resolved=False,
+    ).update(resolved=True)
+    review_obj.application.sync_correction_summary()
+    review_obj.application.save(
+        update_fields=[
+            "correction_fields",
+            "correction_notes",
+            "correction_customer_face_image",
+            "correction_id_front_image",
+            "correction_id_back_image",
+            "correction_customer_phone_image",
+        ]
+    )
     messages.success(request, "Field review dismissed.")
     return redirect("sales_field_reviews", app_id=review_obj.application_id)
 
@@ -724,6 +771,22 @@ def sales_accept_field_review(request, review_id):
         return response
     review_obj.status = ApplicationFieldReview.STATUS_ACCEPTED
     review_obj.save(update_fields=["status", "updated_at"])
+    ApplicationCorrection.objects.filter(
+        application=review_obj.application,
+        field_name=review_obj.field_key,
+        resolved=False,
+    ).update(resolved=True)
+    review_obj.application.sync_correction_summary()
+    review_obj.application.save(
+        update_fields=[
+            "correction_fields",
+            "correction_notes",
+            "correction_customer_face_image",
+            "correction_id_front_image",
+            "correction_id_back_image",
+            "correction_customer_phone_image",
+        ]
+    )
     _audit(request.user, AuditLog.ACTION_KYC_CHANGE, "ApplicationFieldReview", review_obj.pk,
            {"field_key": review_obj.field_key, "action": "accepted"}, request)
     messages.success(request, f"Field '{review_obj.field_label}' accepted.")
@@ -807,4 +870,3 @@ def sales_payments(request):
         "page_heading": "Payments",
         "transactions": recent_transactions,
     })
-

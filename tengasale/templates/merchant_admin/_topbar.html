@@ -1,9 +1,10 @@
+{% load static %}
 <header class="topbar hq-topbar">
   <div class="hq-topbar-left">
     <a href="{% url 'ma_dashboard' %}" class="hq-brand-link" aria-label="Merchant Admin Home">
-      <span class="hq-brand-logo" aria-hidden="true">T</span>
+      <img src="{% static 'images/Tenga.png' %}" alt="" class="hq-brand-logo" aria-hidden="true">
       <span class="hq-brand-text">
-        <span class="hq-brand-name">TengaSale</span>
+        <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="hq-brand-wordmark">
         <span class="hq-brand-sub">Merchant Administration</span>
       </span>
     </a>

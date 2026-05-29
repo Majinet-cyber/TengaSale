@@ -56,6 +56,11 @@
             </div>
             <span class="status-pill"><span data-term-months>12</span> months</span>
         </div>
+        <div class="deal-badge-row">
+            <span class="deal-mini-badge" data-offer-condition>New</span>
+            <span class="deal-mini-badge" data-offer-stock>Available</span>
+            <span class="deal-mini-badge deal-mini-badge--lock" data-offer-lock>Lock-ready</span>
+        </div>
 
         <div class="price-row">
             <span>Cash price</span>
@@ -236,6 +241,9 @@
             document.querySelector("[data-offer-brand]").textContent = deal.brand;
             document.querySelector("[data-offer-model]").textContent = deal.model_name;
             document.querySelector("[data-offer-specs]").textContent = deal.specs;
+            document.querySelector("[data-offer-condition]").textContent = deal.condition || "New";
+            document.querySelector("[data-offer-stock]").textContent = deal.stock_status || "Available";
+            document.querySelector("[data-offer-lock]").textContent = deal.is_lock_ready ? "Lock-ready" : "Lock pending";
             document.querySelector("[data-min-cash]").textContent = money(deal.min_cash_price);
             document.querySelector("[data-max-cash]").textContent = money(deal.max_cash_price);
             document.querySelector("[data-deposit-percent]").textContent = money(deal.deposit_percent);

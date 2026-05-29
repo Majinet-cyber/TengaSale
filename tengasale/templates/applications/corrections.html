@@ -11,23 +11,30 @@
     <span>BACK</span>
 </a>
 
-<h1 class="greeting">Sent Back</h1>
+<h1 class="greeting">Application sent back</h1>
 
 <div class="card">
     <h2>Review these fields</h2>
+    <p class="text-muted">Fix only the fields listed below, then resubmit the application.</p>
     {% if corrections %}
         <div class="merchant-correction-list">
             {% for correction in corrections %}
-                <a class="merchant-correction-item" href="{{ correction.url }}">
-                    <strong>{{ correction.label }}</strong>
-                    {% if correction.note %}<span>{{ correction.note }}</span>{% endif %}
-                </a>
+                <div class="merchant-correction-item">
+                    <div>
+                        <strong>{{ correction.label }}</strong>
+                        {% if correction.note %}<span>{{ correction.note }}</span>{% endif %}
+                    </div>
+                    <a href="{{ correction.url }}" class="merchant-correction-edit">Edit</a>
+                </div>
             {% endfor %}
         </div>
     {% elif correction_labels %}
         <div class="merchant-correction-list">
             {% for label in correction_labels %}
-                <a class="merchant-correction-item" href="{{ edit_url }}"><strong>{{ label }}</strong></a>
+                <div class="merchant-correction-item">
+                    <strong>{{ label }}</strong>
+                    <a href="{{ edit_url }}" class="merchant-correction-edit">Edit</a>
+                </div>
             {% endfor %}
         </div>
     {% else %}
@@ -42,6 +49,6 @@
     </div>
 {% endif %}
 
-<a href="{{ edit_url }}" class="new-application-button">EDIT APPLICATION</a>
+<a href="{{ edit_url }}" class="new-application-button">Continue editing</a>
 
 {% endblock %}

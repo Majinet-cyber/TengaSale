@@ -12,9 +12,9 @@
   <div class="mobile-header__left">
     <a href="{% url 'sales_home' %}" class="mobile-header__logo-link" aria-label="TengaSale home">
       <img
-        src="{% if tengasale_app_icon_url %}{{ tengasale_app_icon_url }}{% else %}{% static 'images/brand/tengasale-logo-icon.png' %}{% endif %}"
+        src="{% if tengasale_app_icon_url %}{{ tengasale_app_icon_url }}{% else %}{% static 'images/Tenga.png' %}{% endif %}"
         alt="TS"
-        class="ts-header-icon"
+        class="ts-header-icon tengasale-logo-mark"
       >
     </a>
     <span class="mobile-header__title">{{ page_heading|default:"TengaSale" }}</span>

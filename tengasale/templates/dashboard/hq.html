@@ -75,18 +75,11 @@
 .hq-logo-mark {
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, #ff6b1a 0%, #e85c0a 100%);
   border-radius: 11px;
-  display: grid;
-  place-items: center;
+  display: block;
   flex-shrink: 0;
   box-shadow: 0 3px 10px rgba(255,107,26,0.40);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1;
+  object-fit: contain;
 }
 
 .hq-brand-text {
@@ -96,11 +89,13 @@
   gap: 2px;
 }
 
-.hq-brand-name {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--hq-ink);
-  letter-spacing: -0.025em;
+.hq-brand-wordmark {
+  width: 150px;
+  max-width: 28vw;
+  height: 24px;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
 }
 
 .hq-brand-sub {
@@ -723,9 +718,9 @@
 <header class="hq-topbar" data-testid="hq-topbar">
 
   <a href="{% url 'home' %}" class="hq-brand-link" aria-label="TengaSale HQ Home">
-    <div class="hq-logo-mark" aria-hidden="true">T</div>
+    <img src="{% static 'images/Tenga.png' %}" alt="" class="hq-logo-mark" aria-hidden="true">
     <div class="hq-brand-text">
-      <span class="hq-brand-name">TengaSale</span>
+      <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="hq-brand-wordmark">
       <span class="hq-brand-sub">HQ Command Center</span>
     </div>
   </a>

@@ -99,6 +99,25 @@
     {% endwith %}
   </div>
 
+  {% with marked=app.active_corrections %}
+    {% if marked %}
+      <aside class="ts-sendback-panel">
+        <div>
+          <div class="ts-sendback-panel__eyebrow">Ready to send back</div>
+          <h2>Merchant will see these exact fields</h2>
+        </div>
+        <div class="ts-sendback-panel__list">
+          {% for correction in marked %}
+            <div class="ts-sendback-chip">
+              <strong>{{ correction.label }}</strong>
+              {% if correction.note %}<span>{{ correction.note }}</span>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </aside>
+    {% endif %}
+  {% endwith %}
+
   {# Decision Form #}
   <form method="post" x-show="!showReject">
     {% csrf_token %}

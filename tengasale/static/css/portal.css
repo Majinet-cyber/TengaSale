@@ -79,16 +79,11 @@
 .hq-brand-logo, .hq-logo-mark {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #ff6b1a 0%, #e85c0a 100%);
   border-radius: 10px;
-  display: grid;
-  place-items: center;
+  display: block;
   flex-shrink: 0;
   box-shadow: 0 3px 10px rgba(255,107,26,0.35);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1;
+  object-fit: contain;
 }
 
 .hq-brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -101,6 +96,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hq-brand-wordmark {
+  width: 140px;
+  max-width: 28vw;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .hq-brand-sub, .hq-brand-role {

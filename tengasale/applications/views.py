@@ -139,10 +139,17 @@ def choose_device(request, app_id):
             "deposit_percent": str(deal.deposit_percent),
             "loan_multiplier": str(deal.loan_multiplier),
             "term_months": deal.term_months,
+            "stock_status": deal.get_stock_status_display(),
+            "is_lock_ready": deal.is_lock_ready,
+            "condition": deal.get_condition_display(),
         }
         for deal in deals
     ]
-    brand_names = []
+    preferred_order = ["Tecno", "Itel", "Redmi/Xiaomi", "Samsung"]
+    deal_brand_names = list(dict.fromkeys(deal.brand.name for deal in deals))
+    brand_names = [name for name in preferred_order if name in deal_brand_names]
+    if not brand_names and not deal_brand_names:
+        brand_names = ["TECNO", "itel", "Redmi"]
     for deal in deals:
         if deal.brand.name not in brand_names:
             brand_names.append(deal.brand.name)

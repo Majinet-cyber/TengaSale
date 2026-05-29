@@ -9,7 +9,7 @@
 {% if variant == "full" %}
 <div class="logo-full-showcase">
   <img
-    src="{% static 'images/brand/tengasale-logo-icon.png' %}"
+    src="{% static 'images/TENGASALEe.png' %}"
     alt="TengaSale — Smartphone Financing for Malawi"
     class="logo-full-showcase__img"
     loading="lazy"
@@ -18,7 +18,7 @@
 {% else %}
 <a href="{% url 'website_landing' %}" class="logo-compact" aria-label="TengaSale home">
   <img
-    src="{% static 'images/brand/tengasale-logo-full.svg' %}"
+    src="{% static 'images/TENGASALEe.png' %}"
     alt="TengaSale"
     class="logo-compact-img"
     width="38"
@@ -26,7 +26,7 @@
     onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';"
   >
   <span class="logo-wordmark" style="display:none;" aria-hidden="true">
-    <span>Tenga</span><span class="highlight">Sale</span>
+    <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="logo-wordmark-img">
   </span>
 </a>
 {% endif %}

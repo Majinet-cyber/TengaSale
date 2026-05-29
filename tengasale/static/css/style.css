@@ -95,14 +95,10 @@ a {
 .logo-mark {
     width: 42px;
     height: 42px;
-    display: grid;
-    place-items: center;
+    display: block;
     border-radius: 14px;
-    background: var(--orange);
-    color: #111111;
-    font-size: 27px;
-    font-weight: 900;
-    letter-spacing: 0;
+    object-fit: contain;
+    object-position: center;
 }
 
 .brand-copy {
@@ -114,6 +110,24 @@ a {
     font-size: 19px;
     font-weight: 900;
     letter-spacing: 0;
+}
+
+.brand-wordmark-img,
+.auth-wordmark-img {
+    width: 150px;
+    max-width: 48vw;
+    height: 36px;
+    display: block;
+    object-fit: contain;
+    object-position: left center;
+}
+
+.auth-wordmark-img {
+    width: 210px;
+    max-width: 72vw;
+    height: 64px;
+    margin: 0 auto;
+    object-position: center;
 }
 
 .brand-tagline {
@@ -473,7 +487,7 @@ a {
     height: 72px;
     margin: 0 auto 14px;
     border-radius: 22px;
-    font-size: 48px;
+    object-fit: contain;
 }
 
 .auth-brand h1 {
@@ -1095,7 +1109,7 @@ textarea:focus {
 .brand-card-grid,
 .spec-card-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -1113,9 +1127,12 @@ textarea:focus {
 .brand-card {
     display: grid;
     place-items: center;
+    gap: 6px;
     padding: 12px 8px;
-    font-size: 19px;
+    font-size: 17px;
     font-weight: 950;
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .deals-hero-card {
@@ -1135,17 +1152,23 @@ textarea:focus {
 }
 
 .brand-card-logo {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
-    background: #111111;
+    border-radius: 12px;
+    background: #ff6a00;
     color: #ffffff;
     font-size: 18px;
 }
 
 .brand-card-premium small {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.brand-card small {
     color: var(--muted);
     font-size: 11px;
     font-weight: 850;
@@ -1172,6 +1195,30 @@ textarea:focus {
 
 .selected-offer-card {
     border-color: rgba(255, 106, 0, 0.35);
+}
+
+.deal-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 4px;
+}
+
+.deal-mini-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #f0f4f8;
+    color: #52677a;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.deal-mini-badge--lock {
+    background: #e8f6ee;
+    color: #168a45;
 }
 
 .offer-kicker {
@@ -1424,6 +1471,49 @@ textarea:focus {
 .empty-state {
     color: var(--ink-soft);
     font-weight: 750;
+}
+
+.merchant-correction-list {
+    display: grid;
+    gap: 10px;
+}
+
+.merchant-correction-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 106, 0, 0.18);
+    border-radius: 14px;
+    background: #fff8f2;
+}
+
+.merchant-correction-item strong,
+.merchant-correction-item span {
+    display: block;
+}
+
+.merchant-correction-item span {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.merchant-correction-edit {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--orange);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    text-decoration: none;
+    flex-shrink: 0;
 }
 
 .deal-header,
@@ -3681,6 +3771,35 @@ table {
     /* Early settlement options ? single column */
     .early-options-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    .brand-card-grid,
+    .spec-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .brand-card,
+    .spec-card {
+        min-height: 72px;
+        border-radius: 14px;
+    }
+
+    .deal-header,
+    .price-row,
+    .range-meta,
+    .early-pay-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .pricing-grid,
+    .offer-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .selected-offer-card h2 {
+        font-size: 20px;
+        overflow-wrap: anywhere;
     }
 }
 

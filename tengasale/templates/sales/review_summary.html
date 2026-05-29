@@ -1,7 +1,7 @@
 {% extends "sales/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}Summary — {{ app.application_number }}{% endblock %}
+{% block page_title %}Summary - {{ app.application_number }}{% endblock %}
 
 {% block content %}
 <div class="sales-main">
@@ -17,7 +17,6 @@
 
   <div class="ts-app-num">{{ app.application_number }}</div>
 
-  {# ── Fraud / Duplicate Risk Panel ── #}
   {% if dup_result.has_duplicates %}
   <div class="ts-review-card" style="background:#fef2f2;border:2px solid #dc2626;margin-bottom:12px;">
     <div class="ts-review-card__title" style="color:#dc2626;">
@@ -44,38 +43,65 @@
   </div>
   {% endif %}
 
-  {# ── Marked fields banner ── #}
-  {% with marked=app.field_reviews.all %}
+  {% with marked=app.active_corrections %}
     {% if marked %}
-      <div class="ts-review-card" style="background:#fff8f0;border-color:#ff6b1a;border-width:2px;">
-        <div class="ts-review-card__title" style="color:#ff6b1a;">
-          Fields Marked for Review
-          <span class="ts-menu-badge ts-badge-orange">{{ marked.count }}</span>
+      <aside class="ts-sendback-panel">
+        <div>
+          <div class="ts-sendback-panel__eyebrow">Send-back panel</div>
+          <h2>{{ marked|length }} field{{ marked|length|pluralize }} selected for merchant correction</h2>
         </div>
-        {% for fr in marked %}
-          {% if fr.status == "marked" %}
-            <div class="ts-review-row">
-              <span>{{ fr.field_label }}</span>
-              <span class="ts-badge ts-badge-orange">{{ fr.get_reason_display }}</span>
+        <div class="ts-sendback-panel__list">
+          {% for correction in marked %}
+            <div class="ts-sendback-chip">
+              <strong>{{ correction.label }}</strong>
+              {% if correction.note %}<span>{{ correction.note }}</span>{% endif %}
             </div>
-          {% endif %}
-        {% endfor %}
-        <a href="{% url 'sales_field_reviews' app.id %}" class="ts-btn-secondary ts-btn-full" style="margin-top:8px;">
-          View &amp; Manage Field Reviews
-        </a>
-      </div>
+          {% endfor %}
+        </div>
+        <a href="{% url 'sales_final_review' app.id %}" class="ts-btn-orange ts-sendback-panel__action">Review &amp; Send Back</a>
+      </aside>
     {% endif %}
   {% endwith %}
 
-  <div class="ts-review-card">
-    <div class="ts-review-card__title">Customer</div>
-    <div class="ts-review-row"><span>Name</span><strong>{{ app.customer_name|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Phone</span><strong>{{ app.customer_phone|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>National ID</span><strong>{{ app.national_id|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>District</span><strong>{{ app.district|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Occupation</span><strong>{{ app.occupation|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Income Band</span><strong>{{ app.income_band|default:"—" }}</strong></div>
-  </div>
+  <section class="ts-review-flow">
+    <div class="ts-review-flow__header">
+      <span>Step-by-step underwriting</span>
+      <h2>Application facts</h2>
+    </div>
+
+    <div class="ts-review-section">
+      <h3>Income</h3>
+      {% include "sales/_field_row.html" with question_number="01" icon="MWK" field_key="income_band" label="Income band" value=app.income_band expected="Expected: matches stated income bracket" section="income" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="02" icon="MWK" field_key="exact_monthly_income" label="Exact income amount" value=app.exact_monthly_income|mwk expected="Expected: supports repayment comfortably" section="income" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="03" icon="CAL" field_key="proof_of_income_type" label="Income frequency" value=app.proof_of_income_type expected="Expected: salary, business, casual, or recurring income" section="income" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="04" icon="SRC" field_key="income_source" label="Income source" value=app.income_source expected="Expected: clear source of funds" section="income" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="05" icon="JOB" field_key="occupation" label="Occupation" value=app.occupation expected="Expected: specific role or business type" section="income" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="06" icon="TXT" field_key="work_description" label="Income source description" value=app.work_description expected="Expected: enough detail to verify income" section="income" app_id=app.id %}
+    </div>
+
+    <div class="ts-review-section">
+      <h3>Contacts</h3>
+      {% include "sales/_field_row.html" with question_number="07" icon="TEL" field_key="customer_phone" label="Contacts provided" value=app.customer_phone expected="Expected: reachable customer number" section="contacts" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="08" icon="CO" field_key="proof_contact_name" label="Company contact name" value=app.proof_contact_name expected="Expected: verifier name where applicable" section="contacts" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="09" icon="CO" field_key="proof_contact_phone" label="Company contact number" value=app.proof_contact_phone expected="Expected: reachable verifier number" section="contacts" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="10" icon="NOK" field_key="next_of_kin_1_name" label="Next of kin name" value=app.next_of_kin_1_name expected="Expected: close contact who knows the customer" section="contacts" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="11" icon="NOK" field_key="next_of_kin_1_phone" label="Next of kin number" value=app.next_of_kin_1_phone expected="Expected: reachable phone number" section="contacts" app_id=app.id %}
+    </div>
+
+    <div class="ts-review-section">
+      <h3>Residence</h3>
+      {% include "sales/_field_row.html" with question_number="12" icon="PIN" field_key="precise_location" label="Residential area" value=app.precise_location expected="Expected: precise area, village, or landmark" section="location" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="13" icon="YRS" field_key="district" label="Years at current address" value=app.rent_or_own_home expected="Expected: stable, traceable residence details" section="location" app_id=app.id %}
+    </div>
+
+    {% if app.deal %}
+    <div class="ts-review-section">
+      <h3>Device and terms</h3>
+      {% include "sales/_field_row.html" with question_number="14" icon="PHN" field_key="selected_deal" label="Device selected" value=app.deal expected="Expected: customer confirmed model and specs" section="device" app_id=app.id %}
+      {% include "sales/_field_row.html" with question_number="15" icon="PAY" field_key="calculated_deposit_amount" label="Deposit/payment terms" value=app.calculated_deposit_amount|mwk expected="Expected: deposit, daily, monthly, and term clearly understood" section="device" app_id=app.id %}
+    </div>
+    {% endif %}
+  </section>
 
   <div class="ts-review-card">
     <div class="ts-review-card__title">KYC Images</div>
@@ -98,31 +124,13 @@
     </div>
   </div>
 
-  {% if app.deal %}
-  <div class="ts-review-card">
-    <div class="ts-review-card__title">Deal</div>
-    <div class="ts-review-row"><span>Device</span><strong>{{ app.deal }}</strong></div>
-    <div class="ts-review-row"><span>Cash Price</span><strong>{{ app.selected_cash_price|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Deposit</span><strong>{{ app.calculated_deposit_amount|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Daily Repayment</span><strong>{{ app.calculated_daily_payment|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Monthly (30-day)</span><strong>{{ app.calculated_monthly_payment|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Total Contract</span><strong>{{ app.calculated_total_loan|mwk }}</strong></div>
-  </div>
-  {% endif %}
-
-  <div style="text-align:right;margin-bottom:8px;">
-    <a href="{% url 'sales_field_reviews' app.id %}" class="ts-btn-xs ts-btn-ghost" data-testid="field-mark-button">
-      🔖 Mark / Edit Fields
-    </a>
-  </div>
-
   <form method="post">
     {% csrf_token %}
     <div class="ts-review-card">
       <div class="ts-review-card__title">Summary Check</div>
       {% include "sales/_yes_no.html" with field_name="summary_clear" label="Is all summary information clear and correct?" current_value=review.summary_clear %}
     </div>
-    <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">Continue to Identity Check →</button>
+    <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">Continue to Identity Check</button>
   </form>
 
 </div>

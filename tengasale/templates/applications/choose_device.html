@@ -28,7 +28,9 @@
             <div class="brand-card-grid" role="list">
                 {% for brand_name in brand_names %}
                     <button class="brand-card" type="button" data-brand="{{ brand_name }}" role="listitem">
+                        <span class="brand-card-logo">{{ brand_name|slice:":1" }}</span>
                         <span>{{ brand_name }}</span>
+                        <small>View phones</small>
                     </button>
                 {% endfor %}
             </div>
@@ -56,7 +58,12 @@
                         <h2 data-offer-model></h2>
                         <p class="text-muted" data-offer-specs></p>
                     </div>
-                    <span class="status-pill">12 months</span>
+                    <span class="status-pill"><span data-term-months>12</span> months</span>
+                </div>
+                <div class="deal-badge-row">
+                    <span class="deal-mini-badge" data-offer-condition>New</span>
+                    <span class="deal-mini-badge" data-offer-stock>Available</span>
+                    <span class="deal-mini-badge deal-mini-badge--lock" data-offer-lock>Lock-ready</span>
                 </div>
 
                 <div class="price-row">
@@ -89,7 +96,7 @@
                         <strong>MWK <span data-deposit></span></strong>
                     </div>
                     <div>
-                        <span>12 months monthly</span>
+                        <span><span data-term-copy>12</span> months monthly</span>
                         <strong>MWK <span data-monthly></span></strong>
                     </div>
                     <div>
@@ -242,6 +249,11 @@
             document.querySelector("[data-offer-brand]").textContent = deal.brand;
             document.querySelector("[data-offer-model]").textContent = deal.model_name;
             document.querySelector("[data-offer-specs]").textContent = deal.specs;
+            document.querySelector("[data-offer-condition]").textContent = deal.condition || "New";
+            document.querySelector("[data-offer-stock]").textContent = deal.stock_status || "Available";
+            document.querySelector("[data-offer-lock]").textContent = deal.is_lock_ready ? "Lock-ready" : "Lock pending";
+            document.querySelector("[data-term-months]").textContent = deal.term_months || 12;
+            document.querySelector("[data-term-copy]").textContent = deal.term_months || 12;
             document.querySelector("[data-min-cash]").textContent = money(deal.min_cash_price);
             document.querySelector("[data-max-cash]").textContent = money(deal.max_cash_price);
             document.querySelector("[data-deposit-percent]").textContent = money(deal.deposit_percent);
@@ -257,8 +269,9 @@
             const cash = Number(slider.value);
             const totalLoan = cash * Number(selectedDeal.loan_multiplier);
             const deposit = totalLoan * Number(selectedDeal.deposit_percent) / 100;
-            const monthly = totalLoan / 12;
-            const daily = totalLoan / 360;
+            const termMonths = Number(selectedDeal.term_months || 12);
+            const monthly = totalLoan / termMonths;
+            const daily = totalLoan / (termMonths * 30);
             const sixTotal = totalLoan * 0.85;
             const threeTotal = totalLoan * 0.75;
 

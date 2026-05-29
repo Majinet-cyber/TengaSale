@@ -1277,8 +1277,188 @@
 }
 
 .ts-mark-form {
+  grid-column: 1 / -1;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 10px;
+  background: #fff9f0;
+  border: 1px solid #f0d9c0;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.ts-mark-form form {
+  display: grid;
+  gap: 8px;
+}
+
+.ts-mark-form label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #5f6670;
+}
+
+.ts-mark-form select,
+.ts-mark-form input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #ddd4c7;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  font-size: 0.86rem;
+}
+
+.ts-mark-form__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.ts-review-flow,
+.ts-sendback-panel {
+  margin: 12px 18px;
+}
+
+.ts-review-flow {
+  display: grid;
+  gap: 14px;
+}
+
+.ts-review-flow__header {
+  padding: 4px 2px;
+}
+
+.ts-review-flow__header span,
+.ts-sendback-panel__eyebrow {
+  color: #ff6a00;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ts-review-flow__header h2,
+.ts-sendback-panel h2 {
+  margin: 3px 0 0;
+  color: #111;
+  font-size: 1.2rem;
+  line-height: 1.15;
+}
+
+.ts-review-section {
+  display: grid;
+  gap: 8px;
+}
+
+.ts-review-section h3 {
+  margin: 6px 0 2px;
+  color: #111;
+  font-size: 0.88rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ts-question-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e7edf3;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(17,17,17,0.04);
+}
+
+.ts-question-card__meta {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.ts-question-card__number {
+  min-width: 28px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff2e8;
+  color: #e85d04;
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+
+.ts-question-card__icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #f0f4f8;
+  color: #60758a;
+  font-size: 0.58rem;
+  font-weight: 950;
+}
+
+.ts-question-card__body {
+  min-width: 0;
+}
+
+.ts-question-card__label {
+  color: #667080;
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.ts-question-card__value {
+  display: block;
+  margin-top: 2px;
+  color: #111;
+  font-size: 0.96rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ts-question-card__expected {
+  margin-top: 5px;
+  color: #7a828c;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.ts-sendback-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: #fff8f0;
+  border: 1.5px solid rgba(255, 106, 0, 0.32);
+  border-radius: 16px;
+}
+
+.ts-sendback-panel__list {
+  display: grid;
+  gap: 8px;
+}
+
+.ts-sendback-chip {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+}
+
+.ts-sendback-chip span {
+  color: #7a4d25;
+  font-size: 0.8rem;
+}
+
+.ts-sendback-panel__action {
+  text-align: center;
+  text-decoration: none;
 }
 
 /* -- Orange action button ---- */
