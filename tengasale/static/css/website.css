@@ -58,6 +58,12 @@
 /* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 /* ── Site body (scoped; only /site/ loads this file) ─────────── */
 .site-body {
   margin: 0;
@@ -116,11 +122,61 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Logo image ──────────────────────────────────────────────── */
 .site-logo-img {
-  height: 44px;
+  max-height: 36px;
   width: auto;
-  max-width: 200px;
+  max-width: 180px;
   object-fit: contain;
   display: block;
+}
+
+.site-body .ts-logo-icon,
+.site-body img.ts-logo-icon {
+  width: 44px;
+  height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.site-body .ts-logo-wordmark,
+.site-body img.ts-logo-wordmark,
+.site-body .site-logo-img,
+.site-body .logo-compact-img,
+.site-body .logo-wordmark-img,
+.site-body .sitefooter__brand-name-img {
+  max-height: 36px;
+  max-width: 180px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.site-body .ts-logo-auth,
+.site-body img.ts-logo-auth {
+  max-width: 220px;
+  max-height: 90px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.site-body .ts-logo-hero,
+.site-body img.ts-logo-hero {
+  max-width: 280px;
+  max-height: 160px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.site-body .sitenav__logo-mark.ts-logo-icon,
+.site-body .sitefooter__logo.ts-logo-icon {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
 }
 
 /* CSS lettermark fallback — shown if image fails */
@@ -1416,10 +1472,39 @@ a { color: inherit; text-decoration: none; }
   .support-links { flex-direction: column; align-items: center; }
 }
 
+@media (max-width: 768px) {
+  .site-body .ts-logo-wordmark,
+  .site-body img.ts-logo-wordmark,
+  .site-body .site-logo-img,
+  .site-body .logo-compact-img,
+  .site-body .logo-wordmark-img,
+  .site-body .sitefooter__brand-name-img {
+    max-width: 140px;
+    max-height: 32px;
+  }
+
+  .hero,
+  .hero-section,
+  .landing-hero {
+    overflow: hidden;
+  }
+
+  .hero__visual,
+  .hero-visual,
+  .hero-art,
+  .hero-collage {
+    max-width: 100%;
+  }
+
+  img {
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 414px) {
   .sitenav__logo { width: 36px; height: 36px; font-size: 20px; }
   .sitenav__name { font-size: 17px; }
-  .site-logo-img { height: 36px; max-width: 150px; }
+  .site-logo-img { height: auto; max-height: 32px; max-width: 140px; }
 }
 
 @media (max-width: 380px) {
@@ -2055,6 +2140,17 @@ a { color: inherit; text-decoration: none; }
   display: block;
 }
 
+.site-body img.ts-logo-wordmark,
+.site-body img.ts-logo-icon,
+.site-body img.ts-logo-auth,
+.site-body img.ts-logo-hero,
+.site-body img.site-logo-img,
+.site-body img.logo-compact-img,
+.site-body img.logo-wordmark-img,
+.site-body img.sitefooter__brand-name-img {
+  object-fit: contain;
+}
+
 /* ── Logo compact — used in navbar ───────────────────────────── */
 .logo-compact {
   display: inline-flex;
@@ -2064,9 +2160,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 .logo-compact-img {
-  height: 44px;
+  max-height: 36px;
   width: auto;
-  max-width: 200px;
+  max-width: 180px;
   object-fit: contain;
   display: block;
   flex: 0 0 auto;
@@ -2084,9 +2180,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 .logo-wordmark-img {
-  height: 36px;
-  width: 160px;
-  max-width: 48vw;
+  max-height: 36px;
+  width: auto;
+  max-width: 180px;
   display: block;
   object-fit: contain;
   object-position: left center;
@@ -2100,17 +2196,19 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Logo full showcase — constrained brand image ─────────────── */
 .logo-full-showcase {
-  width: min(560px, 92vw);
+  width: min(320px, 92vw);
   margin-inline: auto;
 }
 
 .logo-full-showcase__img,
 .logo-full-showcase img {
+  max-width: 280px;
+  max-height: 160px;
   width: 100%;
   height: auto;
   object-fit: contain;
   display: block;
-  max-width: 100%;
+  margin-inline: auto;
 }
 
 /* ── Hero brand image — in the hero visual column ─────────────── */
@@ -2474,11 +2572,13 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 414px) {
   .logo-compact-img {
-    height: 36px;
-    max-width: 160px;
+    height: auto;
+    max-height: 32px;
+    max-width: 140px;
   }
   .portal-compact-logo {
-    height: 36px;
+    height: auto;
+    max-height: 32px;
   }
 }
 

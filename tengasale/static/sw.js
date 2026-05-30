@@ -8,7 +8,7 @@
  *   Admin / API / media: always skipped
  */
 
-const CACHE_VERSION = "v1.0.2";
+const CACHE_VERSION = "v1.0.3";
 const STATIC_CACHE = `tengasale-static-${CACHE_VERSION}`;
 const HTML_CACHE   = `tengasale-html-${CACHE_VERSION}`;
 const OFFLINE_URL  = "/offline/";

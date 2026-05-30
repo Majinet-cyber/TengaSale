@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/website.css' %}?v=1.2">
+  <link rel="stylesheet" href="{% static 'css/website.css' %}?v=1.2.1">
   {% block site_head %}{% endblock %}
 </head>
 <body class="site-body">
@@ -24,17 +24,17 @@
     <!-- Brand / Logo — compact T icon + wordmark -->
     <a href="/" class="sitenav__brand logo-compact" aria-label="TengaSale home">
       <img
-        src="{% static 'images/TENGASALEe.png' %}"
+        src="{% static 'images/brand/tengasale-logo-full.svg' %}"
         alt="TengaSale"
-        class="site-logo-img logo-compact-img"
+        class="site-logo-img logo-compact-img ts-logo-wordmark"
         width="200"
         height="44"
         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
       >
       <!-- CSS fallback shown only if SVG fails to load -->
       <span class="sitenav__logo-fallback" style="display:none;" aria-hidden="true">
-        <img src="{% static 'images/Tenga.png' %}" alt="" class="sitenav__logo-mark">
-        <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="logo-wordmark-img">
+        <img src="{% static 'images/Tenga.png' %}" alt="" class="sitenav__logo-mark ts-logo-icon">
+        <span class="logo-wordmark"><span>Tenga</span><span class="highlight">Sale</span></span>
       </span>
     </a>
 
@@ -107,9 +107,9 @@
   <div class="sitefooter__inner">
 
     <div class="sitefooter__brand">
-      <img src="{% static 'images/Tenga.png' %}" alt="" class="sitefooter__logo" aria-hidden="true">
+      <img src="{% static 'images/Tenga.png' %}" alt="" class="sitefooter__logo ts-logo-icon" aria-hidden="true">
       <div class="sitefooter__brand-text">
-        <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="sitefooter__brand-name-img">
+        <span class="sitefooter__brand-name">TengaSale</span>
         <span class="sitefooter__brand-tagline">Smartphone Financing for Malawi</span>
       </div>
       <p class="sitefooter__brand-desc">
