@@ -17,6 +17,21 @@
   transition:opacity .12s;
 }
 .dc-btn-primary:hover { opacity:.88; }
+.add-device-btn,
+.btn-add-device {
+  background:#ff5a00;
+  color:#fff;
+  border:1px solid #ff5a00;
+  font-weight:800;
+  box-shadow:0 8px 20px rgba(255,90,0,.18);
+}
+.add-device-btn:hover,
+.btn-add-device:hover {
+  background:#e95000;
+  border-color:#e95000;
+  color:#fff;
+  opacity:1;
+}
 .dc-btn-ghost {
   background:#f8fafc; color:#475569; border:1.5px solid #e2e8f0;
   padding:8px 14px; border-radius:9px; font-weight:700; cursor:pointer; font-size:0.82rem;
@@ -35,7 +50,34 @@
   outline:none; border-color:var(--primary);
 }
 
-.dc-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr)); gap:16px; }
+.dc-brand-groups { display:flex; flex-direction:column; gap:14px; }
+.dc-brand-group {
+  background:#fff; border:1.5px solid #e2e8f0; border-radius:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.05); overflow:hidden;
+}
+.dc-brand-summary {
+  list-style:none; cursor:pointer; display:flex; align-items:center;
+  justify-content:space-between; gap:14px; padding:16px 18px;
+}
+.dc-brand-summary::-webkit-details-marker { display:none; }
+.dc-brand-summary-main { display:flex; align-items:center; gap:12px; min-width:0; flex-wrap:wrap; }
+.dc-brand-name { font-size:1rem; font-weight:900; letter-spacing:.04em; color:#0f172a; }
+.dc-brand-count {
+  display:inline-flex; align-items:center; padding:4px 10px; border-radius:99px;
+  background:rgba(255,90,0,.10); color:#ff5a00; font-size:.72rem; font-weight:800;
+}
+.dc-brand-stats { display:flex; align-items:center; gap:8px; flex-wrap:wrap; color:#64748b; font-size:.76rem; font-weight:700; }
+.dc-brand-stat { background:#f8fafc; border:1px solid #e2e8f0; border-radius:99px; padding:4px 9px; }
+.dc-brand-actions { display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0; }
+.dc-brand-add {
+  background:#fff7ed; color:#e95000; border:1px solid rgba(255,90,0,.24);
+  border-radius:9px; padding:7px 10px; font-size:.75rem; font-weight:800; cursor:pointer;
+}
+.dc-brand-chevron { width:18px; height:18px; color:#94a3b8; transition:transform .15s; flex-shrink:0; }
+.dc-brand-chevron svg { width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.dc-brand-group[open] .dc-brand-chevron { transform:rotate(180deg); }
+.dc-brand-panel { border-top:1px solid #f1f5f9; padding:16px; background:#fbfdff; }
+.dc-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr)); gap:16px; min-width:0; }
 
 .dc-card {
   background:#fff; border:2px solid #e2e8f0; border-radius:16px;
@@ -137,6 +179,12 @@
   grid-column:1/-1; background:#fff; border:2px dashed #e2e8f0; border-radius:16px;
   padding:56px 32px; text-align:center; color:#94a3b8;
 }
+@media (max-width:720px) {
+  .dc-actions { width:100%; justify-content:flex-start; flex-wrap:wrap; }
+  .dc-brand-summary { align-items:flex-start; }
+  .dc-brand-actions { width:100%; justify-content:space-between; margin-left:0; }
+  .dc-brand-summary-main { width:100%; }
+}
 </style>
 {% endblock %}
 
@@ -153,7 +201,7 @@
     </div>
     <div class="dc-actions">
       <button class="dc-btn-ghost" onclick="document.getElementById('add-brand-modal').style.display='flex'">+ Brand</button>
-      <button class="dc-btn-primary" onclick="document.getElementById('add-deal-modal').style.display='flex'">+ Add Device Deal</button>
+      <button class="dc-btn-primary add-device-btn btn-add-device" onclick="openAddDealModal()">+ Add Device Deal</button>
     </div>
   </div>
 
@@ -176,93 +224,39 @@
     <a href="{% url 'hq_deals' %}" style="color:var(--muted);font-size:0.82rem;text-decoration:none;align-self:center;">Reset</a>
   </form>
 
-  <div class="dc-cards">
-    {% for deal in deals %}
-    <div class="dc-card {% if not deal.is_active %}dc-card--inactive{% endif %}" data-testid="deal-card-{{ deal.pk }}">
-
-      <div class="dc-card-top">
-        <div style="flex:1;min-width:0;">
-          <span class="dc-brand-badge">{{ deal.brand.name }}</span>
-          <div class="dc-model">{{ deal.model_name }}</div>
-          <div class="dc-specs">{{ deal.specs }}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          {% if deal.is_featured %}<span class="dc-status-pill dc-status-pill--featured">Featured</span>{% endif %}
-          <span class="dc-status-pill {% if deal.is_active %}dc-status-pill--active{% else %}dc-status-pill--inactive{% endif %}">
-            {% if deal.is_active %}Active{% else %}Inactive{% endif %}
-          </span>
-          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);">
-            <div class="dc-stock-dot {% if deal.stock_status == 'in_stock' %}dc-stock-dot--in{% elif deal.stock_status == 'limited' %}dc-stock-dot--lim{% else %}dc-stock-dot--out{% endif %}"></div>
-            {{ deal.get_stock_status_display }}
+  <div class="dc-brand-groups">
+    {% for group in brand_groups %}
+      <details class="dc-brand-group" {% if forloop.first %}open{% endif %}>
+        <summary class="dc-brand-summary">
+          <div class="dc-brand-summary-main">
+            <span class="dc-brand-name">{{ group.name }}</span>
+            <span class="dc-brand-count">{{ group.count }} model{% if group.count != 1 %}s{% endif %}</span>
+            <span class="dc-brand-stats">
+              <span class="dc-brand-stat">{{ group.active_count }} active</span>
+              <span class="dc-brand-stat">{{ group.in_stock_count }} in stock</span>
+            </span>
+          </div>
+          <div class="dc-brand-actions">
+            {% if group.brand_id %}
+              <button type="button" class="dc-brand-add" onclick="event.preventDefault(); event.stopPropagation(); openAddDealModal('{{ group.brand_id }}');">Add device to this brand</button>
+            {% endif %}
+            <span class="dc-brand-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </div>
+        </summary>
+        <div class="dc-brand-panel">
+          <div class="dc-cards">
+            {% for deal in group.deals %}
+              {% include "dashboard/partials/device_deal_card.html" with deal=deal %}
+            {% endfor %}
           </div>
         </div>
-      </div>
-
-      <div class="dc-card-metrics">
-        <div class="dc-metric">
-          <div class="dc-metric-val">MWK {{ deal.default_cash_price|default:deal.cash_price|floatformat:0 }}</div>
-          <div class="dc-metric-label">Cash Price</div>
-        </div>
-        <div class="dc-metric">
-          <div class="dc-metric-val">{{ deal.calculated_total_loan|mwk }}</div>
-          <div class="dc-metric-label">Contract Value</div>
-        </div>
-        <div class="dc-metric">
-          <div class="dc-metric-val">{{ deal.deposit_amount|mwk }}</div>
-          <div class="dc-metric-label">Deposit ({{ deal.deposit_percent }}%)</div>
-        </div>
-        <div class="dc-metric">
-          <div class="dc-metric-val">{{ deal.monthly_payment|mwk }}/mo</div>
-          <div class="dc-metric-label">{{ deal.term_months }}-Month Plan</div>
-        </div>
-      </div>
-
-      <div class="dc-card-footer">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          {% if deal.lock_provider %}
-          <span class="dc-lock-tag">{{ deal.lock_provider|title }}</span>
-          {% else %}
-          <span style="font-size:0.68rem;color:#94a3b8;">No lock provider</span>
-          {% endif %}
-          <span style="font-size:0.68rem;color:#94a3b8;">{{ deal.country }}</span>
-        </div>
-        <div class="dc-card-actions">
-          <button class="dc-edit-btn dc-edit-btn--edit"
-            data-deal-id="{{ deal.pk }}"
-            data-brand-id="{{ deal.brand.pk }}"
-            data-model-name="{{ deal.model_name|escapejs }}"
-            data-specs="{{ deal.specs|escapejs }}"
-            data-cash-price="{{ deal.cash_price }}"
-            data-min-price="{{ deal.min_cash_price }}"
-            data-max-price="{{ deal.max_cash_price }}"
-            data-def-price="{{ deal.default_cash_price }}"
-            data-deposit-pct="{{ deal.deposit_percent }}"
-            data-multiplier="{{ deal.loan_multiplier }}"
-            data-term="{{ deal.term_months }}"
-            data-active="{{ deal.is_active|lower }}"
-            data-featured="{{ deal.is_featured|lower }}"
-            data-stock="{{ deal.stock_status }}"
-            data-lock="{{ deal.lock_provider }}"
-            data-country="{{ deal.country }}"
-            onclick="openEditModal(this)">Edit</button>
-          <form method="post" style="display:inline;" onsubmit="return confirm('Toggle this deal?');">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="toggle_deal">
-            <input type="hidden" name="deal_id" value="{{ deal.pk }}">
-            <button type="submit" class="dc-edit-btn {% if deal.is_active %}dc-edit-btn--toggle-on{% else %}dc-edit-btn--toggle-off{% endif %}">
-              {% if deal.is_active %}Deactivate{% else %}Activate{% endif %}
-            </button>
-          </form>
-        </div>
-      </div>
-
-    </div>
+      </details>
     {% empty %}
-    <div class="dc-empty">
-      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      <div style="font-size:1rem;font-weight:800;color:#475569;margin-bottom:6px;">No devices found</div>
-      <div style="font-size:0.82rem;">Add a device deal or adjust your filters.</div>
-    </div>
+      <div class="dc-empty">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <div style="font-size:1rem;font-weight:800;color:#475569;margin-bottom:6px;">No devices found</div>
+        <div style="font-size:0.82rem;">Add a device deal or adjust your filters.</div>
+      </div>
     {% endfor %}
   </div>
 
@@ -281,7 +275,7 @@
         <input type="hidden" name="action" value="add_deal">
         <div class="dc-field">
           <label>Brand</label>
-          <select name="brand_id" required>
+          <select name="brand_id" id="add-deal-brand-id" required>
             {% for b in brands %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}
           </select>
         </div>
@@ -428,13 +422,13 @@
       <button class="dc-modal-close" onclick="document.getElementById('add-brand-modal').style.display='none'">&times;</button>
     </div>
     <div class="dc-modal-body">
-      <form method="post">
+      <form method="post" id="add-brand-form">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_brand">
         <div class="dc-field"><label>Brand Name</label><input type="text" name="brand_name" required autofocus placeholder="e.g. Samsung"></div>
         <div class="dc-modal-footer">
           <button type="button" class="dc-cancel" onclick="document.getElementById('add-brand-modal').style.display='none'">Cancel</button>
-          <button type="submit">Add Brand</button>
+          <button type="submit" class="dc-create-brand-btn">Create Brand</button>
         </div>
       </form>
     </div>
@@ -445,6 +439,13 @@
 
 {% block extra_scripts %}
 <script>
+function openAddDealModal(brandId) {
+  var modal = document.getElementById('add-deal-modal');
+  var brandSelect = document.getElementById('add-deal-brand-id');
+  if (brandId && brandSelect) brandSelect.value = brandId;
+  modal.style.display = 'flex';
+}
+
 function openEditModal(btn) {
   var d = btn.dataset;
   document.getElementById('edit-deal-id').value = d.dealId;
@@ -471,5 +472,16 @@ document.querySelectorAll('.dc-modal').forEach(function(m) {
     if (e.target === m) m.style.display = 'none';
   });
 });
+
+var addBrandForm = document.getElementById('add-brand-form');
+if (addBrandForm) {
+  addBrandForm.addEventListener('submit', function () {
+    var submitBtn = addBrandForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+    }
+  });
+}
 </script>
 {% endblock %}

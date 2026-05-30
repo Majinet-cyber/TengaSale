@@ -340,6 +340,25 @@
   color: var(--hq-muted);
 }
 
+.hq-chart-note,
+.hq-chart-empty {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--hq-muted);
+  margin: 0;
+}
+
+.hq-chart-empty {
+  min-height: 156px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  border: 1.5px dashed var(--hq-border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
 /* Pipeline progress bars */
 .hq-pipeline {
   display: flex;
@@ -1128,6 +1147,33 @@
       <canvas id="queueChart" style="max-height:165px;"></canvas>
     </div>
 
+    <div class="hq-chart-card">
+      <div class="hq-chart-hdr">
+        <span class="hq-chart-title">Financial Performance</span>
+        <span class="hq-chart-pill">14 days</span>
+      </div>
+      {% if financial_has_data %}
+        <canvas id="financialPerformanceChart" style="height:170px;max-height:170px;"></canvas>
+        {% if not financial_performance_chart.profitAvailable %}
+          <p class="hq-chart-note">Profit needs cost data; showing revenue and payments only.</p>
+        {% endif %}
+      {% else %}
+        <div class="hq-chart-empty">No financial data yet. Revenue and profit charts will appear once deals and payments are recorded.</div>
+      {% endif %}
+    </div>
+
+    <div class="hq-chart-card">
+      <div class="hq-chart-hdr">
+        <span class="hq-chart-title">Contract Value vs Payments</span>
+        <span class="hq-chart-pill">14 days</span>
+      </div>
+      {% if financial_has_data %}
+        <canvas id="contractValuePaymentsChart" style="height:170px;max-height:170px;"></canvas>
+      {% else %}
+        <div class="hq-chart-empty">No financial data yet. Revenue and profit charts will appear once deals and payments are recorded.</div>
+      {% endif %}
+    </div>
+
   </div>
 
   <p class="hq-sl">Operations</p>
@@ -1395,6 +1441,8 @@
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{{ financial_performance_chart|json_script:"financial-performance-data" }}
+{{ contract_value_chart|json_script:"contract-value-data" }}
 <script>
 (function () {
   'use strict';
@@ -1498,6 +1546,129 @@
           },
           x: {
             ticks: { font: { size: 10 }, color: '#64748b' },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function readChartData(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function mwkLabel(value) {
+    return 'MWK ' + Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  var fpEl = document.getElementById('financialPerformanceChart');
+  var fpData = readChartData('financial-performance-data');
+  if (fpEl && fpData) {
+    var fpDatasets = [
+      {
+        label: 'Revenue',
+        data: fpData.revenue,
+        borderColor: '#ff6b1a',
+        backgroundColor: 'rgba(255,107,26,0.12)',
+        tension: 0.35,
+        fill: false,
+        borderWidth: 2
+      },
+      {
+        label: 'Payments Collected',
+        data: fpData.payments,
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(22,163,74,0.12)',
+        tension: 0.35,
+        fill: false,
+        borderWidth: 2
+      }
+    ];
+    if (fpData.profitAvailable) {
+      fpDatasets.push({
+        label: 'Profit',
+        data: fpData.profit,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,0.12)',
+        tension: 0.35,
+        fill: false,
+        borderWidth: 2
+      });
+    }
+    new Chart(fpEl, {
+      type: 'line',
+      data: { labels: fpData.labels, datasets: fpDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + mwkLabel(ctx.raw); } } }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (value) { return mwkLabel(value); } },
+            grid: { color: '#f1f5f9' },
+            border: { display: false }
+          },
+          x: {
+            ticks: { font: { size: 10 }, color: '#64748b', maxRotation: 0 },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  var cvEl = document.getElementById('contractValuePaymentsChart');
+  var cvData = readChartData('contract-value-data');
+  if (cvEl && cvData) {
+    new Chart(cvEl, {
+      type: 'bar',
+      data: {
+        labels: cvData.labels,
+        datasets: [
+          {
+            label: 'Contract Value Created',
+            data: cvData.contractValue,
+            backgroundColor: 'rgba(255,107,26,0.76)',
+            borderRadius: 6,
+            borderSkipped: false
+          },
+          {
+            label: 'Payments Collected',
+            data: cvData.payments,
+            backgroundColor: 'rgba(22,163,74,0.76)',
+            borderRadius: 6,
+            borderSkipped: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + mwkLabel(ctx.raw); } } }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (value) { return mwkLabel(value); } },
+            grid: { color: '#f1f5f9' },
+            border: { display: false }
+          },
+          x: {
+            ticks: { font: { size: 10 }, color: '#64748b', maxRotation: 0 },
             grid: { display: false },
             border: { display: false }
           }

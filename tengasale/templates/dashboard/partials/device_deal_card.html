@@ -1,0 +1,80 @@
+{% load ts_filters %}
+<div class="dc-card {% if not deal.is_active %}dc-card--inactive{% endif %}" data-testid="deal-card-{{ deal.pk }}">
+
+  <div class="dc-card-top">
+    <div style="flex:1;min-width:0;">
+      <span class="dc-brand-badge">{{ deal.brand.name }}</span>
+      <div class="dc-model">{{ deal.model_name }}</div>
+      <div class="dc-specs">{{ deal.specs }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      {% if deal.is_featured %}<span class="dc-status-pill dc-status-pill--featured">Featured</span>{% endif %}
+      <span class="dc-status-pill {% if deal.is_active %}dc-status-pill--active{% else %}dc-status-pill--inactive{% endif %}">
+        {% if deal.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+      <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);">
+        <div class="dc-stock-dot {% if deal.stock_status == 'in_stock' %}dc-stock-dot--in{% elif deal.stock_status == 'limited' %}dc-stock-dot--lim{% else %}dc-stock-dot--out{% endif %}"></div>
+        {{ deal.get_stock_status_display }}
+      </div>
+    </div>
+  </div>
+
+  <div class="dc-card-metrics">
+    <div class="dc-metric">
+      <div class="dc-metric-val">MWK {{ deal.default_cash_price|default:deal.cash_price|floatformat:0 }}</div>
+      <div class="dc-metric-label">Cash Price</div>
+    </div>
+    <div class="dc-metric">
+      <div class="dc-metric-val">{{ deal.calculated_total_loan|mwk }}</div>
+      <div class="dc-metric-label">Contract Value</div>
+    </div>
+    <div class="dc-metric">
+      <div class="dc-metric-val">{{ deal.deposit_amount|mwk }}</div>
+      <div class="dc-metric-label">Deposit ({{ deal.deposit_percent }}%)</div>
+    </div>
+    <div class="dc-metric">
+      <div class="dc-metric-val">{{ deal.monthly_payment|mwk }}/mo</div>
+      <div class="dc-metric-label">{{ deal.term_months }}-Month Plan</div>
+    </div>
+  </div>
+
+  <div class="dc-card-footer">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      {% if deal.lock_provider %}
+      <span class="dc-lock-tag">{{ deal.lock_provider|title }}</span>
+      {% else %}
+      <span style="font-size:0.68rem;color:#94a3b8;">No lock provider</span>
+      {% endif %}
+      <span style="font-size:0.68rem;color:#94a3b8;">{{ deal.country }}</span>
+    </div>
+    <div class="dc-card-actions">
+      <button class="dc-edit-btn dc-edit-btn--edit"
+        data-deal-id="{{ deal.pk }}"
+        data-brand-id="{{ deal.brand.pk }}"
+        data-model-name="{{ deal.model_name|escapejs }}"
+        data-specs="{{ deal.specs|escapejs }}"
+        data-cash-price="{{ deal.cash_price }}"
+        data-min-price="{{ deal.min_cash_price }}"
+        data-max-price="{{ deal.max_cash_price }}"
+        data-def-price="{{ deal.default_cash_price }}"
+        data-deposit-pct="{{ deal.deposit_percent }}"
+        data-multiplier="{{ deal.loan_multiplier }}"
+        data-term="{{ deal.term_months }}"
+        data-active="{{ deal.is_active|lower }}"
+        data-featured="{{ deal.is_featured|lower }}"
+        data-stock="{{ deal.stock_status }}"
+        data-lock="{{ deal.lock_provider }}"
+        data-country="{{ deal.country }}"
+        onclick="openEditModal(this)">Edit</button>
+      <form method="post" style="display:inline;" onsubmit="return confirm('Toggle this deal?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_deal">
+        <input type="hidden" name="deal_id" value="{{ deal.pk }}">
+        <button type="submit" class="dc-edit-btn {% if deal.is_active %}dc-edit-btn--toggle-on{% else %}dc-edit-btn--toggle-off{% endif %}">
+          {% if deal.is_active %}Deactivate{% else %}Activate{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>

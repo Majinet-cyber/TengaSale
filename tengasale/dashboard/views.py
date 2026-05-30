@@ -139,6 +139,7 @@ def hq_dashboard(request):
     from portal.models import PaymentContract, PaymentTransaction
     from commissions.models import MerchantContractPayout, CommissionLedger
     from decimal import Decimal
+    from datetime import timedelta
 
     User = get_user_model()
     total_merchants = User.objects.filter(profile__role="merchant").count()
@@ -192,6 +193,48 @@ def hq_dashboard(request):
         status__in=["active", "overdue", "locked"]
     ).count()
 
+    chart_days = []
+    for offset in range(13, -1, -1):
+        day = today - timedelta(days=offset)
+        label = day.strftime("%d %b")
+        contract_value = (
+            PaymentContract.objects.filter(created_at__date=day)
+            .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+        )
+        payments_collected = (
+            PaymentTransaction.objects.filter(status="paid", paid_at__date=day)
+            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        )
+        payout_cost = (
+            MerchantContractPayout.objects.filter(created_at__date=day)
+            .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
+        )
+        chart_days.append({
+            "date": day.isoformat(),
+            "label": label,
+            "revenue": float(contract_value),
+            "payments": float(payments_collected),
+            "profit": float(contract_value - payout_cost),
+            "contract_value": float(contract_value),
+        })
+
+    has_contract_values = any(day["contract_value"] for day in chart_days)
+    has_payments = any(day["payments"] for day in chart_days)
+    has_payout_costs = MerchantContractPayout.objects.exists()
+    financial_has_data = has_contract_values or has_payments
+    financial_performance_chart = {
+        "labels": [day["label"] for day in chart_days],
+        "revenue": [day["revenue"] for day in chart_days],
+        "payments": [day["payments"] for day in chart_days],
+        "profit": [day["profit"] if has_payout_costs else 0 for day in chart_days],
+        "profitAvailable": has_payout_costs,
+    }
+    contract_value_chart = {
+        "labels": [day["label"] for day in chart_days],
+        "contractValue": [day["contract_value"] for day in chart_days],
+        "payments": [day["payments"] for day in chart_days],
+    }
+
     # New role & portal KPIs
     from website.models import MerchantLead
     new_leads_count = MerchantLead.objects.filter(status=MerchantLead.STATUS_NEW).count()
@@ -235,6 +278,9 @@ def hq_dashboard(request):
         "approval_rate": approval_rate,
         "uw_payout_liability": uw_payout_liability,
         "lock_exposure_count": lock_exposure_count,
+        "financial_has_data": financial_has_data,
+        "financial_performance_chart": financial_performance_chart,
+        "contract_value_chart": contract_value_chart,
     }
     return render(request, "dashboard/hq.html", context)
 
@@ -288,6 +334,7 @@ def hq_deals(request):
     from deals.models import DeviceBrand, DeviceDeal
     from decimal import Decimal, InvalidOperation
     from core.models import AuditLog
+    from collections import OrderedDict
 
     msg = None
     msg_type = "info"
@@ -390,9 +437,21 @@ def hq_deals(request):
         elif action == "add_brand":
             brand_name = request.POST.get("brand_name", "").strip()
             if brand_name:
-                brand, created = DeviceBrand.objects.get_or_create(name=brand_name)
-                msg = f"Brand '{brand_name}' {'created' if created else 'already exists'}."
-                msg_type = "success" if created else "info"
+                existing_brand = DeviceBrand.objects.filter(name__iexact=brand_name).first()
+                if existing_brand:
+                    msg = f"Brand '{existing_brand.name}' already exists."
+                    msg_type = "info"
+                else:
+                    brand = DeviceBrand.objects.create(name=brand_name)
+                    AuditLog.objects.create(
+                        user=request.user,
+                        action="hq_brand_add",
+                        object_type="DeviceBrand",
+                        object_id=str(brand.pk),
+                        detail={"brand": brand.name},
+                    )
+                    msg = f"Brand '{brand.name}' created."
+                    msg_type = "success"
             else:
                 msg = "Brand name is required."
                 msg_type = "error"
@@ -416,9 +475,47 @@ def hq_deals(request):
         deals_qs = deals_qs.filter(is_active=False)
 
     brands = DeviceBrand.objects.order_by("name")
+    main_brand_keys = ["TECNO", "ITEL", "REDMI", "SAMSUNG"]
+    brand_groups = OrderedDict()
+
+    def brand_group_key(brand_name):
+        normalized = (brand_name or "").strip().upper()
+        for key in main_brand_keys:
+            if key in normalized:
+                return key
+        return "OTHER"
+
+    for deal in deals_qs:
+        key = brand_group_key(deal.brand.name if deal.brand_id else "")
+        if key not in brand_groups:
+            brand_groups[key] = {
+                "key": key,
+                "name": key,
+                "deals": [],
+                "count": 0,
+                "active_count": 0,
+                "in_stock_count": 0,
+                "brand_id": deal.brand_id if key != "OTHER" else None,
+            }
+        group = brand_groups[key]
+        group["deals"].append(deal)
+        group["count"] += 1
+        if deal.is_active:
+            group["active_count"] += 1
+        if deal.stock_status == DeviceDeal.STOCK_IN:
+            group["in_stock_count"] += 1
+        if key != "OTHER" and not group["brand_id"]:
+            group["brand_id"] = deal.brand_id
+
+    brand_groups = [
+        brand_groups[key]
+        for key in [*main_brand_keys, "OTHER"]
+        if key in brand_groups and brand_groups[key]["count"] > 0
+    ]
 
     return render(request, "dashboard/hq_deals.html", {
         "deals": deals_qs,
+        "brand_groups": brand_groups,
         "brands": brands,
         "search": search,
         "brand_filter": brand_filter,

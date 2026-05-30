@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -549,6 +550,8 @@ def sales_queue_rules(request):
 
 @underwriter_required
 def sales_wallet(request):
+    from datetime import timedelta
+
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
 
     # Legacy wallet transactions
@@ -611,6 +614,55 @@ def sales_wallet(request):
 
     # Summary from commissions service
     summary = get_underwriter_wallet_summary(request.user)
+    pending_payout_total = (
+        UnderwriterMonthlyPayout.objects.filter(
+            user=request.user,
+            status__in=[
+                UnderwriterMonthlyPayout.STATUS_PENDING,
+                UnderwriterMonthlyPayout.STATUS_PROCESSING,
+            ],
+        ).aggregate(t=Sum("net_amount"))["t"] or Decimal("0")
+    )
+    gross_earnings_total = summary.get("total_commissions_earned", Decimal("0")) or Decimal("0")
+    deductions_total = abs(summary.get("total_arrears_deductions", Decimal("0")) or Decimal("0"))
+    net_earnings_total = gross_earnings_total - deductions_total
+
+    today = timezone.now().date()
+    earnings_days = []
+    for offset in range(13, -1, -1):
+        day = today - timedelta(days=offset)
+        day_entries = CommissionLedger.objects.filter(user=request.user, created_at__date=day)
+        gross = (
+            day_entries.filter(entry_type=CommissionLedger.ENTRY_REPAYMENT, amount__gt=0)
+            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        )
+        deduction_total = (
+            day_entries.filter(
+                entry_type__in=[
+                    CommissionLedger.ENTRY_ARREARS,
+                    CommissionLedger.ENTRY_WHT,
+                    CommissionLedger.ENTRY_ADJUSTMENT,
+                ],
+                amount__lt=0,
+            ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        )
+        deductions = abs(deduction_total)
+        earnings_days.append({
+            "label": day.strftime("%d %b"),
+            "gross": float(gross),
+            "deductions": float(deductions),
+            "net": float(gross - deductions),
+        })
+
+    earnings_chart = {
+        "labels": [day["label"] for day in earnings_days],
+        "gross": [day["gross"] for day in earnings_days],
+        "deductions": [day["deductions"] for day in earnings_days],
+        "net": [day["net"] for day in earnings_days],
+    }
+    earnings_chart_has_data = any(
+        day["gross"] or day["deductions"] or day["net"] for day in earnings_days
+    )
 
     active_tab = request.GET.get("tab", "earnings")
 
@@ -622,6 +674,12 @@ def sales_wallet(request):
         "ledger_rows": ledger_rows,
         "monthly_payouts": monthly_payouts,
         "summary": summary,
+        "pending_payout_total": pending_payout_total,
+        "gross_earnings_total": gross_earnings_total,
+        "deductions_total": deductions_total,
+        "net_earnings_total": net_earnings_total,
+        "earnings_chart": earnings_chart,
+        "earnings_chart_has_data": earnings_chart_has_data,
         "active_tab": active_tab,
     })
 

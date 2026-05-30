@@ -40,6 +40,37 @@
 </div>
 
 {# ── Tabs ── #}
+<div class="earnings-kpi-grid">
+  <div class="earnings-kpi">
+    <span>Gross Earnings</span>
+    <strong class="text-green">{{ gross_earnings_total|mwk }}</strong>
+  </div>
+  <div class="earnings-kpi">
+    <span>Deductions</span>
+    <strong class="text-red">{{ deductions_total|mwk }}</strong>
+  </div>
+  <div class="earnings-kpi">
+    <span>Net Earnings</span>
+    <strong>{{ net_earnings_total|mwk }}</strong>
+  </div>
+  <div class="earnings-kpi">
+    <span>Pending Payouts</span>
+    <strong>{{ pending_payout_total|mwk }}</strong>
+  </div>
+</div>
+
+<div class="wallet-chart-card">
+  <div class="wallet-chart-card__header">
+    <div class="review-card__title">Earnings Breakdown</div>
+    <span>14 days</span>
+  </div>
+  {% if earnings_chart_has_data %}
+    <canvas id="earningsBreakdownChart" style="height:220px;max-height:220px;"></canvas>
+  {% else %}
+    <div class="wallet-chart-empty">No earnings data yet. Earnings, deductions, and net charts will appear once repayments or deductions are recorded.</div>
+  {% endif %}
+</div>
+
 <div x-data="{ tab: '{{ active_tab }}' }">
   <div class="tab-bar">
     <button
@@ -252,6 +283,63 @@
 </div>
 
 <style>
+.earnings-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.earnings-kpi,
+.wallet-chart-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15,23,42,.06);
+}
+.earnings-kpi {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.earnings-kpi span {
+  font-size: .75rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.earnings-kpi strong {
+  font-size: 1rem;
+}
+.wallet-chart-card {
+  padding: 16px;
+  margin: 12px 0;
+}
+.wallet-chart-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wallet-chart-card__header span {
+  font-size: .72rem;
+  color: var(--muted);
+  background: #f1f5f9;
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-weight: 800;
+}
+.wallet-chart-empty {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: .86rem;
+}
 .payout-card { padding: 16px; margin-bottom: 10px; }
 .payout-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
 .payout-card__period { font-weight: 700; font-size: 0.95rem; }
@@ -259,6 +347,76 @@
 .payout-breakdown { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 10px; }
 .payout-row { display: flex; justify-content: space-between; font-size: 0.88rem; }
 .payout-row--net { border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+@media (min-width: 720px) {
+  .earnings-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 </style>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{{ earnings_chart|json_script:"earnings-breakdown-data" }}
+<script>
+(function () {
+  var chartEl = document.getElementById('earningsBreakdownChart');
+  var dataEl = document.getElementById('earnings-breakdown-data');
+  if (!chartEl || !dataEl || !window.Chart) return;
+  var chartData = JSON.parse(dataEl.textContent);
+  function mwkLabel(value) {
+    return 'MWK ' + Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+  new Chart(chartEl, {
+    type: 'bar',
+    data: {
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Gross Earnings',
+          data: chartData.gross,
+          backgroundColor: 'rgba(22,163,74,.78)',
+          borderRadius: 7,
+          borderSkipped: false
+        },
+        {
+          label: 'Deductions',
+          data: chartData.deductions,
+          backgroundColor: 'rgba(220,38,38,.72)',
+          borderRadius: 7,
+          borderSkipped: false
+        },
+        {
+          label: 'Net Earnings',
+          data: chartData.net,
+          backgroundColor: 'rgba(255,90,0,.78)',
+          borderRadius: 7,
+          borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + mwkLabel(ctx.raw); } } }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: function (value) { return mwkLabel(value); } },
+          grid: { color: '#f1f5f9' },
+          border: { display: false }
+        },
+        x: {
+          ticks: { color: '#64748b', font: { size: 10 }, maxRotation: 0 },
+          grid: { display: false },
+          border: { display: false }
+        }
+      }
+    }
+  });
+})();
+</script>
 {% endblock %}
