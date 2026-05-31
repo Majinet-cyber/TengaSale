@@ -3,11 +3,39 @@
 
 {% block page_title %}Merchant Payouts — TengaSale HQ{% endblock %}
 
+{% block extra_head %}
+<style>
+.mpo-wrap { max-width:1000px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.mpo-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
+.mpo-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.mpo-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+.mpo-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.mpo-stat {
+  background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.80); border-radius:12px;
+  padding:16px; box-shadow:0 2px 8px rgba(15,23,42,0.06);
+  text-align:center; border-left:3px solid var(--mpo-accent,#ff6b1a);
+}
+.mpo-stat-val { font-size:1.2rem; font-weight:900; color:var(--mpo-accent,#ff6b1a); line-height:1; }
+.mpo-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
+.mpo-card {
+  background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,0.78); border-radius:14px;
+  overflow:hidden; box-shadow:0 2px 8px rgba(15,23,42,0.06); margin-bottom:16px;
+}
+.mpo-note { font-size:0.75rem; color:#64748b; text-align:center; margin-top:12px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width:1000px;margin:0 auto;padding:20px 16px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.9rem;">← HQ</a>
-    <h1 style="font-size:1.4rem;font-weight:800;margin:0;">Merchant Payouts</h1>
+<div class="mpo-wrap" data-testid="hq-dashboard">
+
+  <div class="mpo-hdr">
+    <div>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <h1 class="mpo-title">Merchant Payouts</h1>
+      <p class="mpo-sub">Settlement status, commission tracking, and payout actions.</p>
+    </div>
   </div>
 
   {% if msg %}
@@ -17,22 +45,22 @@
   {% endif %}
 
   {# ── KPI Cards ── #}
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.75rem;color:var(--muted);">Pending Settlement</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--warning);">{{ pending_total|mwk }}</div>
+  <div class="mpo-stats">
+    <div class="mpo-stat" style="--mpo-accent:#d97706;">
+      <div class="mpo-stat-val">{{ pending_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Pending settlement</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.75rem;color:var(--muted);">Processing</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#1d4ed8;">{{ processing_total|mwk }}</div>
+    <div class="mpo-stat" style="--mpo-accent:#ff6b1a;">
+      <div class="mpo-stat-val">{{ processing_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Processing</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.75rem;color:var(--muted);">Paid Settlement</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--success);">{{ paid_total|mwk }}</div>
+    <div class="mpo-stat" style="--mpo-accent:#16a34a;">
+      <div class="mpo-stat-val">{{ paid_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Paid settlement</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.75rem;color:var(--muted);">Total Commission</div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--primary);">{{ commission_total|mwk }}</div>
+    <div class="mpo-stat" style="--mpo-accent:#ff6b1a;">
+      <div class="mpo-stat-val">{{ commission_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Total commission</div>
     </div>
   </div>
 
@@ -51,7 +79,7 @@
     <a href="{% url 'hq_merchant_payouts' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 
-  <div class="glass-card" style="padding:0;overflow:hidden;">
+  <div class="mpo-card">
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
         <thead>
@@ -136,9 +164,6 @@
     </div>
   </div>
 
-  <p style="font-size:0.75rem;color:var(--muted);margin-top:12px;text-align:center;">
-    Merchants have no WHT deduction. Commission = 1% of financed amount (excluding deposit).
-    Payout = full cash price + commission.
-  </p>
+  <p class="mpo-note">Merchants have no WHT deduction. Commission = 1% of financed amount (excluding deposit). Payout = full cash price + commission.</p>
 </div>
 {% endblock %}

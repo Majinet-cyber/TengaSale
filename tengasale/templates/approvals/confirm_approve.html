@@ -4,7 +4,7 @@
 
 <a href="{% url 'underwriter_review_application' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
-    <span>BACK</span>
+    <span>Back</span>
 </a>
 
 <section class="card complete-card">
@@ -14,8 +14,8 @@
 
     <form method="post" class="form-actions">
         {% csrf_token %}
-        <button type="submit" class="btn green-button">APPROVE</button>
-        <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">CANCEL</a>
+        <button type="submit" class="btn green-button">Approve</button>
+        <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">Cancel</a>
     </form>
 </section>
 

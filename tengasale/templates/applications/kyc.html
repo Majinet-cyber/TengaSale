@@ -6,7 +6,7 @@
 
 <a href="{% url 'choose_device' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
-    <span>BACK</span>
+    <span>Back</span>
 </a>
 
 <h1 class="greeting">KYC Capture</h1>
@@ -36,7 +36,7 @@
         <button type="button" class="capture-button" data-capture-button>Capture Face</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
-            <button type="button" class="btn" data-save-capture>SAVE</button>
+            <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
         <div class="kyc-preview{% if app.customer_face_image %} is-visible{% endif %}" data-preview-card>
@@ -70,7 +70,7 @@
         <button type="button" class="capture-button" data-capture-button>Capture ID Front</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
-            <button type="button" class="btn" data-save-capture>SAVE</button>
+            <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
         <div class="kyc-preview{% if app.id_front_image %} is-visible{% endif %}" data-preview-card>
@@ -104,7 +104,7 @@
         <button type="button" class="capture-button" data-capture-button>Capture ID Back</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
-            <button type="button" class="btn" data-save-capture>SAVE</button>
+            <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
         <div class="kyc-preview{% if app.id_back_image %} is-visible{% endif %}" data-preview-card>
@@ -122,7 +122,7 @@
     </section>
 
     <p class="next-disabled-note" data-disabled-note {% if kyc_complete %}hidden{% endif %}>Capture customer face, ID front, and ID back to continue.</p>
-    <button type="submit" class="btn kyc-next-button" data-next-button {% if not kyc_complete %}disabled{% endif %}>NEXT</button>
+    <button type="submit" class="btn kyc-next-button" data-next-button {% if not kyc_complete %}disabled{% endif %}>Next</button>
 </form>
 
 <script>

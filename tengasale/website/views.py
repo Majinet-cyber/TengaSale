@@ -1,10 +1,100 @@
 """Website views — public-facing pages for /site/."""
 import os
 from django.shortcuts import render, redirect
+from django.core.cache import cache
+
+
+def _get_landing_stats():
+    """Return cached landing page stats dict. Cached for 1 hour. Safe if models are empty."""
+    cached = cache.get("landing_stats")
+    if cached is not None:
+        return cached
+
+    stats = {
+        "total_contracts": 0,
+        "total_disbursed": 0,
+        "total_customers": 0,
+        "total_disbursed_formatted": "MWK 0",
+    }
+
+    try:
+        from portal.models import PaymentContract
+        stats["total_contracts"] = PaymentContract.objects.filter(
+            deposit_paid=True
+        ).count()
+    except Exception:
+        pass
+
+    try:
+        from portal.models import PaymentTransaction
+        from django.db.models import Sum
+        total = PaymentTransaction.objects.filter(
+            status="confirmed"
+        ).aggregate(s=Sum("amount"))["s"] or 0
+        stats["total_disbursed"] = int(total)
+        if total >= 1_000_000:
+            stats["total_disbursed_formatted"] = f"MWK {total / 1_000_000:.1f}M"
+        elif total >= 1_000:
+            stats["total_disbursed_formatted"] = f"MWK {total:,.0f}"
+        else:
+            stats["total_disbursed_formatted"] = "MWK 0"
+    except Exception:
+        pass
+
+    try:
+        from financing.models import Customer
+        stats["total_customers"] = Customer.objects.count()
+    except Exception:
+        pass
+
+    if stats["total_customers"] == 0:
+        try:
+            from portal.models import PaymentContract
+            stats["total_customers"] = PaymentContract.objects.count()
+        except Exception:
+            pass
+
+    cache.set("landing_stats", stats, 3600)
+    return stats
+
+
+_MERCHANT_QUOTES = [
+    {
+        "merchant_name": "James Phiri",
+        "shop_name": "City Phone Hub",
+        "city": "Lilongwe",
+        "quote": (
+            "TengaSale changed how I run my shop. Customers who couldn't pay cash "
+            "upfront can now walk out with a phone and pay over time. My sales doubled."
+        ),
+    },
+    {
+        "merchant_name": "Grace Banda",
+        "shop_name": "Banda Electronics",
+        "city": "Blantyre",
+        "quote": (
+            "The platform is easy to use and the support is excellent. I can see all my "
+            "contracts, track payments, and help customers in minutes — not hours."
+        ),
+    },
+    {
+        "merchant_name": "Kondwani Mwale",
+        "shop_name": "Kondwani Gadgets",
+        "city": "Mzuzu",
+        "quote": (
+            "I was worried about repayments but TengaSale handles everything — from "
+            "contracts to payment tracking. It feels like having a finance team built in."
+        ),
+    },
+]
 
 
 def landing(request):
-    return render(request, "website/landing.html", {})
+    stats = _get_landing_stats()
+    return render(request, "website/landing.html", {
+        "landing_stats": stats,
+        "merchant_quotes": _MERCHANT_QUOTES,
+    })
 
 
 def about(request):

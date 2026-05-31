@@ -3,85 +3,130 @@
 
 {% block page_title %}Reconciliation — TengaSale HQ{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+{% block extra_head %}
+<style>
+.rcn-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.rcn-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
+.rcn-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.rcn-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+.rcn-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.rcn-stat {
+  background:rgba(255,255,255,0.90);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.80);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 2px 8px rgba(15,23,42,0.06);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  border-left:3px solid var(--rcn-accent,#ff6b1a);
+}
+.rcn-stat-val { font-size:1.6rem; font-weight:900; color:var(--rcn-accent,#ff6b1a); line-height:1; }
+.rcn-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; text-align:center; }
+.rcn-card {
+  background:rgba(255,255,255,0.90);
+  backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,0.78);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(15,23,42,0.06);
+  margin-bottom:20px;
+}
+.rcn-card-hdr { padding:14px 16px; border-bottom:1.5px solid #f1f5f9; background:linear-gradient(135deg,#fff8f0,#fff); }
+.rcn-card-title { font-size:0.88rem; font-weight:800; margin:0; color:#0f172a; }
+.rcn-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+.rcn-table th { padding:10px 14px; text-align:left; font-size:0.68rem; font-weight:700; color:#64748b; border-bottom:1.5px solid #e2e8f0; white-space:nowrap; }
+.rcn-table td { padding:10px 14px; border-bottom:1px solid #f1f5f9; }
+.rcn-table tr:last-child td { border-bottom:none; }
+.rcn-empty { text-align:center; padding:32px; color:#94a3b8; font-size:0.82rem; }
+.rcn-alert { padding:10px 16px; border-radius:10px; font-size:0.82rem; margin-bottom:14px; }
+.rcn-alert--success { background:#f0fdf4; color:#16a34a; border:1px solid rgba(22,163,74,0.2); }
+.rcn-alert--danger { background:#fef2f2; color:#dc2626; border:1px solid rgba(220,38,38,0.2); }
+.rcn-alert--info { background:#eff6ff; color:#2563eb; border:1px solid rgba(37,99,235,0.2); }
+</style>
+{% endblock %}
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-    <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;">← HQ</a>
+{% block content %}
+<div class="rcn-wrap" data-testid="hq-dashboard">
+
+  <div class="rcn-hdr">
     <div>
-      <h1 style="font-size:1.4rem;font-weight:800;margin:0;">Reconciliation</h1>
-      <p style="font-size:0.8rem;color:var(--muted);margin:2px 0 0 0;">Match payments to contracts and resolve unreconciled transactions.</p>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <h1 class="rcn-title">Reconciliation</h1>
+      <p class="rcn-sub">Match payments to contracts and resolve unreconciled transactions.</p>
     </div>
   </div>
 
   {% if msg %}
-  <div class="alert alert-{% if msg_type == 'success' %}success{% elif msg_type == 'error' %}danger{% else %}info{% endif %} mt-3" role="alert">
+  <div class="rcn-alert rcn-alert--{% if msg_type == 'success' %}success{% elif msg_type == 'error' %}danger{% else %}info{% endif %}">
     {{ msg }}
   </div>
   {% endif %}
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0;">
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Matched</div>
-      <div style="font-size:1.5rem;font-weight:800;color:#16a34a;margin-top:4px;">{{ matched }}</div>
+  <div class="rcn-stats">
+    <div class="rcn-stat" style="--rcn-accent:#16a34a;">
+      <div class="rcn-stat-val">{{ matched }}</div>
+      <div class="rcn-stat-lbl">Matched</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Unmatched</div>
-      <div style="font-size:1.5rem;font-weight:800;color:#dc2626;margin-top:4px;">{{ unmatched }}</div>
+    <div class="rcn-stat" style="--rcn-accent:#dc2626;">
+      <div class="rcn-stat-val">{{ unmatched }}</div>
+      <div class="rcn-stat-lbl">Unmatched</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Duplicate Refs</div>
-      <div style="font-size:1.5rem;font-weight:800;color:#d97706;margin-top:4px;">{{ dup_refs }}</div>
+    <div class="rcn-stat" style="--rcn-accent:#d97706;">
+      <div class="rcn-stat-val">{{ dup_refs }}</div>
+      <div class="rcn-stat-lbl">Duplicate refs</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">External Pending</div>
-      <div style="font-size:1.5rem;font-weight:800;color:#2563eb;margin-top:4px;">{{ ext_pending }}</div>
+    <div class="rcn-stat" style="--rcn-accent:#ff6b1a;">
+      <div class="rcn-stat-val">{{ ext_pending }}</div>
+      <div class="rcn-stat-lbl">External pending</div>
     </div>
   </div>
 
-  <div class="glass-card" style="padding:0;overflow:hidden;">
-    <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
-      <h2 style="font-size:0.9rem;font-weight:800;margin:0;">Unmatched / Pending Transactions</h2>
+  <div class="rcn-card">
+    <div class="rcn-card-hdr">
+      <h2 class="rcn-card-title">Unmatched / Pending Transactions</h2>
     </div>
     <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+      <table class="rcn-table">
         <thead>
-          <tr style="background:#f8fafc;">
-            <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Reference</th>
-            <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Provider</th>
-            <th style="padding:10px 14px;text-align:right;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Amount</th>
-            <th style="padding:10px 14px;text-align:center;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Status</th>
-            <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Contract</th>
-            <th style="padding:10px 14px;text-align:center;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Date</th>
-            <th style="padding:10px 14px;text-align:center;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Action</th>
+          <tr>
+            <th>Reference</th>
+            <th>Provider</th>
+            <th style="text-align:right;">Amount</th>
+            <th style="text-align:center;">Status</th>
+            <th>Contract</th>
+            <th style="text-align:center;">Date</th>
+            <th style="text-align:center;">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for txn in unmatched_qs %}
-          <tr style="border-top:1px solid var(--border);">
-            <td style="padding:10px 14px;font-size:0.75rem;color:var(--muted);">{{ txn.internal_reference }}</td>
-            <td style="padding:10px 14px;">{{ txn.provider }}</td>
-            <td style="padding:10px 14px;text-align:right;font-weight:700;">{{ txn.amount|mwk }}</td>
-            <td style="padding:10px 14px;text-align:center;">
+          <tr>
+            <td style="font-size:0.75rem;color:#64748b;font-family:monospace;">{{ txn.internal_reference }}</td>
+            <td>{{ txn.provider }}</td>
+            <td style="text-align:right;font-weight:700;">{{ txn.amount|mwk }}</td>
+            <td style="text-align:center;">
               <span class="status-badge {% if txn.status == 'paid' %}status-badge--approved{% elif txn.status == 'failed' %}status-badge--rejected{% else %}status-badge--pending{% endif %}">
                 {{ txn.status }}
               </span>
             </td>
-            <td style="padding:10px 14px;">
+            <td>
               {% if txn.payment_contract %}{{ txn.payment_contract.contract_number }}{% else %}<span style="color:#dc2626;font-size:0.75rem;">Unlinked</span>{% endif %}
             </td>
-            <td style="padding:10px 14px;text-align:center;color:var(--muted);">{{ txn.created_at|date:"d M Y" }}</td>
-            <td style="padding:10px 14px;text-align:center;">
+            <td style="text-align:center;color:#64748b;">{{ txn.created_at|date:"d M Y" }}</td>
+            <td style="text-align:center;">
               <form method="post" style="display:inline;">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="mark_reconciled">
                 <input type="hidden" name="txn_id" value="{{ txn.pk }}">
-                <button type="submit" class="btn btn-xs btn-outline-success" style="font-size:0.72rem;padding:2px 8px;">Reconcile</button>
+                <button type="submit" class="btn" style="font-size:0.72rem;padding:4px 10px;background:#f0fdf4;color:#16a34a;border:1px solid rgba(22,163,74,0.3);">Reconcile</button>
               </form>
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" style="padding:32px;text-align:center;color:var(--muted);">No unmatched transactions found.</td></tr>
+          <tr><td colspan="7" class="rcn-empty">No unmatched transactions found.</td></tr>
           {% endfor %}
         </tbody>
       </table>

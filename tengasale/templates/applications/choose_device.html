@@ -6,7 +6,7 @@
 
 <a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
-    <span>BACK</span>
+    <span>Back</span>
 </a>
 
 <h1 class="greeting">Deal Selection</h1>
@@ -92,8 +92,8 @@
                         <strong>MWK <span data-total-loan></span></strong>
                     </div>
                     <div>
-                        <span>Deposit <span data-deposit-percent></span>%</span>
-                        <strong>MWK <span data-deposit></span></strong>
+                        <span>Deposit</span>
+                        <strong class="deposit-inline"><span data-deposit-percent></span>% · MWK <span data-deposit></span></strong>
                     </div>
                     <div>
                         <span><span data-term-copy>12</span> months monthly</span>
@@ -134,7 +134,7 @@
                 </div>
             </article>
 
-            <button class="new-application-button" type="submit">NEXT</button>
+            <button class="new-application-button" type="submit">Next</button>
         </section>
     </form>
 {% else %}
@@ -256,7 +256,7 @@
             document.querySelector("[data-term-copy]").textContent = deal.term_months || 12;
             document.querySelector("[data-min-cash]").textContent = money(deal.min_cash_price);
             document.querySelector("[data-max-cash]").textContent = money(deal.max_cash_price);
-            document.querySelector("[data-deposit-percent]").textContent = money(deal.deposit_percent);
+            document.querySelector("[data-deposit-percent]").textContent = Math.round(Number(deal.deposit_percent));
             offerSection.hidden = false;
             updatePricing();
         }

@@ -7,7 +7,7 @@
 <div class="uw-canvas">
     <a href="{% url 'underwriter_dashboard' %}" class="soft-back">
         <span class="soft-back-icon">&larr;</span>
-        <span>BACK</span>
+        <span>Back</span>
     </a>
 
     <header class="uw-header">
@@ -100,8 +100,8 @@
             {% csrf_token %}
             {% include "dashboard/partials/review_yes_no.html" with name="summary_clear" question="Is everything in this application clear and accurate?" value=review.summary_clear %}
             <div class="uw-actions">
-                <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">BACK</a>
-                <button type="submit" class="btn">SUBMIT</button>
+                <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">Back</a>
+                <button type="submit" class="btn">Submit</button>
             </div>
         </form>
     {% endif %}

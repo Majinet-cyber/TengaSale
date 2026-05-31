@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 <div class="uw-canvas">
-    <a href="{% url 'underwriter_customer_call' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>BACK</span></a>
+    <a href="{% url 'underwriter_customer_call' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>Back</span></a>
     <header class="uw-header"><div><span class="uw-kicker">Income Check</span><h1>Income Check</h1></div></header>
 
     <section class="uw-card">
@@ -49,8 +49,8 @@
         {% include "dashboard/partials/review_yes_no.html" with name="income_source_dependable" question="Is the customer's income source real and dependable?" value=review.income_source_dependable %}
         {% include "dashboard/partials/review_yes_no.html" with name="income_contact_confident" question="Is the employer/business associate confident the customer can pay?" value=review.income_contact_confident %}
         <div class="uw-actions">
-            <a href="{% url 'underwriter_customer_call' app.id %}" class="btn btn-outline">BACK</a>
-            <button type="submit" class="btn">SUBMIT</button>
+            <a href="{% url 'underwriter_customer_call' app.id %}" class="btn btn-outline">Back</a>
+            <button type="submit" class="btn">Submit</button>
         </div>
     </form>
 </div>

@@ -3,34 +3,65 @@
 
 {% block page_title %}Payment Collections — TengaSale HQ{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+{% block extra_head %}
+<style>
+.col-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.col-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
+.col-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.col-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+.col-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:20px; }
+.col-stat {
+  background:rgba(255,255,255,0.90);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.80);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 2px 8px rgba(15,23,42,0.06);
+  text-align:center;
+  border-left:3px solid var(--col-accent,#ff6b1a);
+}
+.col-stat-val { font-size:1.3rem; font-weight:900; color:var(--col-accent,#ff6b1a); line-height:1; }
+.col-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
+.col-export {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; background:#fff8f0; border:1.5px solid rgba(255,107,26,0.25);
+  border-radius:8px; text-decoration:none; color:#ff6b1a; font-size:0.78rem; font-weight:700;
+  white-space:nowrap;
+}
+</style>
+{% endblock %}
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-    <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;">← HQ</a>
+{% block content %}
+<div class="col-wrap" data-testid="hq-dashboard">
+
+  <div class="col-hdr">
     <div>
-      <h1 style="font-size:1.4rem;font-weight:800;margin:0;">Payment Collections</h1>
-      <p style="font-size:0.8rem;color:var(--muted);margin:2px 0 0 0;">Track and monitor all payment activity across the platform.</p>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <h1 class="col-title">Payment Collections</h1>
+      <p class="col-sub">Track and monitor all payment activity across the platform.</p>
     </div>
-    <a href="?export=csv" class="btn btn-sm btn-outline-secondary ms-auto" style="margin-left:auto;">Export CSV</a>
+    <a href="?export=csv" class="col-export">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export CSV
+    </a>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0;">
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Collections Today</div>
-      <div style="font-size:1.4rem;font-weight:800;color:#16a34a;margin-top:4px;">{{ collections_today|mwk }}</div>
+  <div class="col-stats">
+    <div class="col-stat" style="--col-accent:#16a34a;">
+      <div class="col-stat-val">{{ collections_today|mwk }}</div>
+      <div class="col-stat-lbl">Collections today</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Collections This Month</div>
-      <div style="font-size:1.4rem;font-weight:800;color:var(--primary);margin-top:4px;">{{ collections_month|mwk }}</div>
+    <div class="col-stat" style="--col-accent:#ff6b1a;">
+      <div class="col-stat-val">{{ collections_month|mwk }}</div>
+      <div class="col-stat-lbl">Collections this month</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Failed Payments</div>
-      <div style="font-size:1.4rem;font-weight:800;color:#dc2626;margin-top:4px;">{{ failed_payments }}</div>
+    <div class="col-stat" style="--col-accent:#dc2626;">
+      <div class="col-stat-val">{{ failed_payments }}</div>
+      <div class="col-stat-lbl">Failed payments</div>
     </div>
-    <div class="glass-card" style="padding:16px;text-align:center;">
-      <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Pending Processing</div>
-      <div style="font-size:1.4rem;font-weight:800;color:#d97706;margin-top:4px;">{{ pending_payments }}</div>
+    <div class="col-stat" style="--col-accent:#d97706;">
+      <div class="col-stat-val">{{ pending_payments }}</div>
+      <div class="col-stat-lbl">Pending processing</div>
     </div>
   </div>
 

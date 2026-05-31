@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<a href="{% url 'financing_pending_payments' %}" class="back-link">BACK</a>
+<a href="{% url 'financing_pending_payments' %}" class="back-link">Back</a>
 <h1 class="greeting">Verify payment</h1>
 
 <section class="stat-card">
@@ -28,7 +28,7 @@
 {% if payment.verification_status == "pending" %}
     <form method="post" action="{% url 'financing_approve_payment' payment.id %}" class="action-form">
         {% csrf_token %}
-        <button class="btn" type="submit">APPROVE PAYMENT</button>
+        <button class="btn" type="submit">Approve payment</button>
     </form>
     <form method="post" action="{% url 'financing_reject_payment' payment.id %}" class="card action-form">
         {% csrf_token %}

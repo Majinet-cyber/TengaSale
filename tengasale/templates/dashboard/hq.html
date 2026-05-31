@@ -231,7 +231,7 @@
   margin: 0 0 10px;
 }
 
-/* ── KPI tiles ─────────────────────────────────────────────────── */
+/* ── KPI tiles — glassmorphic redesign ─────────────────────────── */
 .hq-kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -240,29 +240,48 @@
 }
 
 .hq-kpi {
-  background: var(--hq-surface);
-  border: 1.5px solid var(--hq-border);
-  border-top: 3px solid var(--kpi-accent, var(--hq-border));
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--hq-radius);
-  padding: 14px 14px 12px;
+  padding: 16px 14px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: var(--hq-shadow);
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: box-shadow 0.14s, transform 0.12s;
+  position: relative;
+  overflow: hidden;
 }
 
-.hq-kpi:hover { box-shadow: var(--hq-shadow-lg); transform: translateY(-2px); }
+.hq-kpi::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--kpi-accent, var(--hq-border));
+  border-radius: var(--hq-radius) var(--hq-radius) 0 0;
+  opacity: 0.6;
+}
+
+.hq-kpi:hover {
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.06);
+  transform: translateY(-2px);
+}
 
 .hq-kpi__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   background: var(--kpi-bg, #f1f5f9);
   color: var(--kpi-color, var(--hq-muted));
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .hq-kpi__icon svg {
@@ -278,7 +297,7 @@
 .hq-kpi__val {
   font-size: 26px;
   font-weight: 900;
-  color: var(--kpi-color, var(--hq-ink));
+  color: var(--hq-ink);
   line-height: 1;
   letter-spacing: -0.04em;
 }
@@ -296,7 +315,7 @@
 .kpi-orange { --kpi-accent: #ff6b1a; --kpi-color: #ff6b1a; --kpi-bg: rgba(255,107,26,0.10); }
 .kpi-green  { --kpi-accent: #16a34a; --kpi-color: #16a34a; --kpi-bg: rgba(22,163,74,0.10); }
 .kpi-red    { --kpi-accent: #dc2626; --kpi-color: #dc2626; --kpi-bg: rgba(220,38,38,0.10); }
-.kpi-blue   { --kpi-accent: #2563eb; --kpi-color: #2563eb; --kpi-bg: rgba(37,99,235,0.10); }
+.kpi-blue   { --kpi-accent: #ff6b1a; --kpi-color: #ff6b1a; --kpi-bg: rgba(255,107,26,0.10); }
 .kpi-amber  { --kpi-accent: #d97706; --kpi-color: #d97706; --kpi-bg: rgba(217,119,6,0.10); }
 .kpi-slate  { --kpi-accent: #64748b; --kpi-color: #475569; --kpi-bg: #f1f5f9; }
 
@@ -609,14 +628,14 @@
   pointer-events: none;
 }
 
-/* Icon colour helpers */
+/* Icon colour helpers — default to orange brand; keep semantic colors only */
 .ni-orange { background: rgba(255,107,26,0.10) !important; color: #ff6b1a !important; }
 .ni-green  { background: rgba(22,163,74,0.10)  !important; color: #16a34a !important; }
-.ni-blue   { background: rgba(37,99,235,0.10)  !important; color: #2563eb !important; }
+.ni-blue   { background: rgba(255,107,26,0.10) !important; color: #ff6b1a !important; }
 .ni-red    { background: rgba(220,38,38,0.10)  !important; color: #dc2626 !important; }
-.ni-amber  { background: rgba(217,119,6,0.10)  !important; color: #d97706 !important; }
-.ni-purple { background: rgba(124,58,237,0.10) !important; color: #7c3aed !important; }
-.ni-slate  { background: #f1f5f9               !important; color: #475569 !important; }
+.ni-amber  { background: rgba(255,107,26,0.10) !important; color: #ff6b1a !important; }
+.ni-purple { background: rgba(255,107,26,0.10) !important; color: #ff6b1a !important; }
+.ni-slate  { background: rgba(255,107,26,0.08) !important; color: #ff6b1a !important; }
 
 /* ── Command Pulse ──────────────────────────────────────────────── */
 .hq-pulse-grid {
@@ -1238,7 +1257,7 @@
 
     <div class="hq-nav-card">
       <div class="hq-nav-card-hdr">
-        <div class="hq-nav-card-icon" style="background:rgba(22,163,74,0.12);color:#16a34a;">
+        <div class="hq-nav-card-icon" style="background:rgba(255,107,26,0.12);color:#ff6b1a;">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
         <span class="hq-nav-card-title">Finance</span>
@@ -1294,7 +1313,7 @@
 
     <div class="hq-nav-card">
       <div class="hq-nav-card-hdr">
-        <div class="hq-nav-card-icon" style="background:rgba(37,99,235,0.12);color:#2563eb;">
+        <div class="hq-nav-card-icon" style="background:rgba(255,107,26,0.12);color:#ff6b1a;">
           <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
         <span class="hq-nav-card-title">Analytics</span>

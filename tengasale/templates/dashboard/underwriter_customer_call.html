@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 <div class="uw-canvas">
-    <a href="{% url 'underwriter_momo_check' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>BACK</span></a>
+    <a href="{% url 'underwriter_momo_check' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>Back</span></a>
     <header class="uw-header"><div><span class="uw-kicker">Customer Call</span><h1>Customer Call</h1></div></header>
 
     <section class="uw-card">
@@ -30,8 +30,8 @@
         {% include "dashboard/partials/review_yes_no.html" with name="customer_understands_direct_payment" question="Did the customer understand they must pay TengaSale directly?" value=review.customer_understands_direct_payment %}
         {% include "dashboard/partials/review_yes_no.html" with name="customer_understands_nonpayment" question="Did the customer understand consequences of non-payment?" value=review.customer_understands_nonpayment %}
         <div class="uw-actions">
-            <a href="{% url 'underwriter_momo_check' app.id %}" class="btn btn-outline">BACK</a>
-            <button type="submit" class="btn">SUBMIT</button>
+            <a href="{% url 'underwriter_momo_check' app.id %}" class="btn btn-outline">Back</a>
+            <button type="submit" class="btn">Submit</button>
         </div>
     </form>
 </div>

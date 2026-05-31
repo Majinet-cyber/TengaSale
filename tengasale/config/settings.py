@@ -169,6 +169,16 @@ STORAGES = {
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Cache — use LocMemCache by default (no external dependency needed)
+# Upgrade to Redis/Memcached in production for multi-process deployments
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "tengasale-default",
+        "TIMEOUT": 3600,  # 1 hour default
+    }
+}
+
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/home/"
 LOGOUT_REDIRECT_URL = "/"

@@ -3,71 +3,98 @@
 
 {% block page_title %}Underwriter Performance — TengaSale HQ{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+{% block extra_head %}
+<style>
+.uwp-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.uwp-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
+.uwp-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.uwp-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+.uwp-card {
+  background:rgba(255,255,255,0.90);
+  backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,0.78);
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 2px 8px rgba(15,23,42,0.06);
+}
+.uwp-name { font-size:1rem; font-weight:800; color:#0f172a; }
+.uwp-handle { font-size:0.72rem; color:#64748b; }
+.uwp-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:12px; flex:1; min-width:0; }
+.uwp-metric { text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; }
+.uwp-metric-val { font-size:1.2rem; font-weight:800; line-height:1; }
+.uwp-metric-lbl { font-size:0.65rem; color:#64748b; font-weight:600; margin-top:4px; }
+.uwp-empty { text-align:center; padding:40px 20px; border:1.5px dashed #e2e8f0; border-radius:14px; color:#94a3b8; font-size:0.88rem; background:rgba(255,255,255,0.60); }
+@media (max-width:600px) { .uwp-metrics { grid-template-columns:repeat(3,1fr); } }
+</style>
+{% endblock %}
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-    <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;">← HQ</a>
+{% block content %}
+<div class="uwp-wrap" data-testid="hq-dashboard">
+
+  <div class="uwp-hdr">
     <div>
-      <h1 style="font-size:1.4rem;font-weight:800;margin:0;">Underwriter Performance</h1>
-      <p style="font-size:0.8rem;color:var(--muted);margin:2px 0 0 0;">Review metrics, approval rates, commissions, and review times per underwriter.</p>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <h1 class="uwp-title">Underwriter Performance</h1>
+      <p class="uwp-sub">Review metrics, approval rates, commissions, and review times per underwriter.</p>
     </div>
   </div>
 
   {% if not stats %}
-  <div class="glass-card" style="padding:32px;text-align:center;color:var(--muted);">
-    No underwriters registered yet.
+  <div class="uwp-empty">
+    <div style="font-size:1.5rem;margin-bottom:8px;">📋</div>
+    No underwriters registered yet. Add underwriters to see performance metrics here.
   </div>
   {% else %}
 
   {% for s in stats %}
-  <div class="glass-card" style="padding:18px;margin-bottom:14px;">
-    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+  <div class="uwp-card">
+    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="min-width:140px;">
-        <div style="font-size:1rem;font-weight:800;color:var(--ink);">{{ s.user.get_full_name|default:s.user.username }}</div>
-        <div style="font-size:0.72rem;color:var(--muted);">@{{ s.user.username }}</div>
+        <div class="uwp-name">{{ s.user.get_full_name|default:s.user.username }}</div>
+        <div class="uwp-handle">@{{ s.user.username }}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;flex:1;min-width:0;">
-        <div style="text-align:center;">
-          <div style="font-size:1.3rem;font-weight:800;color:#2563eb;">{{ s.reviewed }}</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Reviewed</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.3rem;font-weight:800;color:#16a34a;">{{ s.approval_rate }}%</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Approval Rate</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.3rem;font-weight:800;color:#dc2626;">{{ s.rejection_rate }}%</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Rejection Rate</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.1rem;font-weight:800;color:#16a34a;">{{ s.gross_commission|floatformat:0 }}</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Gross Commission</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.1rem;font-weight:800;color:#dc2626;">{{ s.deductions|floatformat:0 }}</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Deductions</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1.1rem;font-weight:800;">{{ s.net_commission|floatformat:0 }}</div>
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Net Commission</div>
-        </div>
-        <div style="text-align:center;">
-          {% if s.avg_review_hours %}
-          <div style="font-size:1.1rem;font-weight:800;color:#7c3aed;">{{ s.avg_review_hours }}h</div>
-          {% else %}
-          <div style="font-size:1.1rem;font-weight:800;color:var(--muted);">—</div>
-          {% endif %}
-          <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;">Avg Review Time</div>
-        </div>
+    </div>
+    <div class="uwp-metrics">
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#ff6b1a;">{{ s.reviewed }}</div>
+        <div class="uwp-metric-lbl">Reviewed</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#16a34a;">{{ s.approval_rate }}%</div>
+        <div class="uwp-metric-lbl">Approval rate</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.rejection_rate }}%</div>
+        <div class="uwp-metric-lbl">Rejection rate</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#16a34a;">{{ s.gross_commission|floatformat:0 }}</div>
+        <div class="uwp-metric-lbl">Gross commission</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.deductions|floatformat:0 }}</div>
+        <div class="uwp-metric-lbl">Deductions</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val">{{ s.net_commission|floatformat:0 }}</div>
+        <div class="uwp-metric-lbl">Net commission</div>
+      </div>
+      <div class="uwp-metric">
+        {% if s.avg_review_hours %}
+        <div class="uwp-metric-val" style="color:#ff6b1a;">{{ s.avg_review_hours }}h</div>
+        {% else %}
+        <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
+        {% endif %}
+        <div class="uwp-metric-lbl">Avg review time</div>
       </div>
     </div>
     {% if s.reviewed %}
     <div style="margin-top:12px;">
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">Review Distribution</div>
+      <div style="font-size:0.70rem;color:#64748b;margin-bottom:5px;font-weight:600;">Review distribution</div>
       <div style="background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden;display:flex;">
-        <div style="background:#16a34a;width:{{ s.approval_rate }}%;transition:width 0.3s;"></div>
-        <div style="background:#dc2626;width:{{ s.rejection_rate }}%;transition:width 0.3s;"></div>
+        <div style="background:#16a34a;width:{{ s.approval_rate }}%;transition:width 0.9s;border-radius:6px 0 0 6px;"></div>
+        <div style="background:#dc2626;width:{{ s.rejection_rate }}%;transition:width 0.9s;"></div>
       </div>
     </div>
     {% endif %}
@@ -78,3 +105,4 @@
 
 </div>
 {% endblock %}
+

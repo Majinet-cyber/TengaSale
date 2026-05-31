@@ -3,15 +3,25 @@
 
 {% block page_title %}Safe Operations — TengaSale HQ{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width:900px;margin:0 auto;padding:20px 16px;">
+{% block extra_head %}
+<style>
+.ops-wrap { max-width:900px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.ops-hdr { padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; margin-bottom:24px; }
+.ops-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.ops-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+.ops-card { border-radius:14px !important; border:1.5px solid #f1f5f9 !important; box-shadow:0 2px 8px rgba(15,23,42,.06) !important; overflow:hidden; }
+.ops-card .card-header { background:#fff8f0 !important; color:#ff6b1a !important; font-size:0.88rem; }
+.ops-card .card-body { background:#fff; }
+</style>
+{% endblock %}
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.9rem;">← HQ</a>
-    <div>
-      <h1 style="font-size:1.4rem;font-weight:800;margin:0;">🛠 Safe Operations</h1>
-      <p class="text-muted small mb-0">All actions are audited and require confirmation. No irreversible one-click operations.</p>
-    </div>
+{% block content %}
+<div class="ops-wrap" data-testid="hq-dashboard">
+
+  <div class="ops-hdr">
+    <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+    <h1 class="ops-title">Safe Operations</h1>
+    <p class="ops-sub">All actions are audited and require confirmation. No irreversible one-click operations.</p>
   </div>
 
   {% if result_message %}
@@ -25,8 +35,8 @@
 
     {# ── Reassign Application ── #}
     <div class="col-12 col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-bold" style="background:#fff8f0;color:#ff6b1a;">
+      <div class="card ops-card h-100">
+        <div class="card-header fw-bold">
           🔄 Reassign Application
         </div>
         <div class="card-body">
@@ -55,8 +65,8 @@
 
     {# ── Release Stuck Claim ── #}
     <div class="col-12 col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-bold" style="background:#f0fdf4;color:#16a34a;">
+      <div class="card ops-card h-100">
+        <div class="card-header fw-bold">
           🔓 Release Stuck Claim
         </div>
         <div class="card-body">
@@ -95,8 +105,8 @@
 
     {# ── Mark Payment for Manual Review ── #}
     <div class="col-12 col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-bold" style="background:#eff6ff;color:#1d4ed8;">
+      <div class="card ops-card h-100">
+        <div class="card-header fw-bold">
           🔎 Mark Payment for Manual Review
         </div>
         <div class="card-body">
@@ -136,8 +146,8 @@
 
     {# ── Resend Customer Correction Link ── #}
     <div class="col-12 col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-bold" style="background:#fdf4ff;color:#9333ea;">
+      <div class="card ops-card h-100">
+        <div class="card-header fw-bold">
           📨 Resend Field Correction Link
         </div>
         <div class="card-body">
@@ -161,7 +171,7 @@
 
   {# ── Recent Audit Log ── #}
   {% if audit_recent %}
-    <div class="card border-0 shadow-sm mt-4">
+    <div class="card ops-card mt-4">
       <div class="card-header fw-bold">📋 Recent Safe Operation Audit Log</div>
       <div class="card-body p-0">
         <table class="table table-sm mb-0">
@@ -189,3 +199,4 @@
 
 </div>
 {% endblock %}
+

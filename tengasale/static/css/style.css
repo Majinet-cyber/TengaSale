@@ -1735,6 +1735,13 @@ textarea:focus {
     font-size: 15px;
 }
 
+.deposit-inline {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
 .upload-preview {
     width: 100%;
     max-height: 220px;
@@ -3871,4 +3878,232 @@ table {
 /* Prevent footer/version text from overlapping content */
 .app-footer-version {
     padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TENGASALE DESIGN SYSTEM — Reusable Component Classes
+   Used across HQ, sales, and finance pages.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Extended CSS variables ──────────────────────────────────── */
+:root {
+    --ts-orange-border: rgba(255, 106, 0, 0.20);
+    --ts-card: #ffffff;
+    --ts-text: #1f2937;
+    --ts-glass-bg: rgba(255, 255, 255, 0.88);
+    --ts-glass-border: rgba(255, 255, 255, 0.72);
+    --ts-shadow-sm: 0 1px 4px rgba(15, 23, 42, 0.06);
+    --ts-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --ts-shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.10);
+    --ts-radius: 14px;
+    --ts-radius-sm: 9px;
+    --ts-radius-lg: 20px;
+}
+
+/* ── Glass card ──────────────────────────────────────────────── */
+.ts-glass-card {
+    background: var(--ts-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--ts-glass-border);
+    border-radius: var(--ts-radius);
+    box-shadow: var(--ts-shadow);
+}
+
+/* ── Standard card ───────────────────────────────────────────── */
+.ts-card {
+    background: var(--ts-card);
+    border: 1.5px solid var(--ts-border);
+    border-radius: var(--ts-radius);
+    box-shadow: var(--ts-shadow-sm);
+    padding: 18px;
+}
+
+/* ── Stat card ───────────────────────────────────────────────── */
+.ts-stat-card {
+    background: var(--ts-glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--ts-glass-border);
+    border-radius: var(--ts-radius);
+    box-shadow: var(--ts-shadow-sm);
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.ts-stat-card__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--ts-orange-soft);
+    border: 1px solid var(--ts-orange-border);
+    display: grid;
+    place-items: center;
+    color: var(--ts-orange);
+    flex-shrink: 0;
+}
+
+.ts-stat-card__icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ts-stat-card__body { flex: 1; min-width: 0; }
+
+.ts-stat-card__val {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--ts-black);
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.ts-stat-card__val--sm { font-size: 16px; letter-spacing: -0.01em; }
+
+.ts-stat-card__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ts-muted);
+    margin-top: 4px;
+}
+
+/* ── Icon chip ───────────────────────────────────────────────── */
+.ts-icon-chip {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--ts-orange-soft);
+    border: 1px solid var(--ts-orange-border);
+    display: grid;
+    place-items: center;
+    color: var(--ts-orange);
+    flex-shrink: 0;
+}
+
+.ts-icon-chip svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ts-icon-chip--success {
+    background: rgba(22, 138, 69, 0.10);
+    border-color: rgba(22, 138, 69, 0.20);
+    color: var(--ts-success);
+}
+
+.ts-icon-chip--danger {
+    background: rgba(217, 48, 37, 0.10);
+    border-color: rgba(217, 48, 37, 0.20);
+    color: var(--ts-danger);
+}
+
+/* ── Section card (nav/menu card) ────────────────────────────── */
+.ts-section-card {
+    background: var(--ts-card);
+    border: 1.5px solid var(--ts-border);
+    border-radius: var(--ts-radius);
+    box-shadow: var(--ts-shadow-sm);
+    overflow: hidden;
+}
+
+/* ── Action button ───────────────────────────────────────────── */
+.ts-action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: var(--ts-orange);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.14s, transform 0.10s;
+    white-space: nowrap;
+}
+
+.ts-action-button:hover {
+    background: var(--ts-orange-dark);
+    transform: translateY(-1px);
+}
+
+.ts-action-button svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+/* ── Mobile grid ─────────────────────────────────────────────── */
+.ts-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    gap: 14px;
+}
+
+/* ── Muted text ──────────────────────────────────────────────── */
+.ts-muted {
+    color: var(--ts-muted);
+    font-size: 13px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.ts-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    border: 1.5px dashed var(--ts-border);
+    border-radius: var(--ts-radius);
+    background: rgba(255, 255, 255, 0.60);
+}
+
+.ts-empty-state__icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    border-radius: 12px;
+    background: var(--ts-orange-soft);
+    display: grid;
+    place-items: center;
+    color: var(--ts-orange);
+}
+
+.ts-empty-state__icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ts-empty-state__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ts-black);
+    margin-bottom: 6px;
+}
+
+.ts-empty-state__body {
+    font-size: 13px;
+    color: var(--ts-muted);
+    max-width: 300px;
+    margin: 0 auto;
+    line-height: 1.55;
 }
