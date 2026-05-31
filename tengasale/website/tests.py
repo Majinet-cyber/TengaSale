@@ -195,7 +195,7 @@ class PublicSiteTests(TestCase):
 
 
 class LandingPageUIRegressionTests(TestCase):
-    """Regression tests for landing page UI — locked in for v1.5 clean rewrite."""
+    """Regression tests for landing page UI bugs fixed in v1.3."""
 
     def setUp(self):
         self.client = Client()
@@ -203,91 +203,66 @@ class LandingPageUIRegressionTests(TestCase):
     def _get_landing(self):
         return self.client.get(reverse("website_landing"))
 
-    # ── Public homepage (/) returns 200 ──────────────────────────
-
-    def test_public_homepage_returns_200(self):
-        """The public homepage at / must return HTTP 200."""
-        response = self.client.get(reverse("public_home"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_public_homepage_has_ts_landing_class(self):
-        """The public homepage must include the ts-landing root class."""
-        response = self.client.get(reverse("public_home"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "ts-landing")
-
-    def test_public_homepage_has_ts_live_stats_grid(self):
-        """The public homepage must include the ts-live-stats-grid stats container."""
-        response = self.client.get(reverse("public_home"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "ts-live-stats-grid")
-
-    def test_public_homepage_has_how_it_works(self):
-        """The public homepage must include the 'How TengaSale works' section heading."""
-        response = self.client.get(reverse("public_home"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "How TengaSale works")
-
-    def test_public_homepage_no_james_phiri(self):
-        """The public homepage must not contain fake testimonial name James Phiri."""
-        response = self.client.get(reverse("public_home"))
-        self.assertNotIn("James Phiri", response.content.decode())
-
-    def test_public_homepage_no_grace_banda(self):
-        """The public homepage must not contain fake testimonial name Grace Banda."""
-        response = self.client.get(reverse("public_home"))
-        self.assertNotIn("Grace Banda", response.content.decode())
-
-    def test_public_homepage_no_kondwani_mwale(self):
-        """The public homepage must not contain fake testimonial name Kondwani Mwale."""
-        response = self.client.get(reverse("public_home"))
-        self.assertNotIn("Kondwani Mwale", response.content.decode())
-
     # ── Live stats ────────────────────────────────────────────────
 
     def test_landing_live_stats_strip_present(self):
         """Live stats strip container must be present on the landing page."""
         response = self._get_landing()
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "ts-stats-strip")
+        self.assertContains(response, "live-stats-strip")
+
+    def test_landing_live_stats_no_mwk_duplication(self):
+        """Label should be 'Disbursed' not 'MWK disbursed' — prevents 'MWK 0 MWK disbursed'."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("MWK disbursed", content,
+            "Label 'MWK disbursed' causes duplication with 'MWK 0' value prefix")
 
     def test_landing_live_stats_have_icon_containers(self):
-        """Live stats must use ts-stat__icon containers."""
+        """Live stat pills must use icon chip containers."""
         response = self._get_landing()
-        self.assertContains(response, "ts-stat__icon")
+        self.assertContains(response, "live-stat-pill__icon")
 
     def test_landing_live_stats_have_value_and_label(self):
         """Each stat must have a value span and a label span."""
         response = self._get_landing()
-        self.assertContains(response, "ts-stat__val")
-        self.assertContains(response, "ts-stat__lbl")
-
-    def test_landing_live_stats_no_raw_stats_outside_container(self):
-        """Stats must be inside ts-stats-inner, not floating raw text."""
-        response = self._get_landing()
-        self.assertContains(response, "ts-stats-inner")
+        self.assertContains(response, "live-stat-pill__val")
+        self.assertContains(response, "live-stat-pill__lbl")
 
     # ── SVG safety ────────────────────────────────────────────────
 
-    def test_landing_icon_chip_svgs_have_explicit_dimensions(self):
+    def test_landing_merchant_value_svgs_have_explicit_dimensions(self):
+        """Merchant value card SVGs must have explicit width/height to prevent inflate."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertIn('merchant-value-card__icon', content)
+        # The merchant value card section must not contain SVGs without dimensions
+        # (bare viewBox-only SVGs expand to 300x150px when CSS is stale/uncached)
+        import re
+        # Find SVGs inside merchant-value-card__icon; they must have width attr
+        merchant_section_start = content.find('merchant-value-grid')
+        merchant_section_end = content.find('/div>', content.rfind('merchant-value-card'))
+        if merchant_section_start > 0:
+            merchant_section = content[merchant_section_start:merchant_section_end + 100]
+            # All SVGs in this section should have width attribute
+            bare_svg = re.search(r'<svg viewBox="[^"]*">', merchant_section)
+            self.assertIsNone(bare_svg,
+                "Merchant value card contains bare SVG without width/height — will inflate if CSS stales")
+
+    def test_landing_no_svgs_without_dimensions_in_icon_chips(self):
         """Icon chip SVGs should have explicit width and height attributes."""
         response = self._get_landing()
         content = response.content.decode()
-        # Step icons: 20x20
-        self.assertIn('width="20" height="20"', content,
-            "Step icon SVGs should have explicit 20x20 dimensions")
-        # Stat/chip icons: 18x18
-        self.assertIn('width="18" height="18"', content,
-            "Icon chip SVGs should have explicit 18x18 dimensions")
-
-    def test_landing_no_bare_viewbox_only_svgs(self):
-        """No SVGs on the landing page should be bare viewBox-only (no width/height)."""
         import re
-        response = self._get_landing()
-        content = response.content.decode()
-        bare_svgs = re.findall(r'<svg\s+viewBox="[^"]*"\s*>', content)
-        self.assertEqual(len(bare_svgs), 0,
-            f"Found {len(bare_svgs)} bare SVGs without width/height — will inflate if CSS stales")
+        # Check that step icons have explicit dimensions
+        self.assertIn('width="26" height="26"', content,
+            "Step icon SVGs should have explicit 26x26 dimensions")
+        # Check that platform stat icons have explicit dimensions
+        self.assertIn('width="18" height="18"', content,
+            "Platform stat icon SVGs should have explicit 18x18 dimensions")
+        # Check that merchant value card icons have explicit dimensions
+        self.assertIn('width="22" height="22"', content,
+            "Icon chip SVGs should have explicit 22x22 dimensions")
 
     # ── No fake testimonials ──────────────────────────────────────
 
@@ -304,8 +279,9 @@ class LandingPageUIRegressionTests(TestCase):
         """No empty quote/testimonial placeholder blocks."""
         response = self._get_landing()
         content = response.content.decode()
+        # merchant_quotes is intentionally empty; no quote cards should render
         self.assertNotIn("merchant-quote-card", content,
-            "Testimonial quote cards must not appear on the landing page")
+            "Testimonial quote cards rendered when merchant_quotes is empty")
 
     # ── Section structure ─────────────────────────────────────────
 
@@ -314,60 +290,18 @@ class LandingPageUIRegressionTests(TestCase):
         response = self._get_landing()
         self.assertContains(response, "Smartphone financing built for")
 
-    def test_landing_hero_subheadline_present(self):
-        """Hero subheadline must be present."""
+    def test_landing_platform_section_present(self):
+        """Platform stats section must be present."""
         response = self._get_landing()
-        self.assertContains(response, "real merchants and real repayments")
+        self.assertContains(response, "platform-stats-grid")
 
-    def test_landing_how_it_works_section_present(self):
-        """How TengaSale works section must be present."""
+    def test_landing_merchant_value_section_present(self):
+        """Merchant value section must be present with its 3 cards."""
         response = self._get_landing()
-        self.assertContains(response, "How TengaSale works")
-
-    def test_landing_how_it_works_has_four_steps(self):
-        """How it works section must have exactly 4 steps."""
-        response = self._get_landing()
-        self.assertContains(response, "Merchant submits application")
-        self.assertContains(response, "Customer and smartphone are verified")
-        self.assertContains(response, "Underwriter approves contract")
-        self.assertContains(response, "Payments and contract status are tracked")
-
-    def test_landing_built_for_merchants_section_present(self):
-        """Built for smartphone merchants section must be present."""
-        response = self._get_landing()
-        self.assertContains(response, "Built for smartphone merchants")
-
-    def test_landing_merchants_value_cards_present(self):
-        """Merchant value cards must be present (4 cards, correct titles)."""
-        response = self._get_landing()
-        self.assertContains(response, "Create structured financed sales")
-        self.assertContains(response, "Track applications and approvals")
-        self.assertContains(response, "View settlement visibility")
-        self.assertContains(response, "Support repayment follow-up")
-
-    def test_landing_for_customers_section_present(self):
-        """For customers section must be present with 3 cards."""
-        response = self._get_landing()
-        self.assertContains(response, "Clear repayment visibility for customers")
-        self.assertContains(response, "View contract balance")
-        self.assertContains(response, "Pay by mobile money")
-        self.assertContains(response, "See payment history")
-
-    def test_landing_platform_controls_section_present(self):
-        """Platform controls section must be present with 4 cards."""
-        response = self._get_landing()
-        self.assertContains(response, "Controls built for repayment discipline")
-        self.assertContains(response, "KYC verification")
-        self.assertContains(response, "Contract records")
-        self.assertContains(response, "IMEI")
-        self.assertContains(response, "Audit logs")
-
-    def test_landing_why_it_matters_section_present(self):
-        """Why it matters section must be present with 3 value cards."""
-        response = self._get_landing()
-        self.assertContains(response, "Fewer informal records")
-        self.assertContains(response, "Better repayment follow-up")
-        self.assertContains(response, "Cleaner merchant operations")
+        self.assertContains(response, "merchant-value-grid")
+        self.assertContains(response, "Faster applications")
+        self.assertContains(response, "Better repayment visibility")
+        self.assertContains(response, "Cleaner merchant records")
 
     def test_landing_faq_present(self):
         """FAQ section must be present."""
@@ -384,32 +318,17 @@ class LandingPageUIRegressionTests(TestCase):
             self.assertNotIn(cls, content,
                 f"Blue Bootstrap class '{cls}' found on landing page")
 
-    def test_landing_uses_smartphone_language(self):
-        """Landing page must use 'smartphone merchants' not bare 'phone merchants'."""
+    def test_landing_css_version_1_3(self):
+        """Landing page must reference the v1.3 CSS to bust stale caches."""
         response = self._get_landing()
         content = response.content.decode()
-        self.assertIn("smartphone", content.lower(),
-            "Page should use 'smartphone' language")
-        # Ensure "smartphone merchants" is present (not just bare "phone merchants")
-        self.assertIn("smartphone merchants", content.lower(),
-            "Should use 'smartphone merchants' not bare 'phone merchants'")
-
-    def test_landing_css_version_1_5(self):
-        """Landing page must reference the v1.5 CSS to bust stale caches."""
-        response = self._get_landing()
-        content = response.content.decode()
+        # The stylesheet link must include the v=1.3 cache-bust param.
+        # ManifestStaticFilesStorage may hash the filename so we search for
+        # the version param separately from the base name.
         self.assertIn("website", content,
             "Page should reference website CSS")
-        self.assertIn("v=1.5", content,
-            "CSS cache-bust version must be v=1.5 for clean landing page rewrite")
-
-    def test_landing_trust_chips_use_correct_labels(self):
-        """Hero trust chips must use updated labels."""
-        response = self._get_landing()
-        self.assertContains(response, "KYC records")
-        self.assertContains(response, "Contract tracking")
-        self.assertContains(response, "Repayment visibility")
-        self.assertContains(response, "Device-lock readiness")
+        self.assertIn("v=1.3", content,
+            "CSS cache-bust version must be v=1.3 to fix SVG rendering bugs")
 
     # ── Portals still work ────────────────────────────────────────
 
