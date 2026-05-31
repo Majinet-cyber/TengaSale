@@ -16,13 +16,12 @@
         Smartphone Financing for Malawi
       </span>
       <h1 class="hero__headline">
-        Phone financing built for<br>
+        Smartphone financing built for<br>
         <em>real merchants and real repayments.</em>
       </h1>
       <p class="hero__body">
-        TengaSale helps merchants offer smartphones on structured instalments,
-        with repayment tracking, customer records, payment visibility,
-        and contract support built into one platform.
+        TengaSale helps smartphone merchants offer instalment sales with customer records,
+        contract tracking, repayment visibility, and device-lock readiness — in one platform.
       </p>
       <div class="hero__ctas">
         <a href="{% url 'portal_search' %}" class="btn-primary">
@@ -180,26 +179,6 @@
     </div>
   </div>
 </section>
-
-<!-- ── Live Stats Strip ───────────────────────────────────────── -->
-<div class="live-stats-strip">
-  <div class="live-stats-strip__inner">
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_contracts|default:"0" }}</span>
-      <span class="live-stat__lbl">Contracts activated</span>
-    </div>
-    <div class="live-stat-divider" aria-hidden="true"></div>
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_disbursed_formatted|default:"MWK 0" }}</span>
-      <span class="live-stat__lbl">Total collected</span>
-    </div>
-    <div class="live-stat-divider" aria-hidden="true"></div>
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_customers|default:"0" }}</span>
-      <span class="live-stat__lbl">Customers connected</span>
-    </div>
-  </div>
-</div>
 
 <!-- ── Platform Stats ─────────────────────────────────────────── -->
 <section class="site-section site-section--brand-showcase" id="brand-showcase">
@@ -465,40 +444,6 @@
   </div>
 </section>
 
-<!-- ── Merchant Social Proof ───────────────────────────────────── -->
-{% if merchant_quotes %}
-<section class="site-section site-section--alt" id="merchant-stories">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">Merchant Stories</span>
-    <h2 class="section-heading section-heading--center">What merchants say</h2>
-    <p class="section-sub section-sub--center" style="margin-bottom:40px">
-      Real merchants. Real results. TengaSale is built for the people who run phone shops across Malawi.
-    </p>
-    <div class="merchant-quotes-grid">
-      {% for q in merchant_quotes %}
-      <div class="merchant-quote-card">
-        <div class="merchant-quote-card__body">
-          <div class="merchant-quote-card__quote-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="currentColor"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" fill="currentColor"/></svg>
-          </div>
-          <p class="merchant-quote-card__text">{{ q.quote }}</p>
-        </div>
-        <div class="merchant-quote-card__footer">
-          <div class="merchant-quote-card__avatar" aria-hidden="true">
-            {{ q.merchant_name|slice:":1" }}
-          </div>
-          <div class="merchant-quote-card__meta">
-            <div class="merchant-quote-card__name">{{ q.merchant_name }}</div>
-            <div class="merchant-quote-card__shop">{{ q.shop_name }} · {{ q.city }}</div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
 <!-- ── Trust & Compliance — LIGHT GLASS ───────────────────────── -->
 <section class="site-section site-section--light" id="compliance">
   <div class="site-section__inner">
@@ -572,7 +517,7 @@
 <section class="site-section" id="trust">
   <div class="site-section__inner">
     <span class="section-eyebrow">Platform Foundations</span>
-    <h2 class="section-heading section-heading--center">Built for controlled phone financing</h2>
+    <h2 class="section-heading section-heading--center">Built for controlled smartphone financing</h2>
     <p class="section-sub section-sub--center">
       TengaSale is structured around the records, controls, and accountability workflows
       that responsible smartphone financing requires — from customer identity to final repayment.

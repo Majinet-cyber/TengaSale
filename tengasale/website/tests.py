@@ -195,7 +195,7 @@ class PublicSiteTests(TestCase):
 
 
 class LandingPageUIRegressionTests(TestCase):
-    """Regression tests for landing page UI bugs fixed in v1.3."""
+    """Regression tests ensuring the landing page is clean and stable after v1.3 cleanup."""
 
     def setUp(self):
         self.client = Client()
@@ -203,66 +203,70 @@ class LandingPageUIRegressionTests(TestCase):
     def _get_landing(self):
         return self.client.get(reverse("website_landing"))
 
-    # ── Live stats ────────────────────────────────────────────────
+    # ── Homepage loads ────────────────────────────────────────────
 
-    def test_landing_live_stats_strip_present(self):
-        """Live stats strip container must be present on the landing page."""
-        response = self._get_landing()
+    def test_homepage_loads_with_status_200(self):
+        """Root URL / must return 200."""
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "live-stats-strip")
 
-    def test_landing_live_stats_no_mwk_duplication(self):
-        """Label should be 'Disbursed' not 'MWK disbursed' — prevents 'MWK 0 MWK disbursed'."""
+    # ── Removed broken sections must be absent ────────────────────
+
+    def test_landing_no_live_stats_strip(self):
+        """Live stats strip must NOT appear — removed until intentionally rebuilt."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("live-stats-strip", content,
+            "live-stats-strip should not appear on landing page")
+
+    def test_landing_no_raw_smart_contracts(self):
+        """Raw 'Smart contracts' label must not appear on the homepage."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("Smart contracts", content,
+            "Raw 'Smart contracts' stat label must not appear on landing page")
+
+    def test_landing_no_mwk_disbursed_label(self):
+        """Raw 'MWK disbursed' label must not appear."""
         response = self._get_landing()
         content = response.content.decode()
         self.assertNotIn("MWK disbursed", content,
-            "Label 'MWK disbursed' causes duplication with 'MWK 0' value prefix")
+            "Raw 'MWK disbursed' label must not appear on landing page")
 
-    def test_landing_live_stats_have_icon_containers(self):
-        """Live stat pills must use icon chip containers."""
-        response = self._get_landing()
-        self.assertContains(response, "live-stat-pill__icon")
-
-    def test_landing_live_stats_have_value_and_label(self):
-        """Each stat must have a value span and a label span."""
-        response = self._get_landing()
-        self.assertContains(response, "live-stat-pill__val")
-        self.assertContains(response, "live-stat-pill__lbl")
-
-    # ── SVG safety ────────────────────────────────────────────────
-
-    def test_landing_merchant_value_svgs_have_explicit_dimensions(self):
-        """Merchant value card SVGs must have explicit width/height to prevent inflate."""
+    def test_landing_no_customers_connected_label(self):
+        """Raw 'Customers connected' live stat label must not appear."""
         response = self._get_landing()
         content = response.content.decode()
-        self.assertIn('merchant-value-card__icon', content)
-        # The merchant value card section must not contain SVGs without dimensions
-        # (bare viewBox-only SVGs expand to 300x150px when CSS is stale/uncached)
-        import re
-        # Find SVGs inside merchant-value-card__icon; they must have width attr
-        merchant_section_start = content.find('merchant-value-grid')
-        merchant_section_end = content.find('/div>', content.rfind('merchant-value-card'))
-        if merchant_section_start > 0:
-            merchant_section = content[merchant_section_start:merchant_section_end + 100]
-            # All SVGs in this section should have width attribute
-            bare_svg = re.search(r'<svg viewBox="[^"]*">', merchant_section)
-            self.assertIsNone(bare_svg,
-                "Merchant value card contains bare SVG without width/height — will inflate if CSS stales")
+        self.assertNotIn("Customers connected", content,
+            "Raw 'Customers connected' live stat must not appear on landing page")
 
-    def test_landing_no_svgs_without_dimensions_in_icon_chips(self):
-        """Icon chip SVGs should have explicit width and height attributes."""
+    def test_landing_does_not_contain_built_for_real_malawian_merchants(self):
+        """'Built for real Malawian smartphone merchants' heading must not appear."""
         response = self._get_landing()
         content = response.content.decode()
-        import re
-        # Check that step icons have explicit dimensions
-        self.assertIn('width="26" height="26"', content,
-            "Step icon SVGs should have explicit 26x26 dimensions")
-        # Check that platform stat icons have explicit dimensions
-        self.assertIn('width="18" height="18"', content,
-            "Platform stat icon SVGs should have explicit 18x18 dimensions")
-        # Check that merchant value card icons have explicit dimensions
-        self.assertIn('width="22" height="22"', content,
-            "Icon chip SVGs should have explicit 22x22 dimensions")
+        self.assertNotIn("Built for real Malawian smartphone merchants", content,
+            "Removed heading found on landing page")
+
+    def test_landing_does_not_contain_faster_applications(self):
+        """'Faster applications' broken section heading must not appear."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("Faster applications", content,
+            "'Faster applications' section must not appear on landing page")
+
+    def test_landing_does_not_contain_better_repayment_visibility(self):
+        """'Better repayment visibility' broken section heading must not appear."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("Better repayment visibility", content,
+            "'Better repayment visibility' section must not appear on landing page")
+
+    def test_landing_does_not_contain_cleaner_merchant_records(self):
+        """'Cleaner merchant records' broken section heading must not appear."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("Cleaner merchant records", content,
+            "'Cleaner merchant records' section must not appear on landing page")
 
     # ── No fake testimonials ──────────────────────────────────────
 
@@ -276,12 +280,11 @@ class LandingPageUIRegressionTests(TestCase):
                 f"Fake testimonial name '{name}' found on landing page")
 
     def test_landing_no_raw_testimonial_placeholders(self):
-        """No empty quote/testimonial placeholder blocks."""
+        """No testimonial quote cards should render on the landing page."""
         response = self._get_landing()
         content = response.content.decode()
-        # merchant_quotes is intentionally empty; no quote cards should render
         self.assertNotIn("merchant-quote-card", content,
-            "Testimonial quote cards rendered when merchant_quotes is empty")
+            "Testimonial quote cards must not appear on landing page")
 
     # ── Section structure ─────────────────────────────────────────
 
@@ -294,14 +297,6 @@ class LandingPageUIRegressionTests(TestCase):
         """Platform stats section must be present."""
         response = self._get_landing()
         self.assertContains(response, "platform-stats-grid")
-
-    def test_landing_merchant_value_section_present(self):
-        """Merchant value section must be present with its 3 cards."""
-        response = self._get_landing()
-        self.assertContains(response, "merchant-value-grid")
-        self.assertContains(response, "Faster applications")
-        self.assertContains(response, "Better repayment visibility")
-        self.assertContains(response, "Cleaner merchant records")
 
     def test_landing_faq_present(self):
         """FAQ section must be present."""
@@ -322,13 +317,8 @@ class LandingPageUIRegressionTests(TestCase):
         """Landing page must reference the v1.3 CSS to bust stale caches."""
         response = self._get_landing()
         content = response.content.decode()
-        # The stylesheet link must include the v=1.3 cache-bust param.
-        # ManifestStaticFilesStorage may hash the filename so we search for
-        # the version param separately from the base name.
-        self.assertIn("website", content,
-            "Page should reference website CSS")
-        self.assertIn("v=1.3", content,
-            "CSS cache-bust version must be v=1.3 to fix SVG rendering bugs")
+        self.assertIn("website", content, "Page should reference website CSS")
+        self.assertIn("v=1.3", content, "CSS cache-bust version must be v=1.3")
 
     # ── Portals still work ────────────────────────────────────────
 
