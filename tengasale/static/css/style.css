@@ -4123,86 +4123,91 @@ table {
     line-height: 1.55;
 }
 
-/* ── Application Stepper ─────────────────────────────────────── */
-.app-stepper {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin: 0 0 20px;
-    overflow-x: auto;
-    padding: 0 0 4px;
-    scrollbar-width: none;
+/* ── Application Progress Indicator ─────────────────────────── */
+.application-progress {
+    margin: 0 0 18px;
 }
-.app-stepper::-webkit-scrollbar { display: none; }
 
-.app-stepper__step {
+.application-progress-meta {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 5px;
-    flex-shrink: 0;
+    font-size: 12px;
+    margin-bottom: 7px;
+    flex-wrap: wrap;
 }
 
-.app-stepper__dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 11px;
-    font-weight: 900;
+.application-progress-meta-step {
+    color: #374151;
+    font-weight: 700;
+}
+
+.application-progress-meta-sep {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.application-progress-meta-name {
+    color: var(--orange);
+    font-weight: 700;
+}
+
+.application-progress-bar {
+    height: 4px;
     background: #e2e8f0;
-    color: #7a828c;
-    transition: background 0.18s, color 0.18s;
-    flex-shrink: 0;
-}
-.app-stepper__dot svg {
-    width: 10px;
-    height: 10px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    border-radius: 99px;
+    overflow: hidden;
 }
 
-.app-stepper__step--active .app-stepper__dot {
+.application-progress-fill {
+    height: 100%;
     background: var(--orange);
-    color: #fff;
-    box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.20);
+    border-radius: 99px;
+    transition: width 0.3s ease;
 }
 
-.app-stepper__step--done .app-stepper__dot {
-    background: var(--green);
-    color: #fff;
+/* Desktop horizontal mini stepper — hidden on mobile */
+.application-stepper {
+    display: none;
+    align-items: center;
+    gap: 0;
+    margin-top: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.application-stepper::-webkit-scrollbar { display: none; }
+
+@media (min-width: 600px) {
+    .application-stepper { display: flex; }
 }
 
-.app-stepper__label {
-    font-size: 9px;
+.application-stepper-sep {
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+    min-width: 6px;
+    max-width: 20px;
+}
+
+.application-step {
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #94a3b8;
     white-space: nowrap;
+    flex-shrink: 0;
 }
-.app-stepper__step--active .app-stepper__label {
+
+.application-step-active {
     color: var(--orange);
 }
-.app-stepper__step--done .app-stepper__label {
+
+.application-step-complete {
     color: var(--green);
 }
 
-.app-stepper__line {
-    flex: 1;
-    height: 2px;
-    background: #e2e8f0;
-    margin-bottom: 14px;
-    min-width: 12px;
-    max-width: 40px;
-    transition: background 0.18s;
-}
-.app-stepper__line--done {
-    background: var(--green);
+.application-step-upcoming {
+    color: #94a3b8;
 }
 
 /* ── Fix footer overlap with enough bottom padding ───────────── */
