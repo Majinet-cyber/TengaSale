@@ -447,12 +447,12 @@ class LogoutTests(TestCase):
             password="test-pass-123",
         )
 
-    def test_logout_via_post_redirects_to_home(self):
+    def test_logout_via_post_redirects_to_login(self):
         self.client.login(username="merchant", password="test-pass-123")
 
         response = self.client.post(reverse("logout"))
 
-        self.assertRedirects(response, "/")
+        self.assertRedirects(response, "/accounts/login/")
 
     def test_logout_via_get_returns_method_not_allowed(self):
         self.client.login(username="merchant", password="test-pass-123")

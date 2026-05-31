@@ -58,43 +58,8 @@ def _get_landing_stats():
     return stats
 
 
-_MERCHANT_QUOTES = [
-    {
-        "merchant_name": "James Phiri",
-        "shop_name": "City Phone Hub",
-        "city": "Lilongwe",
-        "quote": (
-            "TengaSale changed how I run my shop. Customers who couldn't pay cash "
-            "upfront can now walk out with a phone and pay over time. My sales doubled."
-        ),
-    },
-    {
-        "merchant_name": "Grace Banda",
-        "shop_name": "Banda Electronics",
-        "city": "Blantyre",
-        "quote": (
-            "The platform is easy to use and the support is excellent. I can see all my "
-            "contracts, track payments, and help customers in minutes — not hours."
-        ),
-    },
-    {
-        "merchant_name": "Kondwani Mwale",
-        "shop_name": "Kondwani Gadgets",
-        "city": "Mzuzu",
-        "quote": (
-            "I was worried about repayments but TengaSale handles everything — from "
-            "contracts to payment tracking. It feels like having a finance team built in."
-        ),
-    },
-]
-
-
 def landing(request):
-    stats = _get_landing_stats()
-    return render(request, "website/landing.html", {
-        "landing_stats": stats,
-        "merchant_quotes": _MERCHANT_QUOTES,
-    })
+    return render(request, "website/landing.html", {})
 
 
 def about(request):
