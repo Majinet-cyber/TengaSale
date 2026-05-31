@@ -5,687 +5,432 @@
 {% block site_description %}TengaSale provides structured smartphone financing for customers across Malawi — connecting merchants, repayment tracking, and mobile money payment infrastructure in one platform.{% endblock %}
 
 {% block site_content %}
+<div class="ts-landing">
 
-<!-- ── Hero ──────────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero__inner">
-    <!-- LEFT — copy + platform intelligence panel -->
-    <div class="hero__copy">
-      <span class="hero__eyebrow">
-        <svg width="10" height="10" viewBox="0 0 10 10" style="fill:#ff6a00;flex-shrink:0" aria-hidden="true"><circle cx="5" cy="5" r="5"/></svg>
-        Smartphone Financing for Malawi
-      </span>
-      <h1 class="hero__headline">
-        Smartphone financing built for<br>
-        <em>real merchants and real repayments.</em>
-      </h1>
-      <p class="hero__body">
-        TengaSale helps smartphone merchants offer instalment sales with customer records,
-        contract tracking, repayment visibility, and device-lock readiness — in one platform.
-      </p>
-      <div class="hero__ctas">
-        <a href="{% url 'portal_search' %}" class="btn-primary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-          Make a Payment
-        </a>
-        <a href="{% url 'website_merchant_signup' %}" class="btn-secondary">Become a Merchant</a>
-      </div>
-      <div class="hero__trust">
-        <span class="hero__trust-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          KYC records
+<!-- ── A. Hero ──────────────────────────────────────────────── -->
+<section class="ts-hero">
+  <div class="ts-container">
+    <div class="ts-hero__inner">
+
+      <!-- Left — copy -->
+      <div class="ts-hero__copy">
+        <span class="ts-kicker">
+          <svg width="8" height="8" viewBox="0 0 10 10" aria-hidden="true" style="fill:#ff6a00;flex-shrink:0"><circle cx="5" cy="5" r="5"/></svg>
+          Smartphone Financing for Malawi
         </span>
-        <span class="hero__trust-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Contract tracking
-        </span>
-        <span class="hero__trust-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Mobile money payments
-        </span>
-        <span class="hero__trust-item">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Merchant controls
-        </span>
+        <h1 class="ts-hero__h1">
+          Smartphone financing built for<br>
+          <em>real merchants and real repayments.</em>
+        </h1>
+        <p class="ts-hero__sub">
+          TengaSale helps smartphone merchants sell on instalments with customer records,
+          contract tracking, repayment visibility, and device-lock readiness in one platform.
+        </p>
+        <div class="ts-hero__ctas">
+          <a href="{% url 'portal_search' %}" class="btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Make a Payment
+          </a>
+          <a href="{% url 'website_merchant_signup' %}" class="btn-secondary">Become a Merchant</a>
+        </div>
+        <div class="ts-trust-row">
+          <span class="ts-trust-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            KYC records
+          </span>
+          <span class="ts-trust-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Contract tracking
+          </span>
+          <span class="ts-trust-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Repayment visibility
+          </span>
+          <span class="ts-trust-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Device-lock readiness
+          </span>
+        </div>
       </div>
 
-      <!-- Platform Intelligence Panel — fills the blank area -->
-      <div class="hero-intel">
-        <div class="hero-intel__hdr">
-          <span class="hero-intel__dot"></span>
-          <span class="hero-intel__title">Platform Intelligence</span>
-          <span class="hero-intel__badge">Live</span>
+      <!-- Right — product preview cards -->
+      <div class="ts-hero__visual" aria-hidden="true">
+        <!-- Brand card -->
+        <div class="ts-hcard ts-hcard--brand">
+          <img
+            src="{% static 'images/brand/tengasale-logo-icon.png' %}"
+            alt="TengaSale"
+            class="ts-hcard__brand-img"
+            loading="eager"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
+          >
+          <div style="display:none;font-size:20px;font-weight:900;color:#ff6a00;text-align:center;">TengaSale</div>
         </div>
-        <div class="hero-intel__body">
-          <div class="hero-intel__row">
-            <div class="hero-intel__metric">
-              <div class="hero-intel__val">MWK 1.2M+</div>
-              <div class="hero-intel__lbl">Average contract value</div>
-            </div>
-            <div class="hero-intel__metric">
-              <div class="hero-intel__val">12 months</div>
-              <div class="hero-intel__lbl">Standard repayment term</div>
-            </div>
+        <!-- Active contract card -->
+        <div class="ts-hcard">
+          <div class="ts-hcard__label">Active Contract</div>
+          <div class="ts-hcard__device">Samsung Galaxy A15 · City Phones</div>
+          <div class="ts-hcard__value">MWK 540,000 <span>/ MWK 900,000</span></div>
+          <div class="ts-hcard__bar"><div class="ts-hcard__fill" style="width:60%"></div></div>
+          <div class="ts-hcard__meta">
+            <span>60% paid · 6 months remaining</span>
+            <span>MWK 62,500 / mo</span>
           </div>
-          <div class="hero-intel__row">
-            <div class="hero-intel__metric">
-              <div class="hero-intel__val">20%</div>
-              <div class="hero-intel__lbl">Minimum deposit</div>
-            </div>
-            <div class="hero-intel__metric">
-              <div class="hero-intel__val">Airtel · TNM</div>
-              <div class="hero-intel__lbl">Supported payment networks</div>
-            </div>
+        </div>
+        <!-- Payment confirmed card -->
+        <div class="ts-hcard ts-hcard--row">
+          <div class="ts-hcard__left">
+            <div class="ts-hcard__label">Last Payment</div>
+            <div class="ts-hcard__sub">Airtel Money · Ref TS-PAY-0247</div>
           </div>
-          <div class="hero-intel__flow">
-            <div class="hero-intel__flow-step">
-              <div class="hero-intel__flow-dot hero-intel__flow-dot--orange"></div>
-              <span>Apply</span>
+          <span class="ts-badge ts-badge--green">
+            <span class="ts-badge__dot"></span>MWK 62,500
+          </span>
+        </div>
+        <!-- Merchant portfolio card -->
+        <div class="ts-hcard ts-hcard--row">
+          <div class="ts-hcard__left">
+            <div class="ts-hcard__label">Merchant Portfolio</div>
+            <div class="ts-hcard__sub">Active contracts · repayment tracked</div>
+          </div>
+          <span class="ts-badge ts-badge--orange">
+            <span class="ts-badge__dot"></span>24 contracts
+          </span>
+        </div>
+        <!-- Trust signals mini-grid -->
+        <div class="ts-hcard ts-hcard--trust">
+          <div class="ts-mini-grid">
+            <div class="ts-mini-item">
+              <div class="ts-icon-chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div class="ts-mini-item__title">KYC Verified</div>
+              <div class="ts-mini-item__sub">Every customer</div>
             </div>
-            <div class="hero-intel__flow-line"></div>
-            <div class="hero-intel__flow-step">
-              <div class="hero-intel__flow-dot hero-intel__flow-dot--blue"></div>
-              <span>Underwrite</span>
+            <div class="ts-mini-item">
+              <div class="ts-icon-chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+              </div>
+              <div class="ts-mini-item__title">Contract Records</div>
+              <div class="ts-mini-item__sub">Auditable</div>
             </div>
-            <div class="hero-intel__flow-line"></div>
-            <div class="hero-intel__flow-step">
-              <div class="hero-intel__flow-dot hero-intel__flow-dot--green"></div>
-              <span>Contract</span>
-            </div>
-            <div class="hero-intel__flow-line"></div>
-            <div class="hero-intel__flow-step">
-              <div class="hero-intel__flow-dot hero-intel__flow-dot--teal"></div>
-              <span>Repay</span>
+            <div class="ts-mini-item">
+              <div class="ts-icon-chip">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div class="ts-mini-item__title">Device Lock</div>
+              <div class="ts-mini-item__sub">Enforcement ready</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- RIGHT — glassmorphic product preview -->
-    <div class="hero__visual" aria-hidden="true">
-      <!-- TS Brand image — constrained glass card -->
-      <div class="hcard hero-brand-card">
-        <img
-          src="{% static 'images/brand/tengasale-logo-icon.png' %}"
-          alt="TengaSale"
-          class="hero-brand-img"
-          loading="eager"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
-        >
-        <div style="display:none;font-size:24px;font-weight:900;color:#ff6a00;text-align:center;padding:8px 0;">TengaSale</div>
-      </div>
-      <!-- Active contract card -->
-      <div class="hcard">
-        <div class="hcard__label">Active Contract</div>
-        <div class="hcard__device">Device: Samsung Galaxy A15 · Merchant: City Phones</div>
-        <div class="hcard__value">MWK 540,000 <span>/ MWK 900,000</span></div>
-        <div class="hcard__bar"><div class="hcard__fill" style="width:60%"></div></div>
-        <div class="hcard__meta">
-          <span>60% paid · 6 months remaining</span>
-          <span>Monthly: MWK 62,500</span>
-        </div>
-      </div>
-      <!-- Last payment card -->
-      <div class="hcard hcard--row">
-        <div class="hcard__left">
-          <div class="hcard__label">Last Payment</div>
-          <div class="hcard__sub">Airtel Money · Ref TS-PAY-0247 · Confirmed</div>
-        </div>
-        <div>
-          <div class="hcard__badge hcard__badge--green">
-            <span class="hcard__badge-dot"></span> MWK 62,500
-          </div>
-        </div>
-      </div>
-      <!-- Merchant overview card -->
-      <div class="hcard hcard--row">
-        <div class="hcard__left">
-          <div class="hcard__label">Merchant Portfolio</div>
-          <div class="hcard__sub">Active contracts this month · repayment tracking</div>
-        </div>
-        <div>
-          <div class="hcard__badge hcard__badge--orange">
-            <span class="hcard__badge-dot"></span> 24 contracts
-          </div>
-        </div>
-      </div>
-      <!-- Trust signals card -->
-      <div class="hcard hero-trust-card">
-        <div class="hero-trust-grid">
-          <div class="hero-trust-item">
-            <div class="hero-trust-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <div class="hero-trust-label">KYC Verified</div>
-            <div class="hero-trust-sub">Every customer</div>
-          </div>
-          <div class="hero-trust-item">
-            <div class="hero-trust-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div class="hero-trust-label">Contract Records</div>
-            <div class="hero-trust-sub">Auditable</div>
-          </div>
-          <div class="hero-trust-item">
-            <div class="hero-trust-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <div class="hero-trust-label">Device Lock</div>
-            <div class="hero-trust-sub">Contract enforcement</div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </section>
 
-<!-- ── Live Stats Strip ───────────────────────────────────────── -->
-<div class="live-stats-strip">
-  <div class="live-stats-strip__inner">
+<!-- ── B. Live Stats Strip ───────────────────────────────── -->
+<div class="ts-stats-strip">
+  <div class="ts-container">
+    <div class="ts-stats-inner">
 
-    <div class="live-stat-pill">
-      <div class="live-stat-pill__icon" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="ts-stat">
+        <div class="ts-stat__icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="ts-stat__body">
+          <span class="ts-stat__val">{{ landing_stats.total_contracts|default:"0" }}</span>
+          <span class="ts-stat__lbl">Contracts activated</span>
+        </div>
       </div>
-      <div class="live-stat-pill__body">
-        <span class="live-stat-pill__val">{{ landing_stats.total_contracts|default:"0" }}</span>
-        <span class="live-stat-pill__lbl">Smart contracts</span>
+
+      <div class="ts-stat__sep" aria-hidden="true"></div>
+
+      <div class="ts-stat">
+        <div class="ts-stat__icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="ts-stat__body">
+          <span class="ts-stat__val">{{ landing_stats.total_disbursed_formatted|default:"MWK 0" }}</span>
+          <span class="ts-stat__lbl">MWK disbursed</span>
+        </div>
       </div>
+
+      <div class="ts-stat__sep" aria-hidden="true"></div>
+
+      <div class="ts-stat">
+        <div class="ts-stat__icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="ts-stat__body">
+          <span class="ts-stat__val">{{ landing_stats.total_customers|default:"0" }}</span>
+          <span class="ts-stat__lbl">Customers connected</span>
+        </div>
+      </div>
+
     </div>
-
-    <div class="live-stat-pill__sep" aria-hidden="true"></div>
-
-    <div class="live-stat-pill">
-      <div class="live-stat-pill__icon" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </div>
-      <div class="live-stat-pill__body">
-        <span class="live-stat-pill__val">{{ landing_stats.total_disbursed_formatted|default:"MWK 0" }}</span>
-        <span class="live-stat-pill__lbl">Disbursed</span>
-      </div>
-    </div>
-
-    <div class="live-stat-pill__sep" aria-hidden="true"></div>
-
-    <div class="live-stat-pill">
-      <div class="live-stat-pill__icon" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
-      <div class="live-stat-pill__body">
-        <span class="live-stat-pill__val">{{ landing_stats.total_customers|default:"0" }}</span>
-        <span class="live-stat-pill__lbl">Customers connected</span>
-      </div>
-    </div>
-
   </div>
 </div>
 
-<!-- ── Platform Stats ─────────────────────────────────────────── -->
-<section class="site-section site-section--brand-showcase" id="brand-showcase">
-  <div class="site-section__inner">
-    <div class="brand-showcase-copy" style="max-width:600px;margin-bottom:32px;">
-      <span class="section-eyebrow">TengaSale Platform</span>
-      <h2 class="section-heading">Built for merchants, customers, and repayment control</h2>
-      <p class="section-sub">
-        One platform that connects merchants offering smartphones on instalments
-        with customers making structured repayments — with full visibility,
-        contract records, and mobile money payment support.
+<!-- ── C. How TengaSale Works ────────────────────────────── -->
+<section class="ts-section" id="how-it-works">
+  <div class="ts-container">
+    <div class="ts-section__hdr">
+      <span class="ts-eyebrow">The Process</span>
+      <h2 class="ts-section__h2">How TengaSale works</h2>
+      <p class="ts-section__sub">
+        From customer application to repayment tracking, every step is structured and auditable.
       </p>
     </div>
-    <div class="platform-stats-grid">
-      <div class="platform-stat-card">
-        <div class="platform-stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        </div>
-        <div class="platform-stat-val">Smartphones</div>
-        <div class="platform-stat-label">Structured instalment financing for real customers</div>
-      </div>
-      <div class="platform-stat-card">
-        <div class="platform-stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div class="platform-stat-val">Multi-party</div>
-        <div class="platform-stat-label">Merchants, underwriters, and HQ on one platform</div>
-      </div>
-      <div class="platform-stat-card">
-        <div class="platform-stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        </div>
-        <div class="platform-stat-val">Mobile Money</div>
-        <div class="platform-stat-label">Airtel Money &amp; TNM Mpamba payment collection</div>
-      </div>
-      <div class="platform-stat-card">
-        <div class="platform-stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div class="platform-stat-val">KYC &amp; Lock</div>
-        <div class="platform-stat-label">Identity verification, device lock, and contract records</div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ── How It Works ───────────────────────────────────────────── -->
-<section class="site-section" id="how-it-works">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">The Process</span>
-    <h2 class="section-heading">How TengaSale works</h2>
-    <p class="section-sub">
-      A straightforward six-step process from application to full device ownership — handled through your merchant.
-    </p>
+    <div class="ts-steps">
 
-    <div class="steps-list">
-
-      <div class="step">
-        <div class="step__num">1</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <div class="ts-step">
+        <div class="ts-step__num">1</div>
+        <div class="ts-step__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
         </div>
-        <div class="step__title">Choose a device</div>
-        <div class="step__body">Browse available smartphone models at a participating TengaSale merchant and select the right fit for your needs and budget.</div>
+        <div class="ts-step__title">Merchant submits application</div>
+        <div class="ts-step__body">The merchant enters the customer and smartphone details through the TengaSale platform and submits a financing application.</div>
       </div>
 
-      <div class="step">
-        <div class="step__num">2</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <div class="ts-step">
+        <div class="ts-step__num">2</div>
+        <div class="ts-step__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
         </div>
-        <div class="step__title">Apply through a merchant</div>
-        <div class="step__body">Complete a financing application in-store. Your merchant submits the request and supporting documents through the TengaSale platform.</div>
+        <div class="ts-step__title">Customer and smartphone are verified</div>
+        <div class="ts-step__body">National ID is captured for KYC. The financed smartphone is recorded with its IMEI for device verification and lock readiness.</div>
       </div>
 
-      <div class="step">
-        <div class="step__num">3</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
+      <div class="ts-step">
+        <div class="ts-step__num">3</div>
+        <div class="ts-step__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
-        <div class="step__title">Verify your identity</div>
-        <div class="step__body">Present your Malawi National ID for identity verification. KYC is completed through the merchant as part of the structured application process.</div>
+        <div class="ts-step__title">Underwriter approves contract</div>
+        <div class="ts-step__body">The underwriter reviews the application through a structured checklist and issues a numbered contract with a repayment schedule.</div>
       </div>
 
-      <div class="step">
-        <div class="step__num">4</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="18" cy="14" r="1"/></svg>
+      <div class="ts-step">
+        <div class="ts-step__num">4</div>
+        <div class="ts-step__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
-        <div class="step__title">Pay your deposit</div>
-        <div class="step__body">Pay an initial deposit to activate your contract. The deposit amount is agreed at the point of application based on device and repayment term.</div>
-      </div>
-
-      <div class="step">
-        <div class="step__num">5</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <div class="step__title">Activate your contract</div>
-        <div class="step__body">Once approved and your deposit is confirmed, your device contract is activated and your repayment schedule is issued.</div>
-      </div>
-
-      <div class="step">
-        <div class="step__num">6</div>
-        <div class="step__icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="step__title">Repay over time</div>
-        <div class="step__body">Make structured payments via Airtel Money or TNM Mpamba. Settle early to reduce your remaining balance — the sooner you pay, the more you save.</div>
+        <div class="ts-step__title">Payments and contract status are tracked</div>
+        <div class="ts-step__body">Customers repay via Airtel Money or TNM Mpamba. Every payment is recorded. Merchants and customers can see contract status at any time.</div>
       </div>
 
     </div>
   </div>
 </section>
 
-<!-- ── For Customers ──────────────────────────────────────────── -->
-<section class="site-section site-section--alt" id="for-customers">
-  <div class="site-section__inner">
-    <div class="split-layout">
-      <div class="split-layout__copy">
-        <span class="section-eyebrow">For Customers</span>
-        <h2 class="section-heading">Clear repayment visibility for customers</h2>
-        <p class="section-sub">
-          TengaSale gives you a transparent repayment schedule, mobile money payment
-          options, and complete visibility of your contract — from first payment to final ownership.
-        </p>
-        <a href="{% url 'portal_search' %}" class="btn-primary">View My Contract</a>
-      </div>
-      <div class="feature-list">
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">View contract balance</div>
-            <div class="feature-item__body">See exactly what you owe, what you have paid, and your outstanding balance — at any time.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Pay by mobile money</div>
-            <div class="feature-item__body">Make payments via Airtel Money or TNM Mpamba from any location at any time, without visiting a branch.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">See payment history</div>
-            <div class="feature-item__body">Access a full record of every payment made — with reference numbers, amounts, and confirmation status.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Understand your schedule</div>
-            <div class="feature-item__body">Your repayment schedule is clear from day one — showing due dates and remaining instalments throughout the contract.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Pay early where available</div>
-            <div class="feature-item__body">Settle your contract ahead of schedule and receive a discount on your remaining balance — the sooner you pay, the more you save.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Support through your merchant</div>
-            <div class="feature-item__body">Your merchant can assist with payment queries, contract questions, and repayment support on your behalf.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- ── D. Built for Merchants ───────────────────────────── -->
+<section class="ts-section ts-section--alt" id="for-merchants">
+  <div class="ts-container">
+    <div class="ts-split">
 
-<!-- ── For Merchants ──────────────────────────────────────────── -->
-<section class="site-section" id="for-merchants">
-  <div class="site-section__inner">
-    <div class="split-layout" style="direction:rtl">
-      <div class="split-layout__copy" style="direction:ltr">
-        <span class="section-eyebrow">For Merchants</span>
-        <h2 class="section-heading">Sales infrastructure for phone merchants</h2>
-        <p class="section-sub">
-          Sell smartphones on structured financing without building your own credit
-          infrastructure. TengaSale handles contract management, repayment tracking,
-          and payment collection — giving you operational visibility across your portfolio.
+      <!-- Left copy -->
+      <div class="ts-split__copy">
+        <span class="ts-eyebrow">For Merchants</span>
+        <h2 class="ts-section__h2">Built for smartphone merchants</h2>
+        <p class="ts-section__sub ts-section__sub--narrow">
+          Give merchants a cleaner way to sell smartphones on instalments without building
+          their own credit infrastructure.
         </p>
         <div class="btn-row">
           <a href="{% url 'website_merchant_signup' %}" class="btn-primary">Become a Merchant</a>
           <a href="{% url 'login' %}" class="btn-secondary">Merchant Login</a>
         </div>
       </div>
-      <div class="feature-list" style="direction:ltr">
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+
+      <!-- Right 2×2 value cards -->
+      <div class="ts-value-grid">
+
+        <div class="ts-value-card">
+          <div class="ts-icon-chip ts-icon-chip--orange">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Create structured financed sales</div>
-            <div class="feature-item__body">Submit customer applications and manage structured financing approvals through the TengaSale merchant platform.</div>
-          </div>
+          <div class="ts-value-card__title">Create structured financed sales</div>
+          <div class="ts-value-card__body">Submit customer applications and manage structured financing approvals through the merchant platform.</div>
         </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+
+        <div class="ts-value-card">
+          <div class="ts-icon-chip ts-icon-chip--orange">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Track applications and approvals</div>
-            <div class="feature-item__body">Monitor active contracts, approval status, and repayment progress across your entire customer portfolio.</div>
-          </div>
+          <div class="ts-value-card__title">Track applications and approvals</div>
+          <div class="ts-value-card__body">Monitor active contracts, approval status, and repayment progress across your entire customer portfolio.</div>
         </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+
+        <div class="ts-value-card">
+          <div class="ts-icon-chip ts-icon-chip--orange">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">View merchant settlement visibility</div>
-            <div class="feature-item__body">Access commission records, wallet balance, and merchant cash-price settlement information from your dashboard.</div>
-          </div>
+          <div class="ts-value-card__title">View settlement visibility</div>
+          <div class="ts-value-card__body">Access commission records, wallet balance, and cash-price settlement information from your dashboard.</div>
         </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+
+        <div class="ts-value-card">
+          <div class="ts-icon-chip ts-icon-chip--orange">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Support customer repayment follow-up</div>
-            <div class="feature-item__body">Access contract details and payment history to assist customers with queries and repayment issues after the sale.</div>
-          </div>
+          <div class="ts-value-card__title">Support repayment follow-up</div>
+          <div class="ts-value-card__body">Access contract details and payment history to assist customers with queries and repayment issues after the sale.</div>
         </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Access audit records</div>
-            <div class="feature-item__body">Complete application records, approval history, and audit trails are available for every transaction on your portfolio.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="site-icon site-icon--orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <div class="feature-item__text">
-            <div class="feature-item__title">Device and contract status</div>
-            <div class="feature-item__body">View device and contract status across your portfolio. The platform is structured to support device management integrations.</div>
-          </div>
-        </div>
+
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Built for Real Malawian Smartphone Merchants ──────────── -->
-<section class="site-section site-section--alt" id="merchant-value">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">Built for real merchants</span>
-    <h2 class="section-heading section-heading--center">Built for real Malawian smartphone merchants</h2>
-    <p class="section-sub section-sub--center" style="margin-bottom:40px">
-      TengaSale gives smartphone merchants the infrastructure they need to offer financing
-      professionally — without building anything themselves.
-    </p>
-    <div class="merchant-value-grid">
+<!-- ── E. For Customers ──────────────────────────────────── -->
+<section class="ts-section" id="for-customers">
+  <div class="ts-container">
+    <div class="ts-section__hdr">
+      <span class="ts-eyebrow">For Customers</span>
+      <h2 class="ts-section__h2">Clear repayment visibility for customers</h2>
+      <p class="ts-section__sub">
+        Customers can view what they owe, what they have paid, and when the next payment is due.
+      </p>
+    </div>
 
-      <div class="merchant-value-card">
-        <div class="merchant-value-card__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <div class="ts-card-row">
+
+      <div class="ts-feature-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        <h3 class="merchant-value-card__title">Faster applications</h3>
-        <p class="merchant-value-card__body">
-          Submit customer financing applications in minutes — directly from your shop.
-          No paperwork queues. No branch visits. No delays.
-        </p>
+        <div class="ts-feature-card__title">View contract balance</div>
+        <div class="ts-feature-card__body">See exactly what you owe, what you have paid, and your outstanding balance — at any time.</div>
       </div>
 
-      <div class="merchant-value-card">
-        <div class="merchant-value-card__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <div class="ts-feature-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         </div>
-        <h3 class="merchant-value-card__title">Better repayment visibility</h3>
-        <p class="merchant-value-card__body">
-          See real-time repayment status across your full portfolio. Know which contracts
-          are on track, overdue, or completed — at a glance.
-        </p>
+        <div class="ts-feature-card__title">Pay by mobile money</div>
+        <div class="ts-feature-card__body">Make payments via Airtel Money or TNM Mpamba from any location at any time, without visiting a branch.</div>
       </div>
 
-      <div class="merchant-value-card">
-        <div class="merchant-value-card__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <div class="ts-feature-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
-        <h3 class="merchant-value-card__title">Cleaner merchant records</h3>
-        <p class="merchant-value-card__body">
-          Every contract, payment, and customer record is structured, numbered, and
-          audit-ready. Your business stays organised even as your portfolio grows.
-        </p>
+        <div class="ts-feature-card__title">See payment history</div>
+        <div class="ts-feature-card__body">Access a full record of every payment made — with reference numbers, amounts, and confirmation status.</div>
       </div>
 
+    </div>
+
+    <div class="ts-section__cta">
+      <a href="{% url 'portal_search' %}" class="btn-primary">View My Contract</a>
     </div>
   </div>
 </section>
 
-<!-- ── Trust & Compliance — LIGHT GLASS ───────────────────────── -->
-<section class="site-section site-section--light" id="compliance">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">Operational Standards</span>
-    <h2 class="section-heading">Trust, compliance, and operational control</h2>
-    <p class="section-sub">
-      TengaSale is built around structured records, repayment visibility, and audit-friendly
-      workflows for phone-financing operations across the full customer lifecycle.
-    </p>
-
-    <div class="compliance-grid">
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">KYC verification</div>
-          <div class="compliance-item__body">Identity verification through National ID at the point of application — captured and stored per contract record.</div>
-        </div>
-      </div>
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">Contract records</div>
-          <div class="compliance-item__body">All contracts are numbered, timestamped, and linked to the customer, device, and merchant record for full traceability.</div>
-        </div>
-      </div>
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">Repayment history</div>
-          <div class="compliance-item__body">Every payment is recorded with reference, provider, amount, status, and timestamp — complete and auditable.</div>
-        </div>
-      </div>
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">Merchant controls</div>
-          <div class="compliance-item__body">Role-based access for merchants, underwriters, and administrators with audit-logged actions and permissions.</div>
-        </div>
-      </div>
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">Audit logs</div>
-          <div class="compliance-item__body">Approval, rejection, payment, device, and access events are logged with user identity, timestamp, and action context.</div>
-        </div>
-      </div>
-      <div class="compliance-item">
-        <div class="compliance-item__icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div>
-          <div class="compliance-item__title">Device management controls</div>
-          <div class="compliance-item__body">Platform architecture supports MDM and device-locking integrations for PayG financing operations and contract enforcement.</div>
-        </div>
-      </div>
+<!-- ── F. Platform Controls ──────────────────────────────── -->
+<section class="ts-section ts-section--alt" id="platform">
+  <div class="ts-container">
+    <div class="ts-section__hdr">
+      <span class="ts-eyebrow">Operational Controls</span>
+      <h2 class="ts-section__h2">Controls built for repayment discipline</h2>
+      <p class="ts-section__sub">
+        TengaSale is built around structured records, identity verification, device controls,
+        and audit-friendly workflows across the full customer lifecycle.
+      </p>
     </div>
-  </div>
-</section>
 
-<!-- ── Built for Controlled Phone Financing ───────────────────── -->
-<section class="site-section" id="trust">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">Platform Foundations</span>
-    <h2 class="section-heading section-heading--center">Built for controlled smartphone financing</h2>
-    <p class="section-sub section-sub--center">
-      TengaSale is structured around the records, controls, and accountability workflows
-      that responsible smartphone financing requires — from customer identity to final repayment.
-    </p>
+    <div class="ts-controls-grid">
 
-    <div class="trust-grid">
-
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
+      <div class="ts-control-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
         </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Customer KYC records</div>
-          <p class="trust-card__text">National ID, phone, age, gender, and customer profile are captured and verified during the application process — tied to every contract record.</p>
-        </div>
+        <div class="ts-control-card__title">KYC verification</div>
+        <div class="ts-control-card__body">Identity verification through National ID at the point of application — captured and stored per contract record.</div>
       </div>
 
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div class="ts-control-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Contract tracking</div>
-          <p class="trust-card__text">Every financed device is tied to a numbered contract, customer record, merchant, and repayment schedule — fully traceable and auditable.</p>
-        </div>
+        <div class="ts-control-card__title">Contract records</div>
+        <div class="ts-control-card__body">All contracts are numbered, timestamped, and linked to the customer, device, and merchant record for full traceability.</div>
       </div>
 
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <div class="ts-control-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Repayment visibility</div>
-          <p class="trust-card__text">Customers can search and view their contract status, payment history, and remaining balance at any time through the TengaSale payment portal.</p>
-        </div>
+        <div class="ts-control-card__title">IMEI / device verification</div>
+        <div class="ts-control-card__body">IMEI checks help confirm that the financed smartphone matches the selected device. Device-lock readiness supports contract enforcement.</div>
       </div>
 
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <div class="ts-control-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Merchant settlement control</div>
-          <p class="trust-card__text">Merchants see their own sales, commission records, and cash-price settlement data — without access to internal HQ financials or other merchants' data.</p>
-        </div>
-      </div>
-
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Underwriter accountability</div>
-          <p class="trust-card__text">Underwriters review applications through structured checklists and controlled workflows — with audit logs recording every approval, rejection, and correction decision.</p>
-        </div>
-      </div>
-
-      <div class="trust-card">
-        <div class="trust-card__icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div class="trust-card__body">
-          <div class="trust-card__title">Device management readiness</div>
-          <p class="trust-card__text">Device locking and unlocking workflows are supported through provider-ready architecture — enabling PayG contract enforcement across financed smartphone portfolios.</p>
-        </div>
+        <div class="ts-control-card__title">Audit logs</div>
+        <div class="ts-control-card__body">Approval, rejection, payment, device, and access events are logged with user identity, timestamp, and action context.</div>
       </div>
 
     </div>
   </div>
 </section>
 
-<!-- ── FAQ ───────────────────────────────────────────────────── -->
-<section class="site-section site-section--alt" id="faq">
-  <div class="site-section__inner">
-    <span class="section-eyebrow">Frequently Asked Questions</span>
-    <h2 class="section-heading section-heading--center">Common questions</h2>
-    <p class="section-sub section-sub--center" style="margin-bottom:40px">
-      Answers to common questions about TengaSale, repayments, and contracts.
-    </p>
+<!-- ── G. Why It Matters ─────────────────────────────────── -->
+<section class="ts-section" id="why-it-matters">
+  <div class="ts-container">
+    <div class="ts-section__hdr">
+      <span class="ts-eyebrow">Platform Foundations</span>
+      <h2 class="ts-section__h2">Built for controlled smartphone financing</h2>
+      <p class="ts-section__sub">
+        TengaSale is structured around the records, controls, and accountability workflows
+        that responsible smartphone financing requires — from customer identity to final repayment.
+      </p>
+    </div>
+
+    <div class="ts-card-row ts-card-row--3">
+
+      <div class="ts-why-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="ts-why-card__title">Fewer informal records</div>
+        <div class="ts-why-card__body">Every application, contract, and payment is structured and numbered. No paper logs. No informal agreements.</div>
+      </div>
+
+      <div class="ts-why-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="ts-why-card__title">Better repayment follow-up</div>
+        <div class="ts-why-card__body">Merchants and underwriters can see real-time repayment status across active contracts and follow up where needed.</div>
+      </div>
+
+      <div class="ts-why-card">
+        <div class="ts-icon-chip ts-icon-chip--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <div class="ts-why-card__title">Cleaner merchant operations</div>
+        <div class="ts-why-card__body">Merchants operate through a structured platform rather than manual spreadsheets — with commission and settlement visibility built in.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── H. FAQ ─────────────────────────────────────────────── -->
+<section class="ts-section ts-section--alt" id="faq">
+  <div class="ts-container">
+    <div class="ts-section__hdr ts-section__hdr--center">
+      <span class="ts-eyebrow">Frequently Asked Questions</span>
+      <h2 class="ts-section__h2">Common questions</h2>
+      <p class="ts-section__sub ts-section__sub--center">
+        Answers to common questions about TengaSale, repayments, and contracts.
+      </p>
+    </div>
 
     <div class="faq-list">
 
@@ -718,30 +463,16 @@
       </details>
 
       <details class="faq-item">
-        <summary>Can a merchant see my contract details?</summary>
-        <div class="faq-item__body">
-          <p>Your merchant has access to the contracts they have created through TengaSale, including your repayment status and contract progress. This is necessary for them to support you and manage their portfolio. Merchant access is role-controlled and all actions are audit-logged.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
         <summary>How do I become a TengaSale merchant?</summary>
         <div class="faq-item__body">
-          <p>Submit a merchant interest form at <a href="{% url 'website_merchant_signup' %}">tengasale.africa/site/merchant-signup/</a>. Our onboarding team will contact you to discuss requirements and next steps. Once onboarded, you will receive access to the merchant platform. See our <a href="{% url 'website_merchant_terms' %}">Merchant Terms</a> for full details.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary>Is TengaSale available outside Malawi?</summary>
-        <div class="faq-item__body">
-          <p>TengaSale is currently operating as a Malawi pilot. Expansion to other markets is planned as the platform matures. If you are interested in partnering in another market, contact us at <a href="mailto:support@tengasale.africa">support@tengasale.africa</a>.</p>
+          <p>Submit a merchant interest form at <a href="{% url 'website_merchant_signup' %}">tengasale.africa/site/merchant-signup/</a>. Our onboarding team will contact you to discuss requirements and next steps. See our <a href="{% url 'website_merchant_terms' %}">Merchant Terms</a> for full details.</p>
         </div>
       </details>
 
       <details class="faq-item">
         <summary>Which payment methods are supported?</summary>
         <div class="faq-item__body">
-          <p>TengaSale supports Airtel Money and TNM Mpamba for contract repayments. Customers can pay directly through the TengaSale payment portal using their mobile money account — no bank account required. Contact support for details on your specific contract payment options.</p>
+          <p>TengaSale supports Airtel Money and TNM Mpamba for contract repayments. Customers can pay directly through the TengaSale payment portal using their mobile money account — no bank account required.</p>
         </div>
       </details>
 
@@ -756,14 +487,14 @@
   </div>
 </section>
 
-<!-- ── Bottom CTA ─────────────────────────────────────────────── -->
+<!-- ── I. Bottom CTA ──────────────────────────────────────── -->
 <section class="site-cta-section">
-  <div class="site-section__inner" style="text-align:center;">
-    <h2 class="section-heading" style="color:#fff;">Ready to join TengaSale?</h2>
-    <p class="section-sub" style="color:rgba(255,255,255,0.80);margin-bottom:32px;">
-      Whether you run a phone shop, are looking for a new career, or need to make a payment — we are here.
+  <div class="ts-container" style="text-align:center;">
+    <h2 class="ts-cta__h2">Ready to join TengaSale?</h2>
+    <p class="ts-cta__sub">
+      Whether you run a smartphone shop, are looking for a new career, or need to make a payment — we are here.
     </p>
-    <div class="hero__ctas" style="justify-content:center;flex-wrap:wrap;">
+    <div class="ts-cta__buttons">
       <a href="{% url 'website_merchant_signup' %}" class="btn-primary btn-primary--white">Become a Merchant</a>
       <a href="{% url 'portal_search' %}" class="btn-secondary btn-secondary--white">Make a Payment</a>
       <a href="{% url 'website_careers' %}" class="btn-secondary btn-secondary--white">Careers</a>
@@ -771,7 +502,7 @@
   </div>
 </section>
 
-<!-- ── Support CTA ────────────────────────────────────────────── -->
+<!-- ── J. Support Banner ───────────────────────────────────── -->
 <div class="support-banner">
   <div class="support-banner__inner">
     <div class="support-banner__heading">Need assistance?</div>
@@ -787,15 +518,16 @@
         WhatsApp Support
       </a>
       <a href="mailto:support@tengasale.africa" class="support-link">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         support@tengasale.africa
       </a>
       <a href="{% url 'portal_support' %}" class="support-link">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Help Centre
       </a>
     </div>
   </div>
 </div>
 
+</div>{# end .ts-landing #}
 {% endblock %}
