@@ -1057,6 +1057,16 @@
       </div>
     </a>
 
+    <a href="{% url 'device_lock:hq_lock_centre' %}" class="hq-pulse-card" style="text-decoration:none">
+      <div class="hq-pulse-icon" style="background:rgba(255,107,26,0.10);color:#ff6b1a;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="hq-pulse-body">
+        <div class="hq-pulse-val">{{ lock_locked_count|default:"0" }}</div>
+        <div class="hq-pulse-label">Locked Devices</div>
+      </div>
+    </a>
+
     <a href="{% url 'ma_dashboard' %}" class="hq-pulse-card" style="text-decoration:none">
       <div class="hq-pulse-icon" style="background:rgba(37,99,235,0.10);color:#2563eb;">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1379,6 +1389,17 @@
         <div class="hq-nav-item__body">
           <span class="hq-nav-item__title">Safe Operations</span>
           <span class="hq-nav-item__desc">Device locks &amp; risk controls</span>
+        </div>
+        <div class="hq-nav-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+      </a>
+
+      <a href="{% url 'device_lock:hq_lock_centre' %}" class="hq-nav-item">
+        <div class="hq-nav-item__icon ni-red">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="hq-nav-item__body">
+          <span class="hq-nav-item__title">Device Lock Centre</span>
+          <span class="hq-nav-item__desc">Enroll, lock, unlock &amp; audit devices</span>
         </div>
         <div class="hq-nav-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
       </a>

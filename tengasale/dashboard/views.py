@@ -250,6 +250,12 @@ def hq_dashboard(request):
         open_tickets_count = 0
         critical_bugs_count = 0
 
+    try:
+        from device_lock.models import DeviceLockProfile
+        lock_locked_count = DeviceLockProfile.objects.filter(lock_status="locked").count()
+    except Exception:
+        lock_locked_count = 0
+
     context = {
         "total_merchants": total_merchants,
         "total_underwriters": total_underwriters,
@@ -260,6 +266,7 @@ def hq_dashboard(request):
         "awaiting_hq_count": awaiting_hq_count,
         "open_tickets_count": open_tickets_count,
         "critical_bugs_count": critical_bugs_count,
+        "lock_locked_count": lock_locked_count,
         "pending_review_count": FinancingApplication.objects.filter(status="pending_review").count(),
         "under_review_count": FinancingApplication.objects.filter(status="under_review").count(),
         "approved_count": approved_count_total,

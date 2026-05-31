@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "website",
     "merchant_admin.apps.MerchantAdminConfig",
     "support.apps.SupportConfig",
+    "device_lock.apps.DeviceLockConfig",
 ]
 
 MIDDLEWARE = [
@@ -267,6 +268,30 @@ CORRECTION_TOKEN_EXPIRY_HOURS = int(os.environ.get("CORRECTION_TOKEN_EXPIRY_HOUR
 PAYCHANGU_CALLBACK_URL = os.environ.get("PAYCHANGU_CALLBACK_URL", "")
 
 APP_VERSION = "1.0.0"
+
+# ── Device Lock Integration Layer ─────────────────────────────────────────────
+# Master switch — set True when a real provider is available.
+# With False, all lock actions are no-ops but profiles/events are still created.
+DEVICE_LOCK_ENABLED = os.environ.get("DEVICE_LOCK_ENABLED", "False").lower() in ("true", "1", "yes")
+
+# Active lock provider: mock | samsung_knox | trustonic | paytrigger | none
+DEVICE_LOCK_PROVIDER = os.environ.get("DEVICE_LOCK_PROVIDER", "mock")
+
+# Strict mode: True = a lock failure blocks the related workflow step
+DEVICE_LOCK_STRICT_MODE = os.environ.get("DEVICE_LOCK_STRICT_MODE", "False").lower() in ("true", "1", "yes")
+
+# Automatic lifecycle hooks
+DEVICE_LOCK_AUTO_ENROLL = os.environ.get("DEVICE_LOCK_AUTO_ENROLL", "False").lower() in ("true", "1", "yes")
+DEVICE_LOCK_AUTO_LOCK = os.environ.get("DEVICE_LOCK_AUTO_LOCK", "False").lower() in ("true", "1", "yes")
+DEVICE_LOCK_AUTO_UNLOCK = os.environ.get("DEVICE_LOCK_AUTO_UNLOCK", "False").lower() in ("true", "1", "yes")
+
+# Provider API credentials (leave blank until real credentials are available)
+DEVICE_LOCK_WEBHOOK_SECRET = os.environ.get("DEVICE_LOCK_WEBHOOK_SECRET", "")
+DEVICE_LOCK_API_BASE_URL = os.environ.get("DEVICE_LOCK_API_BASE_URL", "")
+DEVICE_LOCK_API_KEY = os.environ.get("DEVICE_LOCK_API_KEY", "")
+DEVICE_LOCK_CLIENT_ID = os.environ.get("DEVICE_LOCK_CLIENT_ID", "")
+DEVICE_LOCK_CLIENT_SECRET = os.environ.get("DEVICE_LOCK_CLIENT_SECRET", "")
+DEVICE_LOCK_TIMEOUT_SECONDS = int(os.environ.get("DEVICE_LOCK_TIMEOUT_SECONDS", "20"))
 
 # ── IMEI Verification Settings ────────────────────────────────────────────────
 # Enable/disable the IMEI verification feature entirely

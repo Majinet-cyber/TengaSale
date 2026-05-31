@@ -20,6 +20,30 @@ def can_access_contract_flow(user, application):
     return application.created_by_id == user.id
 
 
+def _try_create_lock_profile(contract, triggered_by=None):
+    """
+    Create a DeviceLockProfile for the contract after IMEI is captured.
+    Auto-enrolls if DEVICE_LOCK_AUTO_ENROLL=True.
+    Never raises — failures are logged and shown as a warning, not an error.
+    """
+    try:
+        from services.device_lock.service import ensure_lock_profile_for_contract, enroll_device
+        from device_lock.models import DeviceLockEvent
+
+        profile, created = ensure_lock_profile_for_contract(contract)
+        if created:
+            logger.info("Created DeviceLockProfile pk=%s for contract %s", profile.pk, contract.contract_number)
+
+        if getattr(dj_settings, "DEVICE_LOCK_AUTO_ENROLL", False) and profile.lock_status == "not_enrolled":
+            enroll_device(
+                profile,
+                triggered_by=triggered_by,
+                trigger_source=DeviceLockEvent.SOURCE_SYSTEM,
+            )
+    except Exception:
+        logger.exception("Failed to create/enroll lock profile for contract %s", contract.pk)
+
+
 @merchant_required
 def contract_terms(request, app_id):
     application = get_object_or_404(
@@ -127,6 +151,9 @@ def contract_imei(request, contract_id):
                         "IMEI auto-verification failed for application %s", application.pk
                     )
 
+            # Create DeviceLockProfile (and optionally auto-enroll)
+            _try_create_lock_profile(contract, triggered_by=request.user)
+
             return redirect("contract_progress", contract_id=contract.id)
     else:
         form = ImeiForm(instance=contract)
@@ -163,26 +190,76 @@ def contract_progress(request, contract_id):
             application.save(update_fields=["status"])
             messages.success(request, "Warranty marked checked.")
         elif action == "locked":
-            # TODO: replace this placeholder with Upya device locking once integration is available.
             contract.phone_locked = True
             contract.status = Contract.STATUS_LOCKED
             contract.save(update_fields=["phone_locked", "status", "updated_at"])
             application.status = "deposit_pending"
             application.save(update_fields=["status"])
             messages.success(request, "Phone marked locked.")
+
+            # Fire device lock if auto-lock is enabled
+            if getattr(dj_settings, "DEVICE_LOCK_AUTO_LOCK", False):
+                try:
+                    from device_lock.models import DeviceLockProfile, DeviceLockEvent
+                    from services.device_lock.service import lock_device
+                    profile = DeviceLockProfile.objects.filter(contract=contract).first()
+                    if profile:
+                        lock_device(
+                            profile,
+                            reason="Contract marked locked by merchant",
+                            triggered_by=request.user,
+                            trigger_source=DeviceLockEvent.SOURCE_MERCHANT,
+                        )
+                except Exception:
+                    logger.exception("Auto-lock failed for contract %s", contract.pk)
+
         elif action == "deposit":
-            # TODO: replace this placeholder with deposit payment verification once integration is available.
             contract.deposit_paid = True
             contract.status = Contract.STATUS_COMPLETE
             contract.save(update_fields=["deposit_paid", "status", "updated_at"])
             application.status = "contract_complete"
             application.save(update_fields=["status"])
             process_contract_completion(application)
+
+            # Fire device release if policy says so
+            try:
+                from device_lock.models import DeviceLockProfile, DeviceLockEvent
+                from services.device_lock.service import release_device, evaluate_lock_policy
+                profile = DeviceLockProfile.objects.filter(contract=contract).first()
+                if profile:
+                    evaluation = evaluate_lock_policy(contract)
+                    if evaluation.get("action") == "release" and getattr(dj_settings, "DEVICE_LOCK_AUTO_UNLOCK", False):
+                        release_device(
+                            profile,
+                            reason="Contract completed — auto-release",
+                            triggered_by=request.user,
+                            trigger_source=DeviceLockEvent.SOURCE_SYSTEM,
+                        )
+            except Exception:
+                logger.exception("Auto-release failed for contract %s", contract.pk)
+
             return redirect("contract_complete", contract_id=contract.id)
 
         return redirect("contract_progress", contract_id=contract.id)
 
-    return render(request, "contracts/progress.html", {"contract": contract, "application": application})
+    # Fetch lock profile for display
+    lock_profile = None
+    lock_readiness = None
+    try:
+        from device_lock.models import DeviceLockProfile
+        from services.device_lock.service import get_lock_readiness
+        lock_profile = DeviceLockProfile.objects.filter(contract=contract).first()
+        if lock_profile:
+            lock_readiness = get_lock_readiness(lock_profile)
+    except Exception:
+        pass
+
+    return render(request, "contracts/progress.html", {
+        "contract": contract,
+        "application": application,
+        "lock_profile": lock_profile,
+        "lock_readiness": lock_readiness,
+    })
 
 
 @merchant_required
@@ -198,6 +275,22 @@ def contract_detail(request, contract_id):
     contract = get_object_or_404(Contract.objects.select_related("application", "merchant"), id=contract_id)
     if not can_access_contract_flow(request.user, contract.application):
         raise PermissionDenied
-    return render(request, "contracts/detail.html", {"contract": contract, "application": contract.application})
 
-# Create your views here.
+    lock_profile = None
+    lock_readiness = None
+    try:
+        from device_lock.models import DeviceLockProfile
+        from services.device_lock.service import get_lock_readiness
+        lock_profile = DeviceLockProfile.objects.filter(contract=contract).first()
+        if lock_profile:
+            lock_readiness = get_lock_readiness(lock_profile)
+    except Exception:
+        pass
+
+    return render(request, "contracts/detail.html", {
+        "contract": contract,
+        "application": contract.application,
+        "lock_profile": lock_profile,
+        "lock_readiness": lock_readiness,
+        "can_control_lock": False,  # Merchants see status only, not controls
+    })

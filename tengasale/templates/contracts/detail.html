@@ -44,4 +44,6 @@
     </div>
 {% endif %}
 
+{% include "device_lock/lock_card_partial.html" with lock_profile=lock_profile lock_readiness=lock_readiness can_control_lock=can_control_lock %}
+
 {% endblock %}

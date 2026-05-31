@@ -1,0 +1,384 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Device Lock Centre — TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<style>
+.dlc-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.dlc-hdr { padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; margin-bottom:24px; }
+.dlc-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
+.dlc-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-bottom:28px; }
+.kpi-card { border-radius:14px; padding:16px 14px 14px; text-align:center; background:#fff; border:1.5px solid #f1f5f9; box-shadow:0 2px 8px rgba(15,23,42,.05); }
+.kpi-card .kpi-value { font-size:1.9rem; font-weight:900; line-height:1; }
+.kpi-card .kpi-label { font-size:0.72rem; color:#64748b; margin-top:4px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; }
+.kpi-card.kpi-locked .kpi-value { color:#dc2626; }
+.kpi-card.kpi-unlocked .kpi-value { color:#16a34a; }
+.kpi-card.kpi-enrolled .kpi-value { color:#16a34a; }
+.kpi-card.kpi-pending .kpi-value { color:#d97706; }
+.kpi-card.kpi-fail .kpi-value { color:#dc2626; }
+.kpi-card.kpi-grey .kpi-value { color:#475569; }
+.kpi-card.kpi-orange .kpi-value { color:#ff6b1a; }
+
+.dlc-card { border-radius:14px; border:1.5px solid #f1f5f9; box-shadow:0 2px 8px rgba(15,23,42,.06); overflow:hidden; margin-bottom:20px; }
+.dlc-card .card-header { background:#fff8f0; color:#ff6b1a; font-size:0.88rem; font-weight:700; padding:10px 16px; border-bottom:1px solid #ffe4cc; }
+.dlc-card .card-body { background:#fff; padding:0; }
+
+.lock-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
+.lock-badge-locked { background:#fee2e2; color:#dc2626; }
+.lock-badge-unlocked { background:#dcfce7; color:#16a34a; }
+.lock-badge-enrolled { background:#dcfce7; color:#16a34a; }
+.lock-badge-active { background:#dcfce7; color:#16a34a; }
+.lock-badge-pending { background:#fef3c7; color:#d97706; }
+.lock-badge-failed { background:#fee2e2; color:#dc2626; }
+.lock-badge-not_enrolled { background:#f1f5f9; color:#64748b; }
+.lock-badge-released { background:#f1f5f9; color:#475569; }
+.lock-badge-unknown { background:#f1f5f9; color:#94a3b8; }
+
+.provider-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700; background:#fff0e6; color:#ff6b1a; border:1px solid #ffe4cc; }
+.provider-mock { background:#fff0e6; color:#ff6b1a; border-color:#ffe4cc; }
+
+.action-form { display:inline; }
+.action-btn { font-size:0.72rem; padding:3px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+.action-btn-enroll { background:#ff6b1a; color:#fff; }
+.action-btn-lock { background:#dc2626; color:#fff; }
+.action-btn-unlock { background:#16a34a; color:#fff; }
+.action-btn-release { background:#475569; color:#fff; }
+.action-btn-sync { background:#0ea5e9; color:#fff; }
+
+.warning-banner { border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:0.82rem; font-weight:600; background:#fff7ed; border:1.5px solid #fed7aa; color:#9a3412; }
+.mock-banner { border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:0.82rem; font-weight:600; background:#fff0e6; border:1.5px solid #ffe4cc; color:#9a3412; }
+.disabled-banner { border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:0.82rem; font-weight:600; background:#f8fafc; border:1.5px solid #e2e8f0; color:#475569; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dlc-wrap" data-testid="device-lock-centre">
+
+  <div class="dlc-hdr">
+    <div style="margin-bottom:4px;">
+      <a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a>
+    </div>
+    <h1 class="dlc-title">🔐 Device Lock Control Centre</h1>
+    <p class="dlc-sub">Provider-agnostic device lock management. All actions are audited.</p>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{% if msg.tags == 'error' %}danger{% elif msg.tags == 'success' %}success{% else %}info{% endif %} mb-3" role="alert">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not lock_enabled %}
+    <div class="disabled-banner">
+      ⚙️ <strong>DEVICE_LOCK_ENABLED = False</strong> — Lock actions are disabled globally. All operations will be no-ops until enabled in settings.
+    </div>
+  {% endif %}
+
+  {% if lock_provider == "mock" %}
+    <div class="mock-banner">
+      🧪 <strong>Mock provider active</strong> — No real device actions are performed. Safe for demos and development. Set <code>DEVICE_LOCK_PROVIDER</code> to a real provider when ready.
+    </div>
+  {% endif %}
+
+  {# ── KPI Cards ── #}
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-value">{{ stats.lockable }}</div>
+      <div class="kpi-label">Lockable Devices</div>
+    </div>
+    <div class="kpi-card kpi-enrolled">
+      <div class="kpi-value">{{ stats.enrolled }}</div>
+      <div class="kpi-label">Enrolled</div>
+    </div>
+    <div class="kpi-card kpi-locked">
+      <div class="kpi-value">{{ stats.locked }}</div>
+      <div class="kpi-label">Locked</div>
+    </div>
+    <div class="kpi-card kpi-pending">
+      <div class="kpi-value">{{ stats.unlock_pending }}</div>
+      <div class="kpi-label">Unlock Pending</div>
+    </div>
+    <div class="kpi-card kpi-pending">
+      <div class="kpi-value">{{ stats.lock_pending }}</div>
+      <div class="kpi-label">Lock Pending</div>
+    </div>
+    <div class="kpi-card kpi-fail">
+      <div class="kpi-value">{{ stats.failures }}</div>
+      <div class="kpi-label">Lock Failures</div>
+    </div>
+    <div class="kpi-card kpi-grey">
+      <div class="kpi-value">{{ stats.not_enrolled }}</div>
+      <div class="kpi-label">Not Enrolled</div>
+    </div>
+    <div class="kpi-card kpi-grey">
+      <div class="kpi-value">{{ stats.released }}</div>
+      <div class="kpi-label">Released</div>
+    </div>
+  </div>
+
+  {# ── A: Devices needing enrollment ── #}
+  <div class="dlc-card">
+    <div class="card-header">📋 A — Devices Needing Enrollment ({{ needs_enrollment|length }})</div>
+    <div class="card-body">
+      {% if needs_enrollment %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th>IMEI</th><th>Customer</th><th>Deal</th><th>Provider</th><th>Created</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in needs_enrollment %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td>{{ p.customer_name|default:"—" }}</td>
+                <td>{{ p.deal_name|default:"—"|truncatechars:30 }}</td>
+                <td><span class="provider-badge provider-{{ p.lock_provider }}">{{ p.get_lock_provider_display }}</span></td>
+                <td>{{ p.created_at|date:"d M Y" }}</td>
+                <td>
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' p.pk %}"
+                        onsubmit="return confirm('Enroll IMEI {{ p.imei }}?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="enroll">
+                    <button type="submit" class="action-btn action-btn-enroll">Enroll</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No devices awaiting enrollment.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── B: Overdue Lock Candidates ── #}
+  <div class="dlc-card">
+    <div class="card-header">⚠️ B — Overdue Lock Candidates ({{ overdue_candidates|length }})</div>
+    <div class="card-body">
+      {% if overdue_candidates %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th>IMEI</th><th>Customer</th><th>Status</th><th>Provider</th><th>Last Sync</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in overdue_candidates %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td>{{ p.customer_name|default:"—" }}</td>
+                <td><span class="lock-badge lock-badge-{{ p.lock_status }}">{{ p.get_lock_status_display }}</span></td>
+                <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
+                <td>{{ p.last_sync_at|date:"d M Y H:i"|default:"Never" }}</td>
+                <td>
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' p.pk %}"
+                        onsubmit="return confirm('Lock IMEI {{ p.imei }}?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="lock">
+                    <input type="hidden" name="reason" value="Overdue — manual HQ lock">
+                    <button type="submit" class="action-btn action-btn-lock">Lock</button>
+                  </form>
+                  &nbsp;
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' p.pk %}"
+                        onsubmit="return confirm('Sync status for IMEI {{ p.imei }}?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="sync">
+                    <button type="submit" class="action-btn action-btn-sync">Sync</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No enrolled devices flagged as overdue candidates.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── C: Locked Devices ── #}
+  <div class="dlc-card">
+    <div class="card-header">🔒 C — Locked Devices ({{ locked_devices|length }})</div>
+    <div class="card-body">
+      {% if locked_devices %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th>IMEI</th><th>Customer</th><th>Provider</th><th>Last Locked</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in locked_devices %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td>{{ p.customer_name|default:"—" }}</td>
+                <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
+                <td>{{ p.last_lock_attempt_at|date:"d M Y H:i"|default:"—" }}</td>
+                <td>
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' p.pk %}"
+                        onsubmit="return confirm('Unlock IMEI {{ p.imei }}?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="unlock">
+                    <input type="hidden" name="reason" value="Manual HQ unlock">
+                    <button type="submit" class="action-btn action-btn-unlock">Unlock</button>
+                  </form>
+                  &nbsp;
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' p.pk %}"
+                        onsubmit="return confirm('Release IMEI {{ p.imei }} permanently?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="release">
+                    <input type="hidden" name="reason" value="Manual HQ release">
+                    <button type="submit" class="action-btn action-btn-release">Release</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No devices currently locked.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── D: Failed Actions ── #}
+  <div class="dlc-card">
+    <div class="card-header">❌ D — Failed Lock / Unlock Actions ({{ failed_actions|length }})</div>
+    <div class="card-body">
+      {% if failed_actions %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th>IMEI</th><th>Event</th><th>Error</th><th>By</th><th>When</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ev in failed_actions %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff6b1a;">{{ ev.lock_profile.imei }}</a></td>
+                <td><span class="lock-badge lock-badge-failed">{{ ev.get_event_type_display }}</span></td>
+                <td class="text-danger" style="max-width:220px;">{{ ev.error_message|default:"—"|truncatechars:80 }}</td>
+                <td>{{ ev.triggered_by.username|default:"system" }}</td>
+                <td>{{ ev.created_at|date:"d M H:i" }}</td>
+                <td>
+                  <form class="action-form" method="post" action="{% url 'device_lock:lock_action' ev.lock_profile.pk %}"
+                        onsubmit="return confirm('Retry sync for {{ ev.lock_profile.imei }}?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="sync">
+                    <button type="submit" class="action-btn action-btn-sync">Retry Sync</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No recent lock/unlock failures.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── E: Recently Synced ── #}
+  <div class="dlc-card">
+    <div class="card-header">🔄 E — Recently Synced Devices</div>
+    <div class="card-body">
+      {% if recent_synced %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light">
+              <tr><th>IMEI</th><th>Status</th><th>Provider</th><th>Last Sync</th></tr>
+            </thead>
+            <tbody>
+              {% for p in recent_synced %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;">{{ p.imei }}</a></td>
+                <td><span class="lock-badge lock-badge-{{ p.lock_status }}">{{ p.get_lock_status_display }}</span></td>
+                <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
+                <td>{{ p.last_sync_at|date:"d M Y H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No devices have been synced yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Recent Audit Events ── #}
+  <div class="dlc-card">
+    <div class="card-header">📜 Recent Lock Events (Audit Log)</div>
+    <div class="card-body">
+      {% if recent_events %}
+        <div style="overflow-x:auto;">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.78rem;">
+            <thead class="table-light">
+              <tr><th>IMEI</th><th>Event</th><th>Before</th><th>After</th><th>By</th><th>Source</th><th>When</th></tr>
+            </thead>
+            <tbody>
+              {% for ev in recent_events %}
+              <tr>
+                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff6b1a;">{{ ev.lock_profile.imei }}</a></td>
+                <td>{{ ev.get_event_type_display }}</td>
+                <td>{{ ev.status_before|default:"—" }}</td>
+                <td>{{ ev.status_after|default:"—" }}</td>
+                <td>{{ ev.triggered_by.username|default:"system" }}</td>
+                <td>{{ ev.get_trigger_source_display }}</td>
+                <td>{{ ev.created_at|date:"d M H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted small p-3 mb-0">No lock events recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Active Policies ── #}
+  {% if policies %}
+  <div class="dlc-card">
+    <div class="card-header">📋 Lock Policies</div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+        <table class="table table-sm mb-0" style="font-size:0.82rem;">
+          <thead class="table-light">
+            <tr><th>Name</th><th>Grace Days</th><th>Lock After Days</th><th>Auto-Unlock</th><th>Auto-Release</th><th>Active</th></tr>
+          </thead>
+          <tbody>
+            {% for pol in policies %}
+            <tr>
+              <td>{{ pol.name }}</td>
+              <td>{{ pol.grace_period_days }}</td>
+              <td>{{ pol.lock_after_days_overdue }}</td>
+              <td>{% if pol.unlock_when_paid_to_date %}✅{% else %}❌{% endif %}</td>
+              <td>{% if pol.release_when_contract_completed %}✅{% else %}❌{% endif %}</td>
+              <td>{% if pol.is_active %}<span class="lock-badge lock-badge-enrolled">Active</span>{% else %}<span class="lock-badge lock-badge-not_enrolled">Inactive</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
