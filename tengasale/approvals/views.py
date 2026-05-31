@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.decorators import underwriter_required
 from applications.models import ApplicationCorrection, FinancingApplication
+from applications.services import calculate_repayment_confidence  # noqa: E402
 from commissions.models import Commission
 from commissions.services import cancel_application_commissions, process_application_approval
 
@@ -183,10 +184,11 @@ def review_application(request, app_id):
         ("Location Check", reverse("underwriter_location_check", args=[app.id])),
         ("Final Decision", reverse("underwriter_final_review", args=[app.id])),
     ]
+    confidence = calculate_repayment_confidence(app)
     return render(
         request,
         "dashboard/underwriter_review_summary.html",
-        {"app": app, "review": review, "steps": steps, "is_hub": True, **correction_context(app)},
+        {"app": app, "review": review, "steps": steps, "is_hub": True, "confidence": confidence, **correction_context(app)},
     )
 
 
@@ -223,7 +225,8 @@ def summary_review(request, app_id):
         review.save(update_fields=["summary_clear", "updated_at"])
         messages.success(request, "Summary review saved.")
         return redirect("underwriter_identity_check", app_id=app.id)
-    return render(request, "dashboard/underwriter_review_summary.html", {"app": app, "review": review, "is_hub": False, **correction_context(app)})
+    confidence = calculate_repayment_confidence(app)
+    return render(request, "dashboard/underwriter_review_summary.html", {"app": app, "review": review, "is_hub": False, "confidence": confidence, **correction_context(app)})
 
 
 @underwriter_required(sensitive=True)

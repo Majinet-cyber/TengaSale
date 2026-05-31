@@ -16,13 +16,12 @@
         Smartphone Financing for Malawi
       </span>
       <h1 class="hero__headline">
-        Phone financing built for<br>
+        Smartphone financing built for<br>
         <em>real merchants and real repayments.</em>
       </h1>
       <p class="hero__body">
-        TengaSale helps merchants offer smartphones on structured instalments,
-        with repayment tracking, customer records, payment visibility,
-        and contract support built into one platform.
+        TengaSale helps smartphone merchants offer instalment sales with customer records,
+        contract tracking, repayment visibility, and device-lock readiness — in one platform.
       </p>
       <div class="hero__ctas">
         <a href="{% url 'portal_search' %}" class="btn-primary">
@@ -184,20 +183,41 @@
 <!-- ── Live Stats Strip ───────────────────────────────────────── -->
 <div class="live-stats-strip">
   <div class="live-stats-strip__inner">
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_contracts|default:"0" }}</span>
-      <span class="live-stat__lbl">Contracts activated</span>
+
+    <div class="live-stat-pill">
+      <div class="live-stat-pill__icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="live-stat-pill__body">
+        <span class="live-stat-pill__val">{{ landing_stats.total_contracts|default:"0" }}</span>
+        <span class="live-stat-pill__lbl">Smart contracts</span>
+      </div>
     </div>
-    <div class="live-stat-divider" aria-hidden="true"></div>
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_disbursed_formatted|default:"MWK 0" }}</span>
-      <span class="live-stat__lbl">Total collected</span>
+
+    <div class="live-stat-pill__sep" aria-hidden="true"></div>
+
+    <div class="live-stat-pill">
+      <div class="live-stat-pill__icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="live-stat-pill__body">
+        <span class="live-stat-pill__val">{{ landing_stats.total_disbursed_formatted|default:"MWK 0" }}</span>
+        <span class="live-stat-pill__lbl">MWK disbursed</span>
+      </div>
     </div>
-    <div class="live-stat-divider" aria-hidden="true"></div>
-    <div class="live-stat">
-      <span class="live-stat__val">{{ landing_stats.total_customers|default:"0" }}</span>
-      <span class="live-stat__lbl">Customers connected</span>
+
+    <div class="live-stat-pill__sep" aria-hidden="true"></div>
+
+    <div class="live-stat-pill">
+      <div class="live-stat-pill__icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="live-stat-pill__body">
+        <span class="live-stat-pill__val">{{ landing_stats.total_customers|default:"0" }}</span>
+        <span class="live-stat-pill__lbl">Customers connected</span>
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -465,39 +485,53 @@
   </div>
 </section>
 
-<!-- ── Merchant Social Proof ───────────────────────────────────── -->
-{% if merchant_quotes %}
-<section class="site-section site-section--alt" id="merchant-stories">
+<!-- ── Built for Real Malawian Smartphone Merchants ──────────── -->
+<section class="site-section site-section--alt" id="merchant-value">
   <div class="site-section__inner">
-    <span class="section-eyebrow">Merchant Stories</span>
-    <h2 class="section-heading section-heading--center">What merchants say</h2>
+    <span class="section-eyebrow">Built for real merchants</span>
+    <h2 class="section-heading section-heading--center">Built for real Malawian smartphone merchants</h2>
     <p class="section-sub section-sub--center" style="margin-bottom:40px">
-      Real merchants. Real results. TengaSale is built for the people who run phone shops across Malawi.
+      TengaSale gives smartphone merchants the infrastructure they need to offer financing
+      professionally — without building anything themselves.
     </p>
-    <div class="merchant-quotes-grid">
-      {% for q in merchant_quotes %}
-      <div class="merchant-quote-card">
-        <div class="merchant-quote-card__body">
-          <div class="merchant-quote-card__quote-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="currentColor"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" fill="currentColor"/></svg>
-          </div>
-          <p class="merchant-quote-card__text">{{ q.quote }}</p>
+    <div class="merchant-value-grid">
+
+      <div class="merchant-value-card">
+        <div class="merchant-value-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
         </div>
-        <div class="merchant-quote-card__footer">
-          <div class="merchant-quote-card__avatar" aria-hidden="true">
-            {{ q.merchant_name|slice:":1" }}
-          </div>
-          <div class="merchant-quote-card__meta">
-            <div class="merchant-quote-card__name">{{ q.merchant_name }}</div>
-            <div class="merchant-quote-card__shop">{{ q.shop_name }} · {{ q.city }}</div>
-          </div>
-        </div>
+        <h3 class="merchant-value-card__title">Faster applications</h3>
+        <p class="merchant-value-card__body">
+          Submit customer financing applications in minutes — directly from your shop.
+          No paperwork queues. No branch visits. No delays.
+        </p>
       </div>
-      {% endfor %}
+
+      <div class="merchant-value-card">
+        <div class="merchant-value-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3 class="merchant-value-card__title">Better repayment visibility</h3>
+        <p class="merchant-value-card__body">
+          See real-time repayment status across your full portfolio. Know which contracts
+          are on track, overdue, or completed — at a glance.
+        </p>
+      </div>
+
+      <div class="merchant-value-card">
+        <div class="merchant-value-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h3 class="merchant-value-card__title">Cleaner merchant records</h3>
+        <p class="merchant-value-card__body">
+          Every contract, payment, and customer record is structured, numbered, and
+          audit-ready. Your business stays organised even as your portfolio grows.
+        </p>
+      </div>
+
     </div>
   </div>
 </section>
-{% endif %}
 
 <!-- ── Trust & Compliance — LIGHT GLASS ───────────────────────── -->
 <section class="site-section site-section--light" id="compliance">
@@ -572,7 +606,7 @@
 <section class="site-section" id="trust">
   <div class="site-section__inner">
     <span class="section-eyebrow">Platform Foundations</span>
-    <h2 class="section-heading section-heading--center">Built for controlled phone financing</h2>
+    <h2 class="section-heading section-heading--center">Built for controlled smartphone financing</h2>
     <p class="section-sub section-sub--center">
       TengaSale is structured around the records, controls, and accountability workflows
       that responsible smartphone financing requires — from customer identity to final repayment.

@@ -3050,69 +3050,172 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Live Stats Strip ─────────────────────────────────────────── */
+/* ── Live Stats Strip — glassmorphic pill design ─────────────── */
 .live-stats-strip {
-  background: var(--w-orange);
-  padding: 14px 20px;
+  padding: 20px 20px 0;
+  background: transparent;
 }
 
 .live-stats-strip__inner {
   max-width: var(--w-max);
   margin: 0 auto;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: 0;
   flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(255, 106, 0, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(255, 106, 0, 0.08), 0 1px 4px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
 }
 
-.live-stat {
+.live-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 32px;
+  flex: 1;
+  min-width: 0;
+}
+
+.live-stat-pill__icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 106, 0, 0.10);
+  border-radius: 11px;
+  color: var(--w-orange);
+  flex-shrink: 0;
+}
+
+.live-stat-pill__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.live-stat-pill__body {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 6px 32px;
-  gap: 2px;
+  gap: 1px;
+  min-width: 0;
 }
 
-.live-stat__val {
-  font-size: 22px;
+.live-stat-pill__val {
+  font-size: 20px;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--w-black);
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-.live-stat__lbl {
+.live-stat-pill__lbl {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.80);
+  color: var(--w-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
-.live-stat-divider {
+.live-stat-pill__sep {
   width: 1px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.30);
+  background: rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
+  align-self: stretch;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 680px) {
+  .live-stats-strip {
+    padding: 16px 12px 0;
+  }
   .live-stats-strip__inner {
-    gap: 8px;
+    flex-direction: column;
+    border-radius: 16px;
   }
-  .live-stat {
-    padding: 4px 18px;
+  .live-stat-pill {
+    padding: 14px 20px;
+    width: 100%;
   }
-  .live-stat-divider {
-    display: none;
+  .live-stat-pill__sep {
+    width: 100%;
+    height: 1px;
   }
-  .live-stat__val {
+  .live-stat-pill__val {
     font-size: 18px;
   }
 }
 
-/* ── Merchant Quotes / Social Proof ──────────────────────────── */
+/* ── Merchant Value Cards ─────────────────────────────────────── */
+.merchant-value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 860px) {
+  .merchant-value-grid {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+.merchant-value-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--w-radius-lg);
+  box-shadow: var(--w-shadow);
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.merchant-value-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--w-shadow-lg);
+  border-color: rgba(255, 106, 0, 0.22);
+}
+
+.merchant-value-card__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 106, 0, 0.10);
+  border-radius: 14px;
+  color: var(--w-orange);
+  flex-shrink: 0;
+}
+
+.merchant-value-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.merchant-value-card__title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--w-black);
+  line-height: 1.2;
+}
+
+.merchant-value-card__body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--w-muted);
+}
+
+/* ── Merchant Quotes / Social Proof (kept for future real content) */
 .merchant-quotes-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3129,44 +3232,6 @@ a { color: inherit; text-decoration: none; }
   .merchant-quotes-grid {
     grid-template-columns: 1fr;
   }
-}
-
-.merchant-quote-card {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
-  border-radius: var(--w-radius-lg);
-  box-shadow: var(--w-shadow);
-  padding: 24px 22px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.merchant-quote-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--w-shadow-lg);
-  border-color: rgba(255, 106, 0, 0.20);
-}
-
-.merchant-quote-card__body {
-  flex: 1;
-}
-
-.merchant-quote-card__quote-icon {
-  color: var(--w-orange);
-  opacity: 0.55;
-  margin-bottom: 10px;
-  display: block;
-}
-
-.merchant-quote-card__text {
-  font-size: 14.5px;
-  line-height: 1.65;
-  color: var(--w-text);
-  font-style: italic;
 }
 
 .merchant-quote-card__footer {

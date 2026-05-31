@@ -1,0 +1,57 @@
+{% comment %}
+Application stepper progress indicator.
+Usage: {% include "applications/partials/stepper.html" with current_step=1 %}
+Steps: 1=Customer, 2=Smartphone, 3=Location, 4=Work, 5=KYC, 6=Signature, 7=Review
+{% endcomment %}
+{% load static %}
+<div class="app-stepper" role="progressbar" aria-label="Application progress" aria-valuenow="{{ current_step }}" aria-valuemax="7">
+
+  {% comment %}Step 1{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 1 %}app-stepper__step--done{% elif current_step == 1 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 1 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}1{% endif %}</div>
+    <div class="app-stepper__label">Customer</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 1 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 2{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 2 %}app-stepper__step--done{% elif current_step == 2 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 2 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}2{% endif %}</div>
+    <div class="app-stepper__label">Smartphone</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 2 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 3{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 3 %}app-stepper__step--done{% elif current_step == 3 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 3 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}3{% endif %}</div>
+    <div class="app-stepper__label">Location</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 3 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 4{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 4 %}app-stepper__step--done{% elif current_step == 4 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 4 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}4{% endif %}</div>
+    <div class="app-stepper__label">Work</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 4 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 5{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 5 %}app-stepper__step--done{% elif current_step == 5 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 5 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}5{% endif %}</div>
+    <div class="app-stepper__label">KYC</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 5 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 6{% endcomment %}
+  <div class="app-stepper__step {% if current_step > 6 %}app-stepper__step--done{% elif current_step == 6 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">{% if current_step > 6 %}<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>{% else %}6{% endif %}</div>
+    <div class="app-stepper__label">Sign</div>
+  </div>
+  <div class="app-stepper__line{% if current_step > 6 %} app-stepper__line--done{% endif %}"></div>
+
+  {% comment %}Step 7{% endcomment %}
+  <div class="app-stepper__step {% if current_step == 7 %}app-stepper__step--active{% endif %}">
+    <div class="app-stepper__dot">7</div>
+    <div class="app-stepper__label">Review</div>
+  </div>
+
+</div>

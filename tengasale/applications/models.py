@@ -278,6 +278,30 @@ class FinancingApplication(models.Model):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
+    # ── Repayment Confidence Signal ───────────────────────────────────────────
+    RISK_BAND_LOW = "low"
+    RISK_BAND_MEDIUM = "medium"
+    RISK_BAND_HIGH = "high"
+    RISK_BAND_CHOICES = [
+        (RISK_BAND_LOW, "Low risk"),
+        (RISK_BAND_MEDIUM, "Medium risk"),
+        (RISK_BAND_HIGH, "High risk"),
+    ]
+
+    repayment_confidence_score = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Rule-based repayment confidence estimate 0–100. Null means not yet calculated.",
+    )
+    risk_band = models.CharField(
+        max_length=10, choices=RISK_BAND_CHOICES, blank=True, default="",
+        help_text="Risk band derived from confidence score.",
+    )
+    recommendation_note = models.TextField(
+        blank=True, default="",
+        help_text="Human-readable rule-based recommendation note.",
+    )
+    confidence_calculated_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):

@@ -341,10 +341,10 @@ img.ts-logo-hero {
     margin-bottom: 24px;
     padding: 22px;
     border-radius: 18px;
-    background: #2367c7;
+    background: linear-gradient(135deg, #ff6a00, #e05400);
     color: #ffffff;
     text-decoration: none;
-    box-shadow: 0 14px 26px rgba(35, 103, 199, 0.2);
+    box-shadow: 0 14px 26px rgba(255, 106, 0, 0.25);
 }
 
 .active-review-card span {
@@ -465,8 +465,8 @@ img.ts-logo-hero {
     place-items: center;
     flex: 0 0 auto;
     border-radius: 14px;
-    background: var(--blue-gray-soft);
-    color: var(--blue-gray);
+    background: var(--orange-soft);
+    color: var(--orange);
     font-size: 15px;
     font-weight: 900;
 }
@@ -484,15 +484,30 @@ img.ts-logo-hero {
     line-height: 1.25;
 }
 
+/* icon-active: orange brand (default action) */
+.icon-active {
+    background: var(--orange-soft);
+    color: var(--orange);
+}
+
+/* icon-success / icon-money: keep semantic green */
 .icon-success,
 .icon-money {
     background: var(--green-soft);
     color: var(--green);
 }
 
+/* icon-alert: semantic red for danger */
 .icon-alert {
     background: var(--red-soft);
     color: var(--red);
+}
+
+/* icon-tools / icon-payments: orange brand */
+.icon-tools,
+.icon-payments {
+    background: var(--orange-soft);
+    color: var(--orange);
 }
 
 .arrow {
@@ -820,7 +835,7 @@ textarea:focus {
 }
 
 .btn-blue {
-    background: var(--blue-gray);
+    background: var(--orange);
     color: #ffffff;
 }
 
@@ -829,7 +844,7 @@ textarea:focus {
     display: inline-flex;
     align-items: center;
     min-height: 34px;
-    color: var(--blue-gray);
+    color: var(--orange);
     font-size: 13px;
     font-weight: 900;
     text-decoration: none;
@@ -4106,4 +4121,91 @@ table {
     max-width: 300px;
     margin: 0 auto;
     line-height: 1.55;
+}
+
+/* ── Application Stepper ─────────────────────────────────────── */
+.app-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 0 0 20px;
+    overflow-x: auto;
+    padding: 0 0 4px;
+    scrollbar-width: none;
+}
+.app-stepper::-webkit-scrollbar { display: none; }
+
+.app-stepper__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.app-stepper__dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 900;
+    background: #e2e8f0;
+    color: #7a828c;
+    transition: background 0.18s, color 0.18s;
+    flex-shrink: 0;
+}
+.app-stepper__dot svg {
+    width: 10px;
+    height: 10px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app-stepper__step--active .app-stepper__dot {
+    background: var(--orange);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.20);
+}
+
+.app-stepper__step--done .app-stepper__dot {
+    background: var(--green);
+    color: #fff;
+}
+
+.app-stepper__label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+.app-stepper__step--active .app-stepper__label {
+    color: var(--orange);
+}
+.app-stepper__step--done .app-stepper__label {
+    color: var(--green);
+}
+
+.app-stepper__line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin-bottom: 14px;
+    min-width: 12px;
+    max-width: 40px;
+    transition: background 0.18s;
+}
+.app-stepper__line--done {
+    background: var(--green);
+}
+
+/* ── Fix footer overlap with enough bottom padding ───────────── */
+.content {
+    padding-bottom: 96px !important;
 }
