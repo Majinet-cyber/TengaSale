@@ -1,8 +1,10 @@
 /* ================================================================
-   TENGASALE PUBLIC WEBSITE — website.css  v1.2
-   Self-contained design system for /site/ pages.
+   TENGASALE PUBLIC WEBSITE — website.css  v1.5
+   Self-contained design system for the public landing page.
    Does NOT depend on style.css.
    Light mode throughout. Glassmorphic premium fintech UI.
+   v1.4: Full ts-landing design system rewrite.
+   v1.5: ts-landing background, ts-live-stats-grid alias, anchor fixes.
    ================================================================ */
 
 /* ── Design Tokens ───────────────────────────────────────────── */
@@ -3446,6 +3448,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Landing root scope ───────────────────────────────────────── */
 .ts-landing {
+  /* Proof: if this background is missing, CSS is not loading correctly. */
+  background: #fffaf7;
+  color: #101828;
+  overflow-x: hidden;
   isolation: isolate;
 }
 
@@ -3834,6 +3840,22 @@ a { color: inherit; text-decoration: none; }
 }
 
 .ts-stats-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(255, 106, 0, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(255, 106, 0, 0.08), 0 1px 4px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+/* Alias — used in tests and any future stat grid variant */
+.ts-live-stats-grid {
   display: flex;
   align-items: stretch;
   justify-content: center;

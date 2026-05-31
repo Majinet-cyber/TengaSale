@@ -195,13 +195,53 @@ class PublicSiteTests(TestCase):
 
 
 class LandingPageUIRegressionTests(TestCase):
-    """Regression tests for landing page UI — locked in for v1.4 clean rewrite."""
+    """Regression tests for landing page UI — locked in for v1.5 clean rewrite."""
 
     def setUp(self):
         self.client = Client()
 
     def _get_landing(self):
         return self.client.get(reverse("website_landing"))
+
+    # ── Public homepage (/) returns 200 ──────────────────────────
+
+    def test_public_homepage_returns_200(self):
+        """The public homepage at / must return HTTP 200."""
+        response = self.client.get(reverse("public_home"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_public_homepage_has_ts_landing_class(self):
+        """The public homepage must include the ts-landing root class."""
+        response = self.client.get(reverse("public_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ts-landing")
+
+    def test_public_homepage_has_ts_live_stats_grid(self):
+        """The public homepage must include the ts-live-stats-grid stats container."""
+        response = self.client.get(reverse("public_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ts-live-stats-grid")
+
+    def test_public_homepage_has_how_it_works(self):
+        """The public homepage must include the 'How TengaSale works' section heading."""
+        response = self.client.get(reverse("public_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "How TengaSale works")
+
+    def test_public_homepage_no_james_phiri(self):
+        """The public homepage must not contain fake testimonial name James Phiri."""
+        response = self.client.get(reverse("public_home"))
+        self.assertNotIn("James Phiri", response.content.decode())
+
+    def test_public_homepage_no_grace_banda(self):
+        """The public homepage must not contain fake testimonial name Grace Banda."""
+        response = self.client.get(reverse("public_home"))
+        self.assertNotIn("Grace Banda", response.content.decode())
+
+    def test_public_homepage_no_kondwani_mwale(self):
+        """The public homepage must not contain fake testimonial name Kondwani Mwale."""
+        response = self.client.get(reverse("public_home"))
+        self.assertNotIn("Kondwani Mwale", response.content.decode())
 
     # ── Live stats ────────────────────────────────────────────────
 
@@ -354,14 +394,14 @@ class LandingPageUIRegressionTests(TestCase):
         self.assertIn("smartphone merchants", content.lower(),
             "Should use 'smartphone merchants' not bare 'phone merchants'")
 
-    def test_landing_css_version_1_4(self):
-        """Landing page must reference the v1.4 CSS to bust stale caches."""
+    def test_landing_css_version_1_5(self):
+        """Landing page must reference the v1.5 CSS to bust stale caches."""
         response = self._get_landing()
         content = response.content.decode()
         self.assertIn("website", content,
             "Page should reference website CSS")
-        self.assertIn("v=1.4", content,
-            "CSS cache-bust version must be v=1.4 for clean landing page rewrite")
+        self.assertIn("v=1.5", content,
+            "CSS cache-bust version must be v=1.5 for clean landing page rewrite")
 
     def test_landing_trust_chips_use_correct_labels(self):
         """Hero trust chips must use updated labels."""
