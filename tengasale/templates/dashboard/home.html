@@ -1,282 +1,265 @@
 {% extends "base/base.html" %}
 {% load ts_filters %}
 
-{% block extra_head %}
-<style>
-/* ── Merchant Dashboard Premium Styles ──────────────────────── */
-.mhome-hero {
-  background: linear-gradient(135deg, #ff6a00, #e05400);
-  border-radius: 20px;
-  padding: 22px 20px 18px;
-  margin-bottom: 18px;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-}
-.mhome-hero::after {
-  content: '';
-  position: absolute;
-  top: -30px; right: -30px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-}
-.mhome-hero__greeting { font-size: 0.78rem; font-weight: 600; opacity: 0.85; margin-bottom: 4px; }
-.mhome-hero__title { font-size: 1.35rem; font-weight: 900; line-height: 1.1; margin-bottom: 6px; }
-.mhome-hero__sub { font-size: 0.8rem; opacity: 0.80; margin-bottom: 16px; line-height: 1.45; }
-.mhome-hero__cta {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35);
-  color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 12px;
-  font-size: 0.9rem; font-weight: 800; backdrop-filter: blur(6px);
-  transition: background 0.14s;
-}
-.mhome-hero__cta:hover { background: rgba(255,255,255,0.28); }
-.mhome-hero__stats { display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; }
-.mhome-hero__stat { display: flex; flex-direction: column; gap: 1px; }
-.mhome-hero__stat-val { font-size: 1.1rem; font-weight: 900; }
-.mhome-hero__stat-lbl { font-size: 0.68rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-
-.mhome-section { margin-bottom: 18px; }
-.mhome-section-title {
-  font-size: 0.7rem; font-weight: 900; text-transform: uppercase;
-  letter-spacing: 0.07em; color: var(--muted); margin: 0 0 10px;
-}
-
-.mhome-action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.mhome-action-card {
-  display: flex; flex-direction: column; align-items: flex-start;
-  gap: 8px; padding: 16px 14px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 16px;
-  text-decoration: none;
-  color: var(--black);
-  transition: border-color 0.14s, box-shadow 0.14s;
-}
-.mhome-action-card:hover { border-color: var(--orange); box-shadow: 0 4px 16px rgba(255,106,0,0.10); }
-.mhome-action-card__icon {
-  width: 36px; height: 36px;
-  display: grid; place-items: center;
-  border-radius: 10px;
-  background: var(--orange-soft);
-  color: var(--orange);
-}
-.mhome-action-card__icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.mhome-action-card__icon--green { background: var(--green-soft); color: var(--green); }
-.mhome-action-card__icon--red { background: var(--red-soft); color: var(--red); }
-.mhome-action-card__label { font-size: 0.78rem; font-weight: 800; line-height: 1.2; }
-.mhome-action-card__sub { font-size: 0.68rem; color: var(--muted); line-height: 1.3; }
-
-.mhome-tools-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-
-.mhome-compact-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 10px;
-}
-.mhome-compact-card__header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
-}
-.mhome-compact-card__title { font-size: 0.88rem; font-weight: 800; }
-.mhome-compact-card__link {
-  font-size: 0.75rem; color: var(--orange); font-weight: 700;
-  text-decoration: none;
-}
-.mhome-compact-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.mhome-compact-stat { }
-.mhome-compact-stat__val { font-size: 1.1rem; font-weight: 900; }
-.mhome-compact-stat__val--green { color: var(--green); }
-.mhome-compact-stat__val--red { color: var(--red); }
-.mhome-compact-stat__lbl { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
-
-.mhome-support { display: flex; gap: 8px; flex-wrap: wrap; }
-@media (max-width: 400px) {
-  .mhome-action-grid, .mhome-tools-grid { grid-template-columns: 1fr 1fr; }
-}
-</style>
-{% endblock %}
-
 {% block content %}
 
-{# ── A. Hero / Welcome ──────────────────────────────────────── #}
-<div class="mhome-hero">
-  <div class="mhome-hero__greeting">Hello, {{ request.user.first_name|default:request.user.username }}</div>
-  <div class="mhome-hero__title">Merchant Dashboard</div>
-  <div class="mhome-hero__sub">Manage applications, track repayments, and grow your smartphone sales.</div>
-  <a href="{% url 'new_application' %}" class="mhome-hero__cta">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    New application
-  </a>
-  {% if device_financing_stats %}
-  <div class="mhome-hero__stats">
-    <div class="mhome-hero__stat">
-      <span class="mhome-hero__stat-val">{{ device_financing_stats.active_contracts }}</span>
-      <span class="mhome-hero__stat-lbl">Active contracts</span>
-    </div>
-    <div class="mhome-hero__stat">
-      <span class="mhome-hero__stat-val">{{ device_financing_stats.total_financed_devices }}</span>
-      <span class="mhome-hero__stat-lbl">Financed devices</span>
-    </div>
-    {% if device_financing_stats.overdue_contracts %}
-    <div class="mhome-hero__stat">
-      <span class="mhome-hero__stat-val">{{ device_financing_stats.overdue_contracts }}</span>
-      <span class="mhome-hero__stat-lbl">Overdue</span>
-    </div>
-    {% endif %}
+<h1 class="greeting">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
+<p style="font-size:0.8rem;color:var(--muted);margin:-6px 0 14px;font-weight:600;letter-spacing:0.03em;">Merchant Dashboard</p>
+
+{# ── Earnings summary ── #}
+<section class="stat-card earnings-home-card">
+  <span>TengaSale</span>
+  <h2>You are now earning more with TengaSale.</h2>
+  <strong class="amount-positive">Earnings {{ earnings_total|mwk }}</strong>
+  <a href="{% url 'earnings_home' %}" class="btn">View all earnings</a>
+</section>
+
+{# ── Spin & Win ── #}
+<section class="card spin-promo-card">
+  <div>
+    <span class="offer-kicker">Spin &amp; Win</span>
+    <h2>Jackpot rewards are live.</h2>
+    <p class="text-muted">{{ spin_wallet.available_spins }} spins available.</p>
   </div>
+  {% if spin_wallet.available_spins %}
+    <a href="{% url 'spin_rewards' %}" class="btn btn-outline">SPIN NOW</a>
+  {% else %}
+    <span class="btn disabled-button">0 spins available</span>
   {% endif %}
-</div>
+</section>
 
-{# ── B. Applications Section ───────────────────────────────── #}
-<div class="mhome-section">
-  <div class="mhome-section-title">Applications</div>
-  <div class="mhome-action-grid">
-    <a href="{% url 'active_applications' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M9 8h6M9 16h4"/></svg>
-      </div>
-      <div class="mhome-action-card__label">Active</div>
-      <div class="mhome-action-card__sub">In-progress applications</div>
-    </a>
-    <a href="{% url 'completed_applications' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon mhome-action-card__icon--green">
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div class="mhome-action-card__label">Completed</div>
-      <div class="mhome-action-card__sub">Approved &amp; contracted</div>
-    </a>
-    <a href="{% url 'rejected_applications' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon mhome-action-card__icon--red">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      </div>
-      <div class="mhome-action-card__label">Archived</div>
-      <div class="mhome-action-card__sub">Rejected &amp; closed</div>
+{# ── Support & business hours ── #}
+<section class="card support-card">
+  <h2>Business hours and support</h2>
+  {% if is_business_hours %}
+    <p>TengaSale support and application reviews are currently open.</p>
+  {% else %}
+    <p>You are outside TengaSale business hours, application reviews and support may be delayed.</p>
+  {% endif %}
+  <p class="text-muted">{{ business_hours_label }}<br>Current CAT time: {{ business_hours_now|date:"D H:i" }}</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{{ tengasale_whatsapp_link }}" class="btn btn-blue">WhatsApp +265883596135</a>
+    <a href="{% url 'ticket_create' %}" class="btn" style="background:rgba(255,107,26,0.12);color:#ff6a00;border:1.5px solid rgba(255,107,26,0.3)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Report issue
     </a>
   </div>
-</div>
+</section>
 
-{# ── C. Tools Section ─────────────────────────────────────── #}
-<div class="mhome-section">
-  <div class="mhome-section-title">Tools</div>
-  <div class="mhome-tools-grid">
-    <a href="{% url 'all_deals' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon">
-        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      </div>
-      <div class="mhome-action-card__label">All deals</div>
-      <div class="mhome-action-card__sub">Smartphone catalogue</div>
-    </a>
-    <a href="{% url 'earnings_home' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon mhome-action-card__icon--green">
-        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </div>
-      <div class="mhome-action-card__label">My earnings</div>
-      <div class="mhome-action-card__sub">Commission &amp; wallet</div>
-    </a>
-    <a href="{% url 'payments_home' %}" class="mhome-action-card">
-      <div class="mhome-action-card__icon">
-        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      </div>
-      <div class="mhome-action-card__label">Payments</div>
-      <div class="mhome-action-card__sub">MoMo &amp; payment records</div>
-    </a>
+{# ── New Application CTA ── #}
+<a href="{% url 'new_application' %}" class="new-application-button">
+  New application
+</a>
+
+{# ── Cash Settlements ── #}
+<section class="card" data-testid="merchant-payout-row">
+  <div class="section-title-row">
+    <h2>Cash Settlements</h2>
+    <a href="{% url 'financing_dashboard' %}" class="text-link">View details</a>
   </div>
-</div>
-
-{# ── D. Cash Settlements ───────────────────────────────────── #}
-{% if merchant_payout_summary %}
-<div class="mhome-section">
-  <div class="mhome-section-title">Cash Settlements</div>
-  <div class="mhome-compact-card" data-testid="merchant-payout-row">
-    <div class="mhome-compact-card__header">
-      <span class="mhome-compact-card__title">Settlement summary</span>
-      <a href="{% url 'financing_dashboard' %}" class="mhome-compact-card__link">View details →</a>
+  {% if merchant_payout_summary %}
+  <div class="metric-grid compact-metrics">
+    <div>
+      <span>Pending settlements</span>
+      <strong>{{ merchant_payout_summary.pending_count }}</strong>
     </div>
-    <div class="mhome-compact-stats">
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val">{{ merchant_payout_summary.pending_count }}</div>
-        <div class="mhome-compact-stat__lbl">Pending settlements</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val mhome-compact-stat__val--green">{{ merchant_payout_summary.pending_total|mwk }}</div>
-        <div class="mhome-compact-stat__lbl">Pending value</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val">{{ merchant_payout_summary.paid_count }}</div>
-        <div class="mhome-compact-stat__lbl">Paid settlements</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val mhome-compact-stat__val--green">{{ merchant_payout_summary.paid_total|mwk }}</div>
-        <div class="mhome-compact-stat__lbl">Paid total</div>
-      </div>
+    <div>
+      <span>Pending value</span>
+      <strong class="amount-positive">{{ merchant_payout_summary.pending_total|mwk }}</strong>
+    </div>
+    <div>
+      <span>Paid settlements</span>
+      <strong>{{ merchant_payout_summary.paid_count }}</strong>
+    </div>
+    <div>
+      <span>Paid total</span>
+      <strong class="amount-positive">{{ merchant_payout_summary.paid_total|mwk }}</strong>
     </div>
   </div>
-</div>
-{% endif %}
-
-{# ── E. Device Financing Overview ─────────────────────────── #}
-<div class="mhome-section">
-  <div class="mhome-section-title">Device Financing</div>
-  <div class="mhome-compact-card">
-    <div class="mhome-compact-card__header">
-      <span class="mhome-compact-card__title">Financing overview</span>
-      <a href="{% url 'financing_dashboard' %}" class="mhome-compact-card__link">Open →</a>
+  {% if merchant_payout_summary.recent %}
+  <h3 style="margin:12px 0 6px;font-size:0.9rem;">Recent payouts</h3>
+  {% for p in merchant_payout_summary.recent %}
+  <article class="transaction-row">
+    <div>
+      <strong>{{ p.contract.contract_number|default:"—" }}</strong>
+      <p class="text-muted">Cash price: {{ p.cash_price|mwk }} + 1% commission: {{ p.merchant_commission_amount|mwk }}</p>
+      <p class="text-muted">Method: {{ p.get_payout_method_display }} · {{ p.created_at|date:"d M Y" }}</p>
     </div>
-    <div class="mhome-compact-stats">
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val">{{ device_financing_stats.total_financed_devices }}</div>
-        <div class="mhome-compact-stat__lbl">Total financed</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val">{{ device_financing_stats.active_contracts }}</div>
-        <div class="mhome-compact-stat__lbl">Active contracts</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val mhome-compact-stat__val--red">{{ device_financing_stats.overdue_contracts }}</div>
-        <div class="mhome-compact-stat__lbl">Overdue</div>
-      </div>
-      <div class="mhome-compact-stat">
-        <div class="mhome-compact-stat__val">{{ device_financing_stats.expected_monthly_collections|mwk }}</div>
-        <div class="mhome-compact-stat__lbl">Expected monthly</div>
-      </div>
+    <div class="transaction-side">
+      <span class="amount-positive">{{ p.total_payable|mwk }}</span>
+      <span class="status-pill status-{{ p.status }}">{{ p.get_status_display }}</span>
+    </div>
+  </article>
+  {% endfor %}
+  {% endif %}
+  {% else %}
+  <p class="text-muted">No settlements yet.</p>
+  {% endif %}
+</section>
+
+{# ── Device Financing overview ── #}
+<section class="card" data-section="financing_dashboard">
+  <div class="section-title-row">
+    <h2>Device Financing</h2>
+    <a href="{% url 'financing_dashboard' %}" class="text-link">Open</a>
+  </div>
+  <p class="text-muted" style="font-size:0.78rem;margin:-4px 0 10px;">Financing overview</p>
+  <div class="metric-grid compact-metrics">
+    <div>
+      <span>Total financed devices</span>
+      <strong>{{ device_financing_stats.total_financed_devices }}</strong>
+    </div>
+    <div>
+      <span>Active contracts</span>
+      <strong>{{ device_financing_stats.active_contracts }}</strong>
+    </div>
+    <div>
+      <span>Overdue contracts</span>
+      <strong>{{ device_financing_stats.overdue_contracts }}</strong>
+    </div>
+    <div>
+      <span>Locked devices</span>
+      <strong>{{ device_financing_stats.locked_devices }}</strong>
+    </div>
+    <div>
+      <span>Pending verification</span>
+      <strong>{{ device_financing_stats.payments_pending_verification }}</strong>
+    </div>
+    <div>
+      <span>Verified this month</span>
+      <strong>{{ device_financing_stats.payments_verified_this_month }}</strong>
+    </div>
+    <div>
+      <span>Expected monthly collections</span>
+      <strong>{{ device_financing_stats.expected_monthly_collections|mwk }}</strong>
+    </div>
+    <div>
+      <span>Default risk count</span>
+      <strong>{{ device_financing_stats.default_risk_count }}</strong>
     </div>
   </div>
-</div>
+</section>
 
-{# ── F. Earnings / Spin Promo ─────────────────────────────── #}
-{% if spin_wallet.available_spins %}
-<div class="mhome-section">
-  <div class="mhome-compact-card" style="background:linear-gradient(135deg,#fff8f0,#fff0e0);border-color:rgba(255,106,0,0.2);">
-    <div class="mhome-compact-card__header">
-      <span class="mhome-compact-card__title">🎯 Spin &amp; Win — {{ spin_wallet.available_spins }} spins available</span>
-      <a href="{% url 'spin_rewards' %}" class="mhome-compact-card__link">Spin now →</a>
+{# ── Recent Contracts ── #}
+<section class="card">
+  <h2>Recent contracts</h2>
+  {% for contract in recent_financing_contracts %}
+  <div class="mini-table-row">
+    <div>
+      <strong>{{ contract.customer.full_name }}</strong>
+      <small>{{ contract.device.brand }} {{ contract.device.model }} | {{ contract.get_status_display }}</small>
     </div>
-    <p style="font-size:0.78rem;color:var(--muted);">Jackpot rewards are live. Use your spins before they expire.</p>
+    <span>{{ contract.monthly_payment_amount|mwk }}</span>
   </div>
-</div>
-{% endif %}
+  {% empty %}
+  <p class="text-muted">No financed devices yet.</p>
+  {% endfor %}
+</section>
 
-{# ── G. Support ───────────────────────────────────────────── #}
-<div class="mhome-section">
-  <div class="mhome-compact-card">
-    <div class="mhome-compact-card__header">
-      <span class="mhome-compact-card__title">Support &amp; business hours</span>
+{# ── Pending Payment Verifications ── #}
+<section class="card">
+  <h2>Pending payment verifications</h2>
+  {% for payment in pending_financing_payments %}
+  <a href="{% url 'financing_payment_detail' payment.id %}" class="mini-table-row link-row">
+    <div>
+      <strong>{{ payment.customer.full_name }}</strong>
+      <small>{{ payment.contract.device.masked_imei }} | {{ payment.get_payment_method_display }}</small>
     </div>
-    {% if is_business_hours %}
-      <p style="font-size:0.8rem;color:var(--green);font-weight:700;margin-bottom:8px;">● Reviews &amp; support currently open</p>
-    {% else %}
-      <p style="font-size:0.8rem;color:var(--muted);font-weight:600;margin-bottom:8px;">● Outside business hours — reviews may be delayed</p>
-    {% endif %}
-    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">{{ business_hours_label }} · {{ business_hours_now|date:"D H:i" }} CAT</p>
-    <div class="mhome-support">
-      <a href="{{ tengasale_whatsapp_link }}" class="btn btn-sm" style="background:var(--green);color:#fff;font-size:0.78rem;padding:7px 14px;border-radius:9px;text-decoration:none;font-weight:700;">WhatsApp</a>
-      <a href="{% url 'ticket_create' %}" class="btn btn-sm" style="background:var(--orange-soft);color:var(--orange);border:1.5px solid rgba(255,106,0,0.3);font-size:0.78rem;padding:7px 14px;border-radius:9px;text-decoration:none;font-weight:700;">Report issue</a>
+    <span>{{ payment.amount|mwk }}</span>
+  </a>
+  {% empty %}
+  <p class="text-muted">No pending payment proofs.</p>
+  {% endfor %}
+</section>
+
+{# ── Overdue Customers ── #}
+<section class="card">
+  <h2>Overdue customers</h2>
+  {% for contract in overdue_financing_customers %}
+  <div class="mini-table-row">
+    <div>
+      <strong>{{ contract.customer.full_name }}</strong>
+      <small>{{ contract.customer.phone_number }} | {{ contract.get_status_display }}</small>
     </div>
+    <span>{{ contract.next_due_date|date:"M d" }}</span>
   </div>
-</div>
+  {% empty %}
+  <p class="text-muted">No overdue financing customers.</p>
+  {% endfor %}
+</section>
+
+{# ── Device Command History ── #}
+<section class="card">
+  <h2>Device command history</h2>
+  {% for command in device_command_history %}
+  <div class="mini-table-row">
+    <div>
+      <strong>{{ command.get_command_type_display }}</strong>
+      <small>{{ command.device.masked_imei }} | {{ command.provider }}</small>
+    </div>
+    <span>{{ command.get_status_display }}</span>
+  </div>
+  {% empty %}
+  <p class="text-muted">No device commands issued.</p>
+  {% endfor %}
+</section>
+
+{# ── Applications ── #}
+<section class="menu-list" aria-labelledby="applications-title">
+  <h2 id="applications-title">Applications</h2>
+
+  <a href="{% url 'active_applications' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-active">A</span>
+      <span>Active applications</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+
+  <a href="{% url 'completed_applications' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-success">C</span>
+      <span>Completed applications</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+
+  <a href="{% url 'rejected_applications' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-alert">R</span>
+      <span>Archived & rejected</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+</section>
+
+{# ── Tools ── #}
+<section class="menu-list" aria-labelledby="tools-title">
+  <h2 id="tools-title">Tools</h2>
+
+  <a href="{% url 'all_deals' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-tools">D</span>
+      <span>All deals</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+
+  <a href="{% url 'earnings_home' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-money">E</span>
+      <span>My earnings</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+
+  <a href="{% url 'payments_home' %}" class="menu-row">
+    <span class="left">
+      <span class="menu-icon icon-payments">P</span>
+      <span>Payments</span>
+    </span>
+    <span class="arrow" aria-hidden="true">></span>
+  </a>
+</section>
 
 {% endblock %}

@@ -71,10 +71,10 @@ class HomePageTests(TestCase):
         self.assertContains(response, f"Hi, {user.username}")
         self.assertContains(response, "TengaSale")
         self.assertContains(response, "You are now earning more with TengaSale.")
-        self.assertContains(response, "VIEW ALL EARNINGS")
-        self.assertContains(response, "Spin & Win")
-        self.assertContains(response, "0 SPINS AVAILABLE")
-        self.assertContains(response, "NEW APPLICATION")
+        self.assertContains(response, "View all earnings")
+        self.assertContains(response, "Spin &amp; Win")
+        self.assertContains(response, "0 spins available")
+        self.assertContains(response, "New application")
         self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
         self.assertContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
@@ -86,6 +86,63 @@ class HomePageTests(TestCase):
         content = response.content.decode()
         self.assertLess(content.index("whatsapp-button"), content.index("notification-button"))
         self.assertLess(content.index("notification-button"), content.index("logout-button"))
+
+    def test_merchant_dashboard_contains_device_financing_section(self):
+        """Device financing section must always be visible — locks in layout order."""
+        self.create_user("merchant", "Merchant")
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Device Financing")
+        self.assertContains(response, "Financing overview")
+        self.assertContains(response, "Total financed devices")
+        self.assertContains(response, "Active contracts")
+        self.assertContains(response, "Locked devices")
+
+    def test_merchant_dashboard_contains_applications_and_tools_sections(self):
+        """Applications and Tools navigation sections must be present."""
+        self.create_user("merchant", "Merchant")
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Applications")
+        self.assertContains(response, "Active applications")
+        self.assertContains(response, "Completed applications")
+        self.assertContains(response, "Tools")
+        self.assertContains(response, "All deals")
+        self.assertContains(response, "My earnings")
+        self.assertContains(response, "Payments")
+
+    def test_merchant_dashboard_financial_sections_appear_before_applications(self):
+        """Financial data (earnings, device financing) must come before applications nav."""
+        self.create_user("merchant", "Merchant")
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        content = response.content.decode()
+        self.assertIn("Device Financing", content)
+        self.assertIn("Applications", content)
+        self.assertLess(
+            content.index("Device Financing"),
+            content.index("Applications"),
+            "Device Financing section must appear before Applications section",
+        )
+
+    def test_merchant_dashboard_has_compact_header_not_giant_hero(self):
+        """Merchant dashboard must use a compact header, not an oversized orange hero."""
+        self.create_user("merchant", "Merchant")
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Merchant Dashboard")
+        self.assertNotContains(response, "mhome-hero")
 
     def test_underwriter_visiting_merchant_dashboard_redirects_to_underwriter(self):
         self.create_user("underwriter", "Underwriter")
@@ -1269,3 +1326,105 @@ class TechSupportPortalPolishTests(TestCase):
         self.client.login(username="ts_merchant", password="pass")
         response = self.client.get(reverse("bug_monitor"))
         self.assertEqual(response.status_code, 403)
+
+
+class LayoutRegressionTests(TestCase):
+    """
+    Regression tests that lock in the merchant/underwriter/safe-ops layout so
+    future prompt-driven refactors cannot accidentally remove critical sections.
+    """
+
+    def setUp(self):
+        call_command("seed_roles")
+        User = get_user_model()
+        self.merchant_user = User.objects.create_user(username="reg_merchant", password="pass123")
+        assign_role(self.merchant_user, "merchant")
+        self.uw_user = User.objects.create_user(username="reg_underwriter", password="pass123")
+        assign_role(self.uw_user, "underwriter")
+        self.hq_user = User.objects.create_user(username="reg_hq", password="pass123")
+        assign_role(self.hq_user, "hq")
+
+    # ── Merchant dashboard section regression ─────────────────────────────────
+
+    def test_merchant_dashboard_loads_for_merchant(self):
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/home.html")
+
+    def test_merchant_dashboard_has_cash_settlement_section(self):
+        """Cash settlement section must always be present in the template markup."""
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        # Section label always rendered (even when no data)
+        self.assertContains(response, "Cash Settlements")
+
+    def test_merchant_dashboard_has_device_financing_section(self):
+        """Device financing section must always be present."""
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Device Financing")
+        self.assertContains(response, "Financing overview")
+        financing_url = reverse("financing_dashboard")
+        self.assertContains(response, financing_url)
+
+    def test_merchant_dashboard_has_applications_link(self):
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Active applications")
+
+    def test_merchant_dashboard_has_tools_link(self):
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "All deals")
+
+    def test_merchant_dashboard_no_oversized_hero(self):
+        """The orange hero block must not dominate the page."""
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        self.assertNotContains(response, "mhome-hero")
+
+    def test_merchant_dashboard_financial_data_before_apps_nav(self):
+        """Earnings and financing sections appear above the Applications nav."""
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        content = response.content.decode()
+        earnings_pos = content.index("You are now earning more with TengaSale.")
+        financing_pos = content.index("Device Financing")
+        apps_pos = content.index("Active applications")
+        self.assertLess(earnings_pos, apps_pos, "Earnings must appear before Applications nav")
+        self.assertLess(financing_pos, apps_pos, "Device Financing must appear before Applications nav")
+
+    # ── Underwriter (sales) portal regression ─────────────────────────────────
+
+    def test_underwriter_sales_home_loads(self):
+        self.client.login(username="reg_underwriter", password="pass123")
+        response = self.client.get(reverse("sales_home"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_underwriter_applications_list_loads(self):
+        self.client.login(username="reg_underwriter", password="pass123")
+        response = self.client.get(reverse("sales_applications"))
+        self.assertEqual(response.status_code, 200)
+
+    # ── HQ safe operations and fraud checks regression ────────────────────────
+
+    def test_hq_safe_operations_page_loads(self):
+        self.client.login(username="reg_hq", password="pass123")
+        response = self.client.get(reverse("hq_safe_operations"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_hq_fraud_checks_page_loads(self):
+        self.client.login(username="reg_hq", password="pass123")
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_hq_devices_page_loads(self):
+        """Device lock readiness page must load."""
+        self.client.login(username="reg_hq", password="pass123")
+        response = self.client.get(reverse("hq_devices"))
+        self.assertEqual(response.status_code, 200)
