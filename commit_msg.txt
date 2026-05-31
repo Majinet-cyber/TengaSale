@@ -1,35 +1,21 @@
-feat: add merchant_admin and tech_support roles + dedicated portals
+fix landing page layout and clean UI rendering bugs
 
-Phase 1: Added ROLE_MERCHANT_ADMIN and ROLE_TECH_SUPPORT to UserProfile,
-updated ROLE_GROUPS, decorators (merchant_admin_required, tech_support_required),
-HQUserForm with all 5 roles, seed_roles and seed_tengasale_users with
-demo accounts (password: demo12345).
+- Fix giant SVG/icon bug: add explicit width/height to all 40+ inline
+  icon SVGs in landing.html (hero trust, platform stats, steps, features,
+  merchant value cards, compliance, trust grid) - prevents 300x150px
+  inflate when CSS is stale/uncached via service worker
+- Add fill and stroke attributes to bare SVGs that had neither, so icons
+  render correctly even without stylesheet
+- Fix live-stats-strip bottom padding (was 0, now 28px) closing layout gap
+- Fix MWK label duplication in live stats (MWK 0 MWK disbursed) - label
+  now reads Disbursed since value already includes MWK prefix
+- Add defensive CSS section (v1.3): explicit max-size rules for all icon
+  chip containers, overflow hidden on svg, selection orange highlight,
+  section min-height unset guard, eyebrow bg-color reset
+- Bump SW CACHE_VERSION v1.0.3 to v1.0.4 to force browser cache invalidation
+- Bump CSS cache-bust param from v=1.2.1 to v=1.3 in site_base.html
+- Add 16 regression tests in LandingPageUIRegressionTests covering live
+  stats structure, SVG dimensions, fake testimonial prevention, section
+  presence, no blue label classes, CSS version guard, portal smoke checks
 
-Phase 2a: Created merchant_admin app with MerchantKYC and MerchantChecklist
-models, full KYC form flow, verification checklist, status management, and
-recommendation engine that respects REQUIRE_HQ_MERCHANT_APPROVAL setting.
-
-Phase 2b: Created support app with SupportTicket, TicketComment, BugEvent
-models; sanitize_error_metadata() security utility; full ticket CRUD with
-assignment, resolution, and reopen; bug monitor with filter/detail/resolve
-and convert-to-ticket; 6 templates covering dashboard, ticket list/detail/form,
-bug monitor, and bug detail.
-
-Phase 3: Wired both new apps into config/urls.py and INSTALLED_APPS; added
-REQUIRE_HQ_MERCHANT_APPROVAL = True setting.
-
-Phase 4: Updated HQ dashboard with new Operations section (6 pulse cards:
-New Leads, Awaiting HQ, Open Tickets, Critical Bugs, Merchant Admins, TS Staff);
-redesigned hq_users.html with glass-card layout and color-coded role badges
-(orange=Merchant, blue=MA, indigo=TS, purple=UW, black=HQ); hq_users POST
-now logs AuditLog entry on user creation.
-
-Phase 5: Added Report Issue buttons/links to merchant portal, underwriter
-portal, and HQ topbar pointing to /tengasale/support/tickets/new/.
-
-Phase 6: Added 30 new tests (NewRolesTests, AccessControlMatrixTests,
-SupportTicketTests, BugSanitizationTests, MerchantAdminLeadFlowTests);
-updated existing seed password test to demo12345; all 561 tests pass.
-
-Also extended MerchantLead.STATUS_CHOICES with 6 new statuses: kyc_pending,
-documents_pending, site_visit_needed, awaiting_hq, approved, suspended.
+All 43 website tests pass. System check clean.
