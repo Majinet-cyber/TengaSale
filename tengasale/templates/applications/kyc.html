@@ -20,7 +20,7 @@
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    <section class="kyc-section{% if 'customer_face_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.customer_face_image %}true{% else %}false{% endif %}">
+    <section class="kyc-section{% if 'customer_face_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.customer_face_image %}true{% else %}false{% endif %}" data-default-facing="user">
         <div class="kyc-section-header">
             <div>
                 <h2>Customer Face</h2>
@@ -37,6 +37,11 @@
         <button type="button" class="capture-button" data-capture-button>Capture Face</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
+            <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
+                Switch camera
+            </button>
+            <p class="camera-msg" data-camera-msg></p>
             <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
@@ -54,7 +59,7 @@
         </div>
     </section>
 
-    <section class="kyc-section{% if 'id_front_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_front_image %}true{% else %}false{% endif %}">
+    <section class="kyc-section{% if 'id_front_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_front_image %}true{% else %}false{% endif %}" data-default-facing="environment">
         <div class="kyc-section-header">
             <div>
                 <h2>ID Front</h2>
@@ -71,6 +76,11 @@
         <button type="button" class="capture-button" data-capture-button>Capture ID Front</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
+            <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
+                Switch camera
+            </button>
+            <p class="camera-msg" data-camera-msg></p>
             <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
@@ -88,7 +98,7 @@
         </div>
     </section>
 
-    <section class="kyc-section{% if 'id_back_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_back_image %}true{% else %}false{% endif %}">
+    <section class="kyc-section{% if 'id_back_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_back_image %}true{% else %}false{% endif %}" data-default-facing="environment">
         <div class="kyc-section-header">
             <div>
                 <h2>ID Back</h2>
@@ -105,6 +115,11 @@
         <button type="button" class="capture-button" data-capture-button>Capture ID Back</button>
         <div class="camera-panel" data-camera-panel hidden>
             <video playsinline autoplay muted data-camera-video></video>
+            <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
+                Switch camera
+            </button>
+            <p class="camera-msg" data-camera-msg></p>
             <button type="button" class="btn" data-save-capture>Save</button>
         </div>
 
@@ -128,75 +143,122 @@
 
 <script>
     (function () {
-        const form = document.querySelector("[data-kyc-form]");
-        if (!form) {
-            return;
-        }
+        var hasCameraSwitch = !!(
+            navigator.mediaDevices &&
+            navigator.mediaDevices.getSupportedConstraints &&
+            navigator.mediaDevices.getSupportedConstraints().facingMode
+        );
 
-        const sections = Array.from(form.querySelectorAll("[data-kyc-section]"));
-        const nextButton = form.querySelector("[data-next-button]");
-        const disabledNote = form.querySelector("[data-disabled-note]");
+        var form = document.querySelector("[data-kyc-form]");
+        if (!form) { return; }
+
+        var sections = Array.from(form.querySelectorAll("[data-kyc-section]"));
+        var nextButton = form.querySelector("[data-next-button]");
+        var disabledNote = form.querySelector("[data-disabled-note]");
 
         function sectionIsCaptured(section) {
-            const input = section.querySelector("[data-capture-input]");
+            var input = section.querySelector("[data-capture-input]");
             return section.dataset.existing === "true" || (input && input.files && input.files.length > 0);
         }
 
         function refreshNextState() {
-            const allCaptured = sections.every(sectionIsCaptured);
+            var allCaptured = sections.every(sectionIsCaptured);
             nextButton.disabled = !allCaptured;
             disabledNote.hidden = allCaptured;
         }
 
         sections.forEach(function (section) {
-            const input = section.querySelector("[data-capture-input]");
-            const captureButton = section.querySelector("[data-capture-button]");
-            const recaptureButton = section.querySelector("[data-recapture-button]");
-            const cameraPanel = section.querySelector("[data-camera-panel]");
-            const cameraVideo = section.querySelector("[data-camera-video]");
-            const saveCaptureButton = section.querySelector("[data-save-capture]");
-            const previewCard = section.querySelector("[data-preview-card]");
-            const previewImage = section.querySelector("[data-preview-image]");
-            const status = section.querySelector("[data-status]");
-            let stream = null;
+            var input = section.querySelector("[data-capture-input]");
+            var captureButton = section.querySelector("[data-capture-button]");
+            var recaptureButton = section.querySelector("[data-recapture-button]");
+            var cameraPanel = section.querySelector("[data-camera-panel]");
+            var cameraVideo = section.querySelector("[data-camera-video]");
+            var saveCaptureButton = section.querySelector("[data-save-capture]");
+            var switchButton = section.querySelector("[data-switch-camera]");
+            var cameraMsg = section.querySelector("[data-camera-msg]");
+            var previewCard = section.querySelector("[data-preview-card]");
+            var previewImage = section.querySelector("[data-preview-image]");
+            var status = section.querySelector("[data-status]");
+
+            var defaultFacing = section.dataset.defaultFacing || "environment";
+            var currentFacing = defaultFacing;
+            var stream = null;
 
             function stopStream() {
                 if (stream) {
-                    stream.getTracks().forEach(function (track) {
-                        track.stop();
-                    });
+                    stream.getTracks().forEach(function (track) { track.stop(); });
                     stream = null;
                 }
+            }
+
+            function setMsg(text) {
+                if (cameraMsg) { cameraMsg.textContent = text || ""; }
             }
 
             function useFileFallback() {
                 stopStream();
                 cameraPanel.hidden = true;
+                setMsg("");
                 input.click();
             }
 
-            function openCamera() {
+            function openCamera(facing) {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.DataTransfer) {
                     useFileFallback();
                     return;
                 }
 
-                const facingMode = input.getAttribute("capture") === "user" ? "user" : "environment";
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode }, audio: false })
+                var facingMode = facing || currentFacing;
+                stopStream();
+                setMsg("");
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode } }, audio: false })
                     .then(function (mediaStream) {
                         stream = mediaStream;
+                        currentFacing = facingMode;
                         cameraVideo.srcObject = stream;
                         cameraPanel.hidden = false;
+                        if (switchButton) {
+                            switchButton.hidden = !hasCameraSwitch;
+                        }
                     })
-                    .catch(useFileFallback);
+                    .catch(function () {
+                        if (facingMode !== defaultFacing) {
+                            setMsg("Could not switch camera. Using current camera.");
+                            openCamera(defaultFacing);
+                        } else {
+                            useFileFallback();
+                        }
+                    });
+            }
+
+            if (switchButton) {
+                switchButton.hidden = true;
+                switchButton.addEventListener("click", function () {
+                    var nextFacing = currentFacing === "user" ? "environment" : "user";
+                    setMsg("");
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: nextFacing } }, audio: false })
+                        .then(function (mediaStream) {
+                            stopStream();
+                            stream = mediaStream;
+                            currentFacing = nextFacing;
+                            cameraVideo.srcObject = stream;
+                            setMsg("");
+                        })
+                        .catch(function () {
+                            setMsg("Camera switch not supported on this device.");
+                        });
+                });
             }
 
             captureButton.addEventListener("click", function () {
-                openCamera();
+                currentFacing = defaultFacing;
+                openCamera(currentFacing);
             });
 
             recaptureButton.addEventListener("click", function () {
-                openCamera();
+                currentFacing = defaultFacing;
+                openCamera(currentFacing);
             });
 
             saveCaptureButton.addEventListener("click", function () {
@@ -205,32 +267,26 @@
                     return;
                 }
 
-                const canvas = document.createElement("canvas");
+                var canvas = document.createElement("canvas");
                 canvas.width = cameraVideo.videoWidth;
                 canvas.height = cameraVideo.videoHeight;
                 canvas.getContext("2d").drawImage(cameraVideo, 0, 0);
                 canvas.toBlob(function (blob) {
-                    if (!blob) {
-                        useFileFallback();
-                        return;
-                    }
-                    const file = new File([blob], input.dataset.captureInput + ".png", { type: "image/png" });
-                    const transfer = new DataTransfer();
+                    if (!blob) { useFileFallback(); return; }
+                    var file = new File([blob], (input.dataset.captureInput || "capture") + ".png", { type: "image/png" });
+                    var transfer = new DataTransfer();
                     transfer.items.add(file);
                     input.files = transfer.files;
                     input.dispatchEvent(new Event("change", { bubbles: true }));
                     stopStream();
                     cameraPanel.hidden = true;
+                    setMsg("");
                 }, "image/png");
             });
 
             input.addEventListener("change", function () {
-                const file = input.files && input.files[0];
-                if (!file) {
-                    refreshNextState();
-                    return;
-                }
-
+                var file = input.files && input.files[0];
+                if (!file) { refreshNextState(); return; }
                 previewImage.src = URL.createObjectURL(file);
                 previewCard.classList.add("is-visible");
                 status.textContent = "Captured";

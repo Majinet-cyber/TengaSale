@@ -577,7 +577,7 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Deal Selection")
+        self.assertContains(response, "Choose your new smartphone")
         self.assertEqual(response.resolver_match.url_name, "choose_device")
 
     def test_invalid_national_id_does_not_proceed(self):
@@ -1490,3 +1490,97 @@ class VerifyImeiTests(TestCase):
         deal = self._make_deal("Tecno", "Spark 50")
         result = verify_imei_against_selected_device("358089361347363", deal)
         self.assertEqual(result["match_status"], "api_error")
+
+
+class GenderChoicesTests(TestCase):
+    """Gender field must only offer Male and Female — no 'Prefer not to say'."""
+
+    def test_gender_field_has_male_and_female(self):
+        form = CustomerDetailsForm()
+        choice_values = [value for value, _label in form.fields["gender"].choices]
+        self.assertIn("male", choice_values)
+        self.assertIn("female", choice_values)
+
+    def test_gender_field_does_not_have_other(self):
+        form = CustomerDetailsForm()
+        choice_values = [value for value, _label in form.fields["gender"].choices]
+        self.assertNotIn("other", choice_values)
+
+    def test_gender_labels_do_not_include_prefer_not_to_say(self):
+        form = CustomerDetailsForm()
+        choice_labels = [label.lower() for _value, label in form.fields["gender"].choices]
+        self.assertFalse(
+            any("prefer" in label or "not to say" in label for label in choice_labels),
+            "Gender choices must not include 'Prefer not to say'",
+        )
+
+    def test_gender_other_value_is_not_valid(self):
+        data = valid_customer_data(gender="other")
+        form = CustomerDetailsForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("gender", form.errors)
+
+
+class ApplicationPageLoadTests(TestCase):
+    """Basic smoke tests: key pages must return 200 for the right role."""
+
+    def setUp(self):
+        call_command("seed_roles")
+        self.User = get_user_model()
+
+        self.merchant = self.User.objects.create_user(username="pl-merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+
+        self.underwriter = self.User.objects.create_user(username="pl-underwriter", password="test-pass-123")
+        assign_role(self.underwriter, "underwriter")
+
+        self.hq = self.User.objects.create_user(username="pl-hq", password="test-pass-123", is_staff=True)
+        assign_role(self.hq, "hq")
+
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="pending_review",
+        )
+
+    def _login(self, user):
+        self.client.force_login(user)
+
+    def test_deals_page_loads_for_merchant(self):
+        self._login(self.merchant)
+        url = reverse("choose_device", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choose your new smartphone")
+
+    def test_hq_dashboard_loads_for_hq_user(self):
+        self._login(self.hq)
+        url = reverse("hq_dashboard")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_underwriter_review_summary_loads(self):
+        self.app.claimed_by = self.underwriter
+        self.app.status = "under_review"
+        self.app.save(update_fields=["claimed_by", "status"])
+        self._login(self.underwriter)
+        url = reverse("underwriter_review_summary", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_underwriter_identity_check_loads(self):
+        self.app.claimed_by = self.underwriter
+        self.app.status = "under_review"
+        self.app.save(update_fields=["claimed_by", "status"])
+        self._login(self.underwriter)
+        url = reverse("underwriter_identity_check", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_underwriter_final_review_loads(self):
+        self.app.claimed_by = self.underwriter
+        self.app.status = "under_review"
+        self.app.save(update_fields=["claimed_by", "status"])
+        self._login(self.underwriter)
+        url = reverse("underwriter_final_review", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)

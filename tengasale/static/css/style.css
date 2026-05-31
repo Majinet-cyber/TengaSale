@@ -4214,3 +4214,486 @@ table {
 .content {
     padding-bottom: 96px !important;
 }
+
+/* ── Underwriter Review UI ───────────────────────────────────── */
+.uw-canvas {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.uw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.uw-header h1 {
+    margin: 2px 0 0;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.uw-kicker {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+    margin-bottom: 2px;
+}
+
+.uw-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 16px rgba(17, 17, 17, 0.05);
+}
+
+.uw-card h2 {
+    margin: 0 0 14px;
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.uw-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--orange);
+    margin: 14px 0 6px;
+}
+
+.uw-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.uw-warning {
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    background: #fff8ed;
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 8px 0 0;
+    line-height: 1.5;
+}
+
+.uw-score {
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.score-green { color: var(--green); }
+.score-orange { color: var(--orange); }
+.score-red { color: var(--red, #d93025); }
+
+/* Identity comparison grid */
+.uw-comparison {
+    display: grid;
+    gap: 10px;
+}
+
+.uw-comparison-card {
+    background: var(--app-bg);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.uw-comparison-card > span {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.uw-comparison-card small {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.uw-comparison-card strong {
+    font-size: 14px;
+    color: var(--black);
+}
+
+.uw-ok {
+    color: var(--green);
+    font-weight: 900;
+}
+
+/* KYC image grid */
+.uw-image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.uw-image-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.uw-image-block img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--app-bg);
+    border: 1px solid var(--border);
+}
+
+/* Call row */
+.uw-call-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Hub step checklist */
+.uw-step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.uw-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--black);
+    background: var(--app-bg);
+    font-size: 14px;
+    font-weight: 700;
+    transition: background 0.14s;
+}
+
+.uw-step:hover { background: var(--orange-soft); }
+
+.uw-step > span {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.uw-step > b {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 18px;
+    font-weight: 400;
+}
+
+/* ── Review field row ────────────────────────────────────────── */
+.review-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.review-field:last-of-type {
+    border-bottom: none;
+}
+
+.review-field--needs-correction {
+    border-left: 3px solid var(--orange);
+    padding-left: 10px;
+    margin-left: -10px;
+    background: rgba(255, 106, 0, 0.03);
+    border-radius: 0 8px 8px 0;
+}
+
+.review-field__copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.review-field__label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.review-field__value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--black);
+    word-break: break-word;
+}
+
+.review-field__note {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-top: 2px;
+}
+
+/* ── Edit / correction button ────────────────────────────────── */
+.review-edit-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--orange-soft);
+    color: var(--orange);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.12s;
+}
+
+.review-edit-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.review-edit-btn:hover,
+.review-edit-btn:focus-visible {
+    background: rgba(255, 106, 0, 0.20);
+    transform: scale(1.08);
+    outline: none;
+}
+
+.review-edit-btn--active {
+    background: var(--orange);
+    color: #fff;
+}
+
+.review-edit-btn--active:hover {
+    background: var(--orange-dark);
+}
+
+/* ── Yes / No review question ────────────────────────────────── */
+.review-question {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.review-question:last-of-type {
+    border-bottom: none;
+}
+
+.review-question__text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--black);
+    margin: 0 0 10px;
+    line-height: 1.45;
+}
+
+.review-choice-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.review-choice {
+    flex: 1;
+    height: 40px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: border-color 0.14s, background 0.14s, color 0.14s;
+    color: var(--muted);
+}
+
+.review-choice:hover {
+    border-color: var(--muted);
+    color: var(--black);
+}
+
+.review-choice--yes.is-selected {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+}
+
+.review-choice--no.is-selected {
+    background: var(--red, #d93025);
+    border-color: var(--red, #d93025);
+    color: #fff;
+}
+
+.review-choice-tick {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--green);
+    background: transparent;
+    flex-shrink: 0;
+    transition: color 0.14s;
+}
+
+.review-choice-tick.is-no {
+    color: var(--red, #d93025);
+}
+
+/* ── Correction modal ────────────────────────────────────────── */
+.correction-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 17, 17, 0.55);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    padding: 0;
+}
+
+.correction-modal[hidden] {
+    display: none;
+}
+
+.correction-modal__sheet {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    padding: 24px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.correction-modal__title {
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--black);
+    margin: 0;
+}
+
+.correction-modal__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--orange);
+    margin: 0;
+}
+
+.correction-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ── Camera switch button ────────────────────────────────────── */
+.camera-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    color: #fff;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.14s;
+    align-self: flex-start;
+}
+
+.camera-switch-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.camera-switch-btn svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.camera-msg {
+    font-size: 11px;
+    color: #ffd7b5;
+    margin: 4px 0 0;
+    min-height: 16px;
+}
+
+/* ── Corrections summary in final review ─────────────────────── */
+.uw-correction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.uw-correction-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #fff8ed;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.uw-correction-item__field {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #92400e;
+}
+
+.uw-correction-item__note {
+    font-size: 12px;
+    color: #78350f;
+    line-height: 1.4;
+}

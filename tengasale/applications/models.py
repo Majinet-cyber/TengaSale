@@ -131,7 +131,6 @@ class FinancingApplication(models.Model):
         ("", "Select gender"),
         (GENDER_MALE, "Male"),
         (GENDER_FEMALE, "Female"),
-        (GENDER_OTHER, "Prefer not to say"),
     ]
 
     MARITAL_SINGLE = "single"

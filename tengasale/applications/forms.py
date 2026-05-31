@@ -97,7 +97,6 @@ GENDER_CHOICES = [
     ("", "Select gender"),
     ("male", "Male"),
     ("female", "Female"),
-    ("other", "Prefer not to say"),
 ]
 
 MARITAL_CHOICES = [
