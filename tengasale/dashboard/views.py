@@ -2158,6 +2158,41 @@ def hq_fraud_checks(request):
         manager_comment__startswith="[FRAUD"
     ).select_related("created_by").order_by("-created_at")[:30]
 
+    # ── Device mismatch (IMEI verification) ──────────────────────────────────
+    from django.db.models import Q as DQ
+    imei_mismatches = (
+        FinancingApplication.objects.filter(
+            imei_verification_status="mismatch",
+            imei_override=False,
+        )
+        .select_related("created_by", "deal", "deal__brand")
+        .order_by("-imei_verified_at")[:30]
+    )
+    imei_possible = (
+        FinancingApplication.objects.filter(
+            imei_verification_status="possible_match",
+        )
+        .select_related("created_by", "deal", "deal__brand")
+        .order_by("-imei_verified_at")[:20]
+    )
+    imei_errors = (
+        FinancingApplication.objects.filter(
+            imei_verification_status__in=["api_error", "unknown"],
+        )
+        .exclude(imei_number="")
+        .select_related("created_by", "deal", "deal__brand")
+        .order_by("-imei_verified_at")[:20]
+    )
+    imei_mismatch_count = FinancingApplication.objects.filter(
+        imei_verification_status="mismatch", imei_override=False
+    ).count()
+    imei_possible_count = FinancingApplication.objects.filter(
+        imei_verification_status="possible_match"
+    ).count()
+    imei_error_count = FinancingApplication.objects.filter(
+        imei_verification_status__in=["api_error", "unknown"]
+    ).exclude(imei_number="").count()
+
     return render(request, "dashboard/hq_fraud_checks.html", {
         "dup_ids": list(dup_ids),
         "dup_phones": list(dup_phones),
@@ -2167,6 +2202,13 @@ def hq_fraud_checks(request):
         "fraud_marked": fraud_marked,
         "msg": msg,
         "msg_type": msg_type,
+        # IMEI mismatch
+        "imei_mismatches": imei_mismatches,
+        "imei_possible": imei_possible,
+        "imei_errors": imei_errors,
+        "imei_mismatch_count": imei_mismatch_count,
+        "imei_possible_count": imei_possible_count,
+        "imei_error_count": imei_error_count,
     })
 
 

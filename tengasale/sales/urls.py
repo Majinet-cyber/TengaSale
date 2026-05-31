@@ -28,4 +28,8 @@ urlpatterns = [
 
     # Correction link
     path("applications/<int:app_id>/correction-link/", views.sales_send_correction_link, name="sales_correction_link"),
+
+    # IMEI verification
+    path("applications/<int:app_id>/imei-recheck/", views.sales_imei_recheck, name="sales_imei_recheck"),
+    path("applications/<int:app_id>/imei-override/", views.sales_imei_override, name="sales_imei_override"),
 ]

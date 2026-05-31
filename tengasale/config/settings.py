@@ -255,6 +255,23 @@ PAYCHANGU_CALLBACK_URL = os.environ.get("PAYCHANGU_CALLBACK_URL", "")
 
 APP_VERSION = "1.0.0"
 
+# ── IMEI Verification Settings ────────────────────────────────────────────────
+# Enable/disable the IMEI verification feature entirely
+IMEI_CHECK_ENABLED = os.environ.get("IMEI_CHECK_ENABLED", "True") == "True"
+# Strict mode: mismatch blocks submission; possible_match goes to underwriter review
+IMEI_CHECK_STRICT_MODE = os.environ.get("IMEI_CHECK_STRICT_MODE", "True") == "True"
+# Auto-verify IMEI when merchant submits the IMEI form
+IMEI_CHECK_AUTO_VERIFY = os.environ.get("IMEI_CHECK_AUTO_VERIFY", "True") == "True"
+# API credentials (development fallback only; override in production via environment)
+IMEI_CHECK_USERNAME = os.environ.get("IMEI_CHECK_USERNAME", "PaulChris998")
+IMEI_CHECK_API_KEY = os.environ.get("IMEI_CHECK_API_KEY", "nP7VE-ANKTC-YUzkZ-6e9Cc-4PKTh-DndJk")
+IMEI_CHECK_ENDPOINT_BASE = os.environ.get("IMEI_CHECK_ENDPOINT_BASE", "https://dhru.checkimei.com")
+IMEI_CHECK_ALPHA_ENDPOINT_BASE = os.environ.get("IMEI_CHECK_ALPHA_ENDPOINT_BASE", "https://alpha.imeicheck.com")
+# Service ID for the IMEI check service (leave blank until confirmed)
+IMEI_CHECK_SERVICE_ID = os.environ.get("IMEI_CHECK_SERVICE_ID", "")
+# Request timeout in seconds
+IMEI_CHECK_TIMEOUT_SECONDS = int(os.environ.get("IMEI_CHECK_TIMEOUT_SECONDS", "20"))
+
 # ── Merchant Administrator settings ──────────────────────────────────────────
 # If True, Merchant Admins can only *recommend* approval; HQ must give final sign-off.
 # Set to False to allow Merchant Admins to directly approve leads without HQ review.

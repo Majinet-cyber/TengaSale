@@ -1,5 +1,7 @@
+import logging
 from decimal import Decimal
 
+from django.conf import settings as dj_settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,6 +12,8 @@ from commissions.services import process_contract_completion
 
 from .forms import ContractSignatureForm, ImeiForm, MerchantTermsForm
 from .models import Contract
+
+logger = logging.getLogger(__name__)
 
 
 def can_access_contract_flow(user, application):
@@ -95,14 +99,45 @@ def contract_imei(request, contract_id):
             contract = form.save(commit=False)
             contract.status = Contract.STATUS_IMEI_ENTERED
             contract.save()
-            application.imei_number = contract.imei_number
+            imei = contract.imei_number or ""
+            application.imei_number = imei
             application.status = "contract_creating"
             application.save(update_fields=["imei_number", "status"])
+
+            # Auto-verify IMEI against selected deal if enabled
+            if (
+                getattr(dj_settings, "IMEI_CHECK_ENABLED", True)
+                and getattr(dj_settings, "IMEI_CHECK_AUTO_VERIFY", True)
+                and imei
+                and application.deal_id
+            ):
+                try:
+                    from applications.services.imei_verification import (
+                        save_verification_result,
+                        verify_imei_against_selected_device,
+                    )
+                    result = verify_imei_against_selected_device(
+                        imei=imei,
+                        selected_device=application.deal,
+                        user=request.user,
+                    )
+                    save_verification_result(application, result, user=request.user)
+                except Exception:
+                    logger.exception(
+                        "IMEI auto-verification failed for application %s", application.pk
+                    )
+
             return redirect("contract_progress", contract_id=contract.id)
     else:
         form = ImeiForm(instance=contract)
 
-    return render(request, "contracts/imei.html", {"contract": contract, "application": application, "form": form})
+    return render(request, "contracts/imei.html", {
+        "contract": contract,
+        "application": application,
+        "form": form,
+        "imei_check_enabled": getattr(dj_settings, "IMEI_CHECK_ENABLED", True),
+        "strict_mode": getattr(dj_settings, "IMEI_CHECK_STRICT_MODE", True),
+    })
 
 
 @merchant_required

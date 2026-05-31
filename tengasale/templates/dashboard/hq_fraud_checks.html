@@ -90,6 +90,18 @@
       <div class="frd-stat-val">{{ dup_guarantors|length }}</div>
       <div class="frd-stat-lbl">Repeated guarantors</div>
     </div>
+    <div class="frd-stat" style="--frd-accent:#dc2626;">
+      <div class="frd-stat-val">{{ imei_mismatch_count }}</div>
+      <div class="frd-stat-lbl">Device mismatches</div>
+    </div>
+    <div class="frd-stat" style="--frd-accent:#d97706;">
+      <div class="frd-stat-val">{{ imei_possible_count }}</div>
+      <div class="frd-stat-lbl">IMEI possible matches</div>
+    </div>
+    <div class="frd-stat" style="--frd-accent:#64748b;">
+      <div class="frd-stat-val">{{ imei_error_count }}</div>
+      <div class="frd-stat-lbl">IMEI check errors</div>
+    </div>
   </div>
 
   <div class="frd-grid">
@@ -216,6 +228,124 @@
               <button name="action" value="mark_blocked" class="btn" style="font-size:0.72rem;padding:4px 10px;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.3);">Block</button>
             </form>
           </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Device Mismatch (IMEI Verification) ── #}
+  <div class="frd-card" style="margin-bottom:16px;">
+    <div class="frd-card-hdr">
+      <div class="frd-card-hdr-icon" style="background:#fef2f2;color:#dc2626;">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+      </div>
+      <div>
+        <span class="frd-card-title" style="color:#dc2626;">Device Mismatches</span>
+        <span style="font-size:0.68rem;color:#64748b;display:block;margin-top:2px;">IMEI does not match selected smartphone — possible device substitution fraud</span>
+      </div>
+    </div>
+    {% if imei_mismatches %}
+    <div style="overflow-x:auto;">
+    <table class="frd-table">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Merchant</th>
+          <th>Customer</th>
+          <th>Selected smartphone</th>
+          <th>IMEI</th>
+          <th>API result</th>
+          <th style="text-align:center;">Confidence</th>
+          <th style="text-align:center;">Status</th>
+          <th style="text-align:center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in imei_mismatches %}
+        <tr>
+          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
+          <td style="font-size:0.78rem;">{% if app.created_by %}{{ app.created_by.get_full_name|default:app.created_by.username }}{% else %}—{% endif %}</td>
+          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
+          <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
+          <td style="font-family:monospace;font-size:0.72rem;">{{ app.imei_number|default:"—" }}</td>
+          <td style="font-size:0.78rem;">
+            {% if app.imei_api_brand or app.imei_api_model %}
+              <span style="font-weight:600;">{{ app.imei_api_brand }} {{ app.imei_api_model }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if app.imei_match_confidence is not None %}
+              <span style="font-weight:700;color:#dc2626;">{{ app.imei_match_confidence }}%</span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="text-align:center;">
+            <span class="frd-badge" style="background:#fef2f2;color:#dc2626;">Mismatch</span>
+          </td>
+          <td style="text-align:center;">
+            <a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="frd-empty">No confirmed device mismatches.</p>
+    {% endif %}
+  </div>
+
+  {% if imei_possible %}
+  <div class="frd-card" style="margin-bottom:16px;">
+    <div class="frd-card-hdr">
+      <div class="frd-card-hdr-icon" style="background:#fffbeb;color:#d97706;">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <span class="frd-card-title" style="color:#d97706;">Possible Matches — Needs Review</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="frd-table">
+      <thead><tr><th>Application</th><th>Customer</th><th>Selected smartphone</th><th>API result</th><th style="text-align:center;">Confidence</th><th style="text-align:center;">Action</th></tr></thead>
+      <tbody>
+        {% for app in imei_possible %}
+        <tr>
+          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
+          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
+          <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
+          <td style="font-size:0.78rem;">{{ app.imei_api_brand }} {{ app.imei_api_model }}</td>
+          <td style="text-align:center;font-weight:700;color:#d97706;">{{ app.imei_match_confidence|default:"—" }}%</td>
+          <td style="text-align:center;"><a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fffbeb;color:#d97706;border:1px solid rgba(217,119,6,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if imei_errors %}
+  <div class="frd-card" style="margin-bottom:16px;">
+    <div class="frd-card-hdr">
+      <div class="frd-card-hdr-icon" style="background:#fff7ed;color:#ea580c;">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <span class="frd-card-title" style="color:#ea580c;">IMEI Check Errors / Unknown</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="frd-table">
+      <thead><tr><th>Application</th><th>Customer</th><th>IMEI</th><th style="text-align:center;">Status</th><th style="text-align:center;">Action</th></tr></thead>
+      <tbody>
+        {% for app in imei_errors %}
+        <tr>
+          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
+          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
+          <td style="font-family:monospace;font-size:0.72rem;">{{ app.imei_number|default:"—" }}</td>
+          <td style="text-align:center;">
+            <span class="frd-badge" style="background:#fff7ed;color:#ea580c;">{{ app.get_imei_verification_status_display|default:app.imei_verification_status }}</span>
+          </td>
+          <td style="text-align:center;"><a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fff7ed;color:#ea580c;border:1px solid rgba(234,88,12,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a></td>
         </tr>
         {% endfor %}
       </tbody>

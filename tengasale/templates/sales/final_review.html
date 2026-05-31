@@ -74,6 +74,117 @@
   </div>
   {% endif %}
 
+  {# ── IMEI Verification ── #}
+  {% if imei_check_enabled %}
+  <div class="ts-review-card ts-mb-8" style="{% if imei_status == 'mismatch' and not imei_override %}border-left:4px solid #dc2626;{% elif imei_status == 'matched' %}border-left:4px solid #16a34a;{% elif imei_status == 'possible_match' %}border-left:4px solid #d97706;{% else %}border-left:4px solid #94a3b8;{% endif %}">
+    <div class="ts-review-card__title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>IMEI Verification</span>
+      {% if imei_status == 'matched' %}
+        <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(22,163,74,0.2);">✓ Matched</span>
+      {% elif imei_status == 'possible_match' %}
+        <span style="background:#fffbeb;color:#d97706;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(217,119,6,0.2);">⚠ Possible match</span>
+      {% elif imei_status == 'mismatch' %}
+        {% if imei_override %}
+          <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(22,163,74,0.2);">Override applied</span>
+        {% else %}
+          <span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(220,38,38,0.2);">✗ Mismatch</span>
+        {% endif %}
+      {% elif imei_status == 'api_error' %}
+        <span style="background:#fff7ed;color:#ea580c;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(234,88,12,0.2);">API error</span>
+      {% elif imei_status == 'unknown' %}
+        <span style="background:#f8fafc;color:#64748b;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid #e2e8f0;">Unknown</span>
+      {% else %}
+        <span style="background:#f0f9ff;color:#0284c7;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:700;border:1px solid rgba(2,132,199,0.2);">Pending</span>
+      {% endif %}
+    </div>
+
+    {% if imei_number %}
+    <div class="ts-review-row"><span>IMEI</span><strong style="font-family:monospace;">{{ imei_number }}</strong></div>
+    {% endif %}
+    <div class="ts-review-row"><span>Selected smartphone</span><strong>{{ app.deal }}</strong></div>
+    {% if imei_api_brand or imei_api_model %}
+    <div class="ts-review-row"><span>API-confirmed device</span><strong>{{ imei_api_brand }} {{ imei_api_model }}</strong></div>
+    {% endif %}
+    {% if imei_match_confidence is not None %}
+    <div class="ts-review-row"><span>Confidence</span>
+      <strong style="color:{% if imei_match_confidence >= 85 %}#16a34a{% elif imei_match_confidence >= 60 %}#d97706{% else %}#dc2626{% endif %};">{{ imei_match_confidence }}%</strong>
+    </div>
+    {% endif %}
+    {% if imei_verified_at %}
+    <div class="ts-review-row"><span>Verified at</span><strong>{{ imei_verified_at|date:"d M Y H:i" }}</strong></div>
+    {% endif %}
+
+    {% if imei_status == 'mismatch' and not imei_override %}
+    <div style="background:#fef2f2;border:1.5px solid rgba(220,38,38,0.25);border-radius:10px;padding:12px 14px;margin-top:10px;">
+      <p style="margin:0;font-size:0.82rem;font-weight:700;color:#dc2626;">
+        ⚠ Device substitution fraud warning
+      </p>
+      <p style="margin:4px 0 0;font-size:0.78rem;color:#b91c1c;">
+        The selected smartphone does not match the IMEI result. This may indicate device substitution fraud. Approval is blocked until an override is applied.
+      </p>
+    </div>
+    {% endif %}
+
+    {% if imei_status == 'possible_match' %}
+    <div style="background:#fffbeb;border:1.5px solid rgba(217,119,6,0.25);border-radius:10px;padding:10px 14px;margin-top:10px;">
+      <p style="margin:0;font-size:0.78rem;color:#92400e;">
+        ⚠ The IMEI result is close to the selected smartphone but requires review before approval.
+      </p>
+    </div>
+    {% endif %}
+
+    {% if imei_verification_reason %}
+    <details style="margin-top:10px;">
+      <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">Verification details</summary>
+      <ul style="font-size:0.74rem;color:#475569;padding-left:16px;margin:6px 0 0;">
+        {% for line in imei_verification_reason.splitlines %}
+          {% if line %}<li>{{ line }}</li>{% endif %}
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+
+    {% if imei_raw_response %}
+    <details style="margin-top:6px;">
+      <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">View technical result</summary>
+      <pre style="font-size:0.65rem;white-space:pre-wrap;overflow:auto;max-height:120px;margin-top:6px;background:#f8fafc;padding:8px;border-radius:6px;color:#475569;">{{ imei_raw_response.raw_result|default:"(no raw result)" }}</pre>
+    </details>
+    {% endif %}
+
+    {# Override section (HQ / staff only) #}
+    {% if imei_status == 'mismatch' and not imei_override and can_override_imei %}
+    <div style="margin-top:12px;padding-top:12px;border-top:1.5px solid #f1f5f9;">
+      <form method="post" action="{% url 'sales_imei_override' app.id %}">
+        {% csrf_token %}
+        <label style="font-size:0.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:6px;">Override reason *</label>
+        <textarea name="override_reason" rows="2" required
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.82rem;resize:vertical;box-sizing:border-box;"
+          placeholder="Explain why this IMEI mismatch is acceptable…"></textarea>
+        <button type="submit"
+          style="margin-top:8px;padding:8px 18px;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:0.80rem;font-weight:700;cursor:pointer;">
+          Override IMEI mismatch
+        </button>
+      </form>
+    </div>
+    {% elif imei_override %}
+    <div style="margin-top:10px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:0.78rem;color:#166534;">
+      Override applied by {{ imei_override_by.get_full_name|default:imei_override_by.username }} on {{ imei_override_at|date:"d M Y" }}:
+      <em>{{ imei_override_reason }}</em>
+    </div>
+    {% endif %}
+
+    {# Recheck button #}
+    {% if imei_number and can_override_imei %}
+    <form method="post" action="{% url 'sales_imei_recheck' app.id %}" style="margin-top:10px;">
+      {% csrf_token %}
+      <button type="submit" style="font-size:0.75rem;padding:6px 14px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;color:#475569;">
+        Recheck IMEI
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if app.deal %}
   <div class="ts-review-card ts-mb-8">
     <div class="ts-review-card__title">Deal</div>
@@ -126,7 +237,8 @@
       <textarea name="manager_comment" id="id_comment" class="ts-textarea" rows="3" placeholder="Add notes…">{{ review.comment }}</textarea>
     </div>
     <div class="ts-decision-row">
-      <button type="submit" name="decision" value="approve" class="ts-btn-approve">
+      <button type="submit" name="decision" value="approve" class="ts-btn-approve"
+        {% if imei_check_enabled and strict_mode and imei_status == 'mismatch' and not imei_override %}disabled title="IMEI mismatch blocks approval. Override required."{% endif %}>
         <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         APPROVE
       </button>

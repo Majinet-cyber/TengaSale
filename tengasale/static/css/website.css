@@ -3052,7 +3052,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Live Stats Strip ─────────────────────────────────────────── */
 /* ── Live Stats Strip — glassmorphic pill design ─────────────── */
 .live-stats-strip {
-  padding: 20px 20px 0;
+  padding: 20px 20px 28px;
   background: transparent;
 }
 
@@ -3266,4 +3266,169 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
   color: var(--w-muted);
   margin-top: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   v1.3 — DEFENSIVE FIXES: SVG containment, section spacing,
+   icon stability, and blue-label prevention.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Global SVG safety net ────────────────────────────────────── */
+/* Prevent ANY inline SVG from escaping its container.
+   These rules apply even when outer container classes partially fail. */
+.site-body svg {
+  overflow: hidden;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+/* ── Explicit icon-chip SVG sizing ────────────────────────────── */
+/* Each icon chip category has explicit max dimensions so SVGs
+   that lack HTML width/height attrs can never inflate to 300x150px. */
+.site-icon svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.step__icon svg {
+  width: 26px;
+  height: 26px;
+  max-width: 26px;
+  max-height: 26px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.platform-stat-icon svg {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.compliance-item__icon svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trust-card__icon svg {
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.merchant-value-card__icon svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-trust-icon svg {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  display: block;
+  fill: none;
+  stroke: var(--w-orange);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Section eyebrow / kicker — always orange, never blue ─────── */
+.section-eyebrow,
+.hero__eyebrow,
+.lead-form-badge,
+.hero-intel__badge {
+  background-color: transparent;
+}
+
+.section-eyebrow {
+  background: transparent;
+  color: var(--w-orange, #ff6a00);
+}
+
+/* ── Orange selection highlight ───────────────────────────────── */
+.site-body ::selection {
+  background: rgba(255, 106, 0, 0.18);
+  color: var(--w-black);
+}
+
+/* ── Prevent any section from having min-height: 100vh ───────── */
+.site-section,
+.site-section--alt,
+.site-section--light,
+.site-section--dark,
+.site-section--brand-showcase {
+  min-height: unset;
+}
+
+/* ── Safe section padding caps ────────────────────────────────── */
+@media (max-width: 600px) {
+  .site-section,
+  .site-section--alt,
+  .site-section--light,
+  .site-section--brand-showcase {
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+}
+
+/* ── Contain all media inside landing sections ─────────────────── */
+.site-section img,
+.site-section video,
+.site-section svg:not(.site-country-flag) {
+  max-width: 100%;
+}
+
+/* ── Ensure hero brand image never overflows card ─────────────── */
+.hero-brand-img {
+  max-width: 240px;
+  max-height: 120px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }

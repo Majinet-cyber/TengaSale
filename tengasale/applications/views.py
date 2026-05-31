@@ -3,7 +3,9 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required
 from core.business_hours import business_hours_context
@@ -573,4 +575,64 @@ def customer_field_correction(request, token):
         "editable_fields": editable,
         "token": token,
         "expires_at": token_obj.expires_at,
+    })
+
+
+@merchant_required
+@require_POST
+def verify_imei_ajax(request, app_id):
+    """
+    AJAX endpoint: verify an IMEI against the application's selected deal.
+    Called by the merchant IMEI entry form before submission.
+    The API key is never included in the response.
+    """
+    from django.conf import settings as django_settings
+    from applications.services.imei_verification import (
+        verify_imei_against_selected_device,
+        save_verification_result,
+    )
+
+    app = get_object_or_404(FinancingApplication, id=app_id, created_by=request.user)
+
+    imei = request.POST.get("imei", "").strip()
+    force_recheck = request.POST.get("force_recheck", "false").lower() == "true"
+
+    if not imei:
+        return JsonResponse({"error": "No IMEI provided"}, status=400)
+
+    if not app.deal_id:
+        return JsonResponse(
+            {"error": "No smartphone deal selected — cannot verify IMEI"},
+            status=400,
+        )
+
+    if not getattr(django_settings, "IMEI_CHECK_ENABLED", True):
+        return JsonResponse({"match_status": "api_error", "reasons": ["IMEI verification disabled"]})
+
+    result = verify_imei_against_selected_device(
+        imei=imei,
+        selected_device=app.deal,
+        user=request.user,
+        force_recheck=force_recheck,
+    )
+
+    # Save result to the application
+    if result.get("match_status") not in ("api_error",) or result.get("api_brand") or result.get("api_model"):
+        app.imei_number = imei
+        app.save(update_fields=["imei_number"])
+        save_verification_result(app, result, user=request.user)
+
+    # Return safe response — never expose raw API key or internal config
+    return JsonResponse({
+        "match_status": result.get("match_status", "unknown"),
+        "confidence": result.get("confidence", 0),
+        "reasons": result.get("reasons", []),
+        "api_brand": result.get("api_brand", ""),
+        "api_model": result.get("api_model", ""),
+        "selected_brand": result.get("selected_brand", ""),
+        "selected_model": result.get("selected_model", ""),
+        "should_block": result.get("should_block", False),
+        "order_id": result.get("order_id", ""),
+        "api_raw_result": result.get("api_raw_result", ""),
+        "success": result.get("success", False),
     })

@@ -194,6 +194,157 @@ class PublicSiteTests(TestCase):
                     f"Visible template comment found in {url}")
 
 
+class LandingPageUIRegressionTests(TestCase):
+    """Regression tests for landing page UI bugs fixed in v1.3."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def _get_landing(self):
+        return self.client.get(reverse("website_landing"))
+
+    # ── Live stats ────────────────────────────────────────────────
+
+    def test_landing_live_stats_strip_present(self):
+        """Live stats strip container must be present on the landing page."""
+        response = self._get_landing()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "live-stats-strip")
+
+    def test_landing_live_stats_no_mwk_duplication(self):
+        """Label should be 'Disbursed' not 'MWK disbursed' — prevents 'MWK 0 MWK disbursed'."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertNotIn("MWK disbursed", content,
+            "Label 'MWK disbursed' causes duplication with 'MWK 0' value prefix")
+
+    def test_landing_live_stats_have_icon_containers(self):
+        """Live stat pills must use icon chip containers."""
+        response = self._get_landing()
+        self.assertContains(response, "live-stat-pill__icon")
+
+    def test_landing_live_stats_have_value_and_label(self):
+        """Each stat must have a value span and a label span."""
+        response = self._get_landing()
+        self.assertContains(response, "live-stat-pill__val")
+        self.assertContains(response, "live-stat-pill__lbl")
+
+    # ── SVG safety ────────────────────────────────────────────────
+
+    def test_landing_merchant_value_svgs_have_explicit_dimensions(self):
+        """Merchant value card SVGs must have explicit width/height to prevent inflate."""
+        response = self._get_landing()
+        content = response.content.decode()
+        self.assertIn('merchant-value-card__icon', content)
+        # The merchant value card section must not contain SVGs without dimensions
+        # (bare viewBox-only SVGs expand to 300x150px when CSS is stale/uncached)
+        import re
+        # Find SVGs inside merchant-value-card__icon; they must have width attr
+        merchant_section_start = content.find('merchant-value-grid')
+        merchant_section_end = content.find('/div>', content.rfind('merchant-value-card'))
+        if merchant_section_start > 0:
+            merchant_section = content[merchant_section_start:merchant_section_end + 100]
+            # All SVGs in this section should have width attribute
+            bare_svg = re.search(r'<svg viewBox="[^"]*">', merchant_section)
+            self.assertIsNone(bare_svg,
+                "Merchant value card contains bare SVG without width/height — will inflate if CSS stales")
+
+    def test_landing_no_svgs_without_dimensions_in_icon_chips(self):
+        """Icon chip SVGs should have explicit width and height attributes."""
+        response = self._get_landing()
+        content = response.content.decode()
+        import re
+        # Check that step icons have explicit dimensions
+        self.assertIn('width="26" height="26"', content,
+            "Step icon SVGs should have explicit 26x26 dimensions")
+        # Check that platform stat icons have explicit dimensions
+        self.assertIn('width="18" height="18"', content,
+            "Platform stat icon SVGs should have explicit 18x18 dimensions")
+        # Check that merchant value card icons have explicit dimensions
+        self.assertIn('width="22" height="22"', content,
+            "Icon chip SVGs should have explicit 22x22 dimensions")
+
+    # ── No fake testimonials ──────────────────────────────────────
+
+    def test_landing_no_fake_testimonial_names(self):
+        """The landing page must not contain hardcoded fake testimonial names."""
+        response = self._get_landing()
+        content = response.content.decode()
+        fake_names = ["James Phiri", "Grace Banda", "Kondwani Mwale"]
+        for name in fake_names:
+            self.assertNotIn(name, content,
+                f"Fake testimonial name '{name}' found on landing page")
+
+    def test_landing_no_raw_testimonial_placeholders(self):
+        """No empty quote/testimonial placeholder blocks."""
+        response = self._get_landing()
+        content = response.content.decode()
+        # merchant_quotes is intentionally empty; no quote cards should render
+        self.assertNotIn("merchant-quote-card", content,
+            "Testimonial quote cards rendered when merchant_quotes is empty")
+
+    # ── Section structure ─────────────────────────────────────────
+
+    def test_landing_hero_headline_present(self):
+        """Hero headline must be present."""
+        response = self._get_landing()
+        self.assertContains(response, "Smartphone financing built for")
+
+    def test_landing_platform_section_present(self):
+        """Platform stats section must be present."""
+        response = self._get_landing()
+        self.assertContains(response, "platform-stats-grid")
+
+    def test_landing_merchant_value_section_present(self):
+        """Merchant value section must be present with its 3 cards."""
+        response = self._get_landing()
+        self.assertContains(response, "merchant-value-grid")
+        self.assertContains(response, "Faster applications")
+        self.assertContains(response, "Better repayment visibility")
+        self.assertContains(response, "Cleaner merchant records")
+
+    def test_landing_faq_present(self):
+        """FAQ section must be present."""
+        response = self._get_landing()
+        self.assertContains(response, "faq-item")
+
+    def test_landing_no_blue_label_classes(self):
+        """Landing page must not use Bootstrap blue classes on section labels."""
+        response = self._get_landing()
+        content = response.content.decode()
+        blue_classes = ["badge-primary", "bg-primary", "btn-primary btn-primary--blue",
+                        "text-primary", "label-primary"]
+        for cls in blue_classes:
+            self.assertNotIn(cls, content,
+                f"Blue Bootstrap class '{cls}' found on landing page")
+
+    def test_landing_css_version_1_3(self):
+        """Landing page must reference the v1.3 CSS to bust stale caches."""
+        response = self._get_landing()
+        content = response.content.decode()
+        # The stylesheet link must include the v=1.3 cache-bust param.
+        # ManifestStaticFilesStorage may hash the filename so we search for
+        # the version param separately from the base name.
+        self.assertIn("website", content,
+            "Page should reference website CSS")
+        self.assertIn("v=1.3", content,
+            "CSS cache-bust version must be v=1.3 to fix SVG rendering bugs")
+
+    # ── Portals still work ────────────────────────────────────────
+
+    def test_merchant_dashboard_url_accessible_for_anonymous(self):
+        """Merchant dashboard redirects to login rather than 500-erroring."""
+        response = self.client.get("/tengasale/merchant/", follow=False)
+        self.assertIn(response.status_code, [302, 301, 200],
+            "Merchant dashboard returned an unexpected error status")
+
+    def test_underwriter_dashboard_url_accessible_for_anonymous(self):
+        """Underwriter dashboard redirects to login rather than 500-erroring."""
+        response = self.client.get("/tengasale/underwriter/", follow=False)
+        self.assertIn(response.status_code, [302, 301, 200, 404],
+            "Underwriter dashboard returned an unexpected error status")
+
+
 class MerchantLeadModelTests(TestCase):
     def test_merchant_lead_str(self):
         lead = MerchantLead(business_name="City Phones", owner_full_name="James Mwale")

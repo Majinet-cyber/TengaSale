@@ -461,6 +461,30 @@ def sales_final_review(request, app_id):
     )
     from risk.models import FraudCheck
     latest_fraud_check = FraudCheck.objects.filter(application=app).order_by("-created_at").first()
+
+    # IMEI verification context
+    from django.conf import settings as dj_settings
+    from accounts.utils import is_hq
+    imei_status = app.imei_verification_status or ""
+    imei_ctx = {
+        "imei_status": imei_status,
+        "imei_verified": app.imei_verified,
+        "imei_api_brand": app.imei_api_brand or "",
+        "imei_api_model": app.imei_api_model or "",
+        "imei_match_confidence": app.imei_match_confidence,
+        "imei_verification_reason": app.imei_verification_reason or "",
+        "imei_verified_at": app.imei_verified_at,
+        "imei_number": app.imei_number or "",
+        "imei_override": app.imei_override,
+        "imei_override_reason": app.imei_override_reason or "",
+        "imei_override_by": app.imei_override_by,
+        "imei_override_at": app.imei_override_at,
+        "imei_raw_response": app.imei_raw_response or {},
+        "imei_check_enabled": getattr(dj_settings, "IMEI_CHECK_ENABLED", True),
+        "strict_mode": getattr(dj_settings, "IMEI_CHECK_STRICT_MODE", True),
+        "can_override_imei": is_hq(request.user) or request.user.is_staff,
+    }
+
     return render(request, "sales/final_review.html", {
         "page_heading": "Final Review",
         "app": app,
@@ -471,6 +495,7 @@ def sales_final_review(request, app_id):
         "total_steps": 6,
         "exposure": exposure,
         "fraud_check": latest_fraud_check,
+        **imei_ctx,
         **correction_context(app),
     })
 
@@ -928,3 +953,99 @@ def sales_payments(request):
         "page_heading": "Payments",
         "transactions": recent_transactions,
     })
+
+
+# ---------------------------------------------------------------------------
+# IMEI recheck (underwriter/HQ can force a fresh API call)
+# ---------------------------------------------------------------------------
+
+@underwriter_required
+@require_POST
+def sales_imei_recheck(request, app_id):
+    """Force a fresh IMEI API check for an application, bypassing cache."""
+    from django.conf import settings as dj_settings
+    from accounts.utils import is_hq
+    from applications.services.imei_verification import (
+        verify_imei_against_selected_device,
+        save_verification_result,
+    )
+
+    app = get_object_or_404(FinancingApplication, pk=app_id)
+
+    imei = app.imei_number or ""
+    if not imei or len(imei) != 15:
+        messages.error(request, "No valid IMEI on this application to recheck.")
+        return redirect("sales_final_review", app_id=app.id)
+
+    if not app.deal_id:
+        messages.error(request, "No deal selected on this application.")
+        return redirect("sales_final_review", app_id=app.id)
+
+    if not getattr(dj_settings, "IMEI_CHECK_ENABLED", True):
+        messages.warning(request, "IMEI verification is disabled in settings.")
+        return redirect("sales_final_review", app_id=app.id)
+
+    try:
+        result = verify_imei_against_selected_device(
+            imei=imei,
+            selected_device=app.deal,
+            user=request.user,
+            force_recheck=True,
+        )
+        save_verification_result(app, result, user=request.user)
+        status_label = result.get("match_status", "unknown").replace("_", " ").title()
+        messages.success(request, f"IMEI rechecked. Status: {status_label}.")
+    except Exception as exc:
+        messages.error(request, f"IMEI recheck failed: {exc}")
+
+    return redirect("sales_final_review", app_id=app.id)
+
+
+# ---------------------------------------------------------------------------
+# IMEI mismatch override (HQ / senior staff only)
+# ---------------------------------------------------------------------------
+
+@require_POST
+def sales_imei_override(request, app_id):
+    """
+    Allow HQ or staff to override an IMEI mismatch with a written reason.
+    This unblocks the application for normal approval flow.
+    """
+    from accounts.utils import is_hq
+    from core.models import AuditLog
+
+    if not request.user.is_authenticated:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
+
+    if not (is_hq(request.user) or request.user.is_staff):
+        messages.error(request, "Only HQ or staff can override an IMEI mismatch.")
+        return redirect("sales_final_review", app_id=app_id)
+
+    app = get_object_or_404(FinancingApplication, pk=app_id)
+    override_reason = request.POST.get("override_reason", "").strip()
+
+    if not override_reason:
+        messages.error(request, "An override reason is required.")
+        return redirect("sales_final_review", app_id=app.id)
+
+    app.imei_override = True
+    app.imei_override_reason = override_reason
+    app.imei_override_by = request.user
+    app.imei_override_at = timezone.now()
+    app.save(update_fields=["imei_override", "imei_override_reason", "imei_override_by", "imei_override_at"])
+
+    AuditLog.objects.create(
+        user=request.user,
+        action="imei_override",
+        object_type="FinancingApplication",
+        object_id=str(app.pk),
+        detail={
+            "application": app.application_number,
+            "imei": app.imei_number,
+            "override_reason": override_reason,
+            "imei_status": app.imei_verification_status,
+        },
+    )
+    messages.success(request, "IMEI mismatch override recorded. Normal approval is now allowed.")
+    return redirect("sales_final_review", app_id=app.id)

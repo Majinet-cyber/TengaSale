@@ -1,36 +1,391 @@
 {% extends "base/base.html" %}
+{% load static %}
 
-{% block page_title %}IMEI Entry{% endblock %}
+{% block page_title %}Phone IMEI — TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── IMEI Verification Card ── */
+.imei-wrap { max-width: 520px; margin: 0 auto; padding: 0 16px 40px; }
+.imei-card {
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,107,26,0.15);
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(15,23,42,0.08);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.imei-card__head {
+  padding: 16px 20px 12px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1.5px solid #f1f5f9;
+  background: linear-gradient(135deg,#fff8f0,#fff);
+}
+.imei-card__icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: rgba(255,107,26,0.12); color: #ff6b1a;
+}
+.imei-card__icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.imei-card__title { font-weight: 800; font-size: 0.95rem; color: #0f172a; margin: 0; }
+.imei-card__sub { font-size: 0.75rem; color: #64748b; margin: 2px 0 0; }
+.imei-card__body { padding: 18px 20px; }
+
+.imei-field-wrap { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 14px; }
+.imei-input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-family: monospace;
+  letter-spacing: 0.06em;
+  outline: none;
+  transition: border-color .15s;
+}
+.imei-input:focus { border-color: #ff6b1a; }
+.btn-verify {
+  padding: 12px 18px;
+  background: #ff6b1a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.btn-verify:hover { background: #e05a12; }
+.btn-verify:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* Status badges */
+.vfy-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 99px;
+  font-size: 0.78rem; font-weight: 700;
+}
+.vfy-badge--match { background: #f0fdf4; color: #16a34a; border: 1px solid rgba(22,163,74,0.2); }
+.vfy-badge--possible { background: #fffbeb; color: #d97706; border: 1px solid rgba(217,119,6,0.2); }
+.vfy-badge--mismatch { background: #fef2f2; color: #dc2626; border: 1px solid rgba(220,38,38,0.2); }
+.vfy-badge--unknown { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+.vfy-badge--pending { background: #f0f9ff; color: #0284c7; border: 1px solid rgba(2,132,199,0.2); }
+.vfy-badge--error { background: #fff7ed; color: #ea580c; border: 1px solid rgba(234,88,12,0.2); }
+
+/* Verification result panel */
+.vfy-result { border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: none; }
+.vfy-result--match { background: #f0fdf4; border: 1px solid rgba(22,163,74,0.2); }
+.vfy-result--possible { background: #fffbeb; border: 1px solid rgba(217,119,6,0.2); }
+.vfy-result--mismatch { background: #fef2f2; border: 1px solid rgba(220,38,38,0.25); }
+.vfy-result--unknown { background: #f8fafc; border: 1px solid #e2e8f0; }
+.vfy-result--error { background: #fff7ed; border: 1px solid rgba(234,88,12,0.2); }
+
+.vfy-result__heading { font-weight: 800; font-size: 0.9rem; margin: 0 0 4px; }
+.vfy-result__sub { font-size: 0.80rem; margin: 0 0 10px; opacity: .85; }
+.vfy-detail-row { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px; }
+.vfy-detail-row span { color: #64748b; }
+.vfy-detail-row strong { color: #0f172a; }
+
+.vfy-reasons { margin-top: 10px; padding: 10px 14px; background: rgba(0,0,0,0.04); border-radius: 8px; }
+.vfy-reasons-title { font-size: 0.70rem; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+.vfy-reasons ul { margin: 0; padding-left: 16px; }
+.vfy-reasons li { font-size: 0.74rem; color: #475569; margin-bottom: 3px; }
+
+.vfy-confidence { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.vfy-confidence-bar-wrap { flex: 1; background: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; }
+.vfy-confidence-bar { height: 6px; border-radius: 4px; transition: width .5s ease; }
+.vfy-confidence-pct { font-size: 0.75rem; font-weight: 700; min-width: 38px; text-align: right; }
+
+.vfy-block-notice {
+  background: #fef2f2; border: 1.5px solid rgba(220,38,38,0.3);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;
+  font-size: 0.82rem; color: #dc2626; font-weight: 600; display: none;
+}
+.vfy-block-notice svg { width: 16px; height: 16px; display: inline; vertical-align: text-bottom; margin-right: 4px; }
+
+.btn-submit-main {
+  width: 100%; padding: 14px;
+  background: #ff6b1a; color: #fff;
+  border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.btn-submit-main:hover { background: #e05a12; }
+.btn-submit-main:disabled { background: #94a3b8; cursor: not-allowed; }
+
+.vfy-spinner { display: inline-block; width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.field-help { font-size: 0.75rem; color: #64748b; margin: 4px 0 0; }
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="imei-wrap">
 
-<a href="{% url 'contract_signature' contract.id %}" class="soft-back">
+  <a href="{% url 'contract_signature' contract.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
-</a>
+  </a>
 
-<h1 class="greeting">Phone IMEI</h1>
+  <h1 class="greeting" style="margin-bottom:6px;">Phone IMEI</h1>
+  <p style="font-size:0.85rem;color:#64748b;margin-bottom:20px;">
+    Enter the 15-digit IMEI of the <strong>{{ application.deal }}</strong> being financed.
+  </p>
 
-<form method="post" class="card">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div class="form-group">
-        <label for="{{ form.imei_number.id_for_label }}">Phone IMEI *</label>
-        {{ form.imei_number }}
-        {{ form.imei_number.errors }}
-        <p class="field-help">Enter exactly 15 digits.</p>
+  <div class="imei-card">
+    <div class="imei-card__head">
+      <div class="imei-card__icon">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </div>
+      <div>
+        <p class="imei-card__title">IMEI Verification</p>
+        <p class="imei-card__sub">Verifying the IMEI protects against device substitution fraud.</p>
+      </div>
     </div>
-    <button type="submit" class="btn primary-button">Next</button>
-</form>
 
+    <div class="imei-card__body">
+      <form method="post" id="imei-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="{{ form.imei_number.id_for_label }}" style="font-weight:700;font-size:0.85rem;">Phone IMEI *</label>
+          <div class="imei-field-wrap" style="margin-top:8px;">
+            {{ form.imei_number }}
+            {% if imei_check_enabled %}
+            <button type="button" id="btn-verify" class="btn-verify" disabled>
+              Verify IMEI
+            </button>
+            {% endif %}
+          </div>
+          {{ form.imei_number.errors }}
+          <p class="field-help">Enter exactly 15 digits. You can find the IMEI by dialling *#06# on the phone.</p>
+        </div>
+      </form>
+
+      {% if imei_check_enabled %}
+      <!-- Verification result panel — shown via JS -->
+      <div id="vfy-pending" class="vfy-result vfy-result--unknown" style="display:block;">
+        <p class="vfy-result__heading" style="color:#0284c7;">IMEI verification pending</p>
+        <p class="vfy-result__sub" style="color:#0369a1;">
+          Enter a 15-digit IMEI and click <strong>Verify IMEI</strong> to check the device.
+        </p>
+      </div>
+
+      <div id="vfy-result-panel" class="vfy-result" style="display:none;">
+        <p class="vfy-result__heading" id="vfy-heading"></p>
+        <p class="vfy-result__sub" id="vfy-sub"></p>
+        <div id="vfy-details"></div>
+        <div id="vfy-confidence-wrap" class="vfy-confidence" style="display:none;">
+          <div class="vfy-confidence-bar-wrap">
+            <div class="vfy-confidence-bar" id="vfy-confidence-bar"></div>
+          </div>
+          <span class="vfy-confidence-pct" id="vfy-confidence-pct"></span>
+        </div>
+        <div id="vfy-reasons" class="vfy-reasons" style="display:none;">
+          <div class="vfy-reasons-title">Verification details</div>
+          <ul id="vfy-reasons-list"></ul>
+        </div>
+        <details style="margin-top:10px;">
+          <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">View technical result</summary>
+          <pre id="vfy-raw" style="font-size:0.65rem;white-space:pre-wrap;overflow:auto;max-height:120px;margin-top:6px;background:#f8fafc;padding:8px;border-radius:6px;color:#475569;"></pre>
+        </details>
+      </div>
+
+      <div id="vfy-block-notice" class="vfy-block-notice" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Submission blocked. The IMEI does not match the selected smartphone. Please correct the smartphone model or enter the correct IMEI.
+      </div>
+      {% endif %}
+
+      <button type="submit" form="imei-form" id="btn-submit" class="btn-submit-main">
+        Next
+      </button>
+
+      {% if imei_check_enabled %}
+      <p id="vfy-review-note" style="font-size:0.75rem;color:#d97706;text-align:center;margin-top:8px;display:none;">
+        This application will require underwriter review due to IMEI verification result.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% if imei_check_enabled %}
 <script>
-    (function () {
-        const input = document.querySelector("[data-imei-input]");
-        if (!input) return;
-        input.addEventListener("input", function () {
-            input.value = input.value.replace(/\D/g, "").slice(0, 15);
-        });
-    })();
-</script>
+(function () {
+  const csrfToken = '{{ csrf_token }}';
+  const verifyUrl = '{% url "verify_imei_ajax" application.id %}';
+  const strictMode = {{ strict_mode|yesno:"true,false" }};
 
+  const input = document.getElementById('{{ form.imei_number.id_for_label }}');
+  const btnVerify = document.getElementById('btn-verify');
+  const btnSubmit = document.getElementById('btn-submit');
+  const pendingPanel = document.getElementById('vfy-pending');
+  const resultPanel = document.getElementById('vfy-result-panel');
+  const blockNotice = document.getElementById('vfy-block-notice');
+  const reviewNote = document.getElementById('vfy-review-note');
+
+  // IMEI digit-only filter
+  if (input) {
+    input.setAttribute('data-imei-input', '');
+    input.style.fontFamily = 'monospace';
+    input.style.letterSpacing = '0.06em';
+    input.addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 15);
+      const ready = this.value.length === 15;
+      btnVerify.disabled = !ready;
+      if (!ready) {
+        showPending();
+        btnSubmit.disabled = false;
+        blockNotice.style.display = 'none';
+        reviewNote.style.display = 'none';
+      }
+    });
+  }
+
+  function showPending() {
+    pendingPanel.style.display = 'block';
+    resultPanel.style.display = 'none';
+  }
+
+  function applyResult(data) {
+    pendingPanel.style.display = 'none';
+    resultPanel.style.display = 'block';
+
+    const status = data.match_status || 'unknown';
+    const heading = document.getElementById('vfy-heading');
+    const sub = document.getElementById('vfy-sub');
+    const detailsEl = document.getElementById('vfy-details');
+    const confWrap = document.getElementById('vfy-confidence-wrap');
+    const confBar = document.getElementById('vfy-confidence-bar');
+    const confPct = document.getElementById('vfy-confidence-pct');
+    const rawEl = document.getElementById('vfy-raw');
+    const reasonsEl = document.getElementById('vfy-reasons');
+    const reasonsList = document.getElementById('vfy-reasons-list');
+
+    // Clear classes
+    resultPanel.className = 'vfy-result';
+
+    const cfg = {
+      'match': {
+        cls: 'vfy-result--match',
+        heading: '✓ Verified smartphone match',
+        sub: `The IMEI confirms this device as <strong>${data.api_brand || ''} ${data.api_model || ''}</strong>.`,
+        headColor: '#16a34a',
+        barColor: '#16a34a',
+      },
+      'possible_match': {
+        cls: 'vfy-result--possible',
+        heading: '⚠ Possible match — underwriter review required',
+        sub: `The IMEI result is close to the selected smartphone but requires review.`,
+        headColor: '#d97706',
+        barColor: '#f59e0b',
+      },
+      'mismatch': {
+        cls: 'vfy-result--mismatch',
+        heading: '✗ Device mismatch detected',
+        sub: `The IMEI returned <strong>${data.api_brand || '?'} ${data.api_model || '?'}</strong>, but the selected smartphone is <strong>${data.selected_brand || ''} ${data.selected_model || ''}</strong>. Please correct the smartphone model or enter the correct IMEI.`,
+        headColor: '#dc2626',
+        barColor: '#ef4444',
+      },
+      'unknown': {
+        cls: 'vfy-result--unknown',
+        heading: 'Device identification unclear',
+        sub: 'The IMEI check could not confidently identify the device. This application will require underwriter review.',
+        headColor: '#64748b',
+        barColor: '#94a3b8',
+      },
+      'api_error': {
+        cls: 'vfy-result--error',
+        heading: 'IMEI check unavailable',
+        sub: 'The verification service could not be reached. This application will require underwriter review.',
+        headColor: '#ea580c',
+        barColor: '#f97316',
+      },
+    };
+
+    const c = cfg[status] || cfg['unknown'];
+    resultPanel.classList.add(c.cls);
+    heading.textContent = c.heading;
+    heading.style.color = c.headColor;
+    sub.innerHTML = c.sub;
+
+    // Device detail rows
+    detailsEl.innerHTML = '';
+    if (data.api_brand || data.api_model) {
+      detailsEl.innerHTML = `
+        <div class="vfy-detail-row"><span>API-confirmed device</span><strong>${data.api_brand || '—'} ${data.api_model || '—'}</strong></div>
+        <div class="vfy-detail-row"><span>Selected smartphone</span><strong>${data.selected_brand || '—'} ${data.selected_model || '—'}</strong></div>`;
+    }
+
+    // Confidence bar
+    const conf = data.confidence || 0;
+    if (conf > 0) {
+      confWrap.style.display = 'flex';
+      confBar.style.width = conf + '%';
+      confBar.style.background = c.barColor;
+      confPct.textContent = conf + '%';
+      confPct.style.color = c.barColor;
+    } else {
+      confWrap.style.display = 'none';
+    }
+
+    // Reasons
+    if (data.reasons && data.reasons.length) {
+      reasonsEl.style.display = 'block';
+      reasonsList.innerHTML = data.reasons.map(r => `<li>${r}</li>`).join('');
+    } else {
+      reasonsEl.style.display = 'none';
+    }
+
+    // Raw result
+    rawEl.textContent = data.api_raw_result || '(no raw result)';
+
+    // Block/submit logic
+    blockNotice.style.display = 'none';
+    reviewNote.style.display = 'none';
+    btnSubmit.disabled = false;
+
+    if (status === 'mismatch' && strictMode) {
+      blockNotice.style.display = 'block';
+      btnSubmit.disabled = true;
+    } else if (['possible_match', 'unknown', 'api_error'].includes(status)) {
+      reviewNote.style.display = 'block';
+    }
+  }
+
+  if (btnVerify) {
+    btnVerify.addEventListener('click', async function () {
+      const imei = input ? input.value.trim() : '';
+      if (imei.length !== 15) return;
+
+      btnVerify.disabled = true;
+      btnVerify.innerHTML = '<span class="vfy-spinner"></span>Verifying…';
+
+      try {
+        const resp = await fetch(verifyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+          },
+          body: `imei=${encodeURIComponent(imei)}`,
+        });
+        const data = await resp.json();
+        applyResult(data);
+      } catch (err) {
+        applyResult({ match_status: 'api_error', reasons: ['Network error: ' + err.message] });
+      } finally {
+        btnVerify.disabled = false;
+        btnVerify.textContent = 'Recheck IMEI';
+      }
+    });
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

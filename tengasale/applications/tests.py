@@ -1254,3 +1254,239 @@ class Phase10FieldMarkingTests(TestCase):
         token2 = ApplicationCorrectionToken.create_or_refresh(self.app)
         self.assertEqual(token1.pk, token2.pk)
         self.assertNotEqual(token2.token, old_token_value)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# IMEI Verification Tests
+# ──────────────────────────────────────────────────────────────────────────────
+
+from unittest.mock import MagicMock, patch
+
+from applications.services.imei_verification import (
+    extract_brand_model_from_api_result,
+    normalize_brand,
+    normalize_model,
+    score_device_match,
+    verify_imei_against_selected_device,
+)
+
+
+class NormalisationTests(TestCase):
+    """normalize_brand and normalize_model helpers."""
+
+    def test_tecno_variants_all_normalise_to_tecno(self):
+        for text in ["Tecno", "TECNO", "Tecno Mobile", "Tecno Telecom (HK) Limited", "tecno telecom"]:
+            self.assertEqual(normalize_brand(text), "tecno", msg=text)
+
+    def test_samsung_galaxy_normalises_to_samsung(self):
+        self.assertEqual(normalize_brand("Samsung Galaxy"), "samsung")
+        self.assertEqual(normalize_brand("Samsung"), "samsung")
+
+    def test_apple_iphone_normalises_to_apple(self):
+        self.assertEqual(normalize_brand("Apple"), "apple")
+        self.assertEqual(normalize_brand("iPhone"), "apple")
+
+    def test_xiaomi_redmi_poco_normalise_to_xiaomi(self):
+        self.assertEqual(normalize_brand("Xiaomi"), "xiaomi")
+        self.assertEqual(normalize_brand("Redmi"), "xiaomi")
+        self.assertEqual(normalize_brand("POCO"), "xiaomi")
+
+    def test_itel_normalises(self):
+        self.assertEqual(normalize_brand("itel"), "itel")
+        self.assertEqual(normalize_brand("iTel"), "itel")
+
+    def test_model_strips_parenthetical_suffix(self):
+        self.assertEqual(normalize_model("iPhone 15 Pro (A3104)"), "iphone 15 pro")
+
+    def test_model_lowercased_and_stripped(self):
+        self.assertEqual(normalize_model("TECNO SPARK 50"), "tecno spark 50")
+
+    def test_model_empty_returns_empty(self):
+        self.assertEqual(normalize_model(""), "")
+
+
+class BrandModelExtractionTests(TestCase):
+    """extract_brand_model_from_api_result."""
+
+    def test_tecno_from_raw_text(self):
+        raw = "Brand: Tecno Telecom (HK) Limited\nModel: TECNO SPARK 50\nModel Name: KN4"
+        brand, model = extract_brand_model_from_api_result(raw, {})
+        self.assertEqual(brand, "tecno")
+        self.assertEqual(model, "TECNO SPARK 50")
+
+    def test_apple_from_object_dict(self):
+        obj = {"model": "iPhone 15 Pro (A3104)", "imei": "35698831919000"}
+        brand, model = extract_brand_model_from_api_result("", obj)
+        self.assertEqual(brand, "apple")
+        self.assertIn("iPhone 15 Pro", model)
+
+    def test_empty_returns_empty(self):
+        brand, model = extract_brand_model_from_api_result("", {})
+        self.assertEqual(brand, "")
+        self.assertEqual(model, "")
+
+
+class MatchScoringTests(TestCase):
+    """score_device_match — all required test cases from spec."""
+
+    def _score(self, sel_brand, sel_model, api_brand, api_model, raw=""):
+        confidence, reasons, status = score_device_match(sel_brand, sel_model, api_brand, api_model, raw)
+        return confidence, status
+
+    def test_tecno_spark_50_exact_match(self):
+        conf, status = self._score("Tecno", "Spark 50", "tecno", "TECNO SPARK 50")
+        self.assertEqual(status, "match")
+        self.assertGreaterEqual(conf, 85)
+
+    def test_tecno_vs_infinix_is_mismatch(self):
+        conf, status = self._score("Tecno", "Spark 20", "infinix", "Hot 40")
+        self.assertEqual(status, "mismatch")
+        self.assertEqual(conf, 0)
+
+    def test_apple_iphone_15_pro_match(self):
+        conf, status = self._score("Apple", "iPhone 15 Pro", "apple", "iPhone 15 Pro (A3104)")
+        self.assertEqual(status, "match")
+        self.assertGreaterEqual(conf, 85)
+
+    def test_redmi_vs_xiaomi_redmi_13c_is_match_or_possible(self):
+        conf, status = self._score("Redmi", "13C", "xiaomi", "Xiaomi Redmi 13C")
+        self.assertIn(status, ("match", "possible_match"))
+
+    def test_samsung_a05_vs_samsung_galaxy_a05_is_match_or_possible(self):
+        conf, status = self._score("Samsung", "A05", "samsung", "Samsung Galaxy A05")
+        self.assertIn(status, ("match", "possible_match"))
+
+    def test_tecno_spark_50_vs_spark_50c_is_possible_or_mismatch(self):
+        conf, status = self._score("Tecno", "Spark 50", "tecno", "TECNO SPARK 50C")
+        self.assertIn(status, ("possible_match", "mismatch"))
+
+    def test_missing_api_model_returns_unknown(self):
+        _, _, status = score_device_match("Tecno", "Spark 50", "tecno", "")
+        self.assertEqual(status, "unknown")
+
+    def test_conflicting_brands_always_mismatch(self):
+        _, _, status = score_device_match("Samsung", "A05", "tecno", "Spark 50")
+        self.assertEqual(status, "mismatch")
+
+    def test_no_api_data_returns_unknown(self):
+        _, _, status = score_device_match("Tecno", "Spark 50", "", "")
+        self.assertEqual(status, "unknown")
+
+
+class VerifyImeiTests(TestCase):
+    """verify_imei_against_selected_device — integration-style tests with mocked API."""
+
+    def _make_deal(self, brand_name="Tecno", model_name="Spark 50"):
+        brand = MagicMock()
+        brand.name = brand_name
+        deal = MagicMock()
+        deal.brand = brand
+        deal.model_name = model_name
+        return deal
+
+    @patch("applications.services.imei_client.ImeiCheckClient")
+    @override_settings(IMEI_CHECK_ENABLED=True, IMEI_CHECK_STRICT_MODE=True)
+    def test_matching_imei_returns_match(self, MockClient):
+        MockClient.return_value.check_imei.return_value = {
+            "success": True,
+            "imei": "358089361347363",
+            "order_id": "111",
+            "status": "success",
+            "raw_result": "Brand: Tecno Telecom (HK) Limited\nModel: TECNO SPARK 50",
+            "object": {},
+            "price": "0.01",
+            "duration": "2s",
+            "error": "",
+        }
+        deal = self._make_deal("Tecno", "Spark 50")
+        result = verify_imei_against_selected_device("358089361347363", deal, force_recheck=True)
+        self.assertIn(result["match_status"], ("match", "possible_match"))
+        self.assertFalse(result.get("should_block", False))
+
+    @patch("applications.services.imei_client.ImeiCheckClient")
+    @override_settings(IMEI_CHECK_ENABLED=True, IMEI_CHECK_STRICT_MODE=True)
+    def test_mismatched_imei_blocks_in_strict_mode(self, MockClient):
+        MockClient.return_value.check_imei.return_value = {
+            "success": True,
+            "imei": "358089361347363",
+            "order_id": "222",
+            "status": "success",
+            "raw_result": "Brand: Infinix\nModel: HOT 40",
+            "object": {},
+            "price": "0.01",
+            "duration": "2s",
+            "error": "",
+        }
+        deal = self._make_deal("Tecno", "Spark 20 Pro")
+        result = verify_imei_against_selected_device("358089361347363", deal, force_recheck=True)
+        self.assertEqual(result["match_status"], "mismatch")
+        self.assertTrue(result["should_block"])
+
+    @patch("applications.services.imei_client.ImeiCheckClient")
+    @override_settings(IMEI_CHECK_ENABLED=True, IMEI_CHECK_STRICT_MODE=False)
+    def test_mismatched_imei_does_not_block_in_non_strict_mode(self, MockClient):
+        MockClient.return_value.check_imei.return_value = {
+            "success": True,
+            "imei": "358089361347363",
+            "order_id": "333",
+            "status": "success",
+            "raw_result": "Brand: Infinix\nModel: HOT 40",
+            "object": {},
+            "price": "0.01",
+            "duration": "2s",
+            "error": "",
+        }
+        deal = self._make_deal("Tecno", "Spark 20 Pro")
+        result = verify_imei_against_selected_device("358089361347363", deal, force_recheck=True)
+        self.assertEqual(result["match_status"], "mismatch")
+        self.assertFalse(result["should_block"])
+
+    @patch("applications.services.imei_client.ImeiCheckClient")
+    @override_settings(IMEI_CHECK_ENABLED=True)
+    def test_api_failure_returns_api_error(self, MockClient):
+        MockClient.return_value.check_imei.return_value = {
+            "success": False,
+            "imei": "358089361347363",
+            "order_id": "",
+            "status": "error",
+            "raw_result": "",
+            "object": {},
+            "price": "",
+            "duration": "",
+            "error": "Service unavailable",
+        }
+        deal = self._make_deal("Tecno", "Spark 50")
+        result = verify_imei_against_selected_device("358089361347363", deal, force_recheck=True)
+        self.assertEqual(result["match_status"], "api_error")
+        self.assertFalse(result["success"])
+
+    @patch("applications.services.imei_client.ImeiCheckClient")
+    @override_settings(IMEI_CHECK_ENABLED=True)
+    def test_cached_result_prevents_duplicate_api_call(self, MockClient):
+        from django.core.cache import cache
+        imei = "123456789012345"
+        cache_key = f"imei_check:{imei}"
+        cache.set(cache_key, {
+            "api_brand": "tecno",
+            "api_model": "Spark 50",
+            "api_raw_result": "Model: TECNO SPARK 50",
+            "order_id": "cached-999",
+            "raw_response": {},
+        }, 3600)
+        deal = self._make_deal("Tecno", "Spark 50")
+        result = verify_imei_against_selected_device(imei, deal, force_recheck=False)
+        MockClient.return_value.check_imei.assert_not_called()
+        self.assertIn("from cache", " ".join(result["reasons"]).lower())
+        cache.delete(cache_key)
+
+    @override_settings(IMEI_CHECK_ENABLED=True)
+    def test_invalid_imei_returns_api_error(self):
+        deal = self._make_deal("Tecno", "Spark 50")
+        result = verify_imei_against_selected_device("123", deal)
+        self.assertEqual(result["match_status"], "api_error")
+
+    @override_settings(IMEI_CHECK_ENABLED=False)
+    def test_disabled_check_returns_api_error(self):
+        deal = self._make_deal("Tecno", "Spark 50")
+        result = verify_imei_against_selected_device("358089361347363", deal)
+        self.assertEqual(result["match_status"], "api_error")

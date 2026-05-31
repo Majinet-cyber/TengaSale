@@ -213,6 +213,46 @@ class FinancingApplication(models.Model):
     calculated_3_month_daily = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     imei_number = models.CharField(max_length=80, blank=True)
 
+    # ── IMEI Verification ─────────────────────────────────────────────────────
+    IMEI_STATUS_PENDING = "pending"
+    IMEI_STATUS_MATCHED = "matched"
+    IMEI_STATUS_POSSIBLE = "possible_match"
+    IMEI_STATUS_MISMATCH = "mismatch"
+    IMEI_STATUS_UNKNOWN = "unknown"
+    IMEI_STATUS_API_ERROR = "api_error"
+
+    IMEI_STATUS_CHOICES = [
+        (IMEI_STATUS_PENDING, "Pending"),
+        (IMEI_STATUS_MATCHED, "Matched"),
+        (IMEI_STATUS_POSSIBLE, "Possible match"),
+        (IMEI_STATUS_MISMATCH, "Mismatch"),
+        (IMEI_STATUS_UNKNOWN, "Unknown"),
+        (IMEI_STATUS_API_ERROR, "API error"),
+    ]
+
+    imei_verified = models.BooleanField(default=False)
+    imei_verification_status = models.CharField(
+        max_length=30, choices=IMEI_STATUS_CHOICES, blank=True, default=""
+    )
+    imei_api_brand = models.CharField(max_length=120, blank=True, null=True)
+    imei_api_model = models.CharField(max_length=180, blank=True, null=True)
+    imei_match_confidence = models.PositiveSmallIntegerField(blank=True, null=True)
+    imei_verification_reason = models.TextField(blank=True, null=True)
+    imei_verified_at = models.DateTimeField(blank=True, null=True)
+    imei_order_id = models.CharField(max_length=80, blank=True, null=True)
+    imei_raw_response = models.JSONField(blank=True, null=True)
+    # Override fields — allow HQ / senior underwriter to unblock a mismatch
+    imei_override = models.BooleanField(default=False)
+    imei_override_reason = models.TextField(blank=True, null=True)
+    imei_override_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="imei_overrides",
+    )
+    imei_override_at = models.DateTimeField(blank=True, null=True)
+
     customer_face_image = models.ImageField(upload_to="kyc/faces/", blank=True, null=True)
     id_front_image = models.ImageField(upload_to="kyc/id_front/", blank=True, null=True)
     id_back_image = models.ImageField(upload_to="kyc/id_back/", blank=True, null=True)
