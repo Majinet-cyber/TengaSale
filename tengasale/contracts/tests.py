@@ -990,3 +990,116 @@ class LegalContextInPdfServiceTests(TestCase):
         self.assertEqual(len(ctx["legal_acceptance_records"]), 1)
         self.assertIsNotNone(ctx["master_terms_accepted_at"])
         self.assertNotEqual(ctx["master_terms_acceptance_id"], "")
+
+
+class SeedLegalDocumentsTests(TestCase):
+    """Tests for seed_legal_documents command and legal file loading safety."""
+
+    def test_seed_command_creates_master_terms(self):
+        from django.core.management import call_command
+        LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+        ).delete()
+        call_command("seed_legal_documents", verbosity=0)
+        doc = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+        ).first()
+        self.assertIsNotNone(doc)
+        self.assertEqual(doc.version, "1.0")
+        self.assertTrue(doc.is_active)
+        self.assertIn("TENGASALE", doc.body_html)
+
+    def test_seed_command_creates_contract_summary(self):
+        from django.core.management import call_command
+        LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+            version="1.0",
+        ).delete()
+        call_command("seed_legal_documents", verbosity=0)
+        doc = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+            version="1.0",
+        ).first()
+        self.assertIsNotNone(doc)
+        self.assertTrue(doc.is_active)
+
+    def test_seed_command_is_idempotent(self):
+        from django.core.management import call_command
+        call_command("seed_legal_documents", verbosity=0)
+        call_command("seed_legal_documents", verbosity=0)
+        count = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+        ).count()
+        self.assertEqual(count, 1)
+
+    def test_seed_command_body_is_valid_utf8(self):
+        from django.core.management import call_command
+        call_command("seed_legal_documents", verbosity=0)
+        doc = LegalDocumentTemplate.objects.get(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+        )
+        # Must be encodable to UTF-8 without error
+        encoded = doc.body_html.encode("utf-8")
+        self.assertGreater(len(encoded), 100)
+
+    def test_safe_read_legal_file_rejects_binary(self):
+        import tempfile, os
+        from contracts.management.commands.seed_legal_documents import _safe_read_legal_file
+        from pathlib import Path
+        from django.core.management.base import CommandError
+        # Write a file with invalid UTF-8 byte (0x97) named .html
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
+            tmp.write(b"Legal text \x97 with bad byte")
+            tmp_path = Path(tmp.name)
+        try:
+            with self.assertRaises(CommandError):
+                _safe_read_legal_file(tmp_path)
+        finally:
+            os.unlink(tmp_path)
+
+    def test_safe_read_legal_file_reads_valid_utf8_html(self):
+        import tempfile, os
+        from contracts.management.commands.seed_legal_documents import _safe_read_legal_file
+        from pathlib import Path
+        content = "<h1>Legal Terms</h1><p>Valid UTF-8 content.</p>"
+        with tempfile.NamedTemporaryFile(
+            suffix=".html", delete=False, mode="w", encoding="utf-8"
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+        try:
+            result = _safe_read_legal_file(tmp_path)
+            self.assertEqual(result, content)
+        finally:
+            os.unlink(tmp_path)
+
+    def test_safe_read_legal_file_rejects_unsupported_format(self):
+        import tempfile, os
+        from contracts.management.commands.seed_legal_documents import _safe_read_legal_file
+        from pathlib import Path
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp.write(b"%PDF-1.4")
+            tmp_path = Path(tmp.name)
+        try:
+            with self.assertRaises(ValueError):
+                _safe_read_legal_file(tmp_path)
+        finally:
+            os.unlink(tmp_path)
+
+    def test_style_css_is_valid_utf8(self):
+        """Ensure style.css in static dir is valid UTF-8 (Render build guard)."""
+        import pathlib
+        css_path = pathlib.Path(__file__).resolve().parent.parent / "static" / "css" / "style.css"
+        if not css_path.exists():
+            self.skipTest("style.css not found in test environment")
+        try:
+            css_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as e:
+            self.fail(
+                f"style.css contains invalid UTF-8 bytes. "
+                f"Render collectstatic will fail. Detail: {e}"
+            )

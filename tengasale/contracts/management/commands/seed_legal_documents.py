@@ -13,10 +13,55 @@ Usage:
 """
 
 import datetime
+from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from contracts.models import LegalDocumentTemplate
+
+
+def _safe_read_legal_file(path: Path) -> str:
+    """
+    Read a legal document source file safely.
+
+    - .txt and .html files: read as UTF-8 text
+    - .docx files: extract text using python-docx (never decoded as UTF-8 directly)
+    - Other formats: raise ValueError
+
+    Raises:
+        CommandError: if the file cannot be read or decoded correctly
+        ValueError: if the file format is unsupported
+    """
+    suffix = path.suffix.lower()
+    if suffix in (".txt", ".html"):
+        try:
+            return path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise CommandError(
+                f"Cannot decode {path.name} as UTF-8. "
+                "Ensure the file is saved with UTF-8 encoding. "
+                f"Detail: {exc}"
+            ) from exc
+    elif suffix == ".docx":
+        try:
+            from docx import Document  # python-docx
+        except ImportError as exc:
+            raise CommandError(
+                "python-docx is required to load .docx legal templates. "
+                "Run: pip install python-docx"
+            ) from exc
+        try:
+            doc = Document(path)
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception as exc:
+            raise CommandError(
+                f"Failed to parse DOCX file {path.name}: {exc}"
+            ) from exc
+    else:
+        raise ValueError(
+            f"Unsupported legal template format: {suffix}. "
+            "Only .txt, .html, and .docx files are supported."
+        )
 
 MASTER_TERMS_V1_HTML = """
 <div class="legal-doc">

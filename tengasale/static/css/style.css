@@ -5227,12 +5227,15 @@ table {
     border-color: var(--ts-orange);
 }
 
-/* ============================================================
-   TENGASALE SILICON VALLEY POLISH — v2.0
-   KulaSell-level simplicity: white, calm, sharp, card-based
-   ============================================================ */
 
-/* -- App background update: light grey instead of warm tint -- */
+
+/* =====================================================================
+   TENGASALE SILICON VALLEY POLISH v2.0
+   KulaSell-level: white, calm, sharp, card-based
+   All string literals are pure ASCII to guarantee UTF-8 safety.
+   ===================================================================== */
+
+/* App background: light grey */
 html,
 body {
     background: #f1f5f9;
@@ -5242,7 +5245,7 @@ body {
     background: #f1f5f9;
 }
 
-/* -- Topbar page title support -- */
+/* Topbar page title */
 .topbar-title {
     font-size: 17px;
     font-weight: 800;
@@ -5254,7 +5257,7 @@ body {
     text-overflow: ellipsis;
 }
 
-/* -- Notification bell live badge -- */
+/* Notification bell live badge */
 .notification-count--live {
     background: #dc2626;
     color: #fff;
@@ -5274,7 +5277,7 @@ body {
     pointer-events: none;
 }
 
-/* -- KulaSell-style brand card grid -- */
+/* KulaSell-style brand card grid */
 .brand-card-grid-v2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -5341,7 +5344,7 @@ body {
     text-align: center;
 }
 
-/* -- Product cards — model list -- */
+/* Product card list */
 .product-card-list {
     display: flex;
     flex-direction: column;
@@ -5412,7 +5415,7 @@ body {
     color: #101828;
 }
 
-/* -- Term selector chips -- */
+/* Term selector chips */
 .term-selector {
     display: flex;
     gap: 8px;
@@ -5441,7 +5444,7 @@ body {
     color: #ff5a00;
 }
 
-/* -- Page header -- */
+/* Page header */
 .ts-page-header {
     padding: 18px 18px 10px;
 }
@@ -5461,7 +5464,7 @@ body {
     line-height: 1.5;
 }
 
-/* -- Section divider label -- */
+/* Section divider label */
 .ts-section-label {
     font-size: 11px;
     font-weight: 800;
@@ -5471,7 +5474,7 @@ body {
     padding: 14px 18px 6px;
 }
 
-/* -- Application list cards — KulaSell style -- */
+/* Application list cards */
 .app-card-list {
     display: flex;
     flex-direction: column;
@@ -5561,7 +5564,7 @@ body {
     flex-shrink: 0;
 }
 
-/* -- Status chips v2 — minimal pills -- */
+/* Status chips */
 .ts-status-chip {
     display: inline-flex;
     align-items: center;
@@ -5628,7 +5631,7 @@ body {
     border: 1px solid #fecaca;
 }
 
-/* -- Tab bar v2 — simple underline tabs -- */
+/* Tab bar */
 .ts-tabs-v2 {
     display: flex;
     border-bottom: 1.5px solid #e5e7eb;
@@ -5660,7 +5663,7 @@ body {
     border-bottom-color: #ff5a00;
 }
 
-/* -- Notification list -- */
+/* Notification list */
 .notif-list {
     display: flex;
     flex-direction: column;
@@ -5724,7 +5727,7 @@ body {
     flex-shrink: 0;
 }
 
-/* -- Notification dropdown -- */
+/* Notification dropdown */
 .notif-dropdown {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
@@ -5809,7 +5812,7 @@ body {
     border-top: 1px solid #e5e7eb;
 }
 
-/* -- ts-badge -- */
+/* ts-badge */
 .ts-badge {
     display: inline-flex;
     align-items: center;
@@ -5840,7 +5843,7 @@ body {
     color: #64748b;
 }
 
-/* -- Empty state -- */
+/* Empty state */
 .ts-empty-state {
     display: flex;
     flex-direction: column;
@@ -5869,7 +5872,7 @@ body {
     color: #94a3b8;
 }
 
-/* -- Contract structured cards -- */
+/* Contract structured cards */
 .contract-section-card {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
@@ -5886,6 +5889,10 @@ body {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     gap: 10px;
+    width: 100%;
+    border: none;
+    background: none;
+    text-align: left;
 }
 
 .contract-section-card__title {
@@ -5947,7 +5954,7 @@ body {
     word-break: break-word;
 }
 
-/* -- Queue card v2 -- */
+/* Queue card */
 .queue-card-v2 {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
@@ -5978,12 +5985,7 @@ body {
     color: #101828;
 }
 
-.queue-card-v2__app-id {
-    font-size: 12px;
-    color: #667085;
-    margin-top: 2px;
-}
-
+.queue-card-v2__app-id,
 .queue-card-v2__merchant {
     font-size: 12px;
     color: #667085;
@@ -6051,7 +6053,7 @@ body {
     padding: 0 16px 14px;
 }
 
-/* -- Summary card -- */
+/* Summary card */
 .ts-summary-card {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
@@ -6082,7 +6084,7 @@ body {
     margin-top: 4px;
 }
 
-/* -- Wallet balance card -- */
+/* Wallet balance card */
 .ts-wallet-card {
     background: #101828;
     border-radius: 18px;
@@ -6113,7 +6115,7 @@ body {
     margin-top: 4px;
 }
 
-/* -- KYC image grid -- */
+/* KYC image grid */
 .kyc-image-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -6157,7 +6159,7 @@ body {
     color: #cbd5e1;
 }
 
-/* -- Image modal lightbox -- */
+/* Image modal lightbox */
 .img-modal-overlay {
     position: fixed;
     inset: 0;
@@ -6211,7 +6213,7 @@ body {
     text-align: center;
 }
 
-/* -- Contact hub -- */
+/* Contact hub */
 .contact-hub-row {
     display: flex;
     align-items: center;
@@ -6265,7 +6267,7 @@ body {
 .contact-action-btn--call  { border-color: #bfdbfe; color: #1d4ed8; }
 .contact-action-btn--wa    { border-color: #bbf7d0; color: #166534; }
 
-/* -- IMEI/Warranty status pills -- */
+/* IMEI/Warranty status pills */
 .imei-status-pill {
     display: inline-flex;
     align-items: center;
@@ -6276,13 +6278,13 @@ body {
     font-weight: 700;
 }
 
-.imei-status-pill--match   { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.imei-status-pill--match    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 .imei-status-pill--mismatch { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .imei-status-pill--pending  { background: #fef9ee; color: #92400e; border: 1px solid #fde68a; }
-.imei-status-pill--unchecked { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+.imei-status-pill--unchecked{ background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
 .imei-status-pill--override { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
 
-/* -- Decision command center -- */
+/* Decision command center */
 .decision-center {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
@@ -6344,7 +6346,7 @@ body {
     border-top: 1px solid #f1f5f9;
 }
 
-/* -- Setup health cards -- */
+/* Setup health cards */
 .health-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -6383,7 +6385,7 @@ body {
     color: #667085;
 }
 
-/* -- Progress stepper -- */
+/* Progress stepper */
 .ts-progress-steps {
     display: flex;
     flex-direction: column;
@@ -6441,7 +6443,7 @@ body {
     margin-top: 2px;
 }
 
-/* -- Sticky footer actions -- */
+/* Sticky footer actions */
 .ts-sticky-actions {
     position: sticky;
     bottom: 0;
@@ -6457,7 +6459,7 @@ body {
     flex: 1;
 }
 
-/* -- btn size variants -- */
+/* Button size variants */
 .btn-sm {
     padding: 5px 12px;
     font-size: 12px;
@@ -6471,6 +6473,6 @@ body {
     border: 1.5px solid #e5e7eb;
 }
 
-/* ============================================================
-   END SILICON VALLEY POLISH ADDITIONS
-   ============================================================ */
+/* =====================================================================
+   END SILICON VALLEY POLISH v2.0
+   ===================================================================== */
