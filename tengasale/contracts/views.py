@@ -84,15 +84,39 @@ def contract_terms(request, app_id):
     master_terms_doc = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_MASTER_TERMS)
     summary_doc = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY)
 
+    # Track that merchant opened the terms page
+    if contract and not contract.terms_opened_at:
+        contract.terms_opened_at = timezone.now()
+        contract.save(update_fields=["terms_opened_at"])
+
     if request.method == "POST":
         form = MerchantTermsForm(request.POST)
         if form.is_valid():
             contract, _ = Contract.from_application(application)
             contract.terms_accepted_by_merchant = True
+            contract.terms_confirmed_at = timezone.now()
+            contract.terms_confirmed_by = request.user
             contract.status = Contract.STATUS_TERMS_ACCEPTED
-            contract.save(update_fields=["terms_accepted_by_merchant", "status", "updated_at"])
+            contract.save(update_fields=[
+                "terms_accepted_by_merchant", "terms_confirmed_at", "terms_confirmed_by",
+                "status", "updated_at",
+            ])
             application.status = "contract_signature"
             application.save(update_fields=["status"])
+
+            # Send notification to merchant
+            try:
+                from notifications.models import Notification
+                Notification.send(
+                    recipient=request.user,
+                    notification_type=Notification.TYPE_TERMS_PENDING,
+                    title="Contract Terms Confirmed",
+                    body=f"You confirmed terms for {application.customer_name} — {contract.contract_number}",
+                    link=application.get_continue_url(),
+                    level=Notification.LEVEL_SUCCESS,
+                )
+            except Exception:
+                pass
 
             # Create LegalAcceptance records for both documents (merchant confirms on behalf)
             now = timezone.now()

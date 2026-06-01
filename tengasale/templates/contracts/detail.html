@@ -1,235 +1,282 @@
 {% extends "base/base.html" %}
-{% load ts_filters %}
+{% load static ts_filters %}
 
-{% block page_title %}Contract {{ contract.contract_number }}{% endblock %}
+{% block page_title %}Contract {{ contract.contract_number }} — TengaSale{% endblock %}
+
+{% block topbar %}
+<header class="topbar app-topbar">
+    <div class="brand-left">
+        <a href="{% url 'active_applications' %}" class="icon-button" aria-label="Back" style="margin-right:6px;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <span style="font-size:17px;font-weight:800;color:#101828;">Contract</span>
+    </div>
+    {% if request.user.is_authenticated %}
+    <div class="top-actions">
+        <a href="{% url 'notifications_list' %}" class="icon-button notification-button" aria-label="Notifications">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            {% if unread_notification_count %}<span class="notification-count notification-count--live">{{ unread_notification_count }}</span>{% endif %}
+        </a>
+    </div>
+    {% endif %}
+</header>
+{% endblock %}
 
 {% block content %}
 
-<a href="{% url 'active_applications' %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
+{# ── Top summary card ── #}
+<div class="ts-summary-card" style="margin-top:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+            <div class="ts-summary-card__label">{{ application.application_number }}</div>
+            <div class="ts-summary-card__value" style="font-size:20px;">{{ contract.contract_number }}</div>
+        </div>
+        <span class="ts-status-chip
+            {% if contract.status == 'complete' %}ts-status-chip--completed
+            {% elif contract.status == 'locking' or contract.status == 'locked' %}ts-status-chip--review
+            {% elif contract.status == 'draft' %}ts-status-chip--draft
+            {% else %}ts-status-chip--pending{% endif %}
+        ">{{ contract.get_status_display }}</span>
+    </div>
+    <div class="product-card__price-grid" style="margin:0;">
+        <div class="product-card__price-item">
+            <span class="product-card__price-label">Customer</span>
+            <span class="product-card__price-value" style="font-size:13px;">{{ contract.customer_name }}</span>
+        </div>
+        <div class="product-card__price-item">
+            <span class="product-card__price-label">Device</span>
+            <span class="product-card__price-value" style="font-size:13px;">{{ contract.deal_name|default:"—" }}</span>
+        </div>
+        <div class="product-card__price-item">
+            <span class="product-card__price-label">Term</span>
+            <span class="product-card__price-value">{{ contract.contract_term_months }} months</span>
+        </div>
+        <div class="product-card__price-item">
+            <span class="product-card__price-label">Monthly</span>
+            <span class="product-card__price-value">{{ contract.monthly_payment|mwk }}</span>
+        </div>
+        <div class="product-card__price-item">
+            <span class="product-card__price-label">Total price</span>
+            <span class="product-card__price-value">{{ contract.total_loan|mwk }}</span>
+        </div>
+    </div>
+</div>
 
-<h1 class="greeting">Contract Detail</h1>
-
-{% if contract.status == "complete" %}
-<div class="alert alert-success" style="margin-bottom:16px;padding:10px 14px;background:#eaffea;border:1px solid #22aa44;border-radius:6px;color:#155724;">
-    <strong>Contract completed.</strong>
-    {% if contract.completed_at %}Completed: {{ contract.completed_at|date:"d M Y, H:i" }}.{% endif %}
-    {% if contract.ownership_transfer_at %}Ownership transferred.{% endif %}
+{# ── Terms review banner ── #}
+{% if contract.terms_confirmed_at %}
+<div style="margin:0 14px 10px;padding:12px 14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;display:flex;align-items:center;gap:10px;">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div>
+        <div style="font-size:13px;font-weight:800;color:#166534;">Terms reviewed</div>
+        <div style="font-size:11px;color:#4ade80;">{{ contract.terms_confirmed_at|date:"d M Y, H:i" }} by {{ contract.terms_confirmed_by.get_full_name|default:contract.terms_confirmed_by.username|default:"—" }}</div>
+    </div>
+</div>
+{% else %}
+<div style="margin:0 14px 10px;padding:12px 14px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;display:flex;align-items:center;gap:10px;">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>
+        <div style="font-size:13px;font-weight:800;color:#92400e;">Terms not reviewed</div>
+        <div style="font-size:11px;color:#b45309;">Review contract terms with customer before activation</div>
+    </div>
 </div>
 {% endif %}
 
-<div class="card detail-card">
-    <div class="detail-row"><span>Contract number</span><strong>{{ contract.contract_number }}</strong></div>
-    <div class="detail-row"><span>Application number</span><strong>{{ application.application_number }}</strong></div>
-    <div class="detail-row"><span>Customer</span><strong>{{ contract.customer_name }}</strong></div>
-    <div class="detail-row"><span>Merchant</span><strong>{{ contract.merchant.get_full_name|default:contract.merchant.username }}</strong></div>
-    <div class="detail-row"><span>Device</span><strong>{{ contract.deal_name|default:"Not selected" }}</strong></div>
-    <div class="detail-row"><span>IMEI</span><strong>{{ contract.imei_number|default:"Not captured" }}</strong></div>
-    <div class="detail-row"><span>Cash price</span><strong>{{ contract.cash_price|mwk }}</strong></div>
-    <div class="detail-row"><span>Total loan / contract price</span><strong>{{ contract.total_loan|mwk }}</strong></div>
-    <div class="detail-row"><span>Deposit</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
-    <div class="detail-row"><span>Monthly payment</span><strong>{{ contract.monthly_payment|mwk }}</strong></div>
-    <div class="detail-row"><span>Daily payment</span><strong>{{ contract.daily_payment|mwk }}</strong></div>
-    <div class="detail-row"><span>Status</span><strong>{{ contract.get_status_display }}</strong></div>
-    <div class="detail-row"><span>Created</span><strong>{{ contract.created_at|date:"Y/m/d, H:i" }}</strong></div>
-    <div class="detail-row"><span>Updated</span><strong>{{ contract.updated_at|date:"Y/m/d, H:i" }}</strong></div>
-    {% if contract.completed_at %}<div class="detail-row"><span>Completed</span><strong>{{ contract.completed_at|date:"Y/m/d, H:i" }}</strong></div>{% endif %}
-    {% if contract.terms_accepted_at %}<div class="detail-row"><span>Terms accepted</span><strong>{{ contract.terms_accepted_at|date:"Y/m/d, H:i" }}</strong></div>{% endif %}
+{# ── Collapsible sections ── #}
+
+{# Customer #}
+<div class="contract-section-card" x-data="{open: true}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Customer
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        <div class="contract-field-row"><span class="contract-field-label">Full Name</span><span class="contract-field-value">{{ contract.customer_name }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">National ID</span><span class="contract-field-value">{{ contract.national_id|default:"—" }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Phone</span><span class="contract-field-value">{{ contract.customer_phone|default:"—" }}</span></div>
+        {% if application.gender %}<div class="contract-field-row"><span class="contract-field-label">Gender</span><span class="contract-field-value">{{ application.get_gender_display }}</span></div>{% endif %}
+        {% if application.marital_status %}<div class="contract-field-row"><span class="contract-field-label">Marital Status</span><span class="contract-field-value">{{ application.marital_status }}</span></div>{% endif %}
+        {% if application.precise_location %}<div class="contract-field-row"><span class="contract-field-label">Address</span><span class="contract-field-value">{{ application.precise_location }}</span></div>{% endif %}
+        {% if application.district %}<div class="contract-field-row"><span class="contract-field-label">District</span><span class="contract-field-value">{{ application.district }}</span></div>{% endif %}
+    </div>
 </div>
 
-<!-- CONTRACT DOCUMENTS -->
-<h2 class="section-heading" style="margin-top:24px;">Contract Documents</h2>
-<div class="card">
-    <div style="padding:12px 16px;">
+{# Device #}
+<div class="contract-section-card" x-data="{open: true}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            Device
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        <div class="contract-field-row"><span class="contract-field-label">Device</span><span class="contract-field-value">{{ contract.deal_name|default:"—" }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">IMEI</span><span class="contract-field-value">{{ contract.imei_number|default:"Not captured" }}</span></div>
+        {% if application.imei_status %}<div class="contract-field-row"><span class="contract-field-label">IMEI Status</span><span class="contract-field-value"><span class="imei-status-pill imei-status-pill--{% if application.imei_status == 'match' %}match{% elif application.imei_status == 'mismatch' %}mismatch{% else %}pending{% endif %}">{{ application.imei_status|title }}</span></span></div>{% endif %}
+        {% if application.deal.brand %}<div class="contract-field-row"><span class="contract-field-label">Brand</span><span class="contract-field-value">{{ application.deal.brand.name }}</span></div>{% endif %}
+        {% if application.deal.specs %}<div class="contract-field-row"><span class="contract-field-label">Specs</span><span class="contract-field-value">{{ application.deal.specs }}</span></div>{% endif %}
+    </div>
+</div>
 
-        <!-- Initial PDF -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
-            <div style="flex:1;">
-                <div style="font-weight:600;font-size:13px;">Initial Signed Contract</div>
-                <div style="font-size:12px;color:#888;">Generated when customer accepted terms</div>
-            </div>
-            <div>
+{# Finance #}
+<div class="contract-section-card" x-data="{open: true}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Finance
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        <div class="contract-field-row"><span class="contract-field-label">Cash Price</span><span class="contract-field-value">{{ contract.cash_price|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Deposit Paid</span><span class="contract-field-value">{{ contract.deposit_amount|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Amount Financed</span><span class="contract-field-value">{{ contract.amount_financed|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Finance Charges</span><span class="contract-field-value">{{ contract.finance_charges|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Total Contract</span><span class="contract-field-value">{{ contract.total_loan|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Contract Term</span><span class="contract-field-value">{{ contract.contract_term_months }} months</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Monthly Payment</span><span class="contract-field-value">{{ contract.monthly_payment|mwk }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Daily Payment</span><span class="contract-field-value">{{ contract.daily_payment|mwk }}</span></div>
+    </div>
+</div>
+
+{# Contacts / Guarantors #}
+{% if application.next_of_kin_1_name or application.next_of_kin_2_name %}
+<div class="contract-section-card" x-data="{open: false}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Guarantors / NOK
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        {% if application.next_of_kin_1_name %}
+        <div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Guarantor 1</div>
+            <div class="contract-field-row"><span class="contract-field-label">Name</span><span class="contract-field-value">{{ application.next_of_kin_1_name }}</span></div>
+            <div class="contract-field-row"><span class="contract-field-label">Phone</span><span class="contract-field-value">{{ application.next_of_kin_1_phone|default:"—" }}</span></div>
+            <div class="contract-field-row"><span class="contract-field-label">Relationship</span><span class="contract-field-value">{{ application.next_of_kin_1_relationship|default:"—" }}</span></div>
+        </div>
+        {% endif %}
+        {% if application.next_of_kin_2_name %}
+        <div>
+            <div style="font-size:11px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Guarantor 2</div>
+            <div class="contract-field-row"><span class="contract-field-label">Name</span><span class="contract-field-value">{{ application.next_of_kin_2_name }}</span></div>
+            <div class="contract-field-row"><span class="contract-field-label">Phone</span><span class="contract-field-value">{{ application.next_of_kin_2_phone|default:"—" }}</span></div>
+            <div class="contract-field-row"><span class="contract-field-label">Relationship</span><span class="contract-field-value">{{ application.next_of_kin_2_relationship|default:"—" }}</span></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Contract Documents #}
+<div class="contract-section-card" x-data="{open: true}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Contract Documents
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        <div class="contract-field-row">
+            <span class="contract-field-label">Initial Contract PDF</span>
+            <span class="contract-field-value">
                 {% if contract.initial_pdf %}
-                    <a href="{% url 'contract_pdf_initial' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View PDF</a>
-                {% else %}
-                    <span style="font-size:12px;color:#aaa;">Not generated</span>
-                {% endif %}
-            </div>
+                    <a href="{% url 'contract_pdf_initial' contract.id %}" target="_blank" class="btn btn-outline btn-sm">View PDF</a>
+                {% else %}<span style="color:#94a3b8;">Not generated</span>{% endif %}
+            </span>
         </div>
-
-        <!-- Initial Bundle PDF -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
-            <div style="flex:1;">
-                <div style="font-weight:600;font-size:13px;">Signed Contract Bundle</div>
-                <div style="font-size:12px;color:#888;">Contract Summary + Master Terms + Acceptance Certificate</div>
-            </div>
-            <div>
+        <div class="contract-field-row">
+            <span class="contract-field-label">Contract Bundle</span>
+            <span class="contract-field-value">
                 {% if contract.contract_bundle_pdf %}
-                    <a href="{% url 'contract_pdf_bundle' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View Bundle PDF</a>
-                {% else %}
-                    <span style="font-size:12px;color:#aaa;">Not generated</span>
-                {% endif %}
-            </div>
+                    <a href="{% url 'contract_pdf_bundle' contract.id %}" target="_blank" class="btn btn-outline btn-sm">View Bundle</a>
+                {% else %}<span style="color:#94a3b8;">Not generated</span>{% endif %}
+            </span>
         </div>
-
-        <!-- Completed Bundle PDF -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
-            <div style="flex:1;">
-                <div style="font-weight:600;font-size:13px;">Completed Contract Bundle</div>
-                <div style="font-size:12px;color:#888;">Final stamped bundle generated on full payment</div>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;">
-                {% if contract.completed_bundle_pdf %}
-                    <a href="{% url 'contract_pdf_completed_bundle' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View Bundle</a>
-                {% endif %}
+        {% if contract.completed_pdf or contract.completed_bundle_pdf %}
+        <div class="contract-field-row">
+            <span class="contract-field-label">Completed Contract</span>
+            <span class="contract-field-value" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;">
                 {% if contract.completed_pdf %}
-                    <a href="{% url 'contract_pdf_completed' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View PDF</a>
-                    {% if is_hq %}
-                    <form method="post" action="{% url 'hq_regen_completed_pdf' contract.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline" style="font-size:11px;color:#888;">Regenerate</button>
-                    </form>
-                    {% endif %}
-                {% elif contract.status == "complete" %}
-                    <span style="font-size:12px;color:#e07000;">Generating...</span>
-                    {% if is_hq %}
-                    <form method="post" action="{% url 'hq_regen_completed_pdf' contract.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline" style="font-size:11px;">Generate Now</button>
-                    </form>
-                    {% endif %}
-                {% else %}
-                    <span style="font-size:12px;color:#aaa;">Not yet (contract not complete)</span>
+                    <a href="{% url 'contract_pdf_completed' contract.id %}" target="_blank" class="btn btn-outline btn-sm">View PDF</a>
                 {% endif %}
-            </div>
+                {% if contract.completed_bundle_pdf %}
+                    <a href="{% url 'contract_pdf_completed_bundle' contract.id %}" target="_blank" class="btn btn-outline btn-sm">View Bundle</a>
+                {% endif %}
+                {% if is_hq %}
+                <form method="post" action="{% url 'hq_regen_completed_pdf' contract.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Regenerate</button>
+                </form>
+                {% endif %}
+            </span>
         </div>
-
-        <!-- WhatsApp Delivery Status -->
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-            <div style="flex:1;">
-                <div style="font-weight:600;font-size:13px;">WhatsApp Delivery</div>
-                {% if latest_delivery %}
-                    <div style="font-size:12px;margin-top:4px;">
-                        {% if latest_delivery.delivery_status == "sent" %}
-                            <span style="color:#22aa44;font-weight:600;">Sent to customer WhatsApp</span><br>
-                            <span style="color:#888;">Sent: {{ latest_delivery.sent_at|date:"d M Y, H:i" }}</span>
-                        {% elif latest_delivery.delivery_status == "scheduled" %}
-                            <span style="color:#e07000;font-weight:600;">Scheduled</span><br>
-                            <span style="color:#888;">Scheduled for: {{ latest_delivery.scheduled_for|date:"d M Y, H:i" }}</span>
-                        {% elif latest_delivery.delivery_status == "failed" %}
-                            <span style="color:#cc0000;font-weight:600;">Delivery failed</span><br>
-                            <span style="color:#888;">{{ latest_delivery.error_message|truncatechars:100 }}</span><br>
-                            <span style="color:#888;">Attempts: {{ latest_delivery.attempt_count }}</span>
-                        {% elif latest_delivery.delivery_status == "skipped" %}
-                            <span style="color:#999;">Skipped &mdash; {{ latest_delivery.error_message }}</span>
-                        {% elif latest_delivery.delivery_status == "cancelled" %}
-                            <span style="color:#999;">Cancelled</span>
-                        {% else %}
-                            <span style="color:#888;">{{ latest_delivery.get_delivery_status_display }}</span>
-                        {% endif %}
-                        <br><span style="font-size:11px;color:#bbb;">Phone: {{ latest_delivery.customer_phone }} | Provider: {{ latest_delivery.provider }}</span>
-                    </div>
-                {% else %}
-                    <div style="font-size:12px;color:#aaa;margin-top:4px;">
-                        {% if contract.status == "complete" %}
-                            Delivery record not found &mdash; contract may be recently completed.
-                        {% else %}
-                            Scheduled after contract completion.
-                        {% endif %}
-                    </div>
-                {% endif %}
-            </div>
-
-            {% if is_hq and latest_delivery %}
-            <div style="display:flex;flex-direction:column;gap:6px;">
-                {% if latest_delivery.delivery_status == "scheduled" or latest_delivery.delivery_status == "failed" or latest_delivery.delivery_status == "skipped" %}
-                <form method="post" action="{% url 'hq_delivery_send_now' latest_delivery.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-primary" style="font-size:12px;">Send Now</button>
-                </form>
-                {% endif %}
-                {% if latest_delivery.delivery_status == "failed" or latest_delivery.delivery_status == "skipped" %}
-                <form method="post" action="{% url 'hq_delivery_retry' latest_delivery.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline" style="font-size:12px;">Retry</button>
-                </form>
-                {% endif %}
-                {% if latest_delivery.delivery_status == "scheduled" %}
-                <form method="post" action="{% url 'hq_delivery_cancel' latest_delivery.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline" style="font-size:12px;color:#cc0000;">Cancel</button>
-                </form>
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
-
+        {% endif %}
     </div>
 </div>
 
-{% if application.signature_image %}
-    <div class="detail-signature">
-        <span>Application signature</span>
-        <img src="{{ application.signature_image.url }}" alt="Application signature">
+{# Technical Details (admin only, collapsed) #}
+{% if is_hq or request.user.is_staff %}
+<div class="contract-section-card" x-data="{open: false}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title" style="color:#64748b;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.38 1.07V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg>
+            Technical Details (Admin)
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        <div class="contract-field-row"><span class="contract-field-label">Contract ID</span><span class="contract-field-value">{{ contract.id }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Application ID</span><span class="contract-field-value">{{ application.id }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Created</span><span class="contract-field-value">{{ contract.created_at|date:"d M Y, H:i" }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Updated</span><span class="contract-field-value">{{ contract.updated_at|date:"d M Y, H:i" }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Merchant</span><span class="contract-field-value">{{ contract.merchant.get_full_name|default:contract.merchant.username }}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Terms accepted</span><span class="contract-field-value">{% if contract.terms_accepted_at %}{{ contract.terms_accepted_at|date:"d M Y H:i" }}{% else %}—{% endif %}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Terms confirmed</span><span class="contract-field-value">{% if contract.terms_confirmed_at %}{{ contract.terms_confirmed_at|date:"d M Y H:i" }}{% else %}—{% endif %}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Active at</span><span class="contract-field-value">{% if contract.active_at %}{{ contract.active_at|date:"d M Y H:i" }}{% else %}—{% endif %}</span></div>
+        <div class="contract-field-row"><span class="contract-field-label">Completed at</span><span class="contract-field-value">{% if contract.completed_at %}{{ contract.completed_at|date:"d M Y H:i" }}{% else %}—{% endif %}</span></div>
+        {% if contract.terms_otp_code %}<div class="contract-field-row"><span class="contract-field-label">OTP Code</span><span class="contract-field-value">{{ contract.terms_otp_code }}</span></div>{% endif %}
     </div>
+</div>
 {% endif %}
 
-{% if contract.customer_contract_signature %}
-    <div class="detail-signature">
-        <span>Contract signature</span>
-        <img src="{{ contract.customer_contract_signature.url }}" alt="Contract signature">
+{# WhatsApp delivery ── #}
+{% if deliveries %}
+<div class="contract-section-card" x-data="{open: false}">
+    <button type="button" class="contract-section-card__header" @click="open = !open">
+        <span class="contract-section-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/></svg>
+            Document Delivery ({{ deliveries|length }})
+        </span>
+        <svg class="contract-section-card__chevron" :class="open && 'contract-section-card__chevron--open'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="contract-section-card__body" :class="open && 'contract-section-card__body--open'">
+        {% for d in deliveries %}
+        <div class="contract-field-row" style="flex-wrap:wrap;gap:6px;">
+            <span class="contract-field-label">{{ d.get_channel_display }}</span>
+            <span class="contract-field-value" style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+                <span class="ts-status-chip {% if d.delivery_status == 'sent' %}ts-status-chip--approved{% elif d.delivery_status == 'failed' %}ts-status-chip--rejected{% else %}ts-status-chip--pending{% endif %}">
+                    {{ d.get_delivery_status_display }}
+                </span>
+                {% if d.sent_at %}<span style="font-size:11px;color:#94a3b8;">{{ d.sent_at|date:"d M H:i" }}</span>{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+        {% if is_hq %}
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+            <form method="post" action="{% url 'hq_resend_contract_pdf' contract.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline btn-sm">Resend WhatsApp PDF</button>
+            </form>
+        </div>
+        {% endif %}
     </div>
-{% endif %}
-
-{% include "device_lock/lock_card_partial.html" with lock_profile=lock_profile lock_readiness=lock_readiness can_control_lock=can_control_lock %}
-
-<!-- LEGAL ACCEPTANCE RECORDS -->
-{% if master_terms_acceptance or summary_acceptance %}
-<h2 class="section-heading" style="margin-top:24px;">Legal Acceptance Records</h2>
-<div class="card detail-card">
-    {% if master_terms_acceptance %}
-    <div class="detail-row">
-        <span>Master Terms version</span>
-        <strong>{{ master_terms_acceptance.legal_document.title }} v{{ master_terms_acceptance.legal_document.version }}</strong>
-    </div>
-    <div class="detail-row">
-        <span>Master Terms accepted</span>
-        <strong>{{ master_terms_acceptance.accepted_at|date:"d M Y, H:i" }}</strong>
-    </div>
-    <div class="detail-row">
-        <span>Acceptance method</span>
-        <strong>{{ master_terms_acceptance.get_acceptance_method_display }}</strong>
-    </div>
-    <div class="detail-row">
-        <span>Acceptance record ID</span>
-        <strong>#{{ master_terms_acceptance.pk }}</strong>
-    </div>
-    {% if master_terms_acceptance.ip_address %}
-    <div class="detail-row">
-        <span>IP address</span>
-        <strong>{{ master_terms_acceptance.ip_address }}</strong>
-    </div>
-    {% endif %}
-    {% endif %}
-
-    {% if summary_acceptance %}
-    <div class="detail-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;">
-        <span>Contract Summary accepted</span>
-        <strong>{{ summary_acceptance.accepted_at|date:"d M Y, H:i" }}</strong>
-    </div>
-    <div class="detail-row">
-        <span>Summary record ID</span>
-        <strong>#{{ summary_acceptance.pk }}</strong>
-    </div>
-    {% endif %}
-
-    {% if legal_acceptances %}
-    <div style="padding:8px 0;font-size:12px;color:#888;">
-        {{ legal_acceptances|length }} acceptance record{{ legal_acceptances|length|pluralize }} on file.
-    </div>
-    {% endif %}
 </div>
 {% endif %}
 

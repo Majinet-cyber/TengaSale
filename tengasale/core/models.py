@@ -133,3 +133,66 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} by {self.user_id} at {self.timestamp}"
+
+
+class AppVersion(models.Model):
+    """App release version and release notes shown to users."""
+
+    version = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=200)
+    notes = models.TextField(blank=True, help_text="Markdown-supported release notes")
+    is_active = models.BooleanField(
+        default=False,
+        help_text="If True, show 'What's New' modal to users who haven't seen it",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="app_versions_created",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "App version"
+        verbose_name_plural = "App versions"
+
+    def __str__(self):
+        return f"v{self.version} — {self.title}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_active:
+            try:
+                from notifications.models import Notification
+                Notification.broadcast(
+                    notification_type=Notification.TYPE_APP_UPDATE,
+                    title=f"TengaSale {self.version} — {self.title}",
+                    body=self.notes[:500] if self.notes else "",
+                    level=Notification.LEVEL_INFO,
+                    link="/notifications/",
+                )
+            except Exception:
+                pass
+
+
+class AppVersionSeen(models.Model):
+    """Tracks which users have seen a given app version modal."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="app_versions_seen",
+    )
+    version = models.ForeignKey(
+        AppVersion,
+        on_delete=models.CASCADE,
+        related_name="seen_by",
+    )
+    seen_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "version")]
+        verbose_name = "App version seen"

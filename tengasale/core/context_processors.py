@@ -5,12 +5,30 @@ from accounts.utils import get_tengasale_role
 
 
 def tengasale_support(request):
+    unread_notification_count = 0
+    app_version = "1.0.0"
+    if request.user.is_authenticated:
+        try:
+            from notifications.models import Notification
+            unread_notification_count = Notification.unread_count_for(request.user)
+        except Exception:
+            pass
+        try:
+            from core.models import AppVersion
+            active_ver = AppVersion.objects.filter(is_active=True).order_by("-created_at").first()
+            if active_ver:
+                app_version = active_ver.version
+        except Exception:
+            pass
+
     return {
         "tengasale_whatsapp_link": settings.TENGASALE_WHATSAPP_LINK,
         "current_tengasale_role": get_tengasale_role(request.user),
         "current_user_is_hq": get_tengasale_role(request.user) == "hq",
         "current_user_can_use_django_admin": request.user.is_authenticated
         and (request.user.is_staff or request.user.is_superuser),
+        "unread_notification_count": unread_notification_count,
+        "app_version": app_version,
         # Brand logo assets — always True since files are committed to static/
         "tengasale_logo_exists": True,
         # Full wordmark image — used in authenticated app topbars

@@ -12,46 +12,67 @@
   </a>
 </div>
 
-<div class="tab-bar">
-  <a href="?tab=active" class="tab-item {% if tab == 'active' %}tab-item--active{% endif %}">Active</a>
-  <a href="?tab=completed" class="tab-item {% if tab == 'completed' %}tab-item--active{% endif %}">Completed</a>
-  <a href="?tab=rejected" class="tab-item {% if tab == 'rejected' %}tab-item--active{% endif %}">Rejected</a>
-  <a href="?tab=queue" class="tab-item {% if tab == 'queue' %}tab-item--active{% endif %}">Queue</a>
+<div class="ts-tabs-v2">
+  <a href="?tab=active"    class="ts-tab-v2 {% if tab == 'active' %}ts-tab-v2--active{% endif %}">Active</a>
+  <a href="?tab=completed" class="ts-tab-v2 {% if tab == 'completed' %}ts-tab-v2--active{% endif %}">Completed</a>
+  <a href="?tab=rejected"  class="ts-tab-v2 {% if tab == 'rejected' %}ts-tab-v2--active{% endif %}">Rejected</a>
+  <a href="?tab=queue"     class="ts-tab-v2 {% if tab == 'queue' %}ts-tab-v2--active{% endif %}">Queue</a>
 </div>
 
 {% if apps %}
+  <div class="app-card-list" style="margin-top:10px;">
   {% for app in apps %}
-    <a
-      href="{% url 'sales_review_summary' app.id %}"
-      class="app-row-card"
-    >
-      <div class="app-row-card__left">
-        <div class="app-row-card__name">{{ app.customer_name|default:"—" }}</div>
-        <div class="app-row-card__meta">
+    <a href="{% url 'sales_review_summary' app.id %}" class="app-card-v2">
+      {# Customer photo #}
+      {% if app.customer_face_image %}
+        <img
+          src="{{ app.customer_face_image.url }}"
+          alt="{{ app.customer_name }}"
+          class="app-card-v2__photo"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        >
+        <div class="app-card-v2__photo-placeholder" style="display:none;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+      {% else %}
+        <div class="app-card-v2__photo-placeholder">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+      {% endif %}
+
+      <div class="app-card-v2__body">
+        <div class="app-card-v2__name">{{ app.customer_name|default:"—" }}</div>
+        <div class="app-card-v2__id">
           {{ app.application_number }}
           {% if app.deal %} · {{ app.deal.brand.name }} {{ app.deal.model_name }}{% endif %}
         </div>
-        <div class="app-row-card__date">{{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</div>
+        <div class="app-card-v2__meta">
+          <span class="app-card-v2__date">{{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</span>
+        </div>
       </div>
-      <div class="app-row-card__right">
-        <span class="status-badge
-          {% if app.status == 'approved' %}status-badge--approved
-          {% elif app.status == 'rejected' %}status-badge--rejected
-          {% elif app.status == 'under_review' %}status-badge--review
-          {% else %}status-badge--pending{% endif %}
+
+      <div class="app-card-v2__right">
+        <span class="ts-status-chip
+          {% if app.status == 'approved' %}ts-status-chip--approved
+          {% elif app.status == 'rejected' %}ts-status-chip--rejected
+          {% elif app.status == 'under_review' %}ts-status-chip--review
+          {% elif app.status == 'completed' or app.status == 'contract_complete' %}ts-status-chip--completed
+          {% elif app.status == 'sent_back' or app.status == 'correction_requested' %}ts-status-chip--sent_back
+          {% else %}ts-status-chip--pending{% endif %}
         ">{{ app.get_status_display }}</span>
-        <svg class="chevron-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </a>
   {% endfor %}
+  </div>
 {% else %}
-  <div class="empty-state">
-    <div class="empty-state__icon">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <div class="ts-empty-state">
+    <div class="ts-empty-state__icon">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     </div>
     <p>No applications here yet.</p>
     {% if tab == 'queue' %}
-      <p class="empty-sub">The queue is clear — check back soon.</p>
+      <p style="font-size:12px;color:#94a3b8;margin:0;">The queue is clear — check back soon.</p>
     {% endif %}
   </div>
 {% endif %}

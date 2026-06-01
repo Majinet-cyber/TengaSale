@@ -1,0 +1,23 @@
+{% load static %}
+<div class="notif-dropdown">
+    <div class="notif-dropdown__header">
+        <span class="notif-dropdown__title">Notifications</span>
+        {% if unread_count %}
+            <span class="ts-badge ts-badge--orange">{{ unread_count }}</span>
+        {% endif %}
+    </div>
+    <div class="notif-dropdown__list">
+    {% for notif in notifications %}
+        <div class="notif-drop-item {% if not notif.is_read %}notif-drop-item--unread{% endif %}">
+            <div class="notif-drop-item__dot notif-dot--{{ notif.level }}"></div>
+            <div class="notif-drop-item__body">
+                <div class="notif-drop-item__title">{{ notif.title }}</div>
+                <div class="notif-drop-item__time">{{ notif.created_at|timesince }} ago</div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="notif-drop-empty">No notifications</div>
+    {% endfor %}
+    </div>
+    <a href="{% url 'notifications_list' %}" class="notif-dropdown__footer">View all notifications</a>
+</div>

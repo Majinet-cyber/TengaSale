@@ -1,6 +1,20 @@
 from django.contrib import admin
 
-from .models import AuditLog, BusinessSetting, QueueRule
+from .models import AppVersion, AppVersionSeen, AuditLog, BusinessSetting, QueueRule
+
+
+@admin.register(AppVersion)
+class AppVersionAdmin(admin.ModelAdmin):
+    list_display = ["version", "title", "is_active", "created_at", "created_by"]
+    list_filter = ["is_active"]
+    readonly_fields = ["created_at"]
+    search_fields = ["version", "title"]
+
+
+@admin.register(AppVersionSeen)
+class AppVersionSeenAdmin(admin.ModelAdmin):
+    list_display = ["user", "version", "seen_at"]
+    readonly_fields = ["seen_at"]
 
 
 @admin.register(BusinessSetting)

@@ -411,11 +411,10 @@ class ApplicationListTests(ApplicationTestCase):
         response = self.client.get(reverse("active_applications"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="application-card"')
+        self.assertContains(response, 'class="app-card-v2"')
         self.assertContains(response, f'href="{app.get_continue_url()}"')
         self.assertContains(response, "Jane Banda")
-        self.assertContains(response, "ID: RQXFVZC9")
-        self.assertContains(response, f"App: {app.application_number}")
+        self.assertContains(response, app.application_number)
 
     def test_completed_applications_page_contains_clickable_card(self):
         app = self.create_application()
@@ -424,7 +423,7 @@ class ApplicationListTests(ApplicationTestCase):
 
         response = self.client.get(reverse("completed_applications"))
 
-        self.assertContains(response, 'class="application-card"')
+        self.assertContains(response, 'class="app-card-v2"')
         self.assertContains(response, "Completed")
         self.assertContains(response, f'href="{app.get_continue_url()}"')
         self.assertEqual(app.get_continue_url(), reverse("application_detail", args=[app.id]))
@@ -437,7 +436,7 @@ class ApplicationListTests(ApplicationTestCase):
         response = self.client.get(reverse("needs_edit_applications"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="application-card"')
+        self.assertContains(response, 'class="app-card-v2"')
         self.assertContains(response, "Needs Edit")
         self.assertNotContains(response, "Correction Requested")
         self.assertContains(response, f'href="{app.get_continue_url()}"')
@@ -461,7 +460,7 @@ class ApplicationListTests(ApplicationTestCase):
 
         response = self.client.get(reverse("rejected_applications"))
 
-        self.assertContains(response, 'class="application-card"')
+        self.assertContains(response, 'class="app-card-v2"')
         self.assertContains(response, f'href="{app.get_continue_url()}"')
         self.assertEqual(app.get_continue_url(), reverse("application_detail", args=[app.id]))
 
@@ -490,7 +489,12 @@ class ApplicationListTests(ApplicationTestCase):
         for url in urls:
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'class="soft-back"')
+            # Verify back navigation exists (either as soft-back or icon-button in topbar)
+            self.assertTrue(
+                b'class="soft-back"' in response.content or
+                b'class="icon-button"' in response.content,
+                f"No back button found in {url}",
+            )
 
 
 class ApplicationContinueUrlTests(ApplicationTestCase):

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from accounts.decorators import merchant_required
-from .models import DeviceDeal
+from .models import DeviceBrand, DeviceDeal
 
 
 @merchant_required
@@ -14,6 +14,7 @@ def all_deals(request):
         {
             "id": deal.id,
             "brand": deal.brand.name,
+            "brand_logo": deal.brand.logo.url if deal.brand.logo else "",
             "model_name": deal.model_name,
             "specs": deal.specs,
             "min_cash_price": str(deal.min_cash_price),
@@ -37,6 +38,21 @@ def all_deals(request):
         if deal.brand.name not in brand_names:
             brand_names.append(deal.brand.name)
 
+    # Build brand info dict: {name: {logo_url, deal_count}}
+    brand_objects = DeviceBrand.objects.filter(is_active=True, name__in=brand_names)
+    brand_info = {}
+    for b in brand_objects:
+        brand_info[b.name] = {
+            "logo_url": b.logo.url if b.logo else "",
+        }
+    deal_counts = {}
+    for deal in deals:
+        deal_counts[deal.brand.name] = deal_counts.get(deal.brand.name, 0) + 1
+    for name in brand_names:
+        if name not in brand_info:
+            brand_info[name] = {"logo_url": ""}
+        brand_info[name]["deal_count"] = deal_counts.get(name, 0)
+
     return render(
         request,
         "deals/all_deals.html",
@@ -44,5 +60,6 @@ def all_deals(request):
             "deals": deals,
             "deal_options": deal_options,
             "brand_names": brand_names,
+            "brand_info": brand_info,
         },
     )

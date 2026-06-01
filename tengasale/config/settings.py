@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "merchant_admin.apps.MerchantAdminConfig",
     "support.apps.SupportConfig",
     "device_lock.apps.DeviceLockConfig",
+    "notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [

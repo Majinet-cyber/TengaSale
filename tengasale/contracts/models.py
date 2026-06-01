@@ -69,11 +69,29 @@ class Contract(models.Model):
     deposit_paid = models.BooleanField(default=False)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_DRAFT)
 
+    # Contract term (3, 6, or 12 months)
+    term_months = models.PositiveIntegerField(
+        default=12,
+        help_text="Contract term in months: 3, 6, or 12",
+    )
+
     # Post-approval tracking fields
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
     terms_accepted_ip = models.CharField(max_length=45, blank=True)
     terms_otp_code = models.CharField(max_length=20, blank=True)
     terms_otp_verified_at = models.DateTimeField(null=True, blank=True)
+
+    # Merchant terms review tracking (required before activation)
+    terms_opened_at = models.DateTimeField(null=True, blank=True)
+    terms_confirmed_at = models.DateTimeField(null=True, blank=True)
+    terms_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="terms_confirmed_contracts",
+    )
+    terms_version = models.CharField(max_length=20, blank=True, default="v1")
 
     # PDF documents
     initial_pdf = models.FileField(upload_to="contract_pdfs/initial/", blank=True, null=True)
@@ -133,10 +151,22 @@ class Contract(models.Model):
 
     @property
     def contract_term_months(self):
+        """Returns the stored term_months, falling back to calculated value."""
+        if self.term_months and self.term_months > 0:
+            return self.term_months
         if self.monthly_payment and self.monthly_payment > 0:
             amount = self.amount_financed
             return int((amount / self.monthly_payment).quantize(Decimal("1")))
-        return 0
+        return 12
+
+    @property
+    def terms_review_confirmed(self):
+        return bool(self.terms_confirmed_at)
+
+    @property
+    def can_activate(self):
+        """Contract can only be activated after terms are confirmed by merchant."""
+        return self.terms_review_confirmed
 
 
 class ContractDocumentDelivery(models.Model):

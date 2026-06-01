@@ -32,6 +32,9 @@ urlpatterns = [
     # Device Lock Integration Layer
     path("", include("device_lock.urls")),
 
+    # Notifications
+    path("notifications/", include("notifications.urls")),
+
     # Tech Support portal
     path("tengasale/support/", include("support.urls")),
 
