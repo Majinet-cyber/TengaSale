@@ -3,31 +3,49 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
+
 <div class="uw-canvas">
-    <a href="{% url 'underwriter_location_check' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>Back</span></a>
+    <a href="{% url 'underwriter_location_check' app.id %}" class="soft-back">
+        <span class="soft-back-icon">&larr;</span>
+        <span>Back</span>
+    </a>
+
     <header class="uw-header">
         <div>
-            <span class="uw-kicker">Final Review</span>
+            <span class="uw-kicker">Final Decision</span>
             <h1>{{ app.customer_name|default:"Unnamed Customer" }}</h1>
         </div>
         <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
     </header>
 
+    {# ── Application summary recap ────────────────────────────────── #}
     <section class="uw-card">
         <h2>Application Summary</h2>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Application</span><strong class="review-field__value">{{ app.application_number }}</strong></div></div>
+        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Customer</span><strong class="review-field__value">{{ app.customer_name|default:"—" }}</strong></div></div>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Phone</span><strong class="review-field__value">{{ app.deal|default:"No phone selected" }}</strong></div></div>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Deposit</span><strong class="review-field__value">MWK {{ app.calculated_deposit_amount|floatformat:0 }}</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Monthly repayment</span><strong class="review-field__value">MWK {{ app.calculated_monthly_payment|floatformat:0 }}</strong></div></div>
+        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Monthly Repayment</span><strong class="review-field__value">MWK {{ app.calculated_monthly_payment|floatformat:0 }}</strong></div></div>
+        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Total Contract</span><strong class="review-field__value">MWK {{ app.calculated_total_loan|floatformat:0 }}</strong></div></div>
     </section>
 
-    <section class="uw-card">
-        <h2>Review Completeness</h2>
+    {# ── D. Deal / Contract Yes/No Questions ──────────────────────── #}
+    <form method="post" class="uw-card" action="{% url 'underwriter_final_review' app.id %}">
+        {% csrf_token %}
+        <h2>D. Deal &amp; Contract Questions</h2>
+        {% include "dashboard/partials/review_yes_no.html" with name="deal_phone_correct" question="Is the selected smartphone model and specs correct for this customer?" value=review.deal_phone_correct %}
+        {% include "dashboard/partials/review_yes_no.html" with name="deal_deposit_understood" question="Does the customer understand the deposit amount and when to pay it?" value=review.deal_deposit_understood %}
+        {% include "dashboard/partials/review_yes_no.html" with name="deal_repayment_understood" question="Does the customer understand the repayment schedule?" value=review.deal_repayment_understood %}
+        {% include "dashboard/partials/review_yes_no.html" with name="deal_lock_understood" question="Does the customer understand that the device can be locked if they do not pay?" value=review.deal_lock_understood %}
+        {% include "dashboard/partials/review_yes_no.html" with name="deal_legal_understood" question="Does the customer understand the legal commitment they are entering?" value=review.deal_legal_understood %}
+
+        {# ── Review Completeness ──────────────────────────────────── #}
+        <h2 style="margin-top:18px;">Review Completeness</h2>
         <div class="uw-score {{ score_class }}">{{ score }}%</div>
         {% if correction_count %}
             <p class="uw-warning">
                 {{ correction_count }} field{{ correction_count|pluralize }} marked for correction.
-                Send back to merchant or remove all corrections before approving.
+                Send back to merchant or resolve all corrections before approving.
             </p>
             <div class="uw-correction-list">
                 {% for field_name, correction in corrections.items %}
@@ -42,13 +60,13 @@
         {% else %}
             <p style="font-size:13px;color:var(--green);font-weight:700;margin:4px 0 0;">No field corrections pending.</p>
         {% endif %}
-    </section>
 
-    <form method="post" class="uw-card" action="{% url 'underwriter_final_review' app.id %}">
-        {% csrf_token %}
-        <label for="manager-comment" style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Underwriter comment</label>
-        <textarea id="manager-comment" name="manager_comment" rows="4" style="margin-top:8px;width:100%;box-sizing:border-box;">{{ review.comment|default:app.manager_comment }}</textarea>
-        <div class="uw-actions">
+        {# ── Underwriter comment ──────────────────────────────────── #}
+        <label for="manager-comment" style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin:16px 0 6px;">Underwriter comment</label>
+        <textarea id="manager-comment" name="manager_comment" rows="4" style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;">{{ review.comment|default:app.manager_comment }}</textarea>
+
+        {# ── Decision buttons ─────────────────────────────────────── #}
+        <div class="uw-actions" style="margin-top:18px;">
             <a href="{% url 'underwriter_location_check' app.id %}" class="btn btn-outline">Back</a>
             <button
                 name="decision"

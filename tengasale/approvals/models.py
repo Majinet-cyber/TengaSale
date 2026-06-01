@@ -81,9 +81,21 @@ class UnderwriterReview(models.Model):
     income_source_dependable = models.BooleanField(null=True, blank=True)
     income_contact_confident = models.BooleanField(null=True, blank=True)
 
+    guarantor_spoken = models.BooleanField(null=True, blank=True)
+    guarantor_confirmed_customer = models.BooleanField(null=True, blank=True)
+    guarantor_confident_repayment = models.BooleanField(null=True, blank=True)
+    contacts_reachable = models.BooleanField(null=True, blank=True)
+
     location_neighbour_spoken = models.BooleanField(null=True, blank=True)
     location_confirmed = models.BooleanField(null=True, blank=True)
     location_traceable = models.BooleanField(null=True, blank=True)
+    location_address_clear = models.BooleanField(null=True, blank=True)
+
+    deal_phone_correct = models.BooleanField(null=True, blank=True)
+    deal_deposit_understood = models.BooleanField(null=True, blank=True)
+    deal_repayment_understood = models.BooleanField(null=True, blank=True)
+    deal_lock_understood = models.BooleanField(null=True, blank=True)
+    deal_legal_understood = models.BooleanField(null=True, blank=True)
 
     comment = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -108,9 +120,19 @@ class UnderwriterReview(models.Model):
         "income_confirmed",
         "income_source_dependable",
         "income_contact_confident",
+        "guarantor_spoken",
+        "guarantor_confirmed_customer",
+        "guarantor_confident_repayment",
+        "contacts_reachable",
         "location_neighbour_spoken",
         "location_confirmed",
         "location_traceable",
+        "location_address_clear",
+        "deal_phone_correct",
+        "deal_deposit_understood",
+        "deal_repayment_understood",
+        "deal_lock_understood",
+        "deal_legal_understood",
     ]
 
     def completeness_score(self):

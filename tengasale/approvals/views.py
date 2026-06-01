@@ -295,7 +295,12 @@ def income_check(request, app_id):
     if response:
         return response
     review = get_review(app, request.user)
-    fields = ["income_understood", "income_contact_spoken", "income_confirmed", "income_source_dependable", "income_contact_confident"]
+    fields = [
+        "income_understood", "income_contact_spoken", "income_confirmed",
+        "income_source_dependable", "income_contact_confident",
+        "guarantor_spoken", "guarantor_confirmed_customer",
+        "guarantor_confident_repayment", "contacts_reachable",
+    ]
     monthly_income = Decimal(app.exact_monthly_income or app.monthly_income or 0)
     monthly_payment = Decimal(app.calculated_monthly_payment or 0)
     recommended_income = monthly_payment * Decimal("10")
@@ -325,7 +330,7 @@ def location_check(request, app_id):
     if response:
         return response
     review = get_review(app, request.user)
-    fields = ["location_neighbour_spoken", "location_confirmed", "location_traceable"]
+    fields = ["location_neighbour_spoken", "location_confirmed", "location_traceable", "location_address_clear"]
     if request.method == "POST":
         for field in fields:
             setattr(review, field, bool_from_post(request, field))
@@ -334,6 +339,7 @@ def location_check(request, app_id):
             "spoke_to_neighbour": review.location_neighbour_spoken,
             "neighbour_confirmed_location": review.location_confirmed,
             "can_locate_if_defaulted": review.location_traceable,
+            "address_is_clear": review.location_address_clear,
         }
         app.save(update_fields=["address_check_answers"])
         messages.success(request, "Location check saved.")
@@ -347,9 +353,15 @@ def final_review(request, app_id):
     if response:
         return response
     review = get_review(app, request.user)
+    deal_fields = [
+        "deal_phone_correct", "deal_deposit_understood",
+        "deal_repayment_understood", "deal_lock_understood", "deal_legal_understood",
+    ]
     if request.method == "POST":
+        for field in deal_fields:
+            setattr(review, field, bool_from_post(request, field))
         review.comment = request.POST.get("manager_comment", "")
-        review.save(update_fields=["comment", "updated_at"])
+        review.save(update_fields=[*deal_fields, "comment", "updated_at"])
         app.manager_comment = review.comment
         app.save(update_fields=["manager_comment"])
         return review_application(request, app_id)

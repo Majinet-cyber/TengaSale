@@ -4,11 +4,62 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<section class="card complete-card approval-success">
-    <h1>Application Approved</h1>
-    <div class="approval-tick">✓</div>
-    <p class="text-muted">{{ app.customer_name|default:"Unnamed Customer" }} · {{ app.application_number }}</p>
-    <a href="{% url 'underwriter_dashboard' %}" class="btn">HOME</a>
-</section>
+<div class="uw-canvas">
+    <section class="uw-card" style="text-align:center;border-top:3px solid var(--green);">
+        <div style="width:64px;height:64px;background:#e8f6ee;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;">
+            <svg style="width:30px;height:30px;stroke:#168a45;fill:none;stroke-width:2.5;" viewBox="0 0 24 24">
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        </div>
+        <h1 style="font-size:22px;font-weight:900;color:var(--black);margin:0 0 8px;">Application Approved</h1>
+        <p style="font-size:14px;color:var(--muted);margin:0 0 4px;">{{ app.customer_name|default:"Customer" }}</p>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 20px;">App #{{ app.application_number }}</p>
+        <span class="status-pill status-approved" style="margin:0 auto;display:inline-block;">Approved</span>
+    </section>
+
+    <section class="uw-card">
+        <h2>What happens next</h2>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
+            The merchant or sales rep will now guide the customer through the following steps.
+        </p>
+
+        <div class="uw-step-list">
+            <div class="uw-step" style="background:#e8f6ee;">
+                <span style="background:#168a45;color:#fff;">✓</span>
+                <strong>Underwriter Approval</strong>
+                <span style="margin-left:auto;font-size:12px;color:#168a45;font-weight:700;">Done</span>
+            </div>
+            <div class="uw-step">
+                <span>1</span>
+                <strong>Customer Terms Acceptance</strong>
+                <b>&rsaquo;</b>
+            </div>
+            <div class="uw-step">
+                <span>2</span>
+                <strong>Capture IMEI</strong>
+                <b>&rsaquo;</b>
+            </div>
+            <div class="uw-step">
+                <span>3</span>
+                <strong>Verify IMEI</strong>
+                <b>&rsaquo;</b>
+            </div>
+            <div class="uw-step">
+                <span>4</span>
+                <strong>Device Lock Readiness</strong>
+                <b>&rsaquo;</b>
+            </div>
+            <div class="uw-step">
+                <span>5</span>
+                <strong>Active Contract</strong>
+                <b>&rsaquo;</b>
+            </div>
+        </div>
+    </section>
+
+    <div class="uw-actions" style="padding:0 0 20px;">
+        <a href="{% url 'underwriter_dashboard' %}" class="btn" style="flex:1;text-align:center;">Back to Dashboard</a>
+    </div>
+</div>
 
 {% endblock %}

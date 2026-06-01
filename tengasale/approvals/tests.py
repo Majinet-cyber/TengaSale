@@ -131,8 +131,48 @@ class ApprovalQueueTests(TestCase):
 
         response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
 
-        for text in ["Application Review", "Customer / Deal Summary", "Review Checklist", "Summary Review", "Identity Check", "MoMo Check", "Customer Call", "Income Check", "Location Check", "Final Decision"]:
+        for text in ["Application Review", "Application Summary", "Review Checklist",
+                     "Summary Review", "Identity Check", "MoMo Check", "Customer Call",
+                     "Income Check", "Location Check", "Final Decision"]:
             self.assertContains(response, text)
+
+    def test_hub_review_shows_customer_and_merchant_and_deal_at_top(self):
+        """Hub review must lead with customer, merchant/sales rep, and deal summary."""
+        app = self.create_pending(
+            status="under_review", claimed_by=self.manager,
+            customer_name="Jane Banda", national_id="RQXFVZC9",
+        )
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+
+        self.assertContains(response, "Jane Banda")
+        self.assertContains(response, "merchant")  # submitter (sales rep)
+        self.assertContains(response, "Application Summary")
+        self.assertContains(response, "Merchant / Sales Rep")
+        self.assertContains(response, "Deal")
+
+    def test_review_page_renders_kyc_image_missing_state(self):
+        """Missing KYC images show clean text placeholder, not question marks."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+
+        self.assertContains(response, "No selfie uploaded")
+        self.assertContains(response, "No ID front uploaded")
+        self.assertContains(response, "No ID back uploaded")
+        # Must not render empty <img> tags without a real src
+        self.assertNotContains(response, 'src=""')
+
+    def test_review_page_edit_icons_use_orange_class(self):
+        """Edit/send-back icons must use the orange review-edit-btn class."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
+
+        self.assertContains(response, "review-edit-btn")
 
     def test_underwriter_can_open_summary_page(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager)
@@ -155,8 +195,89 @@ class ApprovalQueueTests(TestCase):
         self.assertTrue(review.summary_clear)
 
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
+        # Yes button must have is-selected class; tick element removed from new template
         self.assertContains(response, 'review-choice review-choice--yes is-selected')
-        self.assertContains(response, 'review-choice-tick is-yes')
+
+    def test_identity_check_renders_four_yes_no_questions(self):
+        """Identity check must render all 4 identity questions."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "identity_info_matches")
+        self.assertContains(response, "identity_signature_matches")
+        self.assertContains(response, "identity_selfie_matches")
+        self.assertContains(response, "identity_images_clear")
+        self.assertContains(response, "KYC Images")
+
+    def test_identity_check_kyc_images_show_missing_state(self):
+        """KYC images section shows a missing state, not question marks, when empty."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+
+        self.assertContains(response, "No selfie uploaded")
+        self.assertContains(response, "No ID front uploaded")
+        self.assertContains(response, "No ID back uploaded")
+
+    def test_income_check_renders_guarantor_questions(self):
+        """Income check page must render guarantor contact questions."""
+        app = self.create_pending(
+            status="under_review", claimed_by=self.manager,
+            exact_monthly_income=300000, calculated_monthly_payment=60000,
+        )
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_income_check", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "guarantor_spoken")
+        self.assertContains(response, "guarantor_confirmed_customer")
+        self.assertContains(response, "contacts_reachable")
+
+    def test_location_check_renders_four_questions(self):
+        """Location check must render 4 questions including address clarity."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_location_check", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "location_neighbour_spoken")
+        self.assertContains(response, "location_confirmed")
+        self.assertContains(response, "location_traceable")
+        self.assertContains(response, "location_address_clear")
+
+    def test_final_review_renders_deal_questions(self):
+        """Final review must show deal/contract Yes/No questions."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_final_review", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "deal_phone_correct")
+        self.assertContains(response, "deal_deposit_understood")
+        self.assertContains(response, "deal_lock_understood")
+        self.assertContains(response, "deal_legal_understood")
+
+    def test_approval_shows_next_steps(self):
+        """Approve success page must show the post-approval workflow steps."""
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.post(reverse("underwriter_confirm_approve", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Application Approved")
+        self.assertContains(response, "Customer Terms Acceptance")
+        self.assertContains(response, "Capture IMEI")
+        self.assertContains(response, "Device Lock Readiness")
+        app.refresh_from_db()
+        self.assertEqual(app.status, "approved")
 
     def test_corrected_field_renders_orange(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager)

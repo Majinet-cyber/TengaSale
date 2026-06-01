@@ -3,57 +3,95 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
-<div class="uw-canvas">
-    <a href="{% url 'underwriter_customer_call' app.id %}" class="soft-back"><span class="soft-back-icon">&larr;</span><span>Back</span></a>
-    <header class="uw-header"><div><span class="uw-kicker">Income Check</span><h1>Income Check</h1></div></header>
 
+<div class="uw-canvas">
+    <a href="{% url 'underwriter_customer_call' app.id %}" class="soft-back">
+        <span class="soft-back-icon">&larr;</span>
+        <span>Back</span>
+    </a>
+
+    <header class="uw-header">
+        <div>
+            <span class="uw-kicker">Income Check</span>
+            <h1>{{ app.customer_name|default:"Unnamed Customer" }}</h1>
+        </div>
+        <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
+    </header>
+
+    {# ── A. Income ───────────────────────────────────────────────── #}
     <section class="uw-card">
-        <h2>Income Details</h2>
+        <h2>A. Income</h2>
         {% include "dashboard/partials/review_field.html" with field_name="income_band" section="Income" label="Income Band" value=app.income_band correction=corrections.income_band %}
-        {% include "dashboard/partials/review_field.html" with field_name="exact_monthly_income" section="Income" label="Income Amount" value=app.exact_monthly_income correction=corrections.exact_monthly_income %}
+        {% include "dashboard/partials/review_field.html" with field_name="exact_monthly_income" section="Income" label="Income Amount (Monthly)" value=app.exact_monthly_income correction=corrections.exact_monthly_income %}
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Income Frequency</span>
+                <strong class="review-field__value">Monthly</strong>
+            </div>
+        </div>
         {% include "dashboard/partials/review_field.html" with field_name="income_source" section="Income" label="Income Source" value=app.income_source correction=corrections.income_source %}
         {% include "dashboard/partials/review_field.html" with field_name="occupation" section="Income" label="Occupation" value=app.occupation correction=corrections.occupation %}
         {% include "dashboard/partials/review_field.html" with field_name="proof_notes" section="Income" label="Income Source Description" value=app.proof_notes correction=corrections.proof_notes %}
-        {% include "dashboard/partials/review_field.html" with field_name="proof_contact_name" section="Income" label="Company Contact Name" value=app.proof_contact_name correction=corrections.proof_contact_name %}
-        {% include "dashboard/partials/review_field.html" with field_name="proof_contact_phone" section="Income" label="Company Contact Phone" value=app.proof_contact_phone correction=corrections.proof_contact_phone %}
-        {% include "dashboard/partials/review_field.html" with field_name="proof_of_income_type" section="Income" label="Proof of Income" value=app.proof_of_income_type correction=corrections.proof_of_income_type %}
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Income Frequency</span><strong class="review-field__value">Monthly</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Company Name</span><strong class="review-field__value">Not captured</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Education Type</span><strong class="review-field__value">Not captured</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Marital Status</span><strong class="review-field__value">Not captured</strong></div></div>
-        {% if app.proof_contact_phone %}
-            <a class="btn" href="tel:+265{{ app.proof_contact_phone }}">CALL EMPLOYER / CALL BUSINESS ASSOCIATE</a>
-        {% else %}
-            <span class="btn btn-outline disabled">CALL EMPLOYER / CALL BUSINESS ASSOCIATE</span>
-        {% endif %}
+        {% include "dashboard/partials/review_field.html" with field_name="proof_of_income_type" section="Income" label="Proof of Income Type" value=app.proof_of_income_type correction=corrections.proof_of_income_type %}
     </section>
 
+    {# ── B. Contacts / Guarantor ─────────────────────────────────── #}
     <section class="uw-card">
+        <h2>B. Contacts Provided</h2>
+        {% include "dashboard/partials/review_field.html" with field_name="proof_contact_name" section="Contacts" label="Company Contact Name" value=app.proof_contact_name correction=corrections.proof_contact_name %}
+        {% include "dashboard/partials/review_field.html" with field_name="proof_contact_phone" section="Contacts" label="Company Contact Phone" value=app.proof_contact_phone correction=corrections.proof_contact_phone %}
+        {% include "dashboard/partials/review_field.html" with field_name="next_of_kin_2_name" section="Contacts" label="Guarantor / Next of Kin Name" value=app.next_of_kin_2_name correction=corrections.next_of_kin_2_name %}
+        {% include "dashboard/partials/review_field.html" with field_name="next_of_kin_2_phone" section="Contacts" label="Guarantor / Next of Kin Phone" value=app.next_of_kin_2_phone correction=corrections.next_of_kin_2_phone %}
+        {% include "dashboard/partials/review_field.html" with field_name="next_of_kin_2_relationship" section="Contacts" label="Relationship" value=app.next_of_kin_2_relationship correction=corrections.next_of_kin_2_relationship %}
+        <div class="uw-call-row">
+            {% if app.proof_contact_phone %}
+                <a class="btn" href="tel:+265{{ app.proof_contact_phone }}">CALL EMPLOYER</a>
+            {% else %}
+                <span class="btn btn-outline disabled">NO EMPLOYER PHONE</span>
+            {% endif %}
+            {% if app.next_of_kin_2_phone %}
+                <a class="btn btn-outline" href="tel:+265{{ app.next_of_kin_2_phone }}">CALL GUARANTOR</a>
+            {% endif %}
+        </div>
+    </section>
+
+    {# ── Affordability Calculation ────────────────────────────────── #}
+    <section class="uw-card" style="background:#f8fafb;">
         <h2>Affordability Calculation</h2>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Declared Monthly Income</span><strong class="review-field__value">MWK {{ monthly_income|floatformat:0 }}</strong></div></div>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Monthly Payment</span><strong class="review-field__value">MWK {{ monthly_payment|floatformat:0 }}</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Recommended Income</span><strong class="review-field__value">MWK {{ recommended_income|floatformat:0 }}</strong></div></div>
-        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Income Multiple</span><strong class="review-field__value">{{ income_multiple }}x</strong></div></div>
+        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Recommended Min. Income</span><strong class="review-field__value">MWK {{ recommended_income|floatformat:0 }}</strong></div></div>
+        <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Income-to-Payment Ratio</span><strong class="review-field__value">{{ income_multiple }}x</strong></div></div>
         {% if income_multiple < 10 %}
-            <p class="uw-warning">Below recommended income level. Underwriter may still approve with judgment.</p>
+            <p class="uw-warning">Income is below the recommended 10× threshold. Underwriter may still approve with judgment.</p>
         {% else %}
-            <p class="uw-warning">Good affordability. Income is at least 10x the monthly repayment.</p>
+            <p style="font-size:12px;color:var(--green);font-weight:700;margin:4px 0 0;">Good affordability — income is {{ income_multiple }}× the monthly repayment.</p>
         {% endif %}
     </section>
 
+    {# ── Income Yes/No Questions ──────────────────────────────────── #}
     <form method="post" class="uw-card">
         {% csrf_token %}
-        {% include "dashboard/partials/review_yes_no.html" with name="income_understood" question="Do you clearly understand what the applicant does to earn income?" value=review.income_understood %}
-        {% include "dashboard/partials/review_yes_no.html" with name="income_contact_spoken" question="Did you speak to the employer/business associate?" value=review.income_contact_spoken %}
-        {% include "dashboard/partials/review_yes_no.html" with name="income_confirmed" question="Did the employer/business associate confirm the customer works or earns there?" value=review.income_confirmed %}
-        {% include "dashboard/partials/review_yes_no.html" with name="income_source_dependable" question="Is the customer's income source real and dependable?" value=review.income_source_dependable %}
-        {% include "dashboard/partials/review_yes_no.html" with name="income_contact_confident" question="Is the employer/business associate confident the customer can pay?" value=review.income_contact_confident %}
+        <h2>Income Questions</h2>
+        {% include "dashboard/partials/review_yes_no.html" with name="income_understood" question="Is the stated income believable for this occupation and income source?" value=review.income_understood %}
+        {% include "dashboard/partials/review_yes_no.html" with name="income_source_dependable" question="Does the income support the repayment amount?" value=review.income_source_dependable %}
+        {% include "dashboard/partials/review_yes_no.html" with name="income_contact_spoken" question="Did you speak to the employer or business associate?" value=review.income_contact_spoken %}
+        {% include "dashboard/partials/review_yes_no.html" with name="income_confirmed" question="Did the employer confirm the customer works or earns there?" value=review.income_confirmed %}
+        {% include "dashboard/partials/review_yes_no.html" with name="income_contact_confident" question="Was the employer confident the customer can pay?" value=review.income_contact_confident %}
+
+        <h2 style="margin-top:16px;">Guarantor / Contacts Questions</h2>
+        {% include "dashboard/partials/review_yes_no.html" with name="guarantor_spoken" question="Did you speak with the guarantor or next of kin?" value=review.guarantor_spoken %}
+        {% include "dashboard/partials/review_yes_no.html" with name="guarantor_confirmed_customer" question="Did the guarantor confirm they know this customer?" value=review.guarantor_confirmed_customer %}
+        {% include "dashboard/partials/review_yes_no.html" with name="guarantor_confident_repayment" question="Was the guarantor confident the customer would pay?" value=review.guarantor_confident_repayment %}
+        {% include "dashboard/partials/review_yes_no.html" with name="contacts_reachable" question="Are all provided contact numbers reachable?" value=review.contacts_reachable %}
+
         <div class="uw-actions">
             <a href="{% url 'underwriter_customer_call' app.id %}" class="btn btn-outline">Back</a>
-            <button type="submit" class="btn">Submit</button>
+            <button type="submit" class="btn">Save &amp; Continue</button>
         </div>
     </form>
 </div>
+
 {% include "dashboard/partials/correction_modal.html" %}
 <script src="{% static 'js/underwriter_review.js' %}"></script>
 {% endblock %}
