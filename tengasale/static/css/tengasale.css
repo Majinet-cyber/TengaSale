@@ -1130,8 +1130,8 @@ img.ts-logo-wordmark {
 
 .status-badge--approved  { background: #e8f6ee; color: #168a45; }
 .status-badge--rejected  { background: #fdeceb; color: #d93025; }
-.status-badge--review    { background: #edf3f7; color: #2367c7; }
-.status-badge--pending   { background: rgba(255,106,0,0.10); color: #ff5a00; }
+.status-badge--review    { background: rgba(255,90,0,0.10); color: #e64d00; }
+.status-badge--pending   { background: rgba(255,90,0,0.10); color: #ff5a00; }
 
 /* ── Transaction rows ────────────────────────────────────────────── */
 
@@ -1385,11 +1385,19 @@ img.ts-logo-wordmark {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: flex-start;
   gap: 10px;
-  padding: 12px;
+  padding: 14px 12px;
   background: #fff;
   border: 1px solid #e7edf3;
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(17,17,17,0.04);
+  transition: border-color 0.15s;
+}
+
+/* Correction-flagged field card — amber left border, soft yellow tint */
+.ts-question-card--correction {
+  background: #fffbf0;
+  border-color: rgba(245, 158, 11, 0.4);
+  border-left: 3px solid #f59e0b;
 }
 
 .ts-question-card__meta {
@@ -1430,6 +1438,7 @@ img.ts-logo-wordmark {
   color: #667080;
   font-size: 0.75rem;
   font-weight: 850;
+  text-transform: none;
 }
 
 .ts-question-card__value {
@@ -1437,6 +1446,7 @@ img.ts-logo-wordmark {
   margin-top: 2px;
   color: #111;
   font-size: 0.96rem;
+  font-weight: 700;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
@@ -1446,6 +1456,24 @@ img.ts-logo-wordmark {
   color: #7a828c;
   font-size: 0.74rem;
   line-height: 1.35;
+}
+
+/* Correction reason note inside a flagged field card */
+.ts-question-card__corr-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 5px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+}
+.ts-question-card__corr-note svg {
+  flex-shrink: 0;
+  color: #b45309;
 }
 
 .ts-sendback-panel {

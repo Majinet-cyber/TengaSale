@@ -12,7 +12,27 @@
 
 <h1 class="greeting">Application Detail</h1>
 
-{% if is_incomplete %}
+{% if is_post_approval %}
+<div class="app-next-step-banner">
+  <div class="app-next-step-banner__icon">
+    {% if app.status == "approved" %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    {% else %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {% endif %}
+  </div>
+  <div class="app-next-step-banner__body">
+    <div class="app-next-step-banner__title">
+      {% if app.status == "approved" %}Application approved{% else %}Next step required{% endif %}
+    </div>
+    <div class="app-next-step-banner__sub">{{ next_step_label }}</div>
+  </div>
+  <a href="{{ app.get_continue_url }}" class="app-next-step-banner__btn">
+    Continue
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+  </a>
+</div>
+{% elif is_incomplete %}
     <a href="{{ app.get_continue_url }}" class="new-application-button">Continue Application</a>
 {% endif %}
 
@@ -32,14 +52,17 @@
             <h2>Sent Back</h2>
             <p>Review these fields and resubmit the application.</p>
         {% elif app.merchant_status_key == "approved" %}
-            <h2>Your application is approved</h2>
-            <p>Continue to the next step to complete the contract process.</p>
+            <h2>Application approved</h2>
+            <p>Continue to the contract terms to complete the process.</p>
         {% elif app.merchant_status_key == "rejected" %}
             <h2>Your application was rejected</h2>
             <p>Review the underwriter comment below for more information.</p>
+        {% elif app.merchant_status_key == "completed" %}
+            <h2>Contract complete</h2>
+            <p>The device has been financed and the contract is active.</p>
         {% else %}
             <h2>{{ app.merchant_status_label }}</h2>
-            <p>Review the application details below.</p>
+            <p>{% if next_step_label %}{{ next_step_label }}{% else %}Review the application details below.{% endif %}</p>
         {% endif %}
     </div>
     <span class="status-pill status-{{ app.merchant_status_key }}"{% if app.merchant_status_key == "needs_edit" %} aria-label="Needs Edit"{% endif %}>{{ app.merchant_status_label }}</span>

@@ -180,7 +180,7 @@ else:
         },
     }
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Cache — use LocMemCache by default (no external dependency needed)

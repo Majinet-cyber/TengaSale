@@ -1584,3 +1584,76 @@ class ApplicationPageLoadTests(TestCase):
         url = reverse("underwriter_final_review", args=[self.app.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+
+class ApprovalStatusTests(TestCase):
+    """Verify that approving an application updates status correctly and
+    that the detail page shows the post-approval banner."""
+
+    def setUp(self):
+        call_command("seed_roles")
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="appr-merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="under_review",
+            review_status="under_review",
+        )
+
+    def test_approved_status_key_is_approved(self):
+        self.app.status = "approved"
+        self.app.save(update_fields=["status"])
+        self.assertEqual(self.app.merchant_status_key, "approved")
+
+    def test_approved_application_not_in_pending_review_queryset(self):
+        self.app.status = "approved"
+        self.app.save(update_fields=["status"])
+        pending = FinancingApplication.objects.filter(status="pending_review")
+        self.assertNotIn(self.app, pending)
+
+    def test_approved_application_routes_to_contract_terms(self):
+        self.app.status = "approved"
+        self.app.save(update_fields=["status"])
+        self.assertEqual(
+            self.app.get_continue_url(),
+            reverse("contract_terms", args=[self.app.id]),
+        )
+
+    def test_approved_detail_page_shows_next_step_banner(self):
+        self.app.status = "approved"
+        self.app.save(update_fields=["status"])
+        self.client.force_login(self.merchant)
+        url = reverse("application_detail", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "app-next-step-banner")
+        self.assertContains(response, "Application approved")
+        self.assertContains(response, "Continue")
+
+    def test_pending_application_does_not_show_next_step_banner(self):
+        self.app.status = "pending_review"
+        self.app.save(update_fields=["status"])
+        self.client.force_login(self.merchant)
+        url = reverse("application_detail", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "app-next-step-banner")
+
+    def test_imei_entry_step_shows_continue_button(self):
+        self.app.status = "imei_entry"
+        self.app.save(update_fields=["status"])
+        self.client.force_login(self.merchant)
+        url = reverse("application_detail", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "app-next-step-banner")
+
+    def test_status_pill_approved_uses_green_class(self):
+        """Status pill for approved should carry .status-approved CSS class."""
+        self.app.status = "approved"
+        self.app.save(update_fields=["status"])
+        self.client.force_login(self.merchant)
+        url = reverse("application_detail", args=[self.app.id])
+        response = self.client.get(url)
+        self.assertContains(response, 'status-approved')

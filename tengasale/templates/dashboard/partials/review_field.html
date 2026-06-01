@@ -9,7 +9,7 @@
     <button
         type="button"
         class="review-edit-btn{% if correction %} review-edit-btn--active{% endif %}"
-        aria-label="Mark {{ label }} for correction"
+        aria-label="{% if correction %}Remove correction for{% else %}Mark{% endif %} {{ label }} for correction"
         data-correction-open
         data-field-name="{{ field_name }}"
         data-field-label="{{ label }}"

@@ -93,3 +93,11 @@ def format_abs_mwk(value):
     if d == d.to_integral_value():
         return f"MWK {int(d):,}"
     return f"MWK {d:,.2f}"
+
+
+@register.filter(name="get_item")
+def get_item(dictionary, key):
+    """Lookup a dict by dynamic key. Usage: {{ corrections|get_item:field_key }}"""
+    if not dictionary:
+        return None
+    return dictionary.get(key)

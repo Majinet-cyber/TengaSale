@@ -1028,30 +1028,46 @@ textarea:focus {
     display: inline-flex;
     padding: 5px 10px;
     border-radius: 999px;
-    background: var(--blue-gray-soft);
-    color: var(--blue-gray);
+    background: #f1f5f9;
+    color: #64748b;
     font-size: 13px;
     font-weight: 850;
 }
 
+/* Under review / pending — amber */
 .status-pending_review,
 .status-under_review {
     background: #fff3df;
     color: #b44a00;
 }
 
+/* Needs edit / rejected / sent back — red */
 .status-correction_requested,
+.status-sent_back,
 .status-needs_edit,
 .status-rejected {
     background: var(--red-soft);
     color: var(--red);
 }
 
+/* Approved / complete — green */
 .status-approved,
 .status-contract_complete,
 .status-completed {
     background: var(--green-soft);
     color: var(--green);
+}
+
+/* Active contract steps — orange/amber */
+.status-contract_terms,
+.status-contract_signature,
+.status-imei_entry,
+.status-contract_creating,
+.status-warranty_check,
+.status-locking,
+.status-deposit_pending {
+    background: rgba(255, 90, 0, 0.10);
+    color: var(--ts-orange-dark, #e64d00);
 }
 
 .clean-list,
@@ -4994,6 +5010,86 @@ table {
     stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+/* Active/flagged state for the edit button */
+.ts-edit-btn--active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #b45309;
+}
+.ts-edit-btn--active:hover {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+/* ── Post-approval next-step banner ─────────────────────────── */
+.app-next-step-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #f0fdf4;
+    border: 1.5px solid rgba(22, 163, 74, 0.3);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.app-next-step-banner__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.app-next-step-banner__icon svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app-next-step-banner__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-next-step-banner__title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.app-next-step-banner__sub {
+    font-size: 0.82rem;
+    color: #166534;
+    margin-top: 2px;
+}
+
+.app-next-step-banner__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #16a34a;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background 0.13s;
+}
+
+.app-next-step-banner__btn:hover {
+    background: #15803d;
 }
 
 /* ── Yes / No decision controls ─────────────────────────────── */

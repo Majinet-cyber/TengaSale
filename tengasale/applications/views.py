@@ -360,7 +360,8 @@ def application_detail(request, app_id):
     if not user_can_view_application(request.user, app):
         raise PermissionDenied
 
-    incomplete_statuses = [
+    # Statuses where merchant has an action to take (show continue button)
+    incomplete_statuses = {
         "draft",
         "started",
         "customer_details",
@@ -373,7 +374,35 @@ def application_detail(request, app_id):
         "correction_requested",
         "sent_back",
         "imei_required",
-    ]
+    }
+
+    # Post-approval statuses also need a continue/next-step action
+    post_approval_statuses = {
+        "approved",
+        "contract_terms",
+        "contract_signature",
+        "imei_entry",
+        "contract_creating",
+        "warranty_check",
+        "locking",
+        "deposit_pending",
+    }
+
+    # Label describing the next required action after approval
+    _post_approval_labels = {
+        "approved": "Continue to contract terms",
+        "contract_terms": "Review and accept contract terms",
+        "contract_signature": "Sign the contract",
+        "imei_entry": "Enter device IMEI",
+        "contract_creating": "Contract is being created",
+        "warranty_check": "Warranty check in progress",
+        "locking": "Device lock in progress",
+        "deposit_pending": "Deposit payment pending",
+    }
+
+    show_continue = app.status in incomplete_statuses or app.status in post_approval_statuses
+    is_post_approval = app.status in post_approval_statuses
+    next_step_label = _post_approval_labels.get(app.status, "")
 
     return render(
         request,
@@ -381,6 +410,9 @@ def application_detail(request, app_id):
         {
             "app": app,
             "is_incomplete": app.status in incomplete_statuses,
+            "show_continue": show_continue,
+            "is_post_approval": is_post_approval,
+            "next_step_label": next_step_label,
         },
     )
 

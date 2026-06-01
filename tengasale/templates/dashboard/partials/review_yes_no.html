@@ -1,9 +1,12 @@
 <div class="review-question" data-review-yes-no>
     <p class="review-question__text">{{ question }}</p>
     <div class="review-choice-row">
-        <button type="button" class="review-choice review-choice--no{% if value == False %} is-selected{% endif %}" data-review-choice="no">No</button>
-        <span class="review-choice-tick{% if value == True %} is-yes{% elif value == False %} is-no{% endif %}" data-review-tick>{% if value == True %}✓{% endif %}</span>
-        <button type="button" class="review-choice review-choice--yes{% if value == True %} is-selected{% endif %}" data-review-choice="yes">Yes</button>
+        <button type="button" class="review-choice review-choice--no{% if value == False %} is-selected{% endif %}" data-review-choice="no">
+            <span>✕</span> No
+        </button>
+        <button type="button" class="review-choice review-choice--yes{% if value == True %} is-selected{% endif %}" data-review-choice="yes">
+            <span>✓</span> Yes
+        </button>
     </div>
     <input type="hidden" name="{{ name }}" value="{{ value|yesno:'yes,no,' }}" data-review-input>
 </div>
