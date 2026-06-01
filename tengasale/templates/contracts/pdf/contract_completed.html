@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TengaSale Completed Contract {{ contract_number }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 1.5cm;
+  }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px solid #22aa44;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .brand-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #ff5a00;
+    letter-spacing: 1px;
+  }
+  .brand-tagline { font-size: 10px; color: #888; }
+  .contract-title {
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    color: #222;
+  }
+  .completed-badge {
+    display: inline-block;
+    background: #22aa44;
+    color: #fff;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+  .ref-line { font-size: 9px; color: #555; margin-top: 4px; }
+  h2 {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: #f5f5f5;
+    border-left: 3px solid #22aa44;
+    padding: 4px 8px;
+    margin: 14px 0 6px 0;
+    color: #333;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+  }
+  table.data-table td {
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    font-size: 9.5px;
+    vertical-align: top;
+  }
+  table.data-table td.label {
+    width: 40%;
+    background: #fafafa;
+    font-weight: bold;
+    color: #444;
+  }
+  .completion-stamp {
+    background: #f0fff0;
+    border: 2px solid #22aa44;
+    padding: 14px 18px;
+    border-radius: 5px;
+    margin: 16px 0;
+  }
+  .completion-stamp-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #22aa44;
+    text-transform: uppercase;
+    border-bottom: 1px solid #22aa44;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+  .clause { margin-bottom: 8px; font-size: 9.5px; }
+  .clause-letter { font-weight: bold; color: #22aa44; }
+  .clause p { margin: 2px 0; }
+  .notice-box {
+    background: #f0fff0;
+    border: 1px solid #22aa44;
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 9px;
+    margin: 8px 0;
+  }
+  .footer-note {
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-size: 8px;
+    color: #888;
+    text-align: center;
+  }
+  .sig-block { margin-top: 18px; border-top: 1px solid #ddd; padding-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand-name">TENGASALE</div>
+  <div class="brand-tagline">Endless Possibilities — Smartphone Financing</div>
+  <div class="contract-title">Digital Instalment Sale Agreement — Customer Contract Summary</div>
+  <div class="completed-badge">CONTRACT COMPLETED</div>
+  <div class="ref-line">
+    Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
+    Date: <strong>{{ contract_date }}</strong> &nbsp;|&nbsp;
+    Application: <strong>{{ application_id }}</strong>
+  </div>
+</div>
+
+<!-- PARTIES -->
+<h2>Parties to the Agreement</h2>
+<table class="data-table">
+  <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}</td></tr>
+  <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
+  <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
+  <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>
+  <tr><td class="label">Physical Address</td><td>{{ physical_address }}{% if district %}, {{ district }}{% endif %}{% if region %}, {{ region }}{% endif %}</td></tr>
+</table>
+
+<!-- DEVICE -->
+<h2>A. Device Details</h2>
+<table class="data-table">
+  <tr><td class="label">Device</td><td>{{ device_name }}</td></tr>
+  <tr><td class="label">IMEI Number</td><td>{{ imei_number|default:"Recorded" }}</td></tr>
+  {% if serial_number %}<tr><td class="label">Serial Number</td><td>{{ serial_number }}</td></tr>{% endif %}
+  <tr><td class="label">Retail Cash Price</td><td>MWK {{ retail_cash_price|floatformat:2 }}</td></tr>
+  <tr><td class="label">Deposit Paid</td><td>MWK {{ deposit_paid|floatformat:2 }}</td></tr>
+  <tr><td class="label">Amount Financed</td><td>MWK {{ amount_financed|floatformat:2 }}</td></tr>
+  <tr><td class="label">Finance Charges</td><td>MWK {{ finance_charges|floatformat:2 }}</td></tr>
+  <tr><td class="label"><strong>Total Contract Price</strong></td><td><strong>MWK {{ total_contract_price|floatformat:2 }}</strong></td></tr>
+</table>
+
+<!-- PAYMENT -->
+<h2>B. Payment Terms</h2>
+<table class="data-table">
+  {% if contract_term_months %}<tr><td class="label">Contract Term</td><td>{{ contract_term_months }} months</td></tr>{% endif %}
+  <tr><td class="label">Monthly Instalment</td><td>MWK {{ instalment_amount|floatformat:2 }}</td></tr>
+  <tr><td class="label">Daily Instalment</td><td>MWK {{ daily_instalment|floatformat:2 }}</td></tr>
+  <tr><td class="label">Total Paid</td><td>MWK {{ stamp_total_paid|floatformat:2 }}</td></tr>
+  <tr><td class="label">Payment Channels</td><td>{{ payment_channels }}</td></tr>
+</table>
+
+<!-- LEGAL CLAUSES (condensed for completed contract) -->
+<h2>Key Terms — For the Record</h2>
+<div class="clause">
+  <span class="clause-letter">C. OWNERSHIP.</span>
+  <p>Full ownership of the device has transferred to the customer upon completion of all instalment payments and TengaSale's confirmation as recorded in this document.</p>
+</div>
+<div class="clause">
+  <span class="clause-letter">D–P.</span>
+  <p>All terms and conditions of the original Instalment Sale Agreement remain part of this record and were accepted by the customer at the time of signing. Key terms included: instalment obligations (Clause D); default after 14 days (Clause E); repossession rights after 30 days (Clause F); device-lock (Clause J); payment reconciliation (Clause K); WhatsApp/SMS consent (Clause L); PDF delivery consent (Clause M); KYC/data consent (Clause N); audit trail (Clause O); and ownership transfer upon completion (Clause P).</p>
+</div>
+
+<!-- COMPLETION STAMP -->
+<div class="completion-stamp">
+  <div class="completion-stamp-title">CONTRACT COMPLETION RECORD</div>
+  <table class="data-table" style="border:none;">
+    <tr><td class="label" style="border:none;">Contract Number</td><td style="border:none;">{{ stamp_contract_number }}</td></tr>
+    <tr><td class="label" style="border:none;">Customer</td><td style="border:none;">{{ stamp_customer }}</td></tr>
+    <tr><td class="label" style="border:none;">Customer Phone</td><td style="border:none;">{{ stamp_customer_phone }}</td></tr>
+    <tr><td class="label" style="border:none;">Merchant</td><td style="border:none;">{{ stamp_merchant }}</td></tr>
+    <tr><td class="label" style="border:none;">Device</td><td style="border:none;">{{ stamp_device }}</td></tr>
+    <tr><td class="label" style="border:none;">IMEI</td><td style="border:none;">{{ stamp_imei|default:"Recorded" }}</td></tr>
+    <tr><td class="label" style="border:none;">Total Contract Price</td><td style="border:none;">MWK {{ stamp_total_contract_price|floatformat:2 }}</td></tr>
+    <tr><td class="label" style="border:none;">Total Paid</td><td style="border:none;">MWK {{ stamp_total_paid|floatformat:2 }}</td></tr>
+    <tr><td class="label" style="border:none;">Completion Confirmed At</td><td style="border:none;"><strong>{{ stamp_completed_at }}</strong></td></tr>
+    <tr><td class="label" style="border:none;">Final PDF Generated At</td><td style="border:none;">{{ stamp_generated_at }}</td></tr>
+    {% if stamp_scheduled_for %}<tr><td class="label" style="border:none;">WhatsApp Delivery Scheduled</td><td style="border:none;">{{ stamp_scheduled_for }}</td></tr>{% endif %}
+    {% if stamp_delivery_record_id %}<tr><td class="label" style="border:none;">TengaSale Delivery Record ID</td><td style="border:none;">{{ stamp_delivery_record_id }}</td></tr>{% endif %}
+    <tr><td class="label" style="border:none;">Ownership Transfer Status</td><td style="border:none;"><strong>{{ stamp_ownership_transfer }}</strong></td></tr>
+    <tr><td class="label" style="border:none;">Device Lock Release Status</td><td style="border:none;">{{ stamp_lock_release }}</td></tr>
+  </table>
+</div>
+
+<!-- SIGNATURES -->
+<div class="sig-block">
+  <h2>Signatures</h2>
+  <table width="100%">
+    <tr>
+      <td width="48%" style="vertical-align:top;padding-right:10px;">
+        <div style="min-height:40px;border-bottom:1px solid #333;margin-bottom:4px;">
+          {% if customer_sig_url %}<img src="{{ customer_sig_url }}" alt="Customer signature" style="max-height:36px;max-width:180px;">{% endif %}
+        </div>
+        <div style="font-size:9px;color:#555;">
+          Customer Signature<br>Name: {{ customer_full_name }}<br>
+          {% if customer_signature_at %}Date: {{ customer_signature_at|date:"d M Y, H:i" }}{% endif %}
+          {% if otp_code %}<br>OTP Ref: {{ otp_code }}{% endif %}
+        </div>
+      </td>
+      <td width="4%"></td>
+      <td width="48%" style="vertical-align:top;">
+        <div style="min-height:40px;border-bottom:1px solid #333;margin-bottom:4px;"></div>
+        <div style="font-size:9px;color:#555;">
+          TengaSale Authorised Representative<br>
+          {% if approved_by_name %}Name: {{ approved_by_name }}<br>{% endif %}
+          {% if stamp_completed_at %}Completion Date: {{ stamp_completed_at|date:"d M Y, H:i" }}{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="notice-box">
+  <strong>Ownership Transfer Confirmed.</strong> The device described in this contract is now fully owned by {{ customer_full_name }}.
+  This document serves as your completion certificate. Please retain it for your records.
+</div>
+
+<div class="footer-note">
+  Generated by TengaSale on {{ generated_at|date:"d M Y, H:i" }}.
+  Contract No: {{ contract_number }} | Application: {{ application_id }}.
+  This document is issued as an electronic contract completion record by TengaSale Digital Finance, Malawi.
+</div>
+
+</body>
+</html>

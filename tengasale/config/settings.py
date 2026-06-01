@@ -315,5 +315,26 @@ IMEI_CHECK_TIMEOUT_SECONDS = int(os.environ.get("IMEI_CHECK_TIMEOUT_SECONDS", "2
 # Set to False to allow Merchant Admins to directly approve leads without HQ review.
 REQUIRE_HQ_MERCHANT_APPROVAL = True
 
+# ── Messaging / WhatsApp delivery settings ────────────────────────────────────
+MESSAGING_ENABLED = os.environ.get("MESSAGING_ENABLED", "True").lower() in ("true", "1", "yes")
+WHATSAPP_DELIVERY_ENABLED = os.environ.get("WHATSAPP_DELIVERY_ENABLED", "True").lower() in ("true", "1", "yes")
+# Provider: mock | twilio | meta_whatsapp
+WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "mock")
+# Hours after contract completion to send the PDF
+WHATSAPP_SEND_CONTRACT_AFTER_HOURS = int(os.environ.get("WHATSAPP_SEND_CONTRACT_AFTER_HOURS", "24"))
+# Twilio WhatsApp credentials
+WHATSAPP_API_KEY = os.environ.get("WHATSAPP_API_KEY", "")
+WHATSAPP_API_SECRET = os.environ.get("WHATSAPP_API_SECRET", "")
+# Meta / Facebook WhatsApp Business API
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_FROM_NUMBER = os.environ.get("WHATSAPP_FROM_NUMBER", "")
+WHATSAPP_TIMEOUT_SECONDS = int(os.environ.get("WHATSAPP_TIMEOUT_SECONDS", "20"))
+# If True, generate publicly accessible PDF URLs for WhatsApp document sends.
+# If False, use local file path (mock provider works; real providers may fail gracefully).
+CONTRACT_PDF_PUBLIC_URL_MODE = os.environ.get("CONTRACT_PDF_PUBLIC_URL_MODE", "False").lower() in ("true", "1", "yes")
+# Base URL used to build public PDF links (e.g. https://tengasale.onrender.com)
+CONTRACT_PDF_BASE_URL = os.environ.get("CONTRACT_PDF_BASE_URL", "")
+
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

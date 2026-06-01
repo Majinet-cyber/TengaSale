@@ -6,17 +6,74 @@
 {% block content %}
 
 <div class="card complete-card">
-    <div class="complete-check">✓</div>
-    <h1>Contract complete</h1>
+    <div class="complete-check">&#10003;</div>
+    <h1>Contract completed</h1>
     <p>{{ contract.contract_number }}</p>
 </div>
 
 <div class="card detail-card">
     <div class="detail-row"><span>Customer</span><strong>{{ contract.customer_name }}</strong></div>
+    <div class="detail-row"><span>Device</span><strong>{{ contract.deal_name }}</strong></div>
     <div class="detail-row"><span>IMEI</span><strong>{{ contract.imei_number }}</strong></div>
     <div class="detail-row"><span>Deposit</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
-    <div class="detail-row"><span>Monthly</span><strong>{{ contract.monthly_payment|mwk }}</strong></div>
-    <div class="detail-row"><span>Daily</span><strong>{{ contract.daily_payment|mwk }}</strong></div>
+    <div class="detail-row"><span>Total contract price</span><strong>{{ contract.total_loan|mwk }}</strong></div>
+    {% if contract.completed_at %}
+    <div class="detail-row"><span>Completed at</span><strong>{{ contract.completed_at|date:"d M Y, H:i" }}</strong></div>
+    {% endif %}
+</div>
+
+<!-- PDF and delivery status -->
+<div class="card" style="margin-top:16px;">
+    <div style="padding:14px 16px;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;">Contract Documents</div>
+
+        {% if contract.completed_pdf %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="color:#22aa44;font-size:16px;">&#10003;</span>
+            <div>
+                <div style="font-size:13px;font-weight:600;">Final signed PDF generated</div>
+                <a href="{% url 'contract_pdf_completed' contract.id %}" target="_blank" style="font-size:12px;color:#ff5a00;">View / Download PDF</a>
+            </div>
+        </div>
+        {% else %}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="color:#e07000;font-size:16px;">&#9201;</span>
+            <div style="font-size:13px;">Completed PDF being generated...</div>
+        </div>
+        {% endif %}
+
+        {% with delivery=contract.document_deliveries.all.first %}
+        {% if delivery %}
+            {% if delivery.delivery_status == "sent" %}
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:#22aa44;font-size:16px;">&#10003;</span>
+                <div>
+                    <div style="font-size:13px;font-weight:600;">Final signed PDF sent to customer WhatsApp</div>
+                    <div style="font-size:12px;color:#888;">Sent at: {{ delivery.sent_at|date:"d M Y, H:i" }}</div>
+                </div>
+            </div>
+            {% elif delivery.delivery_status == "scheduled" %}
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:#e07000;font-size:16px;">&#9201;</span>
+                <div>
+                    <div style="font-size:13px;font-weight:600;">Final signed PDF scheduled for WhatsApp delivery</div>
+                    <div style="font-size:12px;color:#888;">Scheduled for: {{ delivery.scheduled_for|date:"d M Y, H:i" }}</div>
+                </div>
+            </div>
+            {% elif delivery.delivery_status == "failed" %}
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:#cc0000;font-size:16px;">&#10007;</span>
+                <div>
+                    <div style="font-size:13px;font-weight:600;">WhatsApp delivery failed</div>
+                    <div style="font-size:12px;color:#888;">{{ delivery.error_message }}</div>
+                </div>
+            </div>
+            {% elif delivery.delivery_status == "skipped" %}
+            <div style="font-size:12px;color:#999;">WhatsApp delivery skipped &mdash; {{ delivery.error_message }}</div>
+            {% endif %}
+        {% endif %}
+        {% endwith %}
+    </div>
 </div>
 
 <div class="form-actions">

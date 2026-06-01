@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load ts_filters %}
 
-{% block page_title %}Contract Detail{% endblock %}
+{% block page_title %}Contract {{ contract.contract_number }}{% endblock %}
 
 {% block content %}
 
@@ -12,6 +12,14 @@
 
 <h1 class="greeting">Contract Detail</h1>
 
+{% if contract.status == "complete" %}
+<div class="alert alert-success" style="margin-bottom:16px;padding:10px 14px;background:#eaffea;border:1px solid #22aa44;border-radius:6px;color:#155724;">
+    <strong>Contract completed.</strong>
+    {% if contract.completed_at %}Completed: {{ contract.completed_at|date:"d M Y, H:i" }}.{% endif %}
+    {% if contract.ownership_transfer_at %}Ownership transferred.{% endif %}
+</div>
+{% endif %}
+
 <div class="card detail-card">
     <div class="detail-row"><span>Contract number</span><strong>{{ contract.contract_number }}</strong></div>
     <div class="detail-row"><span>Application number</span><strong>{{ application.application_number }}</strong></div>
@@ -20,14 +28,127 @@
     <div class="detail-row"><span>Device</span><strong>{{ contract.deal_name|default:"Not selected" }}</strong></div>
     <div class="detail-row"><span>IMEI</span><strong>{{ contract.imei_number|default:"Not captured" }}</strong></div>
     <div class="detail-row"><span>Cash price</span><strong>{{ contract.cash_price|mwk }}</strong></div>
-    <div class="detail-row"><span>Merchant price / financed amount</span><strong>{{ contract.total_loan|mwk }}</strong></div>
-    <div class="detail-row"><span>Total loan</span><strong>{{ contract.total_loan|mwk }}</strong></div>
+    <div class="detail-row"><span>Total loan / contract price</span><strong>{{ contract.total_loan|mwk }}</strong></div>
     <div class="detail-row"><span>Deposit</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
     <div class="detail-row"><span>Monthly payment</span><strong>{{ contract.monthly_payment|mwk }}</strong></div>
     <div class="detail-row"><span>Daily payment</span><strong>{{ contract.daily_payment|mwk }}</strong></div>
     <div class="detail-row"><span>Status</span><strong>{{ contract.get_status_display }}</strong></div>
     <div class="detail-row"><span>Created</span><strong>{{ contract.created_at|date:"Y/m/d, H:i" }}</strong></div>
     <div class="detail-row"><span>Updated</span><strong>{{ contract.updated_at|date:"Y/m/d, H:i" }}</strong></div>
+    {% if contract.completed_at %}<div class="detail-row"><span>Completed</span><strong>{{ contract.completed_at|date:"Y/m/d, H:i" }}</strong></div>{% endif %}
+    {% if contract.terms_accepted_at %}<div class="detail-row"><span>Terms accepted</span><strong>{{ contract.terms_accepted_at|date:"Y/m/d, H:i" }}</strong></div>{% endif %}
+</div>
+
+<!-- CONTRACT DOCUMENTS -->
+<h2 class="section-heading" style="margin-top:24px;">Contract Documents</h2>
+<div class="card">
+    <div style="padding:12px 16px;">
+
+        <!-- Initial PDF -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:13px;">Initial Signed Contract</div>
+                <div style="font-size:12px;color:#888;">Generated when customer accepted terms</div>
+            </div>
+            <div>
+                {% if contract.initial_pdf %}
+                    <a href="{% url 'contract_pdf_initial' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View PDF</a>
+                {% else %}
+                    <span style="font-size:12px;color:#aaa;">Not generated</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Completed PDF -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:13px;">Completed Contract PDF</div>
+                <div style="font-size:12px;color:#888;">Generated when contract is fully paid</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                {% if contract.completed_pdf %}
+                    <a href="{% url 'contract_pdf_completed' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View PDF</a>
+                    {% if is_hq %}
+                    <form method="post" action="{% url 'hq_regen_completed_pdf' contract.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline" style="font-size:11px;color:#888;">Regenerate</button>
+                    </form>
+                    {% endif %}
+                {% elif contract.status == "complete" %}
+                    <span style="font-size:12px;color:#e07000;">Generating...</span>
+                    {% if is_hq %}
+                    <form method="post" action="{% url 'hq_regen_completed_pdf' contract.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline" style="font-size:11px;">Generate Now</button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                    <span style="font-size:12px;color:#aaa;">Not yet (contract not complete)</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- WhatsApp Delivery Status -->
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:13px;">WhatsApp Delivery</div>
+                {% if latest_delivery %}
+                    <div style="font-size:12px;margin-top:4px;">
+                        {% if latest_delivery.delivery_status == "sent" %}
+                            <span style="color:#22aa44;font-weight:600;">Sent to customer WhatsApp</span><br>
+                            <span style="color:#888;">Sent: {{ latest_delivery.sent_at|date:"d M Y, H:i" }}</span>
+                        {% elif latest_delivery.delivery_status == "scheduled" %}
+                            <span style="color:#e07000;font-weight:600;">Scheduled</span><br>
+                            <span style="color:#888;">Scheduled for: {{ latest_delivery.scheduled_for|date:"d M Y, H:i" }}</span>
+                        {% elif latest_delivery.delivery_status == "failed" %}
+                            <span style="color:#cc0000;font-weight:600;">Delivery failed</span><br>
+                            <span style="color:#888;">{{ latest_delivery.error_message|truncatechars:100 }}</span><br>
+                            <span style="color:#888;">Attempts: {{ latest_delivery.attempt_count }}</span>
+                        {% elif latest_delivery.delivery_status == "skipped" %}
+                            <span style="color:#999;">Skipped &mdash; {{ latest_delivery.error_message }}</span>
+                        {% elif latest_delivery.delivery_status == "cancelled" %}
+                            <span style="color:#999;">Cancelled</span>
+                        {% else %}
+                            <span style="color:#888;">{{ latest_delivery.get_delivery_status_display }}</span>
+                        {% endif %}
+                        <br><span style="font-size:11px;color:#bbb;">Phone: {{ latest_delivery.customer_phone }} | Provider: {{ latest_delivery.provider }}</span>
+                    </div>
+                {% else %}
+                    <div style="font-size:12px;color:#aaa;margin-top:4px;">
+                        {% if contract.status == "complete" %}
+                            Delivery record not found &mdash; contract may be recently completed.
+                        {% else %}
+                            Scheduled after contract completion.
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if is_hq and latest_delivery %}
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                {% if latest_delivery.delivery_status == "scheduled" or latest_delivery.delivery_status == "failed" or latest_delivery.delivery_status == "skipped" %}
+                <form method="post" action="{% url 'hq_delivery_send_now' latest_delivery.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" style="font-size:12px;">Send Now</button>
+                </form>
+                {% endif %}
+                {% if latest_delivery.delivery_status == "failed" or latest_delivery.delivery_status == "skipped" %}
+                <form method="post" action="{% url 'hq_delivery_retry' latest_delivery.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline" style="font-size:12px;">Retry</button>
+                </form>
+                {% endif %}
+                {% if latest_delivery.delivery_status == "scheduled" %}
+                <form method="post" action="{% url 'hq_delivery_cancel' latest_delivery.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline" style="font-size:12px;color:#cc0000;">Cancel</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
 </div>
 
 {% if application.signature_image %}

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 def generate_contract_number():
@@ -66,6 +67,21 @@ class Contract(models.Model):
     phone_locked = models.BooleanField(default=False)
     deposit_paid = models.BooleanField(default=False)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+
+    # Post-approval tracking fields
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    terms_accepted_ip = models.CharField(max_length=45, blank=True)
+    terms_otp_code = models.CharField(max_length=20, blank=True)
+    terms_otp_verified_at = models.DateTimeField(null=True, blank=True)
+
+    # PDF documents
+    initial_pdf = models.FileField(upload_to="contract_pdfs/initial/", blank=True, null=True)
+    completed_pdf = models.FileField(upload_to="contract_pdfs/completed/", blank=True, null=True)
+
+    # Completion
+    completed_at = models.DateTimeField(null=True, blank=True)
+    ownership_transfer_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -96,4 +112,126 @@ class Contract(models.Model):
     def __str__(self):
         return self.contract_number or f"Contract for {self.application_id}"
 
-# Create your models here.
+    @property
+    def finance_charges(self):
+        return max(Decimal("0"), self.total_loan - self.cash_price)
+
+    @property
+    def total_contract_price(self):
+        return self.total_loan
+
+    @property
+    def amount_financed(self):
+        return max(Decimal("0"), self.total_loan - self.deposit_amount)
+
+    @property
+    def contract_term_months(self):
+        if self.monthly_payment and self.monthly_payment > 0:
+            amount = self.amount_financed
+            return int((amount / self.monthly_payment).quantize(Decimal("1")))
+        return 0
+
+
+class ContractDocumentDelivery(models.Model):
+    CHANNEL_WHATSAPP = "whatsapp"
+    CHANNEL_SMS = "sms"
+    CHANNEL_EMAIL = "email"
+    CHANNEL_MANUAL = "manual"
+    CHANNEL_CHOICES = [
+        (CHANNEL_WHATSAPP, "WhatsApp"),
+        (CHANNEL_SMS, "SMS"),
+        (CHANNEL_EMAIL, "Email"),
+        (CHANNEL_MANUAL, "Manual"),
+    ]
+
+    STATUS_PENDING = "pending"
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_SKIPPED = "skipped"
+    DELIVERY_STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_SENT, "Sent"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_SKIPPED, "Skipped"),
+    ]
+
+    PROVIDER_MOCK = "mock"
+    PROVIDER_TWILIO = "twilio"
+    PROVIDER_META = "meta_whatsapp"
+    PROVIDER_OTHER = "other"
+    PROVIDER_CHOICES = [
+        (PROVIDER_MOCK, "Mock (Test)"),
+        (PROVIDER_TWILIO, "Twilio WhatsApp"),
+        (PROVIDER_META, "Meta WhatsApp Business"),
+        (PROVIDER_OTHER, "Other"),
+    ]
+
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.CASCADE,
+        related_name="document_deliveries",
+    )
+    application = models.ForeignKey(
+        "applications.FinancingApplication",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="document_deliveries",
+    )
+    customer_phone = models.CharField(max_length=20, blank=True)
+    normalized_customer_phone = models.CharField(max_length=20, blank=True)
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default=CHANNEL_WHATSAPP)
+    delivery_status = models.CharField(
+        max_length=20,
+        choices=DELIVERY_STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+    scheduled_for = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    completed_at_snapshot = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Snapshot of contract.completed_at at time of scheduling.",
+    )
+    pdf_file = models.FileField(upload_to="contract_pdfs/delivery/", blank=True, null=True)
+    pdf_url = models.CharField(max_length=500, blank=True)
+    message_text = models.TextField(blank=True)
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default=PROVIDER_MOCK)
+    provider_message_id = models.CharField(max_length=200, blank=True)
+    provider_response = models.JSONField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    triggered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="triggered_deliveries",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Contract Document Delivery"
+        verbose_name_plural = "Contract Document Deliveries"
+        indexes = [
+            models.Index(fields=["delivery_status", "scheduled_for"]),
+            models.Index(fields=["contract", "channel"]),
+        ]
+
+    def __str__(self):
+        return f"Delivery #{self.pk} [{self.delivery_status}] for {self.contract}"
+
+    @property
+    def is_due(self):
+        if self.delivery_status != self.STATUS_SCHEDULED:
+            return False
+        if not self.scheduled_for:
+            return False
+        return timezone.now() >= self.scheduled_for

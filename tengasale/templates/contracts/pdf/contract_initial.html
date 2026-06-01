@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TengaSale Contract {{ contract_number }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 1.5cm;
+  }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    color: #1a1a1a;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px solid #ff5a00;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .brand-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #ff5a00;
+    letter-spacing: 1px;
+  }
+  .brand-tagline {
+    font-size: 10px;
+    color: #888;
+  }
+  .contract-title {
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    color: #222;
+  }
+  .ref-line {
+    font-size: 9px;
+    color: #555;
+    margin-top: 4px;
+  }
+  h2 {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: #f5f5f5;
+    border-left: 3px solid #ff5a00;
+    padding: 4px 8px;
+    margin: 14px 0 6px 0;
+    color: #333;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+  }
+  table.data-table td {
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    font-size: 9.5px;
+    vertical-align: top;
+  }
+  table.data-table td.label {
+    width: 40%;
+    background: #fafafa;
+    font-weight: bold;
+    color: #444;
+  }
+  .clause {
+    margin-bottom: 8px;
+    font-size: 9.5px;
+  }
+  .clause-letter {
+    font-weight: bold;
+    color: #ff5a00;
+  }
+  .clause p {
+    margin: 2px 0;
+  }
+  .sig-block {
+    margin-top: 18px;
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+  }
+  .sig-row {
+    display: table;
+    width: 100%;
+  }
+  .sig-col {
+    display: table-cell;
+    width: 48%;
+    vertical-align: top;
+    padding: 0 1%;
+  }
+  .sig-line {
+    border-bottom: 1px solid #333;
+    min-height: 30px;
+    margin-bottom: 4px;
+  }
+  .sig-label {
+    font-size: 9px;
+    color: #555;
+  }
+  .footer-note {
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-size: 8px;
+    color: #888;
+    text-align: center;
+  }
+  .notice-box {
+    background: #fff8f3;
+    border: 1px solid #ff5a00;
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 9px;
+    margin: 8px 0;
+  }
+  .stamp-box {
+    background: #f0fff0;
+    border: 2px solid #22aa44;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 12px 0;
+  }
+  .stamp-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #22aa44;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div class="header">
+  <div class="brand-name">TENGASALE</div>
+  <div class="brand-tagline">Endless Possibilities — Smartphone Financing</div>
+  <div class="contract-title">Digital Instalment Sale Agreement — Customer Contract Summary</div>
+  <div class="ref-line">
+    Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
+    Date: <strong>{{ contract_date }}</strong> &nbsp;|&nbsp;
+    Application: <strong>{{ application_id }}</strong>
+  </div>
+</div>
+
+<!-- ═══════════════════ PARTIES ═══════════════════ -->
+<h2>Parties to the Agreement</h2>
+<table class="data-table">
+  <tr>
+    <td class="label">Seller (TengaSale)</td>
+    <td>TengaSale Digital Finance, Malawi</td>
+  </tr>
+  <tr>
+    <td class="label">Merchant / Agent</td>
+    <td>{{ merchant_name }} {% if merchant_phone %}— Tel: {{ merchant_phone }}{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="label">Customer Full Name</td>
+    <td>{{ customer_full_name }}</td>
+  </tr>
+  <tr>
+    <td class="label">National ID / Passport</td>
+    <td>{{ national_id_or_passport }}</td>
+  </tr>
+  <tr>
+    <td class="label">Customer Phone</td>
+    <td>{{ phone_number }}</td>
+  </tr>
+  <tr>
+    <td class="label">Physical Address</td>
+    <td>{{ physical_address }}{% if district %}, {{ district }}{% endif %}{% if region %}, {{ region }}{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="label">Traditional Authority / Area</td>
+    <td>{{ ta_area }}</td>
+  </tr>
+  {% if date_of_birth %}
+  <tr>
+    <td class="label">Date of Birth</td>
+    <td>{{ date_of_birth }}</td>
+  </tr>
+  {% endif %}
+  {% if gender %}
+  <tr>
+    <td class="label">Gender</td>
+    <td>{{ gender }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<!-- ═══════════════════ A. DEVICE DETAILS ═══════════════════ -->
+<h2>A. Device Details</h2>
+<table class="data-table">
+  <tr>
+    <td class="label">Device</td>
+    <td>{{ device_name }}</td>
+  </tr>
+  {% if device_specs %}
+  <tr>
+    <td class="label">Specs / Variant</td>
+    <td>{{ device_specs }}</td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td class="label">IMEI Number</td>
+    <td>{{ imei_number|default:"To be confirmed" }}</td>
+  </tr>
+  {% if serial_number %}
+  <tr>
+    <td class="label">Serial Number</td>
+    <td>{{ serial_number }}</td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td class="label">Retail Cash Price</td>
+    <td>MWK {{ retail_cash_price|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Deposit Paid</td>
+    <td>MWK {{ deposit_paid|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Amount Financed</td>
+    <td>MWK {{ amount_financed|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Finance Charges</td>
+    <td>MWK {{ finance_charges|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label"><strong>Total Contract Price</strong></td>
+    <td><strong>MWK {{ total_contract_price|floatformat:2 }}</strong></td>
+  </tr>
+</table>
+
+<!-- ═══════════════════ B. PAYMENT TERMS ═══════════════════ -->
+<h2>B. Payment Terms</h2>
+<table class="data-table">
+  {% if contract_term_months %}
+  <tr>
+    <td class="label">Contract Term</td>
+    <td>{{ contract_term_months }} months</td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td class="label">Monthly Instalment</td>
+    <td>MWK {{ instalment_amount|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Daily Instalment</td>
+    <td>MWK {{ daily_instalment|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Payment Frequency</td>
+    <td>{{ payment_frequency }}</td>
+  </tr>
+  <tr>
+    <td class="label">Total Payable</td>
+    <td>MWK {{ total_payable|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td class="label">Approved Payment Channels</td>
+    <td>{{ payment_channels }}</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════ LEGAL CLAUSES ═══════════════════ -->
+<h2>Legal Terms and Conditions</h2>
+
+<div class="clause">
+  <span class="clause-letter">C. OWNERSHIP.</span>
+  <p>The financed device shall remain the property of TengaSale Digital Finance ("TengaSale") until the Total Contract Price has been paid in full by the customer. No title, interest, or ownership rights shall pass to the customer until full payment is confirmed by TengaSale.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">D. CUSTOMER CONSENT.</span>
+  <p>By accepting this agreement, the customer consents to: (i) purchasing the device on an instalment basis as described above; (ii) TengaSale retaining ownership of the device until fully paid; (iii) TengaSale monitoring repayment status and applying device access restrictions in accordance with this agreement; and (iv) the customer's repayment obligations as set out herein.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">E. DEFAULT.</span>
+  <p>The customer shall be considered in default if any instalment payment remains unpaid for <strong>14 consecutive days</strong> from its due date. Upon default, TengaSale reserves the right to restrict access to the device and/or pursue recovery of the outstanding balance.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">F. REPOSSESSION.</span>
+  <p>If the customer remains in default for <strong>30 or more consecutive days</strong>, TengaSale may repossess the financed device. Repossession may be carried out by TengaSale or its authorised agents. The customer shall cooperate with any lawful repossession process.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">G. DISPOSAL OF REPOSSESSED DEVICE.</span>
+  <p>Following repossession, TengaSale may sell or otherwise dispose of the repossessed device to recover the outstanding balance. Any proceeds in excess of the outstanding amount, after deducting reasonable costs of repossession and disposal, shall be returned to the customer.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">H. ELECTRONIC SIGNATURE.</span>
+  <p>The customer acknowledges that an OTP verification code, biometric confirmation, touchscreen signature, or any form of electronic acceptance (including acceptance via SMS, WhatsApp, or electronic form) constitutes a valid and legally binding signature for the purposes of this agreement. The customer's electronic acceptance of this agreement is equivalent to a handwritten signature.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">I. IMEI AND DEVICE VERIFICATION.</span>
+  <p>The customer acknowledges that the financed smartphone is identified by its IMEI and/or serial number as recorded in this agreement. TengaSale may verify the device identity at any time for fraud prevention, contract administration, and device-lock readiness. Any discrepancy in IMEI may result in contract suspension pending investigation.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">J. DEVICE LOCK AND ACCESS RESTRICTION.</span>
+  <p>The customer acknowledges that the device may be enrolled in a device-lock or device-management system operated by TengaSale or a third-party provider. If payments are overdue in accordance with this agreement and applicable law, TengaSale may restrict access to the device remotely until the account is brought up to date or fully settled. Device unlocking will follow upon payment confirmation.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">K. PAYMENT ALLOCATION AND RECONCILIATION.</span>
+  <p>All payments made by the customer shall be applied to the outstanding contract balance and recorded in TengaSale's systems. Payment confirmation may depend on mobile money or payment provider reconciliation timelines. The customer is advised to retain payment receipts.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">L. WHATSAPP / SMS / EMAIL COMMUNICATION CONSENT.</span>
+  <p>The customer consents to receiving contract notices, payment reminders, repayment confirmations, contract documents, and completion records via WhatsApp, SMS, phone call, or email, using the contact details provided in this agreement. The customer may opt out of marketing communications but acknowledges that contractual notices are necessary for contract administration.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">M. CONTRACT PDF DELIVERY.</span>
+  <p>Upon contract completion, TengaSale may send the final signed contract PDF and completion record to the customer's registered WhatsApp number or other approved communication channel. The customer consents to receiving such documents electronically.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">N. KYC AND DATA PROCESSING CONSENT.</span>
+  <p>The customer consents to TengaSale collecting and processing: National ID or passport details; customer photograph and selfie; ID document images; phone number; physical address; payment records; and contract records. This data may be used for identity verification, fraud prevention, contract administration, debt recovery, and compliance with applicable laws. Data will be handled in accordance with TengaSale's Privacy Policy.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">O. AUDIT TRAIL.</span>
+  <p>The customer acknowledges that all electronic actions in connection with this agreement, including OTP verification, electronic signatures, underwriter approval, payment events, IMEI verification, and device-lock events, may be recorded as part of the contract audit trail. Such records may be used as evidence in dispute resolution.</p>
+</div>
+
+<div class="clause">
+  <span class="clause-letter">P. COMPLETION AND OWNERSHIP TRANSFER.</span>
+  <p>Upon full payment of the Total Contract Price and written confirmation by TengaSale, this contract shall be marked completed and full ownership of the device shall transfer to the customer. Ownership transfer is subject to there being no unresolved fraud, chargeback, reversal, or legal issue relating to the contract.</p>
+</div>
+
+<!-- ═══════════════════ VERIFICATION RECORD ═══════════════════ -->
+<h2>Verification and Approval Record</h2>
+<table class="data-table">
+  <tr>
+    <td class="label">IMEI Verification Status</td>
+    <td>{{ imei_verification_status }}</td>
+  </tr>
+  <tr>
+    <td class="label">KYC Status</td>
+    <td>{{ kyc_status }}</td>
+  </tr>
+  {% if lock_status %}
+  <tr>
+    <td class="label">Device Lock Status</td>
+    <td>{{ lock_status }}</td>
+  </tr>
+  {% endif %}
+  {% if approved_by_name %}
+  <tr>
+    <td class="label">Approved By</td>
+    <td>{{ approved_by_name }}</td>
+  </tr>
+  {% endif %}
+  {% if approval_timestamp %}
+  <tr>
+    <td class="label">Approval Timestamp</td>
+    <td>{{ approval_timestamp }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<!-- ═══════════════════ SIGNATURE BLOCK ═══════════════════ -->
+<div class="sig-block">
+  <h2>Signatures</h2>
+  <table width="100%">
+    <tr>
+      <td width="48%" style="vertical-align:top;padding-right:10px;">
+        <div style="min-height:40px;border-bottom:1px solid #333;margin-bottom:4px;">
+          {% if customer_sig_url %}
+            <img src="{{ customer_sig_url }}" alt="Customer signature" style="max-height:36px;max-width:180px;">
+          {% endif %}
+        </div>
+        <div style="font-size:9px;color:#555;">
+          Customer Signature<br>
+          Name: {{ customer_full_name }}<br>
+          {% if customer_signature_at %}Date: {{ customer_signature_at|date:"d M Y, H:i" }}{% endif %}
+          {% if otp_code %}<br>OTP Ref: {{ otp_code }}{% endif %}
+        </div>
+      </td>
+      <td width="4%"></td>
+      <td width="48%" style="vertical-align:top;">
+        <div style="min-height:40px;border-bottom:1px solid #333;margin-bottom:4px;"></div>
+        <div style="font-size:9px;color:#555;">
+          TengaSale Authorised Representative<br>
+          {% if approved_by_name %}Name: {{ approved_by_name }}<br>{% endif %}
+          {% if authorised_at %}Date: {{ authorised_at|date:"d M Y, H:i" }}{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════ NOTICE BOX ═══════════════════ -->
+<div class="notice-box">
+  <strong>Important Notice:</strong> This device remains the property of TengaSale until all instalments are paid in full.
+  Default after 14 days unpaid. Repossession may occur after 30 days unpaid.
+  Device-lock access restrictions may apply. Keep a copy of this document for your records.
+</div>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<div class="footer-note">
+  Generated by TengaSale on {{ generated_at|date:"d M Y, H:i" }}.
+  Contract No: {{ contract_number }} | Application: {{ application_id }}.
+  This document is an electronic instalment sale agreement issued by TengaSale Digital Finance, Malawi.
+  Status: {{ contract_status }}.
+</div>
+
+</body>
+</html>
