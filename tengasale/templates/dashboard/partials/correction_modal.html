@@ -1,20 +1,20 @@
 <div class="correction-modal" data-correction-modal hidden>
     <div class="correction-modal__backdrop" data-correction-close></div>
-    <form class="correction-panel" data-correction-form data-correction-url="{% url 'underwriter_correction_action' app.id %}">
+    <form class="correction-modal__sheet" data-correction-form data-correction-url="{% url 'underwriter_correction_action' app.id %}">
         {% csrf_token %}
         <input type="hidden" name="field_name" data-correction-field>
         <input type="hidden" name="label" data-correction-label-input>
         <input type="hidden" name="section" data-correction-section>
         <input type="hidden" name="action" value="mark" data-correction-action>
 
-        <h2 data-correction-title>Mark field for correction</h2>
-        <p>Field: <strong data-correction-label></strong></p>
-        <label for="correction-note">What should the merchant fix?</label>
-        <textarea id="correction-note" name="note" rows="4" data-correction-note></textarea>
+        <h2 class="correction-modal__title" data-correction-title>Mark field for correction</h2>
+        <p style="font-size:13px;color:var(--muted);margin:0;">Field: <strong data-correction-label></strong></p>
+        <label class="correction-modal__label" for="correction-note">What should the merchant fix?</label>
+        <textarea id="correction-note" name="note" rows="4" data-correction-note style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
 
-        <div class="correction-panel__actions">
+        <div class="correction-modal__actions">
             <button type="button" class="btn btn-outline" data-correction-close>Cancel</button>
-            <button type="button" class="btn btn-danger-soft" data-correction-remove hidden>Remove correction</button>
+            <button type="button" class="btn btn-danger-soft" data-correction-remove hidden>Remove</button>
             <button type="submit" class="btn" data-correction-submit>MARK FOR EDIT</button>
         </div>
     </form>

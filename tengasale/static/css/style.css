@@ -4664,6 +4664,10 @@ table {
     display: none;
 }
 
+.correction-modal__backdrop {
+    flex: 1;
+}
+
 .correction-modal__sheet {
     width: 100%;
     max-width: 520px;
@@ -5027,8 +5031,8 @@ table {
 
 /* ── Edit / send-back icon button ────────────────────────────── */
 .ts-edit-btn {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: var(--ts-orange-soft);
     border: 1.5px solid var(--ts-orange-border);
@@ -5039,6 +5043,7 @@ table {
     flex-shrink: 0;
     transition: background 0.13s, transform 0.10s;
     padding: 0;
+    min-width: 40px;
 }
 
 .ts-edit-btn:hover {
@@ -5048,8 +5053,8 @@ table {
 }
 
 .ts-edit-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 17px;
+    height: 17px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2.2;
@@ -5057,14 +5062,15 @@ table {
     stroke-linejoin: round;
 }
 
-/* Active/flagged state for the edit button */
+/* Active/flagged state — stays orange, not amber */
 .ts-edit-btn--active {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.5);
-    color: #b45309;
+    background: var(--ts-orange);
+    border-color: var(--ts-orange);
+    color: #ffffff;
 }
 .ts-edit-btn--active:hover {
-    background: #f59e0b;
+    background: var(--ts-orange-dark);
+    border-color: var(--ts-orange-dark);
     color: #ffffff;
 }
 

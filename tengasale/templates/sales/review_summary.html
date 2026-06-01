@@ -15,7 +15,104 @@
 
   {% include "sales/_step_bar.html" with step=step total_steps=total_steps %}
 
-  <div class="ts-app-num">{{ app.application_number }}</div>
+  <div class="ts-app-num">{{ app.application_number }} &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</div>
+
+  {# ── Application Summary ───────────────────────────────────────── #}
+  <div class="ts-review-card" style="border-top:3px solid #ff5a00;margin-top:8px;">
+    <div class="ts-review-card__title">Customer</div>
+    <div class="ts-review-row"><span>Full Name</span><strong>{{ app.customer_name|default:"Not captured" }}</strong></div>
+    <div class="ts-review-row"><span>National ID</span><strong>{{ app.national_id|default:"Not captured" }}</strong></div>
+    {% if app.date_of_birth %}
+    <div class="ts-review-row"><span>Date of Birth</span><strong>{{ app.date_of_birth|date:"d M Y" }}</strong></div>
+    {% endif %}
+    {% if app.gender %}
+    <div class="ts-review-row"><span>Gender</span><strong>{{ app.get_gender_display }}</strong></div>
+    {% endif %}
+    <div class="ts-review-row">
+      <span>Phone</span>
+      {% if app.customer_phone %}
+        <strong><a href="tel:+265{{ app.customer_phone }}" style="color:#ff5a00;text-decoration:none;font-weight:800;">+265 {{ app.customer_phone }}</a></strong>
+      {% else %}
+        <strong>Not captured</strong>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ts-review-card">
+    <div class="ts-review-card__title">Merchant / Sales Rep</div>
+    <div class="ts-review-row"><span>Submitted by</span><strong>{{ app.created_by.get_full_name|default:app.created_by.username }}</strong></div>
+    {% with merchant=app.created_by.merchant_set.first %}
+    {% if merchant %}
+    <div class="ts-review-row"><span>Merchant</span><strong>{{ merchant.business_name }}</strong></div>
+    {% if merchant.phone_number %}
+    <div class="ts-review-row"><span>Merchant Phone</span><strong><a href="tel:{{ merchant.phone_number }}" style="color:#ff5a00;text-decoration:none;font-weight:800;">{{ merchant.phone_number }}</a></strong></div>
+    {% endif %}
+    {% endif %}
+    {% endwith %}
+  </div>
+
+  {% if app.deal %}
+  <div class="ts-review-card">
+    <div class="ts-review-card__title">Deal</div>
+    <div class="ts-review-row"><span>Smartphone</span><strong>{{ app.deal }}</strong></div>
+    <div class="ts-review-row"><span>Cash Price</span><strong>MWK {{ app.selected_cash_price|floatformat:0|default:"—" }}</strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong>MWK {{ app.calculated_deposit_amount|floatformat:0|default:"—" }}</strong></div>
+    <div class="ts-review-row"><span>Daily Repayment</span><strong>MWK {{ app.calculated_daily_payment|floatformat:0|default:"—" }}</strong></div>
+    <div class="ts-review-row"><span>Monthly (30-day)</span><strong>MWK {{ app.calculated_monthly_payment|floatformat:0|default:"—" }}</strong></div>
+    <div class="ts-review-row"><span>Total Contract</span><strong>MWK {{ app.calculated_total_loan|floatformat:0|default:"—" }}</strong></div>
+  </div>
+  {% endif %}
+
+  {# ── KYC Images ────────────────────────────────────────────────── #}
+  <div class="ts-review-card ts-mb-16">
+    <div class="ts-review-card__title">KYC Images</div>
+    <div class="ts-kyc-row">
+      {% if app.customer_face_image %}
+        <div class="ts-kyc-img">
+          <a href="{{ app.customer_face_image.url }}" target="_blank" rel="noopener noreferrer">
+            <img src="{{ app.customer_face_image.url }}" alt="Selfie" loading="lazy"
+                 onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+          </a>
+          <span>Selfie</span>
+        </div>
+      {% else %}
+        <div class="ts-kyc-img ts-kyc-img--missing"><span>No Selfie</span></div>
+      {% endif %}
+      {% if app.id_front_image %}
+        <div class="ts-kyc-img">
+          <a href="{{ app.id_front_image.url }}" target="_blank" rel="noopener noreferrer">
+            <img src="{{ app.id_front_image.url }}" alt="ID Front" loading="lazy"
+                 onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+          </a>
+          <span>ID Front</span>
+        </div>
+      {% else %}
+        <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Front</span></div>
+      {% endif %}
+      {% if app.id_back_image %}
+        <div class="ts-kyc-img">
+          <a href="{{ app.id_back_image.url }}" target="_blank" rel="noopener noreferrer">
+            <img src="{{ app.id_back_image.url }}" alt="ID Back" loading="lazy"
+                 onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+          </a>
+          <span>ID Back</span>
+        </div>
+      {% else %}
+        <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Back</span></div>
+      {% endif %}
+      {% if app.signature_image %}
+        <div class="ts-kyc-img">
+          <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer">
+            <img src="{{ app.signature_image.url }}" alt="Signature" loading="lazy"
+                 onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+          </a>
+          <span>Signature</span>
+        </div>
+      {% else %}
+        <div class="ts-kyc-img ts-kyc-img--missing"><span>No Signature</span></div>
+      {% endif %}
+    </div>
+  </div>
 
   {% if dup_result.has_duplicates %}
   <div class="ts-review-card" style="background:#fef2f2;border:2px solid #dc2626;margin-bottom:12px;">
@@ -102,27 +199,6 @@
     </div>
     {% endif %}
   </section>
-
-  <div class="ts-review-card">
-    <div class="ts-review-card__title">KYC Images</div>
-    <div class="ts-kyc-row">
-      {% if app.customer_face_image %}
-        <div class="ts-kyc-img"><img src="{{ app.customer_face_image.url }}" alt="Selfie" loading="lazy"><span>Selfie</span></div>
-      {% else %}
-        <div class="ts-kyc-img ts-kyc-img--missing"><span>No Selfie</span></div>
-      {% endif %}
-      {% if app.id_front_image %}
-        <div class="ts-kyc-img"><img src="{{ app.id_front_image.url }}" alt="ID Front" loading="lazy"><span>ID Front</span></div>
-      {% else %}
-        <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Front</span></div>
-      {% endif %}
-      {% if app.id_back_image %}
-        <div class="ts-kyc-img"><img src="{{ app.id_back_image.url }}" alt="ID Back" loading="lazy"><span>ID Back</span></div>
-      {% else %}
-        <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Back</span></div>
-      {% endif %}
-    </div>
-  </div>
 
   <form method="post">
     {% csrf_token %}

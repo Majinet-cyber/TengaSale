@@ -718,3 +718,254 @@ class HQOperationsTests(TestCase):
         self.assertTrue(
             AuditLog.objects.filter(action="hq_release_stuck_claim").exists()
         )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# KulaSell-style review structure tests
+# ──────────────────────────────────────────────────────────────────────────────
+
+class KulaSellStyleReviewTests(TestCase):
+    """
+    Tests verifying the KulaSell-style underwriter review structure:
+    - Summary leads with Customer, Merchant/Sales Rep, Deal
+    - KYC images shown with proper missing state (not question marks)
+    - Edit/send-back icons use orange class
+    - Yes/No questions present for each section
+    - Approval flow works end-to-end
+    """
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(
+            username="ks_merchant", password="pass123",
+            first_name="Grace", last_name="Banda",
+        )
+        assign_role(self.merchant, "merchant")
+        self.underwriter = User.objects.create_user(
+            username="ks_uw", password="pass123",
+        )
+        assign_role(self.underwriter, "underwriter")
+
+    def _app(self, **kwargs):
+        defaults = {
+            "created_by": self.merchant,
+            "customer_name": "Alice Phiri",
+            "national_id": "PHIRIAA01",
+            "status": "under_review",
+            "claimed_by": self.underwriter,
+            "submitted_at": timezone.now(),
+            "customer_phone": "0999001122",
+        }
+        defaults.update(kwargs)
+        return FinancingApplication.objects.create(**defaults)
+
+    # ── Hub review page ──────────────────────────────────────────────────────
+
+    def test_hub_review_leads_with_customer_and_merchant_and_deal(self):
+        """Hub review page must show Customer, Merchant/Sales Rep, and Deal near the top."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("Alice Phiri", content)
+        self.assertIn("Application Summary", content)
+        self.assertIn("Customer", content)
+        self.assertIn("Merchant / Sales Rep", content)
+        self.assertIn("Deal", content)
+        # Merchant submitter full name must be visible (get_full_name or username)
+        self.assertTrue("Grace Banda" in content or "ks_merchant" in content)
+
+    def test_hub_review_shows_deposit_and_monthly_repayment(self):
+        """Hub review must display full deal info: deposit, daily, monthly, total."""
+        app = self._app(
+            calculated_deposit_amount=50000,
+            calculated_daily_payment=3333,
+            calculated_monthly_payment=100000,
+            calculated_total_loan=1200000,
+        )
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+
+        content = response.content.decode()
+        self.assertIn("Daily Repayment", content)
+        self.assertIn("Monthly Repayment", content)
+        self.assertIn("Total Contract", content)
+
+    def test_hub_review_kyc_missing_state_no_question_marks(self):
+        """Hub review KYC section shows clean missing text, never an empty <img> tag."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+
+        self.assertContains(response, "No selfie uploaded")
+        self.assertContains(response, "No ID front uploaded")
+        self.assertContains(response, "No ID back uploaded")
+        # No bare empty image src attributes
+        self.assertNotContains(response, 'src=""')
+
+    def test_hub_review_edit_icons_use_orange_class(self):
+        """Hub review edit icons must use review-edit-btn (orange) class."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        # The summary review step (not hub) has edit buttons
+        response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
+
+        self.assertContains(response, "review-edit-btn")
+
+    # ── Sales portal review summary page ────────────────────────────────────
+
+    def test_sales_review_summary_leads_with_customer_section(self):
+        """Modern sales review summary must lead with Customer card, then Merchant, then Deal."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("sales_review_summary", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("Alice Phiri", content)
+        self.assertIn("Merchant / Sales Rep", content)
+        # KYC section must be present
+        self.assertIn("KYC Images", content)
+
+    def test_sales_review_summary_kyc_missing_state(self):
+        """Sales review summary shows clean missing state for KYC images."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("sales_review_summary", args=[app.id]))
+
+        self.assertContains(response, "No Selfie")
+        self.assertContains(response, "No ID Front")
+        self.assertContains(response, "No ID Back")
+        self.assertNotContains(response, 'src=""')
+
+    # ── Identity check ───────────────────────────────────────────────────────
+
+    def test_identity_check_shows_all_four_yes_no_questions(self):
+        """Identity check must render all 4 identity questions."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+
+        self.assertContains(response, "identity_info_matches")
+        self.assertContains(response, "identity_signature_matches")
+        self.assertContains(response, "identity_selfie_matches")
+        self.assertContains(response, "identity_images_clear")
+
+    def test_identity_check_kyc_missing_shows_text_not_empty_img(self):
+        """Identity check never renders empty <img> tags for missing KYC."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+
+        self.assertContains(response, "No selfie uploaded")
+        self.assertContains(response, "No ID front uploaded")
+        self.assertContains(response, "No ID back uploaded")
+        self.assertNotContains(response, 'src=""')
+
+    # ── Income / guarantor questions ─────────────────────────────────────────
+
+    def test_income_check_has_income_and_guarantor_questions(self):
+        """Income check must include both income and guarantor Yes/No questions."""
+        app = self._app(exact_monthly_income=200000, calculated_monthly_payment=40000)
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_income_check", args=[app.id]))
+
+        self.assertContains(response, "income_understood")
+        self.assertContains(response, "income_source_dependable")
+        self.assertContains(response, "guarantor_spoken")
+        self.assertContains(response, "guarantor_confirmed_customer")
+        self.assertContains(response, "contacts_reachable")
+
+    # ── Location questions ───────────────────────────────────────────────────
+
+    def test_location_check_has_four_questions(self):
+        """Location check must have 4 structured Yes/No questions."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_location_check", args=[app.id]))
+
+        self.assertContains(response, "location_neighbour_spoken")
+        self.assertContains(response, "location_confirmed")
+        self.assertContains(response, "location_traceable")
+        self.assertContains(response, "location_address_clear")
+
+    # ── Deal / final review questions ────────────────────────────────────────
+
+    def test_final_review_has_deal_yes_no_questions(self):
+        """Final review must include deal and contract understanding questions."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_final_review", args=[app.id]))
+
+        self.assertContains(response, "deal_phone_correct")
+        self.assertContains(response, "deal_deposit_understood")
+        self.assertContains(response, "deal_repayment_understood")
+        self.assertContains(response, "deal_lock_understood")
+        self.assertContains(response, "deal_legal_understood")
+
+    # ── Approval status flow ─────────────────────────────────────────────────
+
+    def test_approve_changes_status_to_approved_immediately(self):
+        """Approval must set status=approved and no longer show pending."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.post(reverse("underwriter_confirm_approve", args=[app.id]))
+
+        app.refresh_from_db()
+        self.assertEqual(app.status, "approved")
+        self.assertNotEqual(app.status, "pending_review")
+
+    def test_approve_success_shows_next_steps_in_order(self):
+        """Approval success page must list next steps in correct workflow order."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.post(reverse("underwriter_confirm_approve", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("Application Approved", content)
+        self.assertIn("Customer Terms Acceptance", content)
+        self.assertIn("Capture IMEI", content)
+        self.assertIn("Device Lock Readiness", content)
+        # Check ordering in HTML: Terms before IMEI
+        terms_pos = content.find("Customer Terms Acceptance")
+        imei_pos = content.find("Capture IMEI")
+        self.assertLess(terms_pos, imei_pos, "Terms Acceptance must come before Capture IMEI")
+
+    def test_correction_modal_uses_correct_css_class(self):
+        """Correction modal panel must use correction-modal__sheet (not correction-panel)."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+
+        self.assertContains(response, "correction-modal__sheet")
+        self.assertNotContains(response, 'class="correction-panel"')
+
+    def test_no_sending_back_without_corrections_or_comment(self):
+        """Send back requires at least one correction or underwriter comment."""
+        app = self._app()
+        self.client.login(username="ks_uw", password="pass123")
+
+        response = self.client.post(
+            reverse("underwriter_final_review", args=[app.id]),
+            {"decision": "request_correction"},
+        )
+
+        # Should redirect back to final review, not to dashboard
+        self.assertRedirects(response, reverse("underwriter_final_review", args=[app.id]))

@@ -19,19 +19,48 @@
 
   <div class="ts-kyc-row ts-mb-16">
     {% if app.customer_face_image %}
-      <div class="ts-kyc-img"><img src="{{ app.customer_face_image.url }}" alt="Selfie" loading="lazy"><span>Selfie</span></div>
+      <div class="ts-kyc-img">
+        <a href="{{ app.customer_face_image.url }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ app.customer_face_image.url }}" alt="Selfie" loading="lazy"
+               onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+        </a>
+        <span>Selfie</span>
+      </div>
     {% else %}
       <div class="ts-kyc-img ts-kyc-img--missing"><span>No Selfie</span></div>
     {% endif %}
     {% if app.id_front_image %}
-      <div class="ts-kyc-img"><img src="{{ app.id_front_image.url }}" alt="ID Front" loading="lazy"><span>ID Front</span></div>
+      <div class="ts-kyc-img">
+        <a href="{{ app.id_front_image.url }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ app.id_front_image.url }}" alt="ID Front" loading="lazy"
+               onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+        </a>
+        <span>ID Front</span>
+      </div>
     {% else %}
       <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Front</span></div>
     {% endif %}
     {% if app.id_back_image %}
-      <div class="ts-kyc-img"><img src="{{ app.id_back_image.url }}" alt="ID Back" loading="lazy"><span>ID Back</span></div>
+      <div class="ts-kyc-img">
+        <a href="{{ app.id_back_image.url }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ app.id_back_image.url }}" alt="ID Back" loading="lazy"
+               onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+        </a>
+        <span>ID Back</span>
+      </div>
     {% else %}
       <div class="ts-kyc-img ts-kyc-img--missing"><span>No ID Back</span></div>
+    {% endif %}
+    {% if app.signature_image %}
+      <div class="ts-kyc-img">
+        <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ app.signature_image.url }}" alt="Signature" loading="lazy"
+               onerror="this.closest('.ts-kyc-img').classList.add('ts-kyc-img--missing');this.remove();">
+        </a>
+        <span>Signature</span>
+      </div>
+    {% else %}
+      <div class="ts-kyc-img ts-kyc-img--missing"><span>No Signature</span></div>
     {% endif %}
   </div>
 
