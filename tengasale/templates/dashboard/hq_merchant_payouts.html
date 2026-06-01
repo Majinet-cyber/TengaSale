@@ -14,9 +14,9 @@
   background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,0.80); border-radius:12px;
   padding:16px; box-shadow:0 2px 8px rgba(15,23,42,0.06);
-  text-align:center; border-left:3px solid var(--mpo-accent,#ff6b1a);
+  text-align:center; border-left:3px solid var(--mpo-accent,#ff5a00);
 }
-.mpo-stat-val { font-size:1.2rem; font-weight:900; color:var(--mpo-accent,#ff6b1a); line-height:1; }
+.mpo-stat-val { font-size:1.2rem; font-weight:900; color:var(--mpo-accent,#ff5a00); line-height:1; }
 .mpo-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
 .mpo-card {
   background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
@@ -32,7 +32,7 @@
 
   <div class="mpo-hdr">
     <div>
-      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
       <h1 class="mpo-title">Merchant Payouts</h1>
       <p class="mpo-sub">Settlement status, commission tracking, and payout actions.</p>
     </div>
@@ -50,7 +50,7 @@
       <div class="mpo-stat-val">{{ pending_total|mwk }}</div>
       <div class="mpo-stat-lbl">Pending settlement</div>
     </div>
-    <div class="mpo-stat" style="--mpo-accent:#ff6b1a;">
+    <div class="mpo-stat" style="--mpo-accent:#ff5a00;">
       <div class="mpo-stat-val">{{ processing_total|mwk }}</div>
       <div class="mpo-stat-lbl">Processing</div>
     </div>
@@ -58,7 +58,7 @@
       <div class="mpo-stat-val">{{ paid_total|mwk }}</div>
       <div class="mpo-stat-lbl">Paid settlement</div>
     </div>
-    <div class="mpo-stat" style="--mpo-accent:#ff6b1a;">
+    <div class="mpo-stat" style="--mpo-accent:#ff5a00;">
       <div class="mpo-stat-val">{{ commission_total|mwk }}</div>
       <div class="mpo-stat-lbl">Total commission</div>
     </div>

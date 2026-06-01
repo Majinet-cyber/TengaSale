@@ -17,9 +17,9 @@
   border-radius:12px;
   padding:14px 16px;
   box-shadow:0 2px 8px rgba(15,23,42,0.06);
-  border-left:3px solid var(--frd-accent,#ff6b1a);
+  border-left:3px solid var(--frd-accent,#ff5a00);
 }
-.frd-stat-val { font-size:1.4rem; font-weight:900; color:var(--frd-accent,#ff6b1a); line-height:1; }
+.frd-stat-val { font-size:1.4rem; font-weight:900; color:var(--frd-accent,#ff5a00); line-height:1; }
 .frd-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
 .frd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr)); gap:14px; margin-bottom:20px; }
 .frd-card {
@@ -65,7 +65,7 @@
 
   <div class="frd-hdr">
     <div>
-      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
       <h1 class="frd-title">Fraud Checks</h1>
       <p class="frd-sub">Duplicate detection, risk flags, and fraud investigation tools.</p>
     </div>
@@ -86,7 +86,7 @@
       <div class="frd-stat-val">{{ dup_phones|length }}</div>
       <div class="frd-stat-lbl">Duplicate phone flags</div>
     </div>
-    <div class="frd-stat" style="--frd-accent:#ff6b1a;">
+    <div class="frd-stat" style="--frd-accent:#ff5a00;">
       <div class="frd-stat-val">{{ dup_guarantors|length }}</div>
       <div class="frd-stat-lbl">Repeated guarantors</div>
     </div>
@@ -156,10 +156,10 @@
 
     <div class="frd-card">
       <div class="frd-card-hdr">
-        <div class="frd-card-hdr-icon" style="background:rgba(255,107,26,0.10);color:#ff6b1a;">
+        <div class="frd-card-hdr-icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
           <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
         </div>
-        <span class="frd-card-title" style="color:#ff6b1a;">Repeated Guarantor Phones</span>
+        <span class="frd-card-title" style="color:#ff5a00;">Repeated Guarantor Phones</span>
       </div>
       {% if dup_guarantors %}
       <table class="frd-table">

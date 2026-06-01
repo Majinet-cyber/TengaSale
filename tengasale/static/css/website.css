@@ -7,10 +7,10 @@
 
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
-  /* Brand */
-  --w-orange:       #ff6a00;
-  --w-orange-dk:    #e05400;
-  --w-orange-tint:  rgba(255, 106, 0, 0.08);
+  /* Brand — matches TengaSale system token #ff5a00 */
+  --w-orange:       #ff5a00;
+  --w-orange-dk:    #e64d00;
+  --w-orange-tint:  rgba(255, 90, 0, 0.08);
   --w-orange-soft:  #fff0e6;
 
   /* Text */
@@ -1544,13 +1544,13 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Bottom CTA section ───────────────────────────────────────── */
 .site-cta-section {
-  background: linear-gradient(135deg, #ff6b1a 0%, #e8530a 100%);
+  background: linear-gradient(135deg, #ff5a00 0%, #e8530a 100%);
   padding: 72px 24px;
 }
 
 .btn-primary--white {
   background: #ffffff;
-  color: #ff6b1a;
+  color: #ff5a00;
 }
 
 .btn-primary--white:hover {
@@ -1634,14 +1634,14 @@ a { color: inherit; text-decoration: none; }
   fill: none; stroke: currentColor; stroke-width: 2.5;
 }
 
-.lead-back-link:hover { color: #ff6b1a; }
+.lead-back-link:hover { color: #ff5a00; }
 
 .lead-form-hdr { margin-bottom: 28px; }
 
 .lead-form-badge {
   display: inline-block;
   background: rgba(255,107,26,0.12);
-  color: #ff6b1a;
+  color: #ff5a00;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -1755,7 +1755,7 @@ a { color: inherit; text-decoration: none; }
 .lead-select:focus,
 .lead-textarea:focus {
   outline: none;
-  border-color: #ff6b1a;
+  border-color: #ff5a00;
   box-shadow: 0 0 0 3px rgba(255,107,26,0.10);
   background: #ffffff;
 }
@@ -1779,7 +1779,7 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 
-.lead-radio input[type="radio"] { accent-color: #ff6b1a; }
+.lead-radio input[type="radio"] { accent-color: #ff5a00; }
 
 .lead-file-input {
   width: 100%;
@@ -1802,14 +1802,14 @@ a { color: inherit; text-decoration: none; }
 }
 
 .lead-consent a { color: #64748b; text-decoration: underline; }
-.lead-consent a:hover { color: #ff6b1a; }
+.lead-consent a:hover { color: #ff5a00; }
 
 .lead-submit {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 13px 24px;
-  background: #ff6b1a;
+  background: #ff5a00;
   color: #ffffff;
   font-size: 15px;
   font-weight: 800;
@@ -1868,7 +1868,7 @@ a { color: inherit; text-decoration: none; }
   margin: 0 0 8px;
 }
 
-.lead-success-body a { color: #ff6b1a; }
+.lead-success-body a { color: #ff5a00; }
 
 /* ── Careers hero — LIGHT MODE ────────────────────────────────── */
 .careers-hero {
@@ -2006,7 +2006,7 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   place-items: center;
   margin-bottom: 12px;
-  color: #ff6b1a;
+  color: #ff5a00;
 }
 
 .careers-why-icon svg {
@@ -2061,7 +2061,7 @@ a { color: inherit; text-decoration: none; }
   background: rgba(255,107,26,0.10);
   display: grid;
   place-items: center;
-  color: #ff6b1a;
+  color: #ff5a00;
   flex-shrink: 0;
 }
 
@@ -2096,7 +2096,7 @@ a { color: inherit; text-decoration: none; }
 .careers-value {
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-top: 3px solid #ff6b1a;
+  border-top: 3px solid #ff5a00;
   border-radius: 12px;
   padding: 16px 14px;
 }

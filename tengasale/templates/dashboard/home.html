@@ -38,8 +38,8 @@
   {% endif %}
   <p class="text-muted">{{ business_hours_label }}<br>Current CAT time: {{ business_hours_now|date:"D H:i" }}</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <a href="{{ tengasale_whatsapp_link }}" class="btn btn-blue">WhatsApp +265883596135</a>
-    <a href="{% url 'ticket_create' %}" class="btn" style="background:rgba(255,107,26,0.12);color:#ff6a00;border:1.5px solid rgba(255,107,26,0.3)">
+    <a href="{{ tengasale_whatsapp_link }}" class="btn whatsapp-button" style="background:#dcfce7;color:#16a34a;border:1.5px solid rgba(22,163,74,0.30)">WhatsApp +265883596135</a>
+    <a href="{% url 'ticket_create' %}" class="btn" style="background:var(--ts-orange-soft);color:var(--ts-orange);border:1.5px solid var(--ts-orange-border)">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       Report issue
     </a>

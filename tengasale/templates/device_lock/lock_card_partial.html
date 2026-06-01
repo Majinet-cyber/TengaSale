@@ -4,7 +4,7 @@
 
 {% if lock_profile %}
 <div style="border-radius:14px;border:1.5px solid #f1f5f9;box-shadow:0 2px 8px rgba(15,23,42,.05);overflow:hidden;margin-bottom:16px;">
-  <div style="background:#fff8f0;color:#ff6b1a;font-size:0.88rem;font-weight:700;padding:10px 16px;border-bottom:1px solid #ffe4cc;">
+  <div style="background:#fff8f0;color:#ff5a00;font-size:0.88rem;font-weight:700;padding:10px 16px;border-bottom:1px solid #ffe4cc;">
     🔐 Device Lock
   </div>
   <div style="background:#fff;padding:14px 16px;">
@@ -61,7 +61,7 @@
     {% if can_control_lock and not lock_profile.is_released %}
     <div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px;">
       <a href="{% url 'device_lock:profile_detail' lock_profile.pk %}"
-         style="font-size:0.78rem;color:#ff6b1a;font-weight:700;text-decoration:none;">
+         style="font-size:0.78rem;color:#ff5a00;font-weight:700;text-decoration:none;">
         View full lock details & actions →
       </a>
     </div>
@@ -71,7 +71,7 @@
 </div>
 {% else %}
 <div style="border-radius:14px;border:1.5px solid #f1f5f9;box-shadow:0 2px 8px rgba(15,23,42,.05);overflow:hidden;margin-bottom:16px;">
-  <div style="background:#fff8f0;color:#ff6b1a;font-size:0.88rem;font-weight:700;padding:10px 16px;border-bottom:1px solid #ffe4cc;">
+  <div style="background:#fff8f0;color:#ff5a00;font-size:0.88rem;font-weight:700;padding:10px 16px;border-bottom:1px solid #ffe4cc;">
     🔐 Device Lock
   </div>
   <div style="background:#fff;padding:14px 16px;">

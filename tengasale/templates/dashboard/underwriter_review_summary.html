@@ -41,7 +41,7 @@
     </section>
 
     {% if confidence %}
-    <section class="uw-card" style="background:linear-gradient(135deg,rgba(255,106,0,0.04),rgba(255,255,255,0.98));border:1.5px solid rgba(255,106,0,0.15);">
+    <section class="uw-card" style="background:linear-gradient(135deg,rgba(255,90,0,0.04),rgba(255,255,255,0.98));border:1.5px solid rgba(255,90,0,0.15);">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
             <div style="width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:{{ confidence.score_color }}15;flex-shrink:0;">
                 <span style="font-size:1.1rem;font-weight:900;color:{{ confidence.score_color }};">{{ confidence.score }}</span>
@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        <div style="background:rgba(255,106,0,0.04);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <div style="background:rgba(255,90,0,0.04);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
             <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin-bottom:6px;">Score breakdown</div>
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="flex:1;height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;">

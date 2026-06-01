@@ -18,9 +18,9 @@
   padding:16px;
   box-shadow:0 2px 8px rgba(15,23,42,0.06);
   text-align:center;
-  border-left:3px solid var(--san-accent,#ff6b1a);
+  border-left:3px solid var(--san-accent,#ff5a00);
 }
-.san-stat-val { font-size:1.6rem; font-weight:900; color:var(--san-accent,#ff6b1a); line-height:1; }
+.san-stat-val { font-size:1.6rem; font-weight:900; color:var(--san-accent,#ff5a00); line-height:1; }
 .san-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
 .san-card {
   background:rgba(255,255,255,0.90);
@@ -33,8 +33,8 @@
 .san-card-title { font-size:0.88rem; font-weight:800; margin:0 0 14px; color:#0f172a; }
 .san-export-btn {
   display:inline-flex; align-items:center; gap:6px;
-  padding:7px 14px; background:#fff8f0; border:1.5px solid rgba(255,107,26,0.25);
-  border-radius:8px; text-decoration:none; color:#ff6b1a; font-size:0.78rem; font-weight:700;
+  padding:7px 14px; background:#fff8f0; border:1.5px solid rgba(255,90,0,0.25);
+  border-radius:8px; text-decoration:none; color:#ff5a00; font-size:0.78rem; font-weight:700;
   transition:background 0.12s;
 }
 .san-export-btn:hover { background:#fff0e0; }
@@ -47,7 +47,7 @@
 
   <div class="san-hdr">
     <div>
-      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
       <h1 class="san-title">Sales Analytics</h1>
       <p class="san-sub">Sales trends, conversion funnel, and demographic breakdown.</p>
     </div>
@@ -58,11 +58,11 @@
   </div>
 
   <div class="san-stats">
-    <div class="san-stat" style="--san-accent:#ff6b1a;">
+    <div class="san-stat" style="--san-accent:#ff5a00;">
       <div class="san-stat-val">{{ total_apps }}</div>
       <div class="san-stat-lbl">Total applications</div>
     </div>
-    <div class="san-stat" style="--san-accent:#ff6b1a;">
+    <div class="san-stat" style="--san-accent:#ff5a00;">
       <div class="san-stat-val">{{ submitted }}</div>
       <div class="san-stat-lbl">Submitted</div>
     </div>
@@ -93,7 +93,7 @@
             <span style="font-weight:700;">{{ dep_15 }}</span>
           </div>
           <div style="background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden;">
-            {% if total_dep %}<div style="background:#ff6b1a;height:100%;width:{% widthratio dep_15 total_dep 100 %}%;border-radius:4px;"></div>{% endif %}
+            {% if total_dep %}<div style="background:#ff5a00;height:100%;width:{% widthratio dep_15 total_dep 100 %}%;border-radius:4px;"></div>{% endif %}
           </div>
         </div>
         <div>
@@ -201,7 +201,7 @@
       datasets: [{
         label: 'Applications',
         data: data,
-        backgroundColor: '#ff6b1a',
+        backgroundColor: '#ff5a00',
         borderRadius: 5,
         borderSkipped: false,
       }]

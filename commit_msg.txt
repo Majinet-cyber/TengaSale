@@ -1,21 +1,16 @@
-fix landing page layout and clean UI rendering bugs
+refine TengaSale design system and review experience
 
-- Fix giant SVG/icon bug: add explicit width/height to all 40+ inline
-  icon SVGs in landing.html (hero trust, platform stats, steps, features,
-  merchant value cards, compliance, trust grid) - prevents 300x150px
-  inflate when CSS is stale/uncached via service worker
-- Add fill and stroke attributes to bare SVGs that had neither, so icons
-  render correctly even without stylesheet
-- Fix live-stats-strip bottom padding (was 0, now 28px) closing layout gap
-- Fix MWK label duplication in live stats (MWK 0 MWK disbursed) - label
-  now reads Disbursed since value already includes MWK prefix
-- Add defensive CSS section (v1.3): explicit max-size rules for all icon
-  chip containers, overflow hidden on svg, selection orange highlight,
-  section min-height unset guard, eyebrow bg-color reset
-- Bump SW CACHE_VERSION v1.0.3 to v1.0.4 to force browser cache invalidation
-- Bump CSS cache-bust param from v=1.2.1 to v=1.3 in site_base.html
-- Add 16 regression tests in LandingPageUIRegressionTests covering live
-  stats structure, SVG dimensions, fake testimonial prevention, section
-  presence, no blue label classes, CSS version guard, portal smoke checks
-
-All 43 website tests pass. System check clean.
+- Unify brand orange to #ff5a00 across all CSS files and 25 templates
+- Fix semantic colour rules: green=success, red=danger, amber=warning only
+- Remove blue, purple, indigo, cyan from HQ dashboard icon and chart colours
+- Add canonical component classes: ts-kpi-card, ts-action-card, ts-field-card,
+  ts-status-pill, ts-btn-primary, ts-btn-secondary, ts-edit-btn, ts-yn-group
+- Add ts-page-header and ts-section-title typography classes
+- Remove fake Platform Intelligence / Live panel from landing page hero
+- Fix hero flow step dots to use orange and green only (remove blue and teal)
+- Update deals page heading to Choose your new smartphone
+- Enhance underwriter Yes/No partial with comment field on No selection
+- Fix merchant dashboard WhatsApp button to use green style
+- Replace old orange hex values across 4 CSS files and 25 HTML templates
+- Update HQ pipeline chart colours: Under Review=orange, Completed=green
+- Update deals test to assert new page heading text

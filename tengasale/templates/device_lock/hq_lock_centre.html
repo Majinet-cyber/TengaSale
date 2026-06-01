@@ -20,10 +20,10 @@
 .kpi-card.kpi-pending .kpi-value { color:#d97706; }
 .kpi-card.kpi-fail .kpi-value { color:#dc2626; }
 .kpi-card.kpi-grey .kpi-value { color:#475569; }
-.kpi-card.kpi-orange .kpi-value { color:#ff6b1a; }
+.kpi-card.kpi-orange .kpi-value { color:#ff5a00; }
 
 .dlc-card { border-radius:14px; border:1.5px solid #f1f5f9; box-shadow:0 2px 8px rgba(15,23,42,.06); overflow:hidden; margin-bottom:20px; }
-.dlc-card .card-header { background:#fff8f0; color:#ff6b1a; font-size:0.88rem; font-weight:700; padding:10px 16px; border-bottom:1px solid #ffe4cc; }
+.dlc-card .card-header { background:#fff8f0; color:#ff5a00; font-size:0.88rem; font-weight:700; padding:10px 16px; border-bottom:1px solid #ffe4cc; }
 .dlc-card .card-body { background:#fff; padding:0; }
 
 .lock-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
@@ -37,12 +37,12 @@
 .lock-badge-released { background:#f1f5f9; color:#475569; }
 .lock-badge-unknown { background:#f1f5f9; color:#94a3b8; }
 
-.provider-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700; background:#fff0e6; color:#ff6b1a; border:1px solid #ffe4cc; }
-.provider-mock { background:#fff0e6; color:#ff6b1a; border-color:#ffe4cc; }
+.provider-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700; background:#fff0e6; color:#ff5a00; border:1px solid #ffe4cc; }
+.provider-mock { background:#fff0e6; color:#ff5a00; border-color:#ffe4cc; }
 
 .action-form { display:inline; }
 .action-btn { font-size:0.72rem; padding:3px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
-.action-btn-enroll { background:#ff6b1a; color:#fff; }
+.action-btn-enroll { background:#ff5a00; color:#fff; }
 .action-btn-lock { background:#dc2626; color:#fff; }
 .action-btn-unlock { background:#16a34a; color:#fff; }
 .action-btn-release { background:#475569; color:#fff; }
@@ -59,7 +59,7 @@
 
   <div class="dlc-hdr">
     <div style="margin-bottom:4px;">
-      <a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a>
+      <a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a>
     </div>
     <h1 class="dlc-title">🔐 Device Lock Control Centre</h1>
     <p class="dlc-sub">Provider-agnostic device lock management. All actions are audited.</p>
@@ -136,7 +136,7 @@
             <tbody>
               {% for p in needs_enrollment %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff5a00;font-weight:600;">{{ p.imei }}</a></td>
                 <td>{{ p.customer_name|default:"—" }}</td>
                 <td>{{ p.deal_name|default:"—"|truncatechars:30 }}</td>
                 <td><span class="provider-badge provider-{{ p.lock_provider }}">{{ p.get_lock_provider_display }}</span></td>
@@ -175,7 +175,7 @@
             <tbody>
               {% for p in overdue_candidates %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff5a00;font-weight:600;">{{ p.imei }}</a></td>
                 <td>{{ p.customer_name|default:"—" }}</td>
                 <td><span class="lock-badge lock-badge-{{ p.lock_status }}">{{ p.get_lock_status_display }}</span></td>
                 <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
@@ -222,7 +222,7 @@
             <tbody>
               {% for p in locked_devices %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;font-weight:600;">{{ p.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff5a00;font-weight:600;">{{ p.imei }}</a></td>
                 <td>{{ p.customer_name|default:"—" }}</td>
                 <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
                 <td>{{ p.last_lock_attempt_at|date:"d M Y H:i"|default:"—" }}</td>
@@ -269,7 +269,7 @@
             <tbody>
               {% for ev in failed_actions %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff6b1a;">{{ ev.lock_profile.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff5a00;">{{ ev.lock_profile.imei }}</a></td>
                 <td><span class="lock-badge lock-badge-failed">{{ ev.get_event_type_display }}</span></td>
                 <td class="text-danger" style="max-width:220px;">{{ ev.error_message|default:"—"|truncatechars:80 }}</td>
                 <td>{{ ev.triggered_by.username|default:"system" }}</td>
@@ -306,7 +306,7 @@
             <tbody>
               {% for p in recent_synced %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff6b1a;">{{ p.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' p.pk %}" style="color:#ff5a00;">{{ p.imei }}</a></td>
                 <td><span class="lock-badge lock-badge-{{ p.lock_status }}">{{ p.get_lock_status_display }}</span></td>
                 <td><span class="provider-badge">{{ p.get_lock_provider_display }}</span></td>
                 <td>{{ p.last_sync_at|date:"d M Y H:i" }}</td>
@@ -334,7 +334,7 @@
             <tbody>
               {% for ev in recent_events %}
               <tr>
-                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff6b1a;">{{ ev.lock_profile.imei }}</a></td>
+                <td><a href="{% url 'device_lock:profile_detail' ev.lock_profile.pk %}" style="color:#ff5a00;">{{ ev.lock_profile.imei }}</a></td>
                 <td>{{ ev.get_event_type_display }}</td>
                 <td>{{ ev.status_before|default:"—" }}</td>
                 <td>{{ ev.status_after|default:"—" }}</td>

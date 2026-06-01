@@ -20,8 +20,8 @@
   padding:7px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:0.82rem; color:#0f172a;
   min-width:120px; background:#fff;
 }
-.app-filter input:focus, .app-filter select:focus { outline:none; border-color:#ff6b1a; }
-.app-filter-btn { background:#ff6b1a; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.82rem; }
+.app-filter input:focus, .app-filter select:focus { outline:none; border-color:#ff5a00; }
+.app-filter-btn { background:#ff5a00; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.82rem; }
 .app-filter-reset { color:#64748b; font-size:0.82rem; text-decoration:none; align-self:center; }
 
 .app-table-wrap { background:#fff; border:1.5px solid #e2e8f0; border-radius:14px; overflow:hidden; }
@@ -50,7 +50,7 @@ table.app-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
   <div class="app-hdr">
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-        <a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a>
+        <a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a>
       </div>
       <h1 class="app-title">Applications</h1>
       <p class="app-sub">All financing applications across the platform.</p>
@@ -121,7 +121,7 @@ table.app-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
           {% for app in apps %}
           <tr data-testid="app-row">
             <td>
-              <span style="font-weight:700;font-size:0.78rem;color:#ff6b1a;">{{ app.application_number|default:app.id }}</span>
+              <span style="font-weight:700;font-size:0.78rem;color:#ff5a00;">{{ app.application_number|default:app.id }}</span>
             </td>
             <td>
               <div style="font-weight:600;">{{ app.customer_name|default:"Unknown" }}</div>

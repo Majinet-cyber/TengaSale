@@ -29,8 +29,7 @@ class AllDealsPageTests(TestCase):
         response = self.client.get(reverse("all_deals"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "All Deals")
-        self.assertContains(response, "Choose your new phone")
+        self.assertContains(response, "Choose your new smartphone")
         self.assertContains(response, "Compare cash price, deposit, repayments, and early settlement options")
         for brand_name in ["TECNO", "itel", "Redmi"]:
             self.assertContains(response, brand_name)

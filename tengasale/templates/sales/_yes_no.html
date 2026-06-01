@@ -1,24 +1,43 @@
 {% comment %}
-Usage: {% include "sales/_yes_no.html" with field_name="identity_signature_matches" label="Does the signature match?" current_value=review.identity_signature_matches %}
+Usage: {% include "sales/_yes_no.html" with field_name="identity_signature_matches" label="Does the signature match?" current_value=review.identity_signature_matches hint="Compare selfie photo with ID document" %}
 {% endcomment %}
 <div
-  class="yes-no-field"
+  class="yes-no-field ts-yn-group"
   x-data="{ val: '{{ current_value|yesno:'yes,no,' }}' }"
 >
-  <label class="yes-no-label">{{ label }}</label>
-  <div class="yes-no-buttons">
+  <div>
+    <label class="yes-no-label ts-yn-label">{{ label }}</label>
+    {% if hint %}<p class="ts-yn-hint">{{ hint }}</p>{% endif %}
+  </div>
+  <div class="yes-no-buttons ts-yn-buttons">
     <button
       type="button"
-      class="btn-yn btn-yn--yes"
-      x-bind:class="{ 'btn-yn--active': val === 'yes' }"
+      class="btn-yn btn-yn--yes ts-yn-btn ts-yn-btn--yes"
+      x-bind:class="{ 'btn-yn--active ts-yn-btn--active': val === 'yes' }"
       x-on:click="val = 'yes'"
-    >Yes</button>
+      aria-label="Yes — confirmed"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      Yes
+    </button>
     <button
       type="button"
-      class="btn-yn btn-yn--no"
-      x-bind:class="{ 'btn-yn--active': val === 'no' }"
+      class="btn-yn btn-yn--no ts-yn-btn ts-yn-btn--no"
+      x-bind:class="{ 'btn-yn--active ts-yn-btn--active': val === 'no' }"
       x-on:click="val = 'no'"
-    >No</button>
+      aria-label="No — flag for correction"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      No
+    </button>
   </div>
   <input type="hidden" name="{{ field_name }}" x-bind:value="val">
+  <div class="ts-yn-comment" x-show="val === 'no'" x-cloak>
+    <textarea
+      name="{{ field_name }}_comment"
+      placeholder="Reason or correction note (optional)…"
+      rows="2"
+      aria-label="Correction note for {{ label }}"
+    ></textarea>
+  </div>
 </div>

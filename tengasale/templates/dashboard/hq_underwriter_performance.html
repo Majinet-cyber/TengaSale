@@ -34,7 +34,7 @@
 
   <div class="uwp-hdr">
     <div>
-      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff6b1a;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
       <h1 class="uwp-title">Underwriter Performance</h1>
       <p class="uwp-sub">Review metrics, approval rates, commissions, and review times per underwriter.</p>
     </div>
@@ -57,7 +57,7 @@
     </div>
     <div class="uwp-metrics">
       <div class="uwp-metric">
-        <div class="uwp-metric-val" style="color:#ff6b1a;">{{ s.reviewed }}</div>
+        <div class="uwp-metric-val" style="color:#ff5a00;">{{ s.reviewed }}</div>
         <div class="uwp-metric-lbl">Reviewed</div>
       </div>
       <div class="uwp-metric">
@@ -82,7 +82,7 @@
       </div>
       <div class="uwp-metric">
         {% if s.avg_review_hours %}
-        <div class="uwp-metric-val" style="color:#ff6b1a;">{{ s.avg_review_hours }}h</div>
+        <div class="uwp-metric-val" style="color:#ff5a00;">{{ s.avg_review_hours }}h</div>
         {% else %}
         <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
         {% endif %}

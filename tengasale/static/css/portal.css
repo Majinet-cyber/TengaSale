@@ -4,26 +4,23 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-  --hq-orange:    #ff6b1a;
-  --hq-orange-lt: rgba(255,107,26,0.10);
+  /* Brand — aligned with TengaSale system token */
+  --hq-orange:    #ff5a00;
+  --hq-orange-lt: rgba(255,90,0,0.10);
+
+  /* Semantic colours only — not decoration */
   --hq-green:     #16a34a;
   --hq-green-lt:  rgba(22,163,74,0.10);
   --hq-red:       #dc2626;
   --hq-red-lt:    rgba(220,38,38,0.10);
-  --hq-blue:      #2563eb;
-  --hq-blue-lt:   rgba(37,99,235,0.10);
-  --hq-amber:     #d97706;
-  --hq-amber-lt:  rgba(217,119,6,0.10);
-  --hq-purple:    #7c3aed;
-  --hq-purple-lt: rgba(124,58,237,0.10);
-  --hq-indigo:    #4338ca;
-  --hq-indigo-lt: rgba(67,56,202,0.10);
-  --hq-cyan:      #0891b2;
-  --hq-cyan-lt:   rgba(8,145,178,0.10);
-  --hq-ink:       #0f172a;
-  --hq-ink2:      #334155;
-  --hq-muted:     #64748b;
-  --hq-border:    #e2e8f0;
+  --hq-amber:     #f59e0b;
+  --hq-amber-lt:  rgba(245,158,11,0.10);
+
+  /* Neutral text and surface */
+  --hq-ink:       #101828;
+  --hq-ink2:      #344054;
+  --hq-muted:     #667085;
+  --hq-border:    #e5e7eb;
   --hq-surface:   #ffffff;
   --hq-bg:        #f8fafc;
   --hq-radius:    16px;
@@ -395,7 +392,7 @@ img.ts-logo-wordmark {
   line-height: 1.3;
 }
 
-.kpi-orange { --kpi-accent: #ff6b1a; --kpi-color: #ff6b1a; --kpi-bg: rgba(255,107,26,0.10); }
+.kpi-orange { --kpi-accent: #ff5a00; --kpi-color: #ff5a00; --kpi-bg: rgba(255,107,26,0.10); }
 .kpi-green  { --kpi-accent: #16a34a; --kpi-color: #16a34a; --kpi-bg: rgba(22,163,74,0.10); }
 .kpi-red    { --kpi-accent: #dc2626; --kpi-color: #dc2626; --kpi-bg: rgba(220,38,38,0.10); }
 .kpi-blue   { --kpi-accent: #2563eb; --kpi-color: #2563eb; --kpi-bg: rgba(37,99,235,0.10); }

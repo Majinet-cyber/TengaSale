@@ -179,7 +179,7 @@ img.ts-logo-wordmark {
   gap: 5px;
   padding: 6px 12px;
   background: rgba(255,107,26,0.10);
-  color: #ff6a00;
+  color: #ff5a00;
   border: 1.5px solid rgba(255,107,26,0.25);
   border-radius: 20px;
   font-size: 13px;
@@ -416,7 +416,7 @@ img.ts-logo-wordmark {
   stroke-linejoin: round;
 }
 
-.ts-icon-orange { background: rgba(255, 106, 0, 0.12); color: #ff6a00; }
+.ts-icon-orange { background: rgba(255, 106, 0, 0.12); color: #ff5a00; }
 .ts-icon-blue   { background: rgba(35, 103, 199, 0.10); color: #2367c7; }
 .ts-icon-green  { background: rgba(22, 138, 69, 0.10); color: #168a45; }
 
@@ -442,7 +442,7 @@ img.ts-logo-wordmark {
   margin-right: 4px;
 }
 
-.ts-badge-pending { background: rgba(255, 106, 0, 0.12); color: #ff6a00; }
+.ts-badge-pending { background: rgba(255, 106, 0, 0.12); color: #ff5a00; }
 .ts-badge-success { background: rgba(22, 138, 69, 0.10); color: #168a45; }
 
 .ts-row-arrow {
@@ -486,7 +486,7 @@ img.ts-logo-wordmark {
   gap: 6px;
   font-size: 15px;
   font-weight: 700;
-  color: #ff6a00;
+  color: #ff5a00;
   text-decoration: none;
   padding: 6px 0;
 }
@@ -499,7 +499,7 @@ img.ts-logo-wordmark {
   stroke-width: 2.5;
 }
 
-.ts-back-btn:hover { color: #df5600; }
+.ts-back-btn:hover { color: #e64d00; }
 
 /* ── Section Desc / Hints ─────────────────────────────────────────── */
 
@@ -701,7 +701,7 @@ img.ts-logo-wordmark {
 }
 
 .step-dot--active {
-  background: #ff6a00;
+  background: #ff5a00;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(255, 106, 0, 0.3);
 }
@@ -747,7 +747,7 @@ img.ts-logo-wordmark {
 .ts-score-bg { fill: none; stroke: #e4e7eb; stroke-width: 3; }
 .ts-score-fill { fill: none; stroke-width: 3; stroke-linecap: round; }
 .score-green { stroke: #168a45; }
-.score-orange { stroke: #ff6a00; }
+.score-orange { stroke: #ff5a00; }
 .score-red { stroke: #d93025; }
 
 .ts-score-label {
@@ -849,7 +849,7 @@ img.ts-logo-wordmark {
   padding: 15px 20px;
   border-radius: 14px;
   border: none;
-  background: #ff6a00;
+  background: #ff5a00;
   color: #ffffff;
   font-size: 16px;
   font-weight: 800;
@@ -858,7 +858,7 @@ img.ts-logo-wordmark {
   transition: background 0.14s;
 }
 
-.ts-btn-primary:hover { background: #df5600; }
+.ts-btn-primary:hover { background: #e64d00; }
 
 .ts-btn-secondary {
   display: flex;
@@ -899,7 +899,7 @@ img.ts-logo-wordmark {
 .ts-textarea:focus,
 .ts-select:focus {
   outline: none;
-  border-color: #ff6a00;
+  border-color: #ff5a00;
 }
 
 .ts-field-label {
@@ -1046,7 +1046,7 @@ img.ts-logo-wordmark {
 .wallet-balance-card {
   margin: 10px 18px;
   padding: 20px;
-  background: linear-gradient(135deg, #ff6a00, #df5600);
+  background: linear-gradient(135deg, #ff5a00, #e64d00);
   border-radius: 18px;
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(255, 106, 0, 0.25);
@@ -1105,15 +1105,15 @@ img.ts-logo-wordmark {
 }
 
 .tab-item--active {
-  background: #ff6a00;
-  border-color: #ff6a00;
+  background: #ff5a00;
+  border-color: #ff5a00;
   color: #ffffff;
 }
 
 /* ── Text colour utilities ───────────────────────────────────────── */
 .text-green  { color: #168a45 !important; }
 .text-red    { color: #d93025 !important; }
-.text-orange { color: #ff6a00 !important; }
+.text-orange { color: #ff5a00 !important; }
 .text-muted  { color: #7a828c !important; }
 
 /* ── Status badges ───────────────────────────────────────────────── */
@@ -1131,7 +1131,7 @@ img.ts-logo-wordmark {
 .status-badge--approved  { background: #e8f6ee; color: #168a45; }
 .status-badge--rejected  { background: #fdeceb; color: #d93025; }
 .status-badge--review    { background: #edf3f7; color: #2367c7; }
-.status-badge--pending   { background: rgba(255,106,0,0.10); color: #ff6a00; }
+.status-badge--pending   { background: rgba(255,106,0,0.10); color: #ff5a00; }
 
 /* ── Transaction rows ────────────────────────────────────────────── */
 
@@ -1351,7 +1351,7 @@ img.ts-logo-wordmark {
 
 .ts-review-flow__header span,
 .ts-sendback-panel__eyebrow {
-  color: #ff6a00;
+  color: #ff5a00;
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -1530,7 +1530,7 @@ img.ts-logo-wordmark {
   font-size: 11px;
   font-weight: 700;
 }
-.ts-badge-orange { background: rgba(255,106,0,0.12); color: #ff6b1a; }
+.ts-badge-orange { background: rgba(255,106,0,0.12); color: #ff5a00; }
 .ts-badge-blue   { background: rgba(29,78,216,0.10);  color: #1d4ed8; }
 .ts-badge-green  { background: rgba(22,163,74,0.10);  color: #16a34a; }
 .ts-badge-grey   { background: #f0f0f0; color: #666; }
