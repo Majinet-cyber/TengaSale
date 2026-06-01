@@ -85,28 +85,8 @@ class CompletenessScoreTest(TestCase):
         self.assertLess(score, 100)
 
     def test_full_score_when_all_true(self):
-        review = self._make_review(**{
-            "summary_clear": True,
-            "identity_signature_matches": True,
-            "identity_info_matches": True,
-            "momo_name_matches": True,
-            "location_neighbour_spoken": True,
-            "location_confirmed": True,
-            "location_traceable": True,
-            "customer_spoken": True,
-            "customer_intro_done": True,
-            "customer_confirmed_application": True,
-            "customer_confirmed_device": True,
-            "customer_confirmed_deposit": True,
-            "customer_confirmed_repayment": True,
-            "customer_understands_direct_payment": True,
-            "customer_understands_nonpayment": True,
-            "income_understood": True,
-            "income_contact_spoken": True,
-            "income_confirmed": True,
-            "income_source_dependable": True,
-            "income_contact_confident": True,
-        })
+        all_required = {field: True for field in UnderwriterReview.REQUIRED_FIELDS}
+        review = self._make_review(**all_required)
         score = review.completeness_score()
         self.assertEqual(score, 100)
 
