@@ -7,39 +7,208 @@
 <div class="uw-canvas">
     <a href="{% url 'underwriter_dashboard' %}" class="soft-back">
         <span class="soft-back-icon">&larr;</span>
-        <span>Back</span>
+        <span>Back to Dashboard</span>
     </a>
 
+    {# ── Page header ─────────────────────────────────────────────── #}
     <header class="uw-header">
         <div>
-            <span class="uw-kicker">{% if is_hub %}Application Review{% else %}Summary{% endif %}</span>
-            <h1>{% if is_hub %}Application Review{% else %}Summary{% endif %}</h1>
+            <span class="uw-kicker">{% if is_hub %}Application Review{% else %}Summary Review{% endif %}</span>
+            <h1>{{ app.customer_name|default:"Unnamed Customer" }}</h1>
         </div>
         <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
     </header>
 
-    <section class="uw-card">
-        <h2>Customer / Deal Summary</h2>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px;">
+        App #{{ app.application_number|default:app.id }}
+        &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}
+    </p>
+
+    {# ── Application summary card ─────────────────────────────────── #}
+    <section class="uw-card" style="border-top:3px solid var(--orange);">
+        <h2>Application Summary</h2>
+
+        <h3 class="uw-section-title">Customer</h3>
         <div class="review-field">
             <div class="review-field__copy">
-                <span class="review-field__label">Customer</span>
-                <strong class="review-field__value">{{ app.customer_name|default:"Unnamed Customer" }}</strong>
+                <span class="review-field__label">Full Name</span>
+                <strong class="review-field__value">{{ app.customer_name|default:"Not captured" }}</strong>
             </div>
         </div>
         <div class="review-field">
             <div class="review-field__copy">
-                <span class="review-field__label">Application</span>
-                <strong class="review-field__value">{{ app.application_number|default:app.id }}</strong>
+                <span class="review-field__label">National ID</span>
+                <strong class="review-field__value">{{ app.national_id|default:"Not captured" }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Date of Birth</span>
+                <strong class="review-field__value">{{ app.date_of_birth|date:"d M Y"|default:"Not captured" }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Gender</span>
+                <strong class="review-field__value">{{ app.get_gender_display|default:"Not captured" }}</strong>
             </div>
         </div>
         <div class="review-field">
             <div class="review-field__copy">
                 <span class="review-field__label">Phone</span>
+                {% if app.customer_phone %}
+                    <a href="tel:+265{{ app.customer_phone }}" class="review-field__value" style="color:var(--orange);text-decoration:none;font-weight:700;">
+                        +265 {{ app.customer_phone }}
+                    </a>
+                {% else %}
+                    <strong class="review-field__value">Not captured</strong>
+                {% endif %}
+            </div>
+        </div>
+
+        <h3 class="uw-section-title">Merchant / Sales Rep</h3>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Submitted by</span>
+                <strong class="review-field__value">{{ app.created_by.get_full_name|default:app.created_by.username }}</strong>
+            </div>
+        </div>
+        {% with merchant=app.created_by.merchant_set.first %}
+        {% if merchant %}
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Merchant</span>
+                <strong class="review-field__value">{{ merchant.business_name }}</strong>
+            </div>
+        </div>
+        {% if merchant.phone_number %}
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Merchant Phone</span>
+                <a href="tel:{{ merchant.phone_number }}" class="review-field__value" style="color:var(--orange);text-decoration:none;font-weight:700;">
+                    {{ merchant.phone_number }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        {% endwith %}
+
+        <h3 class="uw-section-title">Deal</h3>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Smartphone</span>
                 <strong class="review-field__value">{{ app.deal|default:"No phone selected" }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Cash Price</span>
+                <strong class="review-field__value">MWK {{ app.selected_cash_price|floatformat:0 }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Deposit</span>
+                <strong class="review-field__value">MWK {{ app.calculated_deposit_amount|floatformat:0 }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Daily Repayment</span>
+                <strong class="review-field__value">MWK {{ app.calculated_daily_payment|floatformat:0 }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Monthly Repayment</span>
+                <strong class="review-field__value">MWK {{ app.calculated_monthly_payment|floatformat:0 }}</strong>
+            </div>
+        </div>
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Total (12 months)</span>
+                <strong class="review-field__value">MWK {{ app.calculated_total_loan|floatformat:0 }}</strong>
+            </div>
+        </div>
+        {% if app.calculated_6_month_total %}
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Early: 6 months</span>
+                <strong class="review-field__value">MWK {{ app.calculated_6_month_total|floatformat:0 }}</strong>
+            </div>
+        </div>
+        {% endif %}
+        {% if app.calculated_3_month_total %}
+        <div class="review-field">
+            <div class="review-field__copy">
+                <span class="review-field__label">Early: 3 months</span>
+                <strong class="review-field__value">MWK {{ app.calculated_3_month_total|floatformat:0 }}</strong>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    {# ── KYC images quick preview ─────────────────────────────────── #}
+    <section class="uw-card">
+        <h2>KYC Images</h2>
+        <div class="uw-image-grid">
+            <div class="uw-image-block">
+                {% if app.customer_face_image %}
+                    <a href="{{ app.customer_face_image.url }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ app.customer_face_image.url }}" alt="Selfie" loading="lazy">
+                    </a>
+                {% else %}
+                    <div class="uw-image-missing">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                        No selfie uploaded
+                    </div>
+                {% endif %}
+                <span class="review-field__label" style="text-align:center;">Selfie</span>
+            </div>
+            <div class="uw-image-block">
+                {% if app.id_front_image %}
+                    <a href="{{ app.id_front_image.url }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ app.id_front_image.url }}" alt="ID Front" loading="lazy">
+                    </a>
+                {% else %}
+                    <div class="uw-image-missing">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h8"/></svg>
+                        No ID front uploaded
+                    </div>
+                {% endif %}
+                <span class="review-field__label" style="text-align:center;">ID Front</span>
+            </div>
+            <div class="uw-image-block">
+                {% if app.id_back_image %}
+                    <a href="{{ app.id_back_image.url }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ app.id_back_image.url }}" alt="ID Back" loading="lazy">
+                    </a>
+                {% else %}
+                    <div class="uw-image-missing">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6"/></svg>
+                        No ID back uploaded
+                    </div>
+                {% endif %}
+                <span class="review-field__label" style="text-align:center;">ID Back</span>
+            </div>
+            <div class="uw-image-block">
+                {% if app.signature_image %}
+                    <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ app.signature_image.url }}" alt="Signature" loading="lazy">
+                    </a>
+                {% else %}
+                    <div class="uw-image-missing">
+                        <svg viewBox="0 0 24 24"><path d="M3 17c3-1 5-6 7-6s2 6 4 6 3-5 5-6"/></svg>
+                        No signature uploaded
+                    </div>
+                {% endif %}
+                <span class="review-field__label" style="text-align:center;">Signature</span>
             </div>
         </div>
     </section>
 
+    {# ── Risk / Confidence score ────────────────────────────────────── #}
     {% if confidence %}
     <section class="uw-card" style="background:linear-gradient(135deg,rgba(255,90,0,0.04),rgba(255,255,255,0.98));border:1.5px solid rgba(255,90,0,0.15);">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
@@ -47,37 +216,23 @@
                 <span style="font-size:1.1rem;font-weight:900;color:{{ confidence.score_color }};">{{ confidence.score }}</span>
             </div>
             <div>
-                <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;margin-bottom:2px;">Repayment confidence estimate</div>
+                <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;margin-bottom:2px;">Repayment confidence</div>
                 <div style="font-size:1rem;font-weight:900;color:{{ confidence.score_color }};">{{ confidence.badge_label }}</div>
             </div>
             <div style="margin-left:auto;">
                 <span class="{{ confidence.badge_class }}" style="font-size:0.72rem;">{{ confidence.recommendation }}</span>
             </div>
         </div>
-
-        <div style="background:rgba(255,90,0,0.04);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin-bottom:6px;">Score breakdown</div>
+        <div style="background:rgba(255,90,0,0.04);border-radius:10px;padding:10px 12px;">
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="flex:1;height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;">
-                    <div style="height:100%;width:{{ confidence.score }}%;background:{{ confidence.score_color }};border-radius:999px;transition:width 0.4s;"></div>
+                    <div style="height:100%;width:{{ confidence.score }}%;background:{{ confidence.score_color }};border-radius:999px;"></div>
                 </div>
                 <span style="font-size:0.75rem;font-weight:800;color:{{ confidence.score_color }};white-space:nowrap;">{{ confidence.score }} / 100</span>
             </div>
         </div>
-
-        {% if confidence.reasons %}
-        <div style="margin-bottom:8px;">
-            {% for r in confidence.reasons %}
-            <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;font-size:0.78rem;">
-                <span style="color:#16a34a;font-weight:800;flex-shrink:0;">✓</span>
-                <span style="color:#374151;">{{ r }}</span>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         {% if confidence.flags %}
-        <div>
+        <div style="margin-top:10px;">
             {% for f in confidence.flags %}
             <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;font-size:0.78rem;">
                 <span style="color:#d97706;font-weight:800;flex-shrink:0;">!</span>
@@ -86,77 +241,39 @@
             {% endfor %}
         </div>
         {% endif %}
-
-        <p style="font-size:0.68rem;color:#94a3b8;margin-top:10px;line-height:1.45;">
-            Rule-based signal only. This recommendation supports review. Final approval remains with the underwriter.
-        </p>
+        <p style="font-size:0.68rem;color:#94a3b8;margin-top:10px;">Rule-based estimate only. Final decision is yours.</p>
     </section>
     {% endif %}
 
     {% if is_hub %}
-        <section class="uw-card">
-            <h2>Review Checklist</h2>
-            <div class="uw-step-list">
-                {% for label, url in steps %}
-                    <a class="uw-step" href="{{ url }}"><span>{{ forloop.counter }}</span><strong>{{ label }}</strong><b>&rsaquo;</b></a>
-                {% endfor %}
-            </div>
-        </section>
+    {# ── Review checklist (hub mode) ──────────────────────────────── #}
+    <section class="uw-card">
+        <h2>Review Checklist</h2>
+        {% if correction_count %}
+        <p class="uw-warning">{{ correction_count }} field{{ correction_count|pluralize }} marked for correction.</p>
+        {% endif %}
+        <div class="uw-step-list">
+            {% for label, url in steps %}
+                <a class="uw-step" href="{{ url }}">
+                    <span>{{ forloop.counter }}</span>
+                    <strong>{{ label }}</strong>
+                    <b>&rsaquo;</b>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+
     {% else %}
-        <section class="uw-card">
-            <h2>Application Review</h2>
-
-            <h3 class="uw-section-title">Customer</h3>
-            {% include "dashboard/partials/review_field.html" with field_name="customer_name" section="Customer" label="Full Name" value=app.customer_name correction=corrections.customer_name %}
-            {% include "dashboard/partials/review_field.html" with field_name="national_id" section="Customer" label="ID Number" value=app.national_id correction=corrections.national_id %}
-            {% include "dashboard/partials/review_field.html" with field_name="customer_phone" section="Customer" label="Phone" value=app.customer_phone correction=corrections.customer_phone %}
-            {% include "dashboard/partials/review_field.html" with field_name="occupation" section="Customer" label="Occupation" value=app.occupation correction=corrections.occupation %}
-            {% include "dashboard/partials/review_field.html" with field_name="income_band" section="Customer" label="Income" value=app.income_band correction=corrections.income_band %}
-
-            <h3 class="uw-section-title">Sales Rep</h3>
-            <div class="review-field">
-                <div class="review-field__copy"><span class="review-field__label">Merchant</span><strong class="review-field__value">{{ app.created_by.get_full_name|default:app.created_by.username }}</strong></div>
-            </div>
-
-            <h3 class="uw-section-title">Deal</h3>
-            {% include "dashboard/partials/review_field.html" with field_name="selected_deal" section="Deal" label="Phone" value=app.deal correction=corrections.selected_deal %}
-            {% include "dashboard/partials/review_field.html" with field_name="selected_cash_price" section="Deal" label="Cash Price" value=app.selected_cash_price correction=corrections.selected_cash_price %}
-            {% include "dashboard/partials/review_field.html" with field_name="calculated_deposit_amount" section="Deal" label="Deposit" value=app.calculated_deposit_amount correction=corrections.calculated_deposit_amount %}
-            <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Repayment</span><strong class="review-field__value">MWK {{ app.calculated_monthly_payment|floatformat:0 }} / month</strong></div></div>
-            <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Total 12 months</span><strong class="review-field__value">MWK {{ app.calculated_total_loan|floatformat:0 }}</strong></div></div>
-            <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Early payment totals</span><strong class="review-field__value">6m MWK {{ app.calculated_6_month_total|floatformat:0 }} · 3m MWK {{ app.calculated_3_month_total|floatformat:0 }}</strong></div></div>
-        </section>
-
-        <section class="uw-card">
-            <h2>Images</h2>
-            <div class="uw-image-grid">
-                <div class="uw-image-block">
-                    {% if app.customer_face_image %}<img src="{{ app.customer_face_image.url }}" alt="Selfie Image">{% endif %}
-                    {% include "dashboard/partials/review_field.html" with field_name="customer_face_image" section="Images" label="Selfie Image" value="Captured" correction=corrections.customer_face_image %}
-                </div>
-                <div class="uw-image-block">
-                    {% if app.id_front_image %}<img src="{{ app.id_front_image.url }}" alt="ID Card Image">{% endif %}
-                    {% include "dashboard/partials/review_field.html" with field_name="id_front_image" section="Images" label="ID Card Image" value="Captured" correction=corrections.id_front_image %}
-                </div>
-                <div class="uw-image-block">
-                    {% if app.id_back_image %}<img src="{{ app.id_back_image.url }}" alt="ID Card Back">{% endif %}
-                    {% include "dashboard/partials/review_field.html" with field_name="id_back_image" section="Images" label="ID Card Back" value="Captured" correction=corrections.id_back_image %}
-                </div>
-                <div class="uw-image-block">
-                    {% if app.signature_image %}<img src="{{ app.signature_image.url }}" alt="Signature">{% endif %}
-                    {% include "dashboard/partials/review_field.html" with field_name="customer_signature" section="Images" label="Signature" value="Captured" correction=corrections.customer_signature %}
-                </div>
-            </div>
-        </section>
-
-        <form method="post" class="uw-card">
-            {% csrf_token %}
-            {% include "dashboard/partials/review_yes_no.html" with name="summary_clear" question="Is everything in this application clear and accurate?" value=review.summary_clear %}
-            <div class="uw-actions">
-                <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">Back</a>
-                <button type="submit" class="btn">Submit</button>
-            </div>
-        </form>
+    {# ── Summary review question ───────────────────────────────────── #}
+    <form method="post" class="uw-card">
+        {% csrf_token %}
+        <h2>Summary Check</h2>
+        {% include "dashboard/partials/review_yes_no.html" with name="summary_clear" question="Is everything in this application clear and accurate enough to proceed?" value=review.summary_clear %}
+        <div class="uw-actions">
+            <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">Back</a>
+            <button type="submit" class="btn">Save &amp; Continue</button>
+        </div>
+    </form>
     {% endif %}
 </div>
 

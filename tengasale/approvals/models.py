@@ -61,6 +61,8 @@ class UnderwriterReview(models.Model):
 
     identity_signature_matches = models.BooleanField(null=True, blank=True)
     identity_info_matches = models.BooleanField(null=True, blank=True)
+    identity_selfie_matches = models.BooleanField(null=True, blank=True)
+    identity_images_clear = models.BooleanField(null=True, blank=True)
 
     momo_name_matches = models.BooleanField(null=True, blank=True)
 
@@ -90,6 +92,8 @@ class UnderwriterReview(models.Model):
         "summary_clear",
         "identity_signature_matches",
         "identity_info_matches",
+        "identity_selfie_matches",
+        "identity_images_clear",
         "momo_name_matches",
         "customer_spoken",
         "customer_intro_done",

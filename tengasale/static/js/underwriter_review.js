@@ -12,9 +12,11 @@
                     buttons.forEach(function (candidate) {
                         candidate.classList.toggle("is-selected", candidate.dataset.reviewChoice === value);
                     });
-                    tick.classList.toggle("is-yes", value === "yes");
-                    tick.classList.toggle("is-no", value === "no");
-                    tick.textContent = value === "yes" ? "✓" : "";
+                    if (tick) {
+                        tick.classList.toggle("is-yes", value === "yes");
+                        tick.classList.toggle("is-no", value === "no");
+                        tick.textContent = value === "yes" ? "✓" : "";
+                    }
                 });
             });
         });

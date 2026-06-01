@@ -4383,10 +4383,50 @@ table {
 .uw-image-block img {
     width: 100%;
     aspect-ratio: 4/3;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 12px;
     background: var(--app-bg);
     border: 1px solid var(--border);
+    max-width: 100%;
+}
+
+/* Missing image placeholder */
+.uw-image-missing {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 12px;
+    background: var(--app-bg);
+    border: 2px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px;
+}
+
+.uw-image-missing svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--border);
+    fill: none;
+    stroke-width: 1.5;
+}
+
+/* KYC image section header row */
+.uw-kyc-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.uw-kyc-label-row .review-field__label {
+    font-size: 11px;
 }
 
 /* Call row */
@@ -4493,22 +4533,23 @@ table {
 
 /* ── Edit / correction button ────────────────────────────────── */
 .review-edit-btn {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: var(--orange-soft);
-    color: var(--orange);
+    background: rgba(255, 106, 0, 0.12);
+    color: #ff5a00;
     border: none;
     cursor: pointer;
     display: grid;
     place-items: center;
     flex-shrink: 0;
     transition: background 0.15s, transform 0.12s;
+    min-width: 38px;
 }
 
 .review-edit-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2.2;
@@ -4518,23 +4559,23 @@ table {
 
 .review-edit-btn:hover,
 .review-edit-btn:focus-visible {
-    background: rgba(255, 106, 0, 0.20);
+    background: rgba(255, 106, 0, 0.22);
     transform: scale(1.08);
     outline: none;
 }
 
 .review-edit-btn--active {
-    background: var(--orange);
+    background: #ff5a00;
     color: #fff;
 }
 
 .review-edit-btn--active:hover {
-    background: var(--orange-dark);
+    background: #e64d00;
 }
 
 /* ── Yes / No review question ────────────────────────────────── */
 .review-question {
-    padding: 14px 0;
+    padding: 16px 0;
     border-bottom: 1px solid var(--border);
 }
 
@@ -4543,10 +4584,10 @@ table {
 }
 
 .review-question__text {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--black);
-    margin: 0 0 10px;
+    margin: 0 0 12px;
     line-height: 1.45;
 }
 
@@ -4558,15 +4599,19 @@ table {
 
 .review-choice {
     flex: 1;
-    height: 40px;
-    border-radius: 10px;
+    height: 48px;
+    border-radius: 12px;
     border: 2px solid var(--border);
     background: var(--surface);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
     cursor: pointer;
     transition: border-color 0.14s, background 0.14s, color 0.14s;
     color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .review-choice:hover {

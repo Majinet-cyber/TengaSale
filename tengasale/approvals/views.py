@@ -235,10 +235,16 @@ def identity_check(request, app_id):
     if response:
         return response
     review = get_review(app, request.user)
+    identity_fields = [
+        "identity_signature_matches",
+        "identity_info_matches",
+        "identity_selfie_matches",
+        "identity_images_clear",
+    ]
     if request.method == "POST":
-        review.identity_signature_matches = bool_from_post(request, "identity_signature_matches")
-        review.identity_info_matches = bool_from_post(request, "identity_info_matches")
-        review.save(update_fields=["identity_signature_matches", "identity_info_matches", "updated_at"])
+        for field in identity_fields:
+            setattr(review, field, bool_from_post(request, field))
+        review.save(update_fields=[*identity_fields, "updated_at"])
         messages.success(request, "Identity check saved.")
         return redirect("underwriter_momo_check", app_id=app.id)
     return render(request, "dashboard/underwriter_identity_check.html", {"app": app, "review": review, **correction_context(app)})
