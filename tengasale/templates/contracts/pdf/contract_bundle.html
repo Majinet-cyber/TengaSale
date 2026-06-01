@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TengaSale Contract Bundle {{ contract_number }}</title>
+<style>
+  @page { size: A4; margin: 2cm 1.5cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #1a1a1a; line-height: 1.5; margin: 0; padding: 0; }
+  .header { text-align: center; border-bottom: 2px solid #ff5a00; padding-bottom: 10px; margin-bottom: 16px; }
+  .brand-name { font-size: 22px; font-weight: bold; color: #ff5a00; letter-spacing: 1px; }
+  .brand-tagline { font-size: 10px; color: #888; }
+  .contract-title { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; color: #222; }
+  .ref-line { font-size: 9px; color: #555; margin-top: 4px; }
+  h2 { font-size: 11px; font-weight: bold; text-transform: uppercase; background: #f5f5f5; border-left: 3px solid #ff5a00; padding: 4px 8px; margin: 14px 0 6px 0; color: #333; }
+  h3 { font-size: 10px; font-weight: bold; color: #ff5a00; margin: 10px 0 3px 0; border-bottom: 1px solid #f0d0c0; padding-bottom: 2px; }
+  table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  table.data-table td { padding: 4px 6px; border: 1px solid #ddd; font-size: 9.5px; vertical-align: top; }
+  table.data-table td.label { width: 40%; background: #fafafa; font-weight: bold; color: #444; }
+  .clause { margin-bottom: 8px; font-size: 9.5px; }
+  .clause-letter { font-weight: bold; color: #ff5a00; }
+  .sig-block { margin-top: 18px; border-top: 1px solid #ddd; padding-top: 12px; }
+  .sig-row { display: table; width: 100%; }
+  .sig-col { display: table-cell; width: 48%; vertical-align: top; padding: 0 1%; }
+  .sig-line { border-bottom: 1px solid #333; min-height: 30px; margin-bottom: 4px; }
+  .sig-label { font-size: 9px; color: #555; }
+  .footer-note { margin-top: 20px; padding-top: 8px; border-top: 1px solid #eee; font-size: 8px; color: #888; text-align: center; }
+  .notice-box { background: #fff8f3; border: 1px solid #ff5a00; padding: 6px 10px; border-radius: 3px; font-size: 9px; margin: 8px 0; }
+  .section-break { page-break-before: always; margin-top: 0; }
+  .section-header { text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 14px; background: #f0f4ff; padding: 10px; }
+  .section-label { font-size: 10px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; letter-spacing: 1px; }
+  .cert-box { border: 2px solid #1e3a8a; padding: 14px 18px; border-radius: 4px; margin: 12px 0; background: #f8faff; }
+  .cert-title { font-size: 13px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+  .cert-row { display: table; width: 100%; border-bottom: 1px solid #dde4f0; padding: 4px 0; }
+  .cert-label { display: table-cell; width: 45%; font-weight: bold; font-size: 9.5px; color: #444; }
+  .cert-value { display: table-cell; font-size: 9.5px; color: #222; }
+  .legal-doc h1, .legal-doc h2 { display: none; }
+  .mt-terms-body h3 { font-size: 10px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #c5d0f0; }
+  .mt-terms-body p { margin: 2px 0 6px 0; font-size: 9.5px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PART 1: CUSTOMER CONTRACT SUMMARY ═══════════════ -->
+<div class="header">
+  <div class="brand-name">TENGASALE</div>
+  <div class="brand-tagline">Endless Possibilities — Smartphone Financing</div>
+  <div class="contract-title">Digital Instalment Sale Agreement — Customer Contract Summary</div>
+  <div class="ref-line">
+    Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
+    Date: <strong>{{ contract_date }}</strong> &nbsp;|&nbsp;
+    Application: <strong>{{ application_id }}</strong>
+  </div>
+</div>
+
+<div class="notice-box">
+  <strong>Master Terms Reference:</strong> This Customer Contract Summary is governed by and forms part of the
+  <strong>TengaSale Master Terms and Conditions Version {{ master_terms_version|default:"1.0" }}</strong>.
+  By signing or electronically accepting this Contract Summary, the Customer confirms acceptance of the Master Terms.
+  {% if master_terms_accepted_at %}
+  Master Terms accepted: <strong>{{ master_terms_accepted_at|date:"d M Y, H:i" }}</strong>
+  &mdash; Method: <strong>{{ master_terms_acceptance_method }}</strong>
+  &mdash; Acceptance Record ID: <strong>#{{ master_terms_acceptance_id }}</strong>
+  {% endif %}
+</div>
+
+<!-- Parties -->
+<h2>Parties to the Agreement</h2>
+<table class="data-table">
+  <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} &mdash; Tel: {{ merchant_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
+  <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
+  <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>
+  <tr><td class="label">Physical Address</td><td>{{ physical_address }}{% if district %}, {{ district }}{% endif %}{% if region %}, {{ region }}{% endif %}</td></tr>
+  <tr><td class="label">Traditional Authority / Area</td><td>{{ ta_area }}</td></tr>
+</table>
+
+<!-- Device Details -->
+<h2>A. Device Details</h2>
+<table class="data-table">
+  <tr><td class="label">Device</td><td>{{ device_name }}</td></tr>
+  {% if device_specs %}<tr><td class="label">Specs / Variant</td><td>{{ device_specs }}</td></tr>{% endif %}
+  {% if imei_number %}<tr><td class="label">IMEI Number</td><td>{{ imei_number }}</td></tr>{% endif %}
+  {% if serial_number %}<tr><td class="label">Serial Number</td><td>{{ serial_number }}</td></tr>{% endif %}
+  <tr><td class="label">Retail Cash Price</td><td>MWK {{ retail_cash_price }}</td></tr>
+  <tr><td class="label">Deposit Paid</td><td>MWK {{ deposit_paid }}</td></tr>
+  <tr><td class="label">Amount Financed</td><td>MWK {{ amount_financed }}</td></tr>
+  <tr><td class="label">Finance Charges</td><td>MWK {{ finance_charges }}</td></tr>
+  <tr><td class="label">Total Contract Price</td><td><strong>MWK {{ total_contract_price }}</strong></td></tr>
+</table>
+
+<!-- Payment Terms -->
+<h2>B. Payment Terms</h2>
+<table class="data-table">
+  <tr><td class="label">Contract Term</td><td>{{ contract_term_months }} months</td></tr>
+  <tr><td class="label">Monthly Instalment</td><td>MWK {{ instalment_amount }}</td></tr>
+  <tr><td class="label">Daily Instalment</td><td>MWK {{ daily_instalment }}</td></tr>
+  <tr><td class="label">Payment Frequency</td><td>{{ payment_frequency }}</td></tr>
+  <tr><td class="label">Approved Payment Channels</td><td>{{ payment_channels }}</td></tr>
+</table>
+
+<!-- Core Legal Clauses -->
+<h2>C. Core Legal Terms</h2>
+<div class="clause"><span class="clause-letter">C1.</span> <strong>Ownership.</strong> The device remains the sole property of TengaSale until all payment obligations are fully satisfied.</div>
+<div class="clause"><span class="clause-letter">C2.</span> <strong>Default.</strong> Failure to pay within 14 consecutive days of the due date constitutes an Event of Default.</div>
+<div class="clause"><span class="clause-letter">C3.</span> <strong>Repossession.</strong> After 30 consecutive days of default, TengaSale may repossess the device.</div>
+<div class="clause"><span class="clause-letter">C4.</span> <strong>Disposal.</strong> TengaSale may dispose of a repossessed device by sale or auction. Any remaining deficit remains recoverable.</div>
+<div class="clause"><span class="clause-letter">C5.</span> <strong>Device restriction.</strong> TengaSale may restrict access to the device where payments are overdue, fraud is suspected, or a material breach occurs.</div>
+<div class="clause"><span class="clause-letter">C6.</span> <strong>Electronic acceptance.</strong> Electronic signatures, OTP, and digital acceptance are legally binding under the laws of Malawi.</div>
+<div class="clause"><span class="clause-letter">C7.</span> <strong>Payment allocation.</strong> Payments are allocated: (1) recovery costs, (2) overdue amounts, (3) fees, (4) current instalments, (5) principal.</div>
+
+<!-- Operational Clauses -->
+<h2>D. Operational Clauses</h2>
+<div class="clause"><span class="clause-letter">D1.</span> <strong>IMEI verification.</strong> Customer consents to device IMEI verification before activation.</div>
+<div class="clause"><span class="clause-letter">D2.</span> <strong>Device lock readiness.</strong> Customer consents to TengaSale installing device management technology.</div>
+<div class="clause"><span class="clause-letter">D3.</span> <strong>Communication consent.</strong> Customer consents to receive notices, statements, and documents by WhatsApp, SMS, or email.</div>
+<div class="clause"><span class="clause-letter">D4.</span> <strong>KYC/data processing.</strong> Customer authorises identity verification, fraud screening, and personal data processing for contract administration.</div>
+<div class="clause"><span class="clause-letter">D5.</span> <strong>Audit trail.</strong> All acceptance events, payments, notices, and account activity are electronically recorded and are prima facie evidence.</div>
+<div class="clause"><span class="clause-letter">D6.</span> <strong>Completion and ownership transfer.</strong> Ownership transfers to the Customer only after full payment of all obligations. A completion record is generated and delivered.</div>
+
+<!-- Signature Block -->
+<div class="sig-block">
+  <div class="sig-row">
+    <div class="sig-col">
+      {% if customer_sig_url %}
+        <img src="{{ customer_sig_url }}" alt="Customer Signature" style="max-height:50px;max-width:150px;">
+      {% else %}
+        <div class="sig-line"></div>
+      {% endif %}
+      <div class="sig-label">Customer Signature &mdash; {{ customer_full_name }}</div>
+      <div class="sig-label">Accepted: {{ customer_signature_at|date:"d M Y, H:i"|default:"____________________" }}</div>
+      {% if otp_code %}<div class="sig-label">OTP Ref: {{ otp_code }}</div>{% endif %}
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-label">TengaSale Authorised Representative</div>
+      <div class="sig-label">Approved: {{ authorised_at|date:"d M Y, H:i"|default:"____________________" }}</div>
+      {% if approved_by_name %}<div class="sig-label">Underwriter: {{ approved_by_name }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">
+  Generated: {{ generated_at|date:"d M Y, H:i" }} &mdash;
+  Contract {{ contract_number }} &mdash;
+  TengaSale Customer Contract Summary v1.0 &mdash;
+  Governed by TengaSale Master Terms v{{ master_terms_version|default:"1.0" }}
+</div>
+
+<!-- ═══════════════ PART 2: MASTER TERMS AND CONDITIONS ═══════════════ -->
+<div class="section-break">
+  <div class="section-header">
+    <div class="section-label">Part 2 of 3 &mdash; TengaSale Master Terms and Conditions</div>
+    <div style="font-size:9px;color:#555;margin-top:3px;">
+      Version {{ master_terms_version|default:"1.0" }} &mdash;
+      Contract: {{ contract_number }} &mdash;
+      Customer: {{ customer_full_name }}
+    </div>
+  </div>
+
+  <div class="mt-terms-body">
+    {% if master_terms_body %}
+      {{ master_terms_body }}
+    {% else %}
+      <p>Master Terms document not found. Please run: python manage.py seed_legal_documents</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════ PART 3: ACCEPTANCE CERTIFICATE ═══════════════ -->
+<div class="section-break">
+  <div class="section-header">
+    <div class="section-label">Part 3 of 3 &mdash; Legal Acceptance Certificate</div>
+    <div style="font-size:9px;color:#555;margin-top:3px;">
+      Generated: {{ generated_at|date:"d M Y, H:i" }} &mdash; Contract: {{ contract_number }}
+    </div>
+  </div>
+
+  <div class="cert-box">
+    <div class="cert-title">Legal Acceptance Certificate</div>
+
+    <div class="cert-row"><div class="cert-label">Customer Name</div><div class="cert-value">{{ customer_full_name }}</div></div>
+    <div class="cert-row"><div class="cert-label">National ID / Passport</div><div class="cert-value">{{ national_id_or_passport }}</div></div>
+    <div class="cert-row"><div class="cert-label">Phone Number</div><div class="cert-value">{{ phone_number }}</div></div>
+    <div class="cert-row"><div class="cert-label">Contract Number</div><div class="cert-value">{{ contract_number }}</div></div>
+    <div class="cert-row"><div class="cert-label">Application ID</div><div class="cert-value">{{ application_id }}</div></div>
+
+    <div class="cert-row" style="margin-top:8px;background:#eef2ff;">
+      <div class="cert-label"><strong>Master Terms Version Accepted</strong></div>
+      <div class="cert-value"><strong>TengaSale Master Terms and Conditions v{{ master_terms_version|default:"1.0" }}</strong></div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Master Terms Accepted At</div><div class="cert-value">{{ master_terms_accepted_at|date:"d M Y, H:i"|default:"Not recorded" }}</div></div>
+    <div class="cert-row"><div class="cert-label">Acceptance Method</div><div class="cert-value">{{ master_terms_acceptance_method|default:"Mobile acceptance / digital signature" }}</div></div>
+    <div class="cert-row"><div class="cert-label">Master Terms Record ID</div><div class="cert-value">{% if master_terms_acceptance_id %}#{{ master_terms_acceptance_id }}{% else %}Not recorded{% endif %}</div></div>
+
+    <div class="cert-row" style="margin-top:8px;">
+      <div class="cert-label">Contract Summary Accepted At</div><div class="cert-value">{{ summary_accepted_at|date:"d M Y, H:i"|default:"Not recorded" }}</div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Contract Summary Record ID</div><div class="cert-value">{% if summary_acceptance_id %}#{{ summary_acceptance_id }}{% else %}Not recorded{% endif %}</div></div>
+
+    <div class="cert-row" style="margin-top:8px;">
+      <div class="cert-label">Customer Signature Captured At</div>
+      <div class="cert-value">{{ customer_signature_at|date:"d M Y, H:i"|default:"Pending" }}</div>
+    </div>
+    {% if customer_sig_url %}
+    <div style="margin-top:8px;text-align:center;">
+      <img src="{{ customer_sig_url }}" alt="Customer Signature" style="max-height:60px;max-width:180px;border:1px solid #cdd;">
+      <div style="font-size:8px;color:#888;">Customer signature</div>
+    </div>
+    {% endif %}
+
+    <div class="cert-row" style="margin-top:8px;">
+      <div class="cert-label">Certificate Generated At</div><div class="cert-value">{{ generated_at|date:"d M Y, H:i" }}</div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Generated By</div><div class="cert-value">{{ generated_by_name }}</div></div>
+
+    <div style="margin-top:12px;font-size:8.5px;color:#444;border-top:1px solid #c5d0f0;padding-top:8px;">
+      <strong>Declaration:</strong> By their electronic acceptance, OTP verification, and/or digital signature,
+      the Customer confirms that they have read, understood, and agree to be legally bound by the
+      TengaSale Customer Contract Summary and the TengaSale Master Terms and Conditions
+      Version {{ master_terms_version|default:"1.0" }}, including consent to electronic contracting,
+      device management technology, and personal data processing as described therein.
+      This certificate constitutes prima facie evidence of acceptance under the laws of Malawi.
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Generated by TengaSale as a legal contract acceptance certificate. Contract {{ contract_number }}. Governed by the laws of Malawi.
+  </div>
+</div>
+
+</body>
+</html>

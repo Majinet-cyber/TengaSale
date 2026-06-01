@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}TengaSale Master Terms and Conditions{% endblock %}
+
+{% block content %}
+
+<a href="{% url 'contract_detail' contract.id %}" class="soft-back">
+    <span class="soft-back-icon">&larr;</span>
+    <span>Back to Contract</span>
+</a>
+
+<h1 class="greeting">Master Terms and Conditions</h1>
+
+{% if master_terms %}
+<div class="card" style="padding:20px 24px;margin-bottom:16px;">
+    <div style="border-bottom:1px solid #eee;padding-bottom:12px;margin-bottom:16px;">
+        <div style="font-size:18px;font-weight:700;color:#ff5a00;">{{ master_terms.title }}</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;">
+            Version {{ master_terms.version }} &mdash; Effective {{ master_terms.effective_from }}
+        </div>
+        {% if master_terms.checksum %}
+        <div style="font-size:10px;color:#aaa;margin-top:4px;">
+            Document integrity: {{ master_terms.checksum|truncatechars:24 }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="font-size:13px;line-height:1.7;color:#222;">
+        {{ master_terms.body_html }}
+    </div>
+</div>
+{% else %}
+<div class="card" style="padding:20px;color:#888;text-align:center;">
+    Master Terms and Conditions document not found.
+    Please contact TengaSale support or run:
+    <code>python manage.py seed_legal_documents</code>
+</div>
+{% endif %}
+
+{% endblock %}

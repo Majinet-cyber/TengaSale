@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TengaSale Completed Contract Bundle {{ contract_number }}</title>
+<style>
+  @page { size: A4; margin: 2cm 1.5cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #1a1a1a; line-height: 1.5; margin: 0; padding: 0; }
+  .header { text-align: center; border-bottom: 2px solid #22aa44; padding-bottom: 10px; margin-bottom: 16px; }
+  .brand-name { font-size: 22px; font-weight: bold; color: #ff5a00; letter-spacing: 1px; }
+  .brand-tagline { font-size: 10px; color: #888; }
+  .contract-title { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; color: #222; }
+  .ref-line { font-size: 9px; color: #555; margin-top: 4px; }
+  .completed-badge {
+    display: inline-block; background: #22aa44; color: #fff;
+    font-size: 11px; font-weight: bold; padding: 4px 14px; border-radius: 3px;
+    text-transform: uppercase; margin: 6px 0;
+  }
+  h2 { font-size: 11px; font-weight: bold; text-transform: uppercase; background: #f5f5f5; border-left: 3px solid #22aa44; padding: 4px 8px; margin: 14px 0 6px 0; color: #333; }
+  h3 { font-size: 10px; font-weight: bold; color: #1e3a8a; margin: 10px 0 3px 0; border-bottom: 1px solid #c5d0f0; padding-bottom: 2px; }
+  table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  table.data-table td { padding: 4px 6px; border: 1px solid #ddd; font-size: 9.5px; vertical-align: top; }
+  table.data-table td.label { width: 40%; background: #fafafa; font-weight: bold; color: #444; }
+  .clause { margin-bottom: 8px; font-size: 9.5px; }
+  .clause-letter { font-weight: bold; color: #22aa44; }
+  .sig-block { margin-top: 18px; border-top: 1px solid #ddd; padding-top: 12px; }
+  .sig-row { display: table; width: 100%; }
+  .sig-col { display: table-cell; width: 48%; vertical-align: top; padding: 0 1%; }
+  .sig-line { border-bottom: 1px solid #333; min-height: 30px; margin-bottom: 4px; }
+  .sig-label { font-size: 9px; color: #555; }
+  .footer-note { margin-top: 20px; padding-top: 8px; border-top: 1px solid #eee; font-size: 8px; color: #888; text-align: center; }
+  .notice-box { background: #f0fff0; border: 1px solid #22aa44; padding: 6px 10px; border-radius: 3px; font-size: 9px; margin: 8px 0; }
+  .section-break { page-break-before: always; margin-top: 0; }
+  .section-header { text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 14px; background: #f0f4ff; padding: 10px; }
+  .section-label { font-size: 10px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; letter-spacing: 1px; }
+  .cert-box { border: 2px solid #1e3a8a; padding: 14px 18px; border-radius: 4px; margin: 12px 0; background: #f8faff; }
+  .cert-title { font-size: 13px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+  .cert-row { display: table; width: 100%; border-bottom: 1px solid #dde4f0; padding: 4px 0; }
+  .cert-label { display: table-cell; width: 45%; font-weight: bold; font-size: 9.5px; color: #444; }
+  .cert-value { display: table-cell; font-size: 9.5px; color: #222; }
+  .stamp-box { background: #f0fff0; border: 3px solid #22aa44; padding: 14px 18px; border-radius: 4px; margin: 12px 0; }
+  .stamp-title { font-size: 14px; font-weight: bold; color: #22aa44; text-transform: uppercase; text-align: center; margin-bottom: 10px; letter-spacing: 1px; }
+  .mt-terms-body h3 { font-size: 10px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #c5d0f0; }
+  .mt-terms-body p { margin: 2px 0 6px 0; font-size: 9.5px; }
+  .legal-doc h1, .legal-doc h2 { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ COMPLETION HEADER ═══════════════ -->
+<div class="header">
+  <div class="brand-name">TENGASALE</div>
+  <div class="brand-tagline">Endless Possibilities — Smartphone Financing</div>
+  <div class="completed-badge">CONTRACT COMPLETED</div>
+  <div class="contract-title">Digital Instalment Sale Agreement — Final Completed Bundle</div>
+  <div class="ref-line">
+    Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
+    Completed: <strong>{{ stamp_completed_at|date:"d M Y, H:i"|default:"____" }}</strong> &nbsp;|&nbsp;
+    Application: <strong>{{ application_id }}</strong>
+  </div>
+</div>
+
+<!-- ═══════════════ CONTRACT COMPLETION RECORD ═══════════════ -->
+<div class="stamp-box">
+  <div class="stamp-title">Contract Completion Record</div>
+
+  <div class="cert-row"><div class="cert-label">Contract Number</div><div class="cert-value">{{ stamp_contract_number }}</div></div>
+  <div class="cert-row"><div class="cert-label">Customer Name</div><div class="cert-value">{{ stamp_customer }}</div></div>
+  <div class="cert-row"><div class="cert-label">Customer Phone</div><div class="cert-value">{{ stamp_customer_phone }}</div></div>
+  <div class="cert-row"><div class="cert-label">National ID</div><div class="cert-value">{{ national_id_or_passport }}</div></div>
+  <div class="cert-row"><div class="cert-label">Merchant</div><div class="cert-value">{{ stamp_merchant }}</div></div>
+  <div class="cert-row"><div class="cert-label">Device</div><div class="cert-value">{{ stamp_device }}</div></div>
+  {% if stamp_imei %}<div class="cert-row"><div class="cert-label">IMEI</div><div class="cert-value">{{ stamp_imei }}</div></div>{% endif %}
+  <div class="cert-row"><div class="cert-label">Total Contract Price</div><div class="cert-value">MWK {{ stamp_total_contract_price }}</div></div>
+  <div class="cert-row"><div class="cert-label">Total Paid</div><div class="cert-value">MWK {{ stamp_total_paid }}</div></div>
+  <div class="cert-row"><div class="cert-label">Completion Confirmed At</div><div class="cert-value"><strong>{{ stamp_completed_at|date:"d M Y, H:i"|default:"Not set" }}</strong></div></div>
+  <div class="cert-row"><div class="cert-label">Ownership Transfer Status</div><div class="cert-value">{{ stamp_ownership_transfer }}</div></div>
+  <div class="cert-row"><div class="cert-label">Device Lock Release Status</div><div class="cert-value">{{ stamp_lock_release }}</div></div>
+  <div class="cert-row"><div class="cert-label">Master Terms Version Accepted</div><div class="cert-value">TengaSale Master Terms v{{ master_terms_version|default:"1.0" }}</div></div>
+  {% if master_terms_acceptance_id %}<div class="cert-row"><div class="cert-label">Master Terms Record ID</div><div class="cert-value">#{{ master_terms_acceptance_id }}</div></div>{% endif %}
+  <div class="cert-row"><div class="cert-label">Final PDF Generated At</div><div class="cert-value">{{ stamp_generated_at|date:"d M Y, H:i" }}</div></div>
+  {% if stamp_delivery_record_id %}<div class="cert-row"><div class="cert-label">WhatsApp Delivery Record ID</div><div class="cert-value">#{{ stamp_delivery_record_id }}</div></div>{% endif %}
+  {% if stamp_scheduled_for %}<div class="cert-row"><div class="cert-label">WhatsApp Delivery Scheduled For</div><div class="cert-value">{{ stamp_scheduled_for|date:"d M Y, H:i" }}</div></div>{% endif %}
+
+  <div style="margin-top:10px;font-size:8.5px;color:#155724;border-top:1px solid #a8d5b5;padding-top:8px;">
+    Generated by TengaSale as an electronic contract completion record.
+    This document confirms that all obligations under Contract {{ stamp_contract_number }} have been satisfied
+    and ownership of the device has passed to the Customer in accordance with the TengaSale Master Terms
+    and Conditions Version {{ master_terms_version|default:"1.0" }}.
+  </div>
+</div>
+
+<div class="notice-box">
+  <strong>Master Terms Reference:</strong> This completed contract bundle is governed by the
+  TengaSale Master Terms and Conditions Version {{ master_terms_version|default:"1.0" }}.
+  Customer acceptance confirmed: {% if master_terms_accepted_at %}{{ master_terms_accepted_at|date:"d M Y, H:i" }}{% else %}on record{% endif %}.
+</div>
+
+<!-- Parties -->
+<h2>Parties to the Agreement</h2>
+<table class="data-table">
+  <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} &mdash; Tel: {{ merchant_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
+  <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
+  <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>
+</table>
+
+<!-- Device and Financial Summary -->
+<h2>Device &amp; Financial Summary</h2>
+<table class="data-table">
+  <tr><td class="label">Device</td><td>{{ device_name }}</td></tr>
+  {% if imei_number %}<tr><td class="label">IMEI</td><td>{{ imei_number }}</td></tr>{% endif %}
+  <tr><td class="label">Total Contract Price</td><td>MWK {{ total_contract_price }}</td></tr>
+  <tr><td class="label">Contract Term</td><td>{{ contract_term_months }} months</td></tr>
+  <tr><td class="label">Completion Confirmed</td><td>{{ completed_at|date:"d M Y, H:i"|default:"Not set" }}</td></tr>
+</table>
+
+<!-- Signature Block -->
+<div class="sig-block">
+  <div class="sig-row">
+    <div class="sig-col">
+      {% if customer_sig_url %}
+        <img src="{{ customer_sig_url }}" alt="Customer Signature" style="max-height:50px;max-width:150px;">
+      {% else %}
+        <div class="sig-line"></div>
+      {% endif %}
+      <div class="sig-label">Customer Signature &mdash; {{ customer_full_name }}</div>
+      <div class="sig-label">Signed: {{ customer_signature_at|date:"d M Y, H:i"|default:"____________________" }}</div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-label">TengaSale Authorised Representative</div>
+      <div class="sig-label">Approved: {{ authorised_at|date:"d M Y, H:i"|default:"____________________" }}</div>
+      {% if approved_by_name %}<div class="sig-label">Underwriter: {{ approved_by_name }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">
+  Completed contract bundle generated: {{ stamp_generated_at|date:"d M Y, H:i" }} &mdash;
+  Contract {{ contract_number }} &mdash; TengaSale &mdash; Governed by the laws of Malawi.
+</div>
+
+<!-- ═══════════════ PART 2: MASTER TERMS ═══════════════ -->
+<div class="section-break">
+  <div class="section-header">
+    <div class="section-label">Part 2 of 3 &mdash; TengaSale Master Terms and Conditions</div>
+    <div style="font-size:9px;color:#555;margin-top:3px;">
+      Version {{ master_terms_version|default:"1.0" }} &mdash; Contract: {{ contract_number }} &mdash; Status: COMPLETED
+    </div>
+  </div>
+  <div class="mt-terms-body">
+    {% if master_terms_body %}
+      {{ master_terms_body }}
+    {% else %}
+      <p>Master Terms document not found. Please run: python manage.py seed_legal_documents</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════ PART 3: ACCEPTANCE CERTIFICATE ═══════════════ -->
+<div class="section-break">
+  <div class="section-header">
+    <div class="section-label">Part 3 of 3 &mdash; Legal Acceptance &amp; Completion Certificate</div>
+    <div style="font-size:9px;color:#555;margin-top:3px;">
+      Generated: {{ stamp_generated_at|date:"d M Y, H:i" }} &mdash; Contract: {{ contract_number }}
+    </div>
+  </div>
+
+  <div class="cert-box">
+    <div class="cert-title">Legal Acceptance &amp; Completion Certificate</div>
+
+    <div class="cert-row"><div class="cert-label">Customer Name</div><div class="cert-value">{{ customer_full_name }}</div></div>
+    <div class="cert-row"><div class="cert-label">National ID / Passport</div><div class="cert-value">{{ national_id_or_passport }}</div></div>
+    <div class="cert-row"><div class="cert-label">Phone Number</div><div class="cert-value">{{ phone_number }}</div></div>
+    <div class="cert-row"><div class="cert-label">Contract Number</div><div class="cert-value">{{ contract_number }}</div></div>
+    <div class="cert-row"><div class="cert-label">Application ID</div><div class="cert-value">{{ application_id }}</div></div>
+
+    <div class="cert-row" style="margin-top:8px;background:#eef2ff;">
+      <div class="cert-label"><strong>Master Terms Version Accepted</strong></div>
+      <div class="cert-value"><strong>TengaSale Master Terms and Conditions v{{ master_terms_version|default:"1.0" }}</strong></div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Master Terms Accepted At</div><div class="cert-value">{{ master_terms_accepted_at|date:"d M Y, H:i"|default:"Not recorded" }}</div></div>
+    <div class="cert-row"><div class="cert-label">Acceptance Method</div><div class="cert-value">{{ master_terms_acceptance_method|default:"Digital signature" }}</div></div>
+    <div class="cert-row"><div class="cert-label">Master Terms Record ID</div><div class="cert-value">{% if master_terms_acceptance_id %}#{{ master_terms_acceptance_id }}{% else %}Not recorded{% endif %}</div></div>
+    <div class="cert-row"><div class="cert-label">Contract Summary Record ID</div><div class="cert-value">{% if summary_acceptance_id %}#{{ summary_acceptance_id }}{% else %}Not recorded{% endif %}</div></div>
+
+    <div class="cert-row" style="margin-top:8px;background:#f0fff0;">
+      <div class="cert-label"><strong>Contract Completed At</strong></div>
+      <div class="cert-value"><strong>{{ stamp_completed_at|date:"d M Y, H:i"|default:"Not set" }}</strong></div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Ownership Transfer Status</div><div class="cert-value">{{ stamp_ownership_transfer }}</div></div>
+    <div class="cert-row"><div class="cert-label">WhatsApp Delivery Scheduled</div><div class="cert-value">{% if stamp_scheduled_for %}{{ stamp_scheduled_for|date:"d M Y, H:i" }}{% else %}Not scheduled{% endif %}</div></div>
+    {% if stamp_delivery_record_id %}<div class="cert-row"><div class="cert-label">Delivery Record ID</div><div class="cert-value">#{{ stamp_delivery_record_id }}</div></div>{% endif %}
+
+    <div class="cert-row" style="margin-top:8px;">
+      <div class="cert-label">Certificate Generated At</div><div class="cert-value">{{ stamp_generated_at|date:"d M Y, H:i" }}</div>
+    </div>
+    <div class="cert-row"><div class="cert-label">Generated By</div><div class="cert-value">{{ generated_by_name }}</div></div>
+
+    {% if customer_sig_url %}
+    <div style="margin-top:8px;text-align:center;">
+      <img src="{{ customer_sig_url }}" alt="Customer Signature" style="max-height:60px;max-width:180px;border:1px solid #cdd;">
+      <div style="font-size:8px;color:#888;">Customer signature on file</div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:12px;font-size:8.5px;color:#444;border-top:1px solid #a8d5b5;padding-top:8px;">
+      <strong>Declaration:</strong> This certificate confirms that the Customer has fully satisfied all obligations
+      under the TengaSale Digital Instalment Sale Agreement and the TengaSale Master Terms and Conditions
+      Version {{ master_terms_version|default:"1.0" }}.
+      Ownership of the device passes to the Customer as recorded above.
+      This certificate is prima facie evidence of contract completion under the laws of Malawi.
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Generated by TengaSale as an electronic contract completion record. Contract {{ contract_number }}. Governed by the laws of Malawi.
+  </div>
+</div>
+
+</body>
+</html>

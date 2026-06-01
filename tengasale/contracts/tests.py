@@ -14,8 +14,8 @@ from commissions.models import Commission
 from deals.models import DeviceBrand, DeviceDeal
 from rewards.models import SpinWallet
 
-from .forms import ImeiForm
-from .models import Contract, ContractDocumentDelivery
+from .forms import ImeiForm, MerchantTermsForm
+from .models import Contract, ContractDocumentDelivery, LegalAcceptance, LegalDocumentTemplate
 
 
 PNG_BYTES = (
@@ -69,12 +69,26 @@ class ContractFlowTests(TestCase):
     def test_approved_app_routes_to_contract_terms(self):
         self.assertEqual(self.app.get_continue_url(), reverse("contract_terms", args=[self.app.id]))
 
-    def test_contract_terms_requires_checkbox_and_creates_contract(self):
+    def test_contract_terms_requires_all_checkboxes(self):
+        # Empty post fails with 200 (validation errors)
         response = self.client.post(reverse("contract_terms", args=[self.app.id]), {})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Contract.objects.exists())
 
+        # Only one checkbox also fails
         response = self.client.post(reverse("contract_terms", args=[self.app.id]), {"confirmed_terms": "on"})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Contract.objects.exists())
+
+    def test_contract_terms_all_checkboxes_creates_contract(self):
+        response = self.client.post(reverse("contract_terms", args=[self.app.id]), {
+            "confirmed_terms": "on",
+            "accept_contract_summary": "on",
+            "accept_master_terms": "on",
+            "consent_device_management": "on",
+            "consent_communication": "on",
+            "confirm_information_true": "on",
+        })
         contract = Contract.objects.get(application=self.app)
         self.app.refresh_from_db()
 
@@ -577,3 +591,402 @@ class ContractModelTests(TestCase):
         self.assertIn("stamp_contract_number", stamp)
         self.assertIn("stamp_completed_at", stamp)
         self.assertIn("stamp_ownership_transfer", stamp)
+
+    def test_contract_has_bundle_pdf_fields(self):
+        self.assertIsNone(self.contract.contract_bundle_pdf.name)
+        self.assertIsNone(self.contract.completed_bundle_pdf.name)
+
+    def test_contract_has_active_at_field(self):
+        self.assertIsNone(self.contract.active_at)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Legal document tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+class LegalDocumentTemplateTests(TestCase):
+    def test_create_master_terms(self):
+        doc = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="TengaSale Master Terms",
+            effective_from="2026-06-01",
+            is_active=True,
+            body_html="<p>Test terms content</p>",
+        )
+        self.assertEqual(doc.version, "1.0")
+        self.assertEqual(doc.document_type, "master_terms")
+        self.assertTrue(len(doc.checksum) == 64)
+
+    def test_checksum_generated_on_save(self):
+        doc = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+            version="1.0",
+            title="Contract Summary",
+            effective_from="2026-06-01",
+            body_html="<p>Summary</p>",
+        )
+        self.assertNotEqual(doc.checksum, "")
+
+    def test_unique_together_constraint(self):
+        LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="T1",
+            effective_from="2026-06-01",
+            body_html="<p>v1</p>",
+        )
+        from django.db import IntegrityError
+        with self.assertRaises(Exception):
+            LegalDocumentTemplate.objects.create(
+                document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+                version="1.0",
+                title="T2",
+                effective_from="2026-06-01",
+                body_html="<p>duplicate</p>",
+            )
+
+    def test_get_active_returns_latest(self):
+        LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="Master Terms v1.0",
+            effective_from="2026-01-01",
+            is_active=True,
+            body_html="<p>v1</p>",
+        )
+        result = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_MASTER_TERMS)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.version, "1.0")
+
+    def test_get_active_returns_none_when_not_found(self):
+        result = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_DEVICE_LOCK_TERMS)
+        self.assertIsNone(result)
+
+    def test_str(self):
+        doc = LegalDocumentTemplate(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="Master Terms",
+        )
+        self.assertIn("1.0", str(doc))
+
+
+class SeedLegalDocumentsCommandTests(TestCase):
+    def test_seed_creates_master_terms(self):
+        from django.core.management import call_command
+        import io
+        out = io.StringIO()
+        call_command("seed_legal_documents", stdout=out)
+        self.assertTrue(
+            LegalDocumentTemplate.objects.filter(
+                document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+                version="1.0",
+            ).exists()
+        )
+
+    def test_seed_creates_contract_summary(self):
+        from django.core.management import call_command
+        import io
+        out = io.StringIO()
+        call_command("seed_legal_documents", stdout=out)
+        self.assertTrue(
+            LegalDocumentTemplate.objects.filter(
+                document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+                version="1.0",
+            ).exists()
+        )
+
+    def test_seed_is_idempotent(self):
+        from django.core.management import call_command
+        import io
+        call_command("seed_legal_documents", stdout=io.StringIO())
+        call_command("seed_legal_documents", stdout=io.StringIO())
+        count = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+        ).count()
+        self.assertEqual(count, 1)
+
+    def test_dry_run_creates_nothing(self):
+        from django.core.management import call_command
+        import io
+        call_command("seed_legal_documents", "--dry-run", stdout=io.StringIO())
+        self.assertEqual(LegalDocumentTemplate.objects.count(), 0)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LegalAcceptance tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+class LegalAcceptanceTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="merch_la", password="pass123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="Samsung")
+        self.deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Galaxy A05s",
+            min_cash_price=Decimal("250000"),
+            max_cash_price=Decimal("350000"),
+            default_cash_price=Decimal("300000"),
+            cash_price=Decimal("300000"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("750000"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="Peter Phiri",
+            customer_phone="0881234567",
+            national_id="MWI12345",
+            deal=self.deal,
+            selected_cash_price=Decimal("300000"),
+            calculated_total_loan=Decimal("750000"),
+            calculated_deposit_amount=Decimal("39000"),
+            calculated_monthly_payment=Decimal("59250"),
+            calculated_daily_payment=Decimal("1975"),
+        )
+        self.doc = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="TengaSale Master Terms",
+            effective_from="2026-06-01",
+            is_active=True,
+            body_html="<p>Terms content</p>",
+        )
+
+    def test_create_legal_acceptance(self):
+        acc = LegalAcceptance.objects.create(
+            application=self.app,
+            legal_document=self.doc,
+            accepted_name="Peter Phiri",
+            accepted_phone="0881234567",
+            accepted_national_id="MWI12345",
+            acceptance_method=LegalAcceptance.METHOD_MOBILE_ACCEPTANCE,
+            accepted_at=timezone.now(),
+        )
+        self.assertEqual(acc.legal_document, self.doc)
+        self.assertEqual(acc.accepted_name, "Peter Phiri")
+        self.assertIsNone(acc.contract)
+
+    def test_acceptance_str(self):
+        acc = LegalAcceptance(
+            accepted_name="Peter Phiri",
+            accepted_at=timezone.now(),
+            legal_document=self.doc,
+        )
+        self.assertIn("Peter Phiri", str(acc))
+
+    def test_acceptance_with_contract_link(self):
+        contract, _ = Contract.from_application(self.app)
+        acc = LegalAcceptance.objects.create(
+            application=self.app,
+            contract=contract,
+            legal_document=self.doc,
+            accepted_name="Peter Phiri",
+            accepted_phone="0881234567",
+            acceptance_method=LegalAcceptance.METHOD_DIGITAL_SIGNATURE,
+            accepted_at=timezone.now(),
+        )
+        self.assertEqual(acc.contract, contract)
+        self.assertEqual(acc.acceptance_method, "digital_signature")
+
+    def test_terms_form_requires_all_fields(self):
+        form = MerchantTermsForm(data={})
+        self.assertFalse(form.is_valid())
+        self.assertIn("confirmed_terms", form.errors)
+        self.assertIn("accept_master_terms", form.errors)
+        self.assertIn("accept_contract_summary", form.errors)
+        self.assertIn("consent_device_management", form.errors)
+
+    def test_terms_form_valid_when_all_checked(self):
+        form = MerchantTermsForm(data={
+            "confirmed_terms": True,
+            "accept_contract_summary": True,
+            "accept_master_terms": True,
+            "consent_device_management": True,
+            "consent_communication": True,
+            "confirm_information_true": True,
+        })
+        self.assertTrue(form.is_valid())
+
+
+class LegalAcceptanceContractTermsViewTests(TestCase):
+    """Test that contract_terms view creates LegalAcceptance records."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="merch_terms", password="pass123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="Itel")
+        self.deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="A70",
+            min_cash_price=Decimal("150000"),
+            max_cash_price=Decimal("200000"),
+            default_cash_price=Decimal("175000"),
+            cash_price=Decimal("175000"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("437500"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="Grace Tembo",
+            customer_phone="0991234567",
+            national_id="MWI99999",
+            deal=self.deal,
+            selected_cash_price=Decimal("175000"),
+            calculated_total_loan=Decimal("437500"),
+            calculated_deposit_amount=Decimal("22750"),
+            calculated_monthly_payment=Decimal("34583.33"),
+            calculated_daily_payment=Decimal("1152.78"),
+        )
+        # Seed legal documents
+        self.master_terms = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="TengaSale Master Terms",
+            effective_from="2026-06-01",
+            is_active=True,
+            body_html="<p>Master Terms</p>",
+        )
+        self.summary = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+            version="1.0",
+            title="Contract Summary",
+            effective_from="2026-06-01",
+            is_active=True,
+            body_html="<p>Contract Summary</p>",
+        )
+        self.client.force_login(self.merchant)
+
+    def test_terms_page_loads(self):
+        resp = self.client.get(reverse("contract_terms", args=[self.app.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Master Terms")
+
+    def test_terms_submission_creates_acceptance_records(self):
+        resp = self.client.post(reverse("contract_terms", args=[self.app.id]), {
+            "confirmed_terms": True,
+            "accept_contract_summary": True,
+            "accept_master_terms": True,
+            "consent_device_management": True,
+            "consent_communication": True,
+            "confirm_information_true": True,
+        })
+        # Should redirect to signature
+        self.assertEqual(resp.status_code, 302)
+        # LegalAcceptance records should be created
+        count = LegalAcceptance.objects.filter(application=self.app).count()
+        self.assertEqual(count, 2)
+
+    def test_terms_submission_creates_master_terms_acceptance(self):
+        self.client.post(reverse("contract_terms", args=[self.app.id]), {
+            "confirmed_terms": True,
+            "accept_contract_summary": True,
+            "accept_master_terms": True,
+            "consent_device_management": True,
+            "consent_communication": True,
+            "confirm_information_true": True,
+        })
+        acc = LegalAcceptance.objects.filter(
+            application=self.app,
+            legal_document=self.master_terms,
+        ).first()
+        self.assertIsNotNone(acc)
+        self.assertEqual(acc.accepted_name, "Grace Tembo")
+        self.assertEqual(acc.acceptance_method, LegalAcceptance.METHOD_MOBILE_ACCEPTANCE)
+
+    def test_terms_submission_without_master_terms_fails(self):
+        resp = self.client.post(reverse("contract_terms", args=[self.app.id]), {
+            "confirmed_terms": True,
+            "accept_contract_summary": True,
+            # missing accept_master_terms
+            "consent_device_management": True,
+            "consent_communication": True,
+            "confirm_information_true": True,
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(LegalAcceptance.objects.filter(application=self.app).count(), 0)
+
+
+class LegalContextInPdfServiceTests(TestCase):
+    """Test that _get_legal_context returns expected structure."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="merch_pdf_legal", password="pass123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="Infinix")
+        self.deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Hot 40i",
+            min_cash_price=Decimal("200000"),
+            max_cash_price=Decimal("300000"),
+            default_cash_price=Decimal("250000"),
+            cash_price=Decimal("250000"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("625000"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="Charles Mwale",
+            customer_phone="0881111222",
+            national_id="MWI12312",
+            deal=self.deal,
+            selected_cash_price=Decimal("250000"),
+            calculated_total_loan=Decimal("625000"),
+            calculated_deposit_amount=Decimal("32500"),
+            calculated_monthly_payment=Decimal("49375"),
+            calculated_daily_payment=Decimal("1645.83"),
+        )
+        self.contract, _ = Contract.from_application(self.app)
+        self.master_terms = LegalDocumentTemplate.objects.create(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version="1.0",
+            title="TengaSale Master Terms",
+            effective_from="2026-06-01",
+            is_active=True,
+            body_html="<p>Full Master Terms text</p>",
+        )
+
+    def test_legal_context_has_master_terms_fields(self):
+        from services.contracts.pdf_contracts import _get_legal_context
+        ctx = _get_legal_context(self.contract)
+        self.assertIn("master_terms_doc", ctx)
+        self.assertIn("master_terms_version", ctx)
+        self.assertIn("master_terms_body", ctx)
+        self.assertIn("master_terms_accepted_at", ctx)
+        self.assertIn("legal_acceptance_records", ctx)
+
+    def test_legal_context_finds_active_master_terms_doc(self):
+        from services.contracts.pdf_contracts import _get_legal_context
+        ctx = _get_legal_context(self.contract)
+        self.assertEqual(ctx["master_terms_version"], "1.0")
+        self.assertIn("Full Master Terms text", ctx["master_terms_body"])
+
+    def test_legal_context_includes_acceptance_records(self):
+        LegalAcceptance.objects.create(
+            application=self.app,
+            contract=self.contract,
+            legal_document=self.master_terms,
+            accepted_name="Charles Mwale",
+            accepted_phone="0881111222",
+            acceptance_method=LegalAcceptance.METHOD_DIGITAL_SIGNATURE,
+            accepted_at=timezone.now(),
+        )
+        from services.contracts.pdf_contracts import _get_legal_context
+        ctx = _get_legal_context(self.contract)
+        self.assertEqual(len(ctx["legal_acceptance_records"]), 1)
+        self.assertIsNotNone(ctx["master_terms_accepted_at"])
+        self.assertNotEqual(ctx["master_terms_acceptance_id"], "")

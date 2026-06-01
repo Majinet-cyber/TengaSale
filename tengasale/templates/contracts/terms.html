@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load ts_filters %}
 
-{% block page_title %}Contract Terms{% endblock %}
+{% block page_title %}Contract Terms &amp; Legal Acceptance{% endblock %}
 
 {% block content %}
 
@@ -10,54 +10,137 @@
     <span>Back</span>
 </a>
 
-<h1 class="greeting">Contract Terms</h1>
+<h1 class="greeting">Contract Terms &amp; Legal Acceptance</h1>
 
 <div class="card detail-card">
     <div class="detail-row"><span>Customer</span><strong>{{ application.customer_name }}</strong></div>
-    <div class="detail-row"><span>Device/deal</span><strong>{{ contract.deal_name|default:"Not selected" }}</strong></div>
+    <div class="detail-row"><span>Device / deal</span><strong>{{ contract.deal_name|default:"Not selected" }}</strong></div>
     <div class="detail-row"><span>Cash price</span><strong>{{ contract.cash_price|mwk }}</strong></div>
-    <div class="detail-row"><span>Total loan</span><strong>{{ contract.total_loan|mwk }}</strong></div>
+    <div class="detail-row"><span>Total contract price</span><strong>{{ contract.total_loan|mwk }}</strong></div>
     <div class="detail-row"><span>Deposit</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
-    <div class="detail-row"><span>Monthly payment</span><strong>{{ contract.monthly_payment|mwk }}</strong></div>
-    <div class="detail-row"><span>Daily payment</span><strong>{{ contract.daily_payment|mwk }}</strong></div>
-    <div class="detail-row"><span>3 month early option</span><strong>{{ application.calculated_3_month_total|mwk }}</strong></div>
-    <div class="detail-row"><span>6 month early option</span><strong>{{ application.calculated_6_month_total|mwk }}</strong></div>
+    <div class="detail-row"><span>Monthly instalment</span><strong>{{ contract.monthly_payment|mwk }}</strong></div>
+    <div class="detail-row"><span>Daily instalment</span><strong>{{ contract.daily_payment|mwk }}</strong></div>
+    <div class="detail-row"><span>3-month early option</span><strong>{{ application.calculated_3_month_total|mwk }}</strong></div>
+    <div class="detail-row"><span>6-month early option</span><strong>{{ application.calculated_6_month_total|mwk }}</strong></div>
+</div>
+
+<div class="card">
+    <h2>Key Legal Terms</h2>
+    <ol class="terms-list">
+        <li><strong>Ownership:</strong> The device remains the property of TengaSale until all payments are fully settled.</li>
+        <li><strong>Default:</strong> Failure to pay within <strong>14 consecutive days</strong> constitutes a default event.</li>
+        <li><strong>Repossession:</strong> After <strong>30 consecutive days</strong> of default, TengaSale may repossess the device.</li>
+        <li><strong>Device restrictions:</strong> TengaSale may restrict device access if payments are overdue, fraud is suspected, or a material breach occurs.</li>
+        <li><strong>Loss or theft:</strong> Losing, damaging, or selling the device does not cancel the payment obligation. Notify TengaSale within 72 hours of loss/theft.</li>
+        <li><strong>No replacement:</strong> TengaSale does not replace lost or stolen devices.</li>
+        <li><strong>Deposit required:</strong> Deposit must be paid before final activation.</li>
+        <li><strong>Electronic acceptance:</strong> Electronic signatures, OTP, and digital acceptance are legally binding under the laws of Malawi.</li>
+        <li><strong>Payment allocation:</strong> Payments are allocated first to recovery costs, then overdue amounts, then fees, then current instalments, then principal.</li>
+        <li><strong>Data processing:</strong> TengaSale processes personal data for contract administration, fraud prevention, and compliance.</li>
+    </ol>
+
+    {% if master_terms_doc %}
+    <div class="notice-box" style="background:#f0f4ff;border-left:4px solid #2563eb;padding:12px 16px;margin-top:16px;border-radius:4px;">
+        <strong>TengaSale Master Terms and Conditions v{{ master_terms_doc.version }}</strong> (effective {{ master_terms_doc.effective_from }}) govern all transactions.
+        Full Master Terms are attached to the contract bundle PDF generated after acceptance.
+    </div>
+    {% endif %}
 </div>
 
 <form method="post" class="card" id="terms-form">
     {% csrf_token %}
     {{ form.non_field_errors }}
-    <h2>Terms and conditions</h2>
-    <ol class="terms-list">
-        <li>Customer agrees to repay the financed phone according to the payment schedule.</li>
-        <li>Losing, damaging, or selling the phone does not cancel the credit obligation.</li>
-        <li>TengaSale does not replace lost phones.</li>
-        <li>TengaSale may assist with repairs or support where possible, but repairs may attract costs.</li>
-        <li>Late payment may lead to device locking and collection follow-up.</li>
-        <li>Deposit must be paid before final activation/completion.</li>
-        <li>Customer confirms the information provided is true.</li>
-        <li>Merchant confirms customer was informed of the costs and consequences.</li>
-    </ol>
+
+    <h2>Customer Consent &amp; Acceptance</h2>
+    <p style="color:#555;font-size:0.9rem;margin-bottom:16px;">
+        Read each statement to the customer and confirm their agreement before ticking.
+    </p>
+
+    <label class="check-row" for="id_accept_contract_summary">
+        {{ form.accept_contract_summary }}
+        <span>
+            Customer accepts the <strong>TengaSale Customer Contract Summary</strong>
+            {% if summary_doc %}(v{{ summary_doc.version }}){% endif %}
+            including all payment terms, default consequences, and ownership conditions described above.
+        </span>
+    </label>
+    {{ form.accept_contract_summary.errors }}
+
+    <label class="check-row" for="id_accept_master_terms">
+        {{ form.accept_master_terms }}
+        <span>
+            Customer accepts the <strong>TengaSale Master Terms and Conditions
+            {% if master_terms_doc %}v{{ master_terms_doc.version }}{% else %}v1.0{% endif %}</strong>,
+            which govern this transaction in full and are binding upon signature.
+        </span>
+    </label>
+    {{ form.accept_master_terms.errors }}
+
+    <label class="check-row" for="id_consent_device_management">
+        {{ form.consent_device_management }}
+        <span>
+            Customer consents to TengaSale installing and operating <strong>device management technology</strong>
+            on the device, including remote monitoring and access restriction where permitted by the Agreement.
+        </span>
+    </label>
+    {{ form.consent_device_management.errors }}
+
+    <label class="check-row" for="id_consent_communication">
+        {{ form.consent_communication }}
+        <span>
+            Customer consents to receive <strong>notices, statements, and contract documents</strong>
+            by WhatsApp, SMS, or email to their registered contact details.
+        </span>
+    </label>
+    {{ form.consent_communication.errors }}
+
+    <label class="check-row" for="id_confirm_information_true">
+        {{ form.confirm_information_true }}
+        <span>
+            Customer confirms all <strong>information and identification documents</strong>
+            provided are true, genuine, and complete.
+        </span>
+    </label>
+    {{ form.confirm_information_true.errors }}
 
     <label class="check-row" for="id_confirmed_terms">
         {{ form.confirmed_terms }}
-        <span>I confirm I have explained these terms to the customer.</span>
+        <span>
+            <strong>Merchant confirms</strong> the customer was fully informed of the costs, payment obligations,
+            default consequences, and device management terms.
+        </span>
     </label>
     {{ form.confirmed_terms.errors }}
 
-    <button type="submit" class="btn primary-button" id="terms-submit" disabled>Next</button>
+    <button type="submit" class="btn primary-button" id="terms-submit" disabled>Proceed to Customer Signature &rarr;</button>
 </form>
 
 <script>
-    (function () {
-        const checkbox = document.getElementById("id_confirmed_terms");
-        const button = document.getElementById("terms-submit");
-        function updateState() {
-            button.disabled = !checkbox.checked;
-        }
-        checkbox.addEventListener("change", updateState);
-        updateState();
-    })();
+(function () {
+    const checkboxIds = [
+        "id_confirmed_terms",
+        "id_accept_contract_summary",
+        "id_accept_master_terms",
+        "id_consent_device_management",
+        "id_consent_communication",
+        "id_confirm_information_true",
+    ];
+    const button = document.getElementById("terms-submit");
+
+    function updateState() {
+        const allChecked = checkboxIds.every(id => {
+            const el = document.getElementById(id);
+            return el && el.checked;
+        });
+        button.disabled = !allChecked;
+    }
+
+    checkboxIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("change", updateState);
+    });
+    updateState();
+})();
 </script>
 
 {% endblock %}

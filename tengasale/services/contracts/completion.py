@@ -54,11 +54,15 @@ def handle_contract_completion(contract, *, triggered_by=None) -> dict:
     if save_fields:
         contract.save(update_fields=save_fields + ["updated_at"])
 
-    # 2. Generate completed PDF
+    # 2. Generate completed PDFs (standalone + bundle)
     try:
-        from services.contracts.pdf_contracts import generate_completed_contract_pdf
+        from services.contracts.pdf_contracts import (
+            generate_completed_contract_pdf,
+            generate_completed_contract_bundle_pdf,
+        )
         pdf_bytes = generate_completed_contract_pdf(contract, generated_by=triggered_by)
-        if pdf_bytes:
+        bundle_bytes = generate_completed_contract_bundle_pdf(contract, generated_by=triggered_by)
+        if pdf_bytes or bundle_bytes:
             result["pdf_generated"] = True
         else:
             result["errors"].append("PDF generation returned no content")
@@ -115,18 +119,8 @@ def _schedule_whatsapp_delivery(contract, *, triggered_by=None):
 
     provider = getattr(settings, "WHATSAPP_PROVIDER", "mock")
 
-    # Build message text
     device_name = contract.deal_name or "your device"
     completed_str = completed_at.strftime("%d %b %Y, %H:%M")
-    message_text = (
-        f"Hello {contract.customer_name},\n\n"
-        f"Your TengaSale smartphone financing contract has been completed. "
-        f"Attached is your signed contract copy for your records.\n\n"
-        f"Contract: {contract.contract_number}\n"
-        f"Device: {device_name}\n"
-        f"Completed: {completed_str}\n\n"
-        f"Thank you for using TengaSale."
-    )
 
     delivery_status = ContractDocumentDelivery.STATUS_SCHEDULED
     error_message = ""
@@ -137,6 +131,22 @@ def _schedule_whatsapp_delivery(contract, *, triggered_by=None):
             "WhatsApp delivery skipped for contract %s — %s", contract.pk, error_message
         )
 
+    # Prefer the completed bundle PDF; fall back to standalone completed PDF
+    pdf_for_delivery = (
+        contract.completed_bundle_pdf
+        if getattr(contract, "completed_bundle_pdf", None)
+        else contract.completed_pdf
+    )
+    message_text = (
+        f"Hello {contract.customer_name},\n\n"
+        f"Your TengaSale smartphone financing contract has been completed. "
+        f"Attached is your signed contract and Master Terms copy for your records.\n\n"
+        f"Contract: {contract.contract_number}\n"
+        f"Device: {device_name}\n"
+        f"Completed: {completed_str}\n\n"
+        f"Thank you for using TengaSale."
+    )
+
     delivery = ContractDocumentDelivery.objects.create(
         contract=contract,
         application=getattr(contract, "application", None),
@@ -146,7 +156,7 @@ def _schedule_whatsapp_delivery(contract, *, triggered_by=None):
         delivery_status=delivery_status,
         scheduled_for=scheduled_for,
         completed_at_snapshot=completed_at,
-        pdf_file=contract.completed_pdf if contract.completed_pdf else None,
+        pdf_file=pdf_for_delivery if pdf_for_delivery else None,
         message_text=message_text,
         provider=provider,
         error_message=error_message,
@@ -181,12 +191,16 @@ def _log_completion_audit(contract, *, triggered_by=None):
 
 
 def regenerate_completed_pdf(contract, *, triggered_by=None) -> bool:
-    """Regenerate the completed PDF for an already-completed contract."""
+    """Regenerate all completed PDFs (standalone + bundle) for an already-completed contract."""
     try:
-        from services.contracts.pdf_contracts import generate_completed_contract_pdf
-        pdf_bytes = generate_completed_contract_pdf(contract, generated_by=triggered_by)
-        if pdf_bytes:
-            logger.info("Regenerated completed PDF for contract %s", contract.contract_number)
+        from services.contracts.pdf_contracts import (
+            generate_completed_contract_pdf,
+            generate_completed_contract_bundle_pdf,
+        )
+        ok1 = bool(generate_completed_contract_pdf(contract, generated_by=triggered_by))
+        ok2 = bool(generate_completed_contract_bundle_pdf(contract, generated_by=triggered_by))
+        if ok1 or ok2:
+            logger.info("Regenerated completed PDFs for contract %s", contract.contract_number)
             return True
         return False
     except Exception:

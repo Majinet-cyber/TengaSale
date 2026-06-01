@@ -154,6 +154,19 @@
   </div>
 </div>
 
+{% if master_terms_version %}
+<div class="notice-box">
+  <strong>Master Terms Reference:</strong> This Customer Contract Summary is governed by and forms part of the
+  <strong>TengaSale Master Terms and Conditions Version {{ master_terms_version }}</strong>.
+  By signing or electronically accepting this Contract Summary, the Customer confirms acceptance of the Master Terms.
+  {% if master_terms_accepted_at %}
+  Accepted: {{ master_terms_accepted_at|date:"d M Y, H:i" }}
+  &mdash; Method: {{ master_terms_acceptance_method }}
+  &mdash; Record ID: #{{ master_terms_acceptance_id }}
+  {% endif %}
+</div>
+{% endif %}
+
 <!-- ═══════════════════ PARTIES ═══════════════════ -->
 <h2>Parties to the Agreement</h2>
 <table class="data-table">

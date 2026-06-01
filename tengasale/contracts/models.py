@@ -1,3 +1,4 @@
+import hashlib
 import random
 from decimal import Decimal
 
@@ -77,6 +78,12 @@ class Contract(models.Model):
     # PDF documents
     initial_pdf = models.FileField(upload_to="contract_pdfs/initial/", blank=True, null=True)
     completed_pdf = models.FileField(upload_to="contract_pdfs/completed/", blank=True, null=True)
+    # Legal bundle PDFs (Contract Summary + Master Terms + Acceptance Certificate)
+    contract_bundle_pdf = models.FileField(upload_to="contract_pdfs/bundle/", blank=True, null=True)
+    completed_bundle_pdf = models.FileField(upload_to="contract_pdfs/bundle_completed/", blank=True, null=True)
+
+    # Activation
+    active_at = models.DateTimeField(null=True, blank=True)
 
     # Completion
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -235,3 +242,123 @@ class ContractDocumentDelivery(models.Model):
         if not self.scheduled_for:
             return False
         return timezone.now() >= self.scheduled_for
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Legal document versioning
+# ─────────────────────────────────────────────────────────────────────────────
+
+class LegalDocumentTemplate(models.Model):
+    TYPE_CONTRACT_SUMMARY = "customer_contract_summary"
+    TYPE_MASTER_TERMS = "master_terms"
+    TYPE_PRIVACY_NOTICE = "privacy_notice"
+    TYPE_DEVICE_LOCK_TERMS = "device_lock_terms"
+
+    DOCUMENT_TYPE_CHOICES = [
+        (TYPE_CONTRACT_SUMMARY, "Customer Contract Summary"),
+        (TYPE_MASTER_TERMS, "Master Terms and Conditions"),
+        (TYPE_PRIVACY_NOTICE, "Privacy Notice"),
+        (TYPE_DEVICE_LOCK_TERMS, "Device Lock Terms"),
+    ]
+
+    document_type = models.CharField(max_length=40, choices=DOCUMENT_TYPE_CHOICES)
+    version = models.CharField(max_length=20)
+    title = models.CharField(max_length=200)
+    effective_from = models.DateField()
+    effective_to = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    body_html = models.TextField(help_text="Full HTML content of this legal document version.")
+    source_file = models.FileField(upload_to="legal_docs/source/", blank=True, null=True)
+    checksum = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash of body_html for integrity verification.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("document_type", "version")]
+        ordering = ["-effective_from", "-version"]
+        verbose_name = "Legal Document Template"
+        verbose_name_plural = "Legal Document Templates"
+
+    def save(self, *args, **kwargs):
+        if self.body_html:
+            self.checksum = hashlib.sha256(self.body_html.encode("utf-8")).hexdigest()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} v{self.version}"
+
+    @classmethod
+    def get_active(cls, document_type: str) -> "LegalDocumentTemplate | None":
+        return cls.objects.filter(document_type=document_type, is_active=True).order_by("-effective_from").first()
+
+
+class LegalAcceptance(models.Model):
+    METHOD_OTP = "otp"
+    METHOD_DIGITAL_SIGNATURE = "digital_signature"
+    METHOD_MOBILE_ACCEPTANCE = "mobile_acceptance"
+    METHOD_BIOMETRIC = "biometric_confirmation"
+    METHOD_STAFF = "staff_confirmed"
+
+    ACCEPTANCE_METHOD_CHOICES = [
+        (METHOD_OTP, "OTP Verification"),
+        (METHOD_DIGITAL_SIGNATURE, "Digital/Touchscreen Signature"),
+        (METHOD_MOBILE_ACCEPTANCE, "Mobile Acceptance (Checkbox/Tap)"),
+        (METHOD_BIOMETRIC, "Biometric Confirmation"),
+        (METHOD_STAFF, "Staff Confirmed"),
+    ]
+
+    application = models.ForeignKey(
+        "applications.FinancingApplication",
+        on_delete=models.CASCADE,
+        related_name="legal_acceptances",
+    )
+    contract = models.ForeignKey(
+        "contracts.Contract",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="legal_acceptances",
+    )
+    legal_document = models.ForeignKey(
+        LegalDocumentTemplate,
+        on_delete=models.PROTECT,
+        related_name="acceptances",
+    )
+    accepted_by_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="legal_acceptances",
+    )
+    accepted_name = models.CharField(max_length=150, blank=True)
+    accepted_phone = models.CharField(max_length=20, blank=True)
+    accepted_national_id = models.CharField(max_length=20, blank=True)
+    acceptance_method = models.CharField(
+        max_length=30,
+        choices=ACCEPTANCE_METHOD_CHOICES,
+        default=METHOD_MOBILE_ACCEPTANCE,
+    )
+    accepted_at = models.DateTimeField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device_reference = models.CharField(max_length=200, blank=True)
+    otp_reference = models.CharField(max_length=50, blank=True)
+    signature_image = models.ImageField(upload_to="legal_signatures/", blank=True, null=True)
+    acceptance_text_snapshot = models.TextField(
+        blank=True,
+        help_text="Snapshot of document title/version at time of acceptance for audit purposes.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-accepted_at"]
+        verbose_name = "Legal Acceptance"
+        verbose_name_plural = "Legal Acceptances"
+        indexes = [
+            models.Index(fields=["application", "legal_document"]),
+            models.Index(fields=["contract", "legal_document"]),
+        ]
+
+    def __str__(self):
+        return f"Acceptance of {self.legal_document} by {self.accepted_name or self.accepted_by_user_id} at {self.accepted_at:%Y-%m-%d %H:%M}"

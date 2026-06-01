@@ -14,7 +14,7 @@ from applications.models import FinancingApplication
 from commissions.services import process_contract_completion
 
 from .forms import ContractSignatureForm, ImeiForm, MerchantTermsForm
-from .models import Contract, ContractDocumentDelivery
+from .models import Contract, ContractDocumentDelivery, LegalAcceptance, LegalDocumentTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,10 @@ def contract_terms(request, app_id):
         daily_payment=application.calculated_daily_payment or Decimal("0"),
     )
 
+    # Load active legal documents for display
+    master_terms_doc = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_MASTER_TERMS)
+    summary_doc = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY)
+
     if request.method == "POST":
         form = MerchantTermsForm(request.POST)
         if form.is_valid():
@@ -89,11 +93,49 @@ def contract_terms(request, app_id):
             contract.save(update_fields=["terms_accepted_by_merchant", "status", "updated_at"])
             application.status = "contract_signature"
             application.save(update_fields=["status"])
+
+            # Create LegalAcceptance records for both documents (merchant confirms on behalf)
+            now = timezone.now()
+            ip = (
+                request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                or request.META.get("REMOTE_ADDR", "")
+            )
+            ua = request.META.get("HTTP_USER_AGENT", "")
+            for doc in [master_terms_doc, summary_doc]:
+                if doc:
+                    LegalAcceptance.objects.update_or_create(
+                        application=application,
+                        contract=contract,
+                        legal_document=doc,
+                        defaults={
+                            "accepted_by_user": request.user,
+                            "accepted_name": contract.customer_name,
+                            "accepted_phone": contract.customer_phone,
+                            "accepted_national_id": contract.national_id or "",
+                            "acceptance_method": LegalAcceptance.METHOD_MOBILE_ACCEPTANCE,
+                            "accepted_at": now,
+                            "ip_address": ip or None,
+                            "user_agent": ua,
+                            "acceptance_text_snapshot": f"{doc.title} v{doc.version}",
+                        },
+                    )
+                    _audit(request.user, "legal_document_accepted", "LegalAcceptance", f"{application.pk}:{doc.pk}", {
+                        "document": str(doc),
+                        "customer": contract.customer_name,
+                        "method": LegalAcceptance.METHOD_MOBILE_ACCEPTANCE,
+                    })
+
             return redirect("contract_signature", contract_id=contract.id)
     else:
         form = MerchantTermsForm()
 
-    return render(request, "contracts/terms.html", {"application": application, "contract": display_contract, "form": form})
+    return render(request, "contracts/terms.html", {
+        "application": application,
+        "contract": display_contract,
+        "form": form,
+        "master_terms_doc": master_terms_doc,
+        "summary_doc": summary_doc,
+    })
 
 
 @merchant_required
@@ -110,21 +152,40 @@ def contract_signature(request, contract_id):
             contract.customer_contract_signature.save(form.signature_file.name, form.signature_file, save=False)
             contract.customer_terms_accepted = True
             contract.status = Contract.STATUS_SIGNED
-            # Capture terms acceptance metadata
-            contract.terms_accepted_at = timezone.now()
-            ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR", "")
+            now = timezone.now()
+            contract.terms_accepted_at = now
+            ip = (
+                request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+                or request.META.get("REMOTE_ADDR", "")
+            )
             contract.terms_accepted_ip = ip
             contract.save()
             application.status = "imei_entry"
             application.save(update_fields=["status"])
 
-            # Generate initial signed PDF
-            _generate_initial_pdf_async(contract, triggered_by=request.user)
+            # Update LegalAcceptance records to digital_signature method + attach signature image
+            ua = request.META.get("HTTP_USER_AGENT", "")
+            for acc in LegalAcceptance.objects.filter(application=application, contract=contract):
+                acc.acceptance_method = LegalAcceptance.METHOD_DIGITAL_SIGNATURE
+                acc.accepted_at = now
+                acc.ip_address = ip or None
+                acc.user_agent = ua
+                if form.signature_file:
+                    from django.core.files.base import ContentFile
+                    sig_copy = ContentFile(form.signature_file.read(), name=f"legal_sig_{acc.pk}_{acc.legal_document_id}.png")
+                    acc.signature_image.save(sig_copy.name, sig_copy, save=False)
+                acc.save()
 
-            # Audit log
-            _audit(request.user, "terms_accepted", "Contract", str(contract.pk), {
+            # Generate initial signed PDF + bundle PDF
+            _generate_initial_pdf_async(contract, triggered_by=request.user)
+            _generate_bundle_pdf_async(contract, triggered_by=request.user)
+
+            # Audit
+            _audit(request.user, "contract_terms_signed", "Contract", str(contract.pk), {
                 "contract_number": contract.contract_number,
                 "customer": contract.customer_name,
+                "master_terms_accepted": True,
+                "summary_accepted": True,
             })
 
             return redirect("contract_imei", contract_id=contract.id)
@@ -334,6 +395,18 @@ def contract_detail(request, contract_id):
         channel=ContractDocumentDelivery.CHANNEL_WHATSAPP,
     ).order_by("-created_at").first()
 
+    # Legal acceptance records
+    legal_acceptances = LegalAcceptance.objects.filter(
+        application=application,
+    ).select_related("legal_document").order_by("-accepted_at")
+
+    master_terms_acceptance = legal_acceptances.filter(
+        legal_document__document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+    ).first()
+    summary_acceptance = legal_acceptances.filter(
+        legal_document__document_type=LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY,
+    ).first()
+
     return render(request, "contracts/detail.html", {
         "contract": contract,
         "application": application,
@@ -342,6 +415,9 @@ def contract_detail(request, contract_id):
         "can_control_lock": False,
         "latest_delivery": latest_delivery,
         "is_hq": is_hq,
+        "legal_acceptances": legal_acceptances,
+        "master_terms_acceptance": master_terms_acceptance,
+        "summary_acceptance": summary_acceptance,
     })
 
 
@@ -371,6 +447,71 @@ def contract_pdf_initial(request, contract_id):
         filename=f"TengaSale_Contract_{contract.contract_number}.pdf",
         content_type="application/pdf",
     )
+
+
+@merchant_required
+def contract_pdf_bundle(request, contract_id):
+    """Serve or generate the initial contract bundle PDF."""
+    contract = get_object_or_404(Contract.objects.select_related("application"), id=contract_id)
+    is_hq = _user_is_hq(request.user)
+    if not is_hq and not can_access_contract_flow(request.user, contract.application):
+        raise PermissionDenied
+
+    if not contract.contract_bundle_pdf:
+        from services.contracts.pdf_contracts import generate_contract_bundle_pdf
+        generate_contract_bundle_pdf(contract, generated_by=request.user)
+        contract.refresh_from_db()
+
+    if not contract.contract_bundle_pdf:
+        raise Http404("Contract bundle PDF not available")
+
+    return FileResponse(
+        contract.contract_bundle_pdf.open("rb"),
+        as_attachment=False,
+        filename=f"TengaSale_Contract_{contract.contract_number}_Bundle.pdf",
+        content_type="application/pdf",
+    )
+
+
+@merchant_required
+def contract_pdf_completed_bundle(request, contract_id):
+    """Serve or generate the completed contract bundle PDF."""
+    contract = get_object_or_404(Contract.objects.select_related("application"), id=contract_id)
+    is_hq = _user_is_hq(request.user)
+    if not is_hq and not can_access_contract_flow(request.user, contract.application):
+        raise PermissionDenied
+
+    if not contract.completed_bundle_pdf:
+        if contract.status != Contract.STATUS_COMPLETE:
+            raise Http404("Contract not yet completed")
+        from services.contracts.pdf_contracts import generate_completed_contract_bundle_pdf
+        generate_completed_contract_bundle_pdf(contract, generated_by=request.user)
+        contract.refresh_from_db()
+
+    if not contract.completed_bundle_pdf:
+        raise Http404("Completed bundle PDF not available")
+
+    return FileResponse(
+        contract.completed_bundle_pdf.open("rb"),
+        as_attachment=False,
+        filename=f"TengaSale_Contract_{contract.contract_number}_Bundle_Completed.pdf",
+        content_type="application/pdf",
+    )
+
+
+@merchant_required
+def contract_master_terms_view(request, contract_id):
+    """Display the Master Terms and Conditions accepted for this contract."""
+    contract = get_object_or_404(Contract.objects.select_related("application"), id=contract_id)
+    is_hq = _user_is_hq(request.user)
+    if not is_hq and not can_access_contract_flow(request.user, contract.application):
+        raise PermissionDenied
+
+    master_terms = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_MASTER_TERMS)
+    return render(request, "contracts/master_terms_view.html", {
+        "contract": contract,
+        "master_terms": master_terms,
+    })
 
 
 @merchant_required
@@ -519,6 +660,15 @@ def _generate_initial_pdf_async(contract, *, triggered_by=None):
         generate_customer_contract_pdf(contract, purpose="initial", generated_by=triggered_by)
     except Exception:
         logger.exception("Initial PDF generation failed for contract %s", contract.pk)
+
+
+def _generate_bundle_pdf_async(contract, *, triggered_by=None):
+    """Generate initial contract bundle PDF (Summary + Master Terms + Acceptance Certificate) — never raises."""
+    try:
+        from services.contracts.pdf_contracts import generate_contract_bundle_pdf
+        generate_contract_bundle_pdf(contract, generated_by=triggered_by)
+    except Exception:
+        logger.exception("Bundle PDF generation failed for contract %s", contract.pk)
 
 
 def _audit(user, action: str, object_type: str, object_id: str, detail: dict):

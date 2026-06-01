@@ -40,6 +40,7 @@ def generate_customer_contract_pdf(contract, *, purpose: str = "initial", genera
         context["purpose"] = purpose
         context["generated_by_name"] = _user_display(generated_by)
         context["generated_at"] = timezone.now()
+        context.update(_get_legal_context(contract))
         html = render_contract_html(contract, context, template="contracts/pdf/contract_initial.html")
         pdf_bytes = _html_to_pdf(html)
         if pdf_bytes:
@@ -49,6 +50,83 @@ def generate_customer_contract_pdf(contract, *, purpose: str = "initial", genera
         return pdf_bytes
     except Exception:
         logger.exception("Failed to generate initial PDF for contract %s", getattr(contract, "contract_number", "?"))
+        return None
+
+
+def generate_master_terms_pdf(version: str = "1.0") -> Optional[bytes]:
+    """
+    Generate a standalone Master Terms and Conditions PDF for the given version.
+
+    Returns raw bytes or None on failure.
+    """
+    try:
+        from contracts.models import LegalDocumentTemplate
+        doc = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            version=version,
+        ).first()
+        if not doc:
+            logger.error("Master Terms v%s not found in database. Run seed_legal_documents first.", version)
+            return None
+        context = {
+            "doc": doc,
+            "generated_at": timezone.now(),
+            "version": version,
+        }
+        html = render_to_string("contracts/pdf/master_terms.html", context)
+        return _html_to_pdf(html)
+    except Exception:
+        logger.exception("Failed to generate Master Terms PDF v%s", version)
+        return None
+
+
+def generate_contract_bundle_pdf(contract, *, generated_by=None) -> Optional[bytes]:
+    """
+    Generate the initial contract bundle: Contract Summary + Master Terms + Acceptance Certificate.
+
+    Saves to contract.contract_bundle_pdf and returns raw bytes.
+    """
+    try:
+        context = get_contract_context(contract)
+        context["purpose"] = "initial_bundle"
+        context["generated_by_name"] = _user_display(generated_by)
+        context["generated_at"] = timezone.now()
+        # Inject Master Terms doc body and acceptance records
+        context.update(_get_legal_context(contract))
+        html = render_to_string("contracts/pdf/contract_bundle.html", context)
+        pdf_bytes = _html_to_pdf(html)
+        if pdf_bytes:
+            filename = f"contract_{contract.contract_number}_bundle.pdf"
+            contract.contract_bundle_pdf.save(filename, ContentFile(pdf_bytes), save=True)
+            logger.info("Contract bundle PDF generated for %s", contract.contract_number)
+        return pdf_bytes
+    except Exception:
+        logger.exception("Failed to generate bundle PDF for contract %s", getattr(contract, "contract_number", "?"))
+        return None
+
+
+def generate_completed_contract_bundle_pdf(contract, *, generated_by=None) -> Optional[bytes]:
+    """
+    Generate the completed bundle: completed Contract Summary + Master Terms + Acceptance Certificate + Completion Stamp.
+
+    Saves to contract.completed_bundle_pdf and returns raw bytes.
+    """
+    try:
+        context = get_contract_context(contract)
+        context["purpose"] = "completed_bundle"
+        context["generated_by_name"] = _user_display(generated_by)
+        context["generated_at"] = timezone.now()
+        context.update(_get_legal_context(contract))
+        context.update(_build_stamp_context(contract))
+        html = render_to_string("contracts/pdf/contract_bundle_completed.html", context)
+        pdf_bytes = _html_to_pdf(html)
+        if pdf_bytes:
+            filename = f"contract_{contract.contract_number}_bundle_completed.pdf"
+            contract.completed_bundle_pdf.save(filename, ContentFile(pdf_bytes), save=True)
+            logger.info("Completed bundle PDF generated for %s", contract.contract_number)
+        return pdf_bytes
+    except Exception:
+        logger.exception("Failed to generate completed bundle PDF for contract %s", getattr(contract, "contract_number", "?"))
         return None
 
 
@@ -64,6 +142,7 @@ def generate_completed_contract_pdf(contract, *, generated_by=None) -> Optional[
         context["purpose"] = "completed"
         context["generated_by_name"] = _user_display(generated_by)
         context["generated_at"] = timezone.now()
+        context.update(_get_legal_context(contract))
         stamp = _build_stamp_context(contract)
         context.update(stamp)
         html = render_contract_html(contract, context, template="contracts/pdf/contract_completed.html")
@@ -241,6 +320,60 @@ def get_contract_context(contract) -> dict[str, Any]:
         # Completion
         "completed_at": contract.completed_at,
         "ownership_transfer_at": contract.ownership_transfer_at,
+    }
+
+
+def _get_legal_context(contract) -> dict[str, Any]:
+    """
+    Fetch LegalDocumentTemplate and LegalAcceptance records for the contract.
+    Used in bundle PDF templates.
+    """
+    master_terms_doc = None
+    master_terms_body = ""
+    acceptance_records = []
+    master_terms_version = "1.0"
+    master_terms_accepted_at = None
+    master_terms_acceptance_method = ""
+    master_terms_acceptance_id = ""
+    summary_accepted_at = None
+    summary_acceptance_id = ""
+
+    try:
+        from contracts.models import LegalDocumentTemplate, LegalAcceptance
+        # Master Terms doc
+        master_terms_doc = LegalDocumentTemplate.objects.filter(
+            document_type=LegalDocumentTemplate.TYPE_MASTER_TERMS,
+            is_active=True,
+        ).order_by("-effective_from").first()
+        if master_terms_doc:
+            master_terms_version = master_terms_doc.version
+            master_terms_body = master_terms_doc.body_html or ""
+
+        app = getattr(contract, "application", None)
+        if app:
+            acceptances = LegalAcceptance.objects.filter(application=app).select_related("legal_document").order_by("-accepted_at")
+            for acc in acceptances:
+                acceptance_records.append(acc)
+                if acc.legal_document.document_type == LegalDocumentTemplate.TYPE_MASTER_TERMS:
+                    master_terms_accepted_at = acc.accepted_at
+                    master_terms_acceptance_method = acc.get_acceptance_method_display()
+                    master_terms_acceptance_id = str(acc.pk)
+                elif acc.legal_document.document_type == LegalDocumentTemplate.TYPE_CONTRACT_SUMMARY:
+                    summary_accepted_at = acc.accepted_at
+                    summary_acceptance_id = str(acc.pk)
+    except Exception:
+        logger.exception("Error loading legal context for contract %s", getattr(contract, "contract_number", "?"))
+
+    return {
+        "master_terms_doc": master_terms_doc,
+        "master_terms_body": master_terms_body,
+        "master_terms_version": master_terms_version,
+        "master_terms_accepted_at": master_terms_accepted_at,
+        "master_terms_acceptance_method": master_terms_acceptance_method,
+        "master_terms_acceptance_id": master_terms_acceptance_id,
+        "summary_accepted_at": summary_accepted_at,
+        "summary_acceptance_id": summary_acceptance_id,
+        "legal_acceptance_records": acceptance_records,
     }
 
 

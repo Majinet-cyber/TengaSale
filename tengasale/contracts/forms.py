@@ -13,6 +13,26 @@ class MerchantTermsForm(forms.Form):
         required=True,
         error_messages={"required": "Confirm that the terms were explained to the customer."},
     )
+    accept_contract_summary = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Customer must accept the Customer Contract Summary."},
+    )
+    accept_master_terms = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Customer must accept the TengaSale Master Terms and Conditions v1.0."},
+    )
+    consent_device_management = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Customer must consent to device management and access restriction."},
+    )
+    consent_communication = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Customer must consent to receive notices by WhatsApp/SMS/email."},
+    )
+    confirm_information_true = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Customer must confirm the information provided is true."},
+    )
 
 
 class ContractSignatureForm(forms.ModelForm):

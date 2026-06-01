@@ -59,13 +59,31 @@
             </div>
         </div>
 
-        <!-- Completed PDF -->
+        <!-- Initial Bundle PDF -->
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
             <div style="flex:1;">
-                <div style="font-weight:600;font-size:13px;">Completed Contract PDF</div>
-                <div style="font-size:12px;color:#888;">Generated when contract is fully paid</div>
+                <div style="font-weight:600;font-size:13px;">Signed Contract Bundle</div>
+                <div style="font-size:12px;color:#888;">Contract Summary + Master Terms + Acceptance Certificate</div>
+            </div>
+            <div>
+                {% if contract.contract_bundle_pdf %}
+                    <a href="{% url 'contract_pdf_bundle' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View Bundle PDF</a>
+                {% else %}
+                    <span style="font-size:12px;color:#aaa;">Not generated</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Completed Bundle PDF -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:13px;">Completed Contract Bundle</div>
+                <div style="font-size:12px;color:#888;">Final stamped bundle generated on full payment</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
+                {% if contract.completed_bundle_pdf %}
+                    <a href="{% url 'contract_pdf_completed_bundle' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View Bundle</a>
+                {% endif %}
                 {% if contract.completed_pdf %}
                     <a href="{% url 'contract_pdf_completed' contract.id %}" target="_blank" class="btn btn-sm btn-outline" style="font-size:12px;">View PDF</a>
                     {% if is_hq %}
@@ -166,5 +184,53 @@
 {% endif %}
 
 {% include "device_lock/lock_card_partial.html" with lock_profile=lock_profile lock_readiness=lock_readiness can_control_lock=can_control_lock %}
+
+<!-- LEGAL ACCEPTANCE RECORDS -->
+{% if master_terms_acceptance or summary_acceptance %}
+<h2 class="section-heading" style="margin-top:24px;">Legal Acceptance Records</h2>
+<div class="card detail-card">
+    {% if master_terms_acceptance %}
+    <div class="detail-row">
+        <span>Master Terms version</span>
+        <strong>{{ master_terms_acceptance.legal_document.title }} v{{ master_terms_acceptance.legal_document.version }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Master Terms accepted</span>
+        <strong>{{ master_terms_acceptance.accepted_at|date:"d M Y, H:i" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Acceptance method</span>
+        <strong>{{ master_terms_acceptance.get_acceptance_method_display }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Acceptance record ID</span>
+        <strong>#{{ master_terms_acceptance.pk }}</strong>
+    </div>
+    {% if master_terms_acceptance.ip_address %}
+    <div class="detail-row">
+        <span>IP address</span>
+        <strong>{{ master_terms_acceptance.ip_address }}</strong>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if summary_acceptance %}
+    <div class="detail-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;">
+        <span>Contract Summary accepted</span>
+        <strong>{{ summary_acceptance.accepted_at|date:"d M Y, H:i" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Summary record ID</span>
+        <strong>#{{ summary_acceptance.pk }}</strong>
+    </div>
+    {% endif %}
+
+    {% if legal_acceptances %}
+    <div style="padding:8px 0;font-size:12px;color:#888;">
+        {{ legal_acceptances|length }} acceptance record{{ legal_acceptances|length|pluralize }} on file.
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
 {% endblock %}
