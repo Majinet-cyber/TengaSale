@@ -12,133 +12,236 @@
 {% include "applications/partials/stepper.html" with current_step=5 %}
 <h1 class="greeting">KYC Capture</h1>
 
-<div class="card instruction-card">
-    <p>Capture customer face, ID front, and ID back. Preview all images before continuing.</p>
+<div class="card kyc-intro-card">
+    <div class="kyc-intro-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <div>
+        <strong>Three photos required</strong>
+        <p class="text-muted" style="margin:2px 0 0;font-size:0.85rem;">Customer face · ID front · ID back. Preview each before continuing.</p>
+    </div>
+</div>
+
+{# ── Preview confirmation modal (shown after each capture) ── #}
+<div class="kyc-confirm-overlay" id="kyc-confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="kyc-confirm-title">
+    <div class="kyc-confirm-card">
+        <h3 id="kyc-confirm-title" class="kyc-confirm-title" data-confirm-title>Is the image clear?</h3>
+        <p class="kyc-confirm-hint" data-confirm-hint>Make sure there is no blur or glare.</p>
+        <img src="" alt="Preview" class="kyc-confirm-preview" data-confirm-img>
+        <div class="kyc-confirm-actions">
+            <button type="button" class="btn" id="kyc-confirm-yes" data-confirm-yes>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Yes, looks good
+            </button>
+            <button type="button" class="btn btn-outline kyc-retake-btn" id="kyc-confirm-no" data-confirm-no>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+                Retake
+            </button>
+        </div>
+    </div>
 </div>
 
 <form method="post" enctype="multipart/form-data" class="kyc-form" data-kyc-form>
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    <section class="kyc-section{% if 'customer_face_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.customer_face_image %}true{% else %}false{% endif %}" data-default-facing="user">
+    {# ── Selfie section ── #}
+    <section class="kyc-section{% if 'customer_face_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.customer_face_image %}true{% else %}false{% endif %}" data-default-facing="user" data-confirm-title="Is the customer's face clear?" data-confirm-hint="Make sure the face fills the frame, eyes are open, and there is no blur.">
         <div class="kyc-section-header">
-            <div>
-                <h2>Customer Face</h2>
-                <p>Use the front camera for a clear live selfie.</p>
+            <div class="kyc-section-info">
+                <div class="kyc-section-icon kyc-icon-face">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/></svg>
+                </div>
+                <div>
+                    <h2>Customer Face</h2>
+                    <p class="text-muted">Front camera · Live selfie</p>
+                </div>
             </div>
             <span class="capture-status{% if app.customer_face_image %} captured{% endif %}" data-status>
                 {% if app.customer_face_image %}Captured{% else %}Required{% endif %}
             </span>
         </div>
 
+        <div class="kyc-instruction-tips">
+            <div class="kyc-tip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                Good lighting
+            </div>
+            <div class="kyc-tip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+                Face fills the oval frame
+            </div>
+            <div class="kyc-tip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Eyes open, no sunglasses
+            </div>
+        </div>
+
         {{ form.customer_face_image }}
         {{ form.customer_face_image.errors }}
 
-        <button type="button" class="capture-button" data-capture-button>Capture Face</button>
+        <button type="button" class="capture-button" data-capture-button>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Capture Selfie
+        </button>
         <div class="camera-panel" data-camera-panel hidden>
-            <video playsinline autoplay muted data-camera-video></video>
+            <div class="camera-frame-wrapper">
+                <video playsinline autoplay muted data-camera-video></video>
+                <div class="camera-frame camera-frame--oval" aria-hidden="true"></div>
+                <p class="camera-guide-text">Fit customer's face inside the oval</p>
+            </div>
             <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
                 Switch camera
             </button>
             <p class="camera-msg" data-camera-msg></p>
-            <button type="button" class="btn" data-save-capture>Save</button>
+            <button type="button" class="btn" data-save-capture>Take Selfie</button>
         </div>
 
         <div class="kyc-preview{% if app.customer_face_image %} is-visible{% endif %}" data-preview-card>
             {% if app.customer_face_image %}
-                <img src="{{ app.customer_face_image.url }}" alt="Customer Face preview" data-preview-image>
+                <img src="{{ app.customer_face_image.url }}" alt="Customer Face preview" data-preview-image class="kyc-preview-img">
             {% else %}
-                <img src="" alt="Customer Face preview" data-preview-image>
+                <img src="" alt="Customer Face preview" data-preview-image class="kyc-preview-img">
             {% endif %}
             <div class="kyc-preview-meta">
                 <strong>Customer Face</strong>
-                <span class="capture-status captured">Captured</span>
+                <span class="capture-status captured">✓ Captured</span>
             </div>
-            <button type="button" class="recapture-button" data-recapture-button>Recapture</button>
+            <button type="button" class="recapture-button" data-recapture-button>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+                Retake
+            </button>
         </div>
     </section>
 
-    <section class="kyc-section{% if 'id_front_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_front_image %}true{% else %}false{% endif %}" data-default-facing="environment">
+    {# ── ID Front section ── #}
+    <section class="kyc-section{% if 'id_front_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_front_image %}true{% else %}false{% endif %}" data-default-facing="environment" data-confirm-title="Is the ID front clear and readable?" data-confirm-hint="All corners visible, no glare, text clearly readable.">
         <div class="kyc-section-header">
-            <div>
-                <h2>ID Front</h2>
-                <p>Use the rear camera and fill the frame with the ID.</p>
+            <div class="kyc-section-info">
+                <div class="kyc-section-icon kyc-icon-id">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div>
+                    <h2>ID Front</h2>
+                    <p class="text-muted">Rear camera · Rear of National ID card</p>
+                </div>
             </div>
             <span class="capture-status{% if app.id_front_image %} captured{% endif %}" data-status>
                 {% if app.id_front_image %}Captured{% else %}Required{% endif %}
             </span>
         </div>
 
+        <div class="kyc-instruction-tips">
+            <div class="kyc-tip">Good lighting, no glare</div>
+            <div class="kyc-tip">All 4 corners visible</div>
+            <div class="kyc-tip">Text clearly readable</div>
+        </div>
+
         {{ form.id_front_image }}
         {{ form.id_front_image.errors }}
 
-        <button type="button" class="capture-button" data-capture-button>Capture ID Front</button>
+        <button type="button" class="capture-button" data-capture-button>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Take ID Front Photo
+        </button>
         <div class="camera-panel" data-camera-panel hidden>
-            <video playsinline autoplay muted data-camera-video></video>
+            <div class="camera-frame-wrapper">
+                <video playsinline autoplay muted data-camera-video></video>
+                <div class="camera-frame camera-frame--rect" aria-hidden="true"></div>
+                <p class="camera-guide-text">Fit the ID card inside the rectangle</p>
+            </div>
             <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
                 Switch camera
             </button>
             <p class="camera-msg" data-camera-msg></p>
-            <button type="button" class="btn" data-save-capture>Save</button>
+            <button type="button" class="btn" data-save-capture>Take Photo</button>
         </div>
 
         <div class="kyc-preview{% if app.id_front_image %} is-visible{% endif %}" data-preview-card>
             {% if app.id_front_image %}
-                <img src="{{ app.id_front_image.url }}" alt="ID Front preview" data-preview-image>
+                <img src="{{ app.id_front_image.url }}" alt="ID Front preview" data-preview-image class="kyc-preview-img">
             {% else %}
-                <img src="" alt="ID Front preview" data-preview-image>
+                <img src="" alt="ID Front preview" data-preview-image class="kyc-preview-img">
             {% endif %}
             <div class="kyc-preview-meta">
                 <strong>ID Front</strong>
-                <span class="capture-status captured">Captured</span>
+                <span class="capture-status captured">✓ Captured</span>
             </div>
-            <button type="button" class="recapture-button" data-recapture-button>Recapture</button>
+            <button type="button" class="recapture-button" data-recapture-button>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+                Retake
+            </button>
         </div>
     </section>
 
-    <section class="kyc-section{% if 'id_back_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_back_image %}true{% else %}false{% endif %}" data-default-facing="environment">
+    {# ── ID Back section ── #}
+    <section class="kyc-section{% if 'id_back_image' in app.correction_fields %} has-correction{% endif %}" data-kyc-section data-existing="{% if app.id_back_image %}true{% else %}false{% endif %}" data-default-facing="environment" data-confirm-title="Is the ID back clear and readable?" data-confirm-hint="All text readable, no glare, all corners visible.">
         <div class="kyc-section-header">
-            <div>
-                <h2>ID Back</h2>
-                <p>Use the rear camera and make all text readable.</p>
+            <div class="kyc-section-info">
+                <div class="kyc-section-icon kyc-icon-id">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div>
+                    <h2>ID Back</h2>
+                    <p class="text-muted">Rear camera · Back of National ID card</p>
+                </div>
             </div>
             <span class="capture-status{% if app.id_back_image %} captured{% endif %}" data-status>
                 {% if app.id_back_image %}Captured{% else %}Required{% endif %}
             </span>
         </div>
 
+        <div class="kyc-instruction-tips">
+            <div class="kyc-tip">Good lighting, no glare</div>
+            <div class="kyc-tip">All 4 corners visible</div>
+            <div class="kyc-tip">All text clearly readable</div>
+        </div>
+
         {{ form.id_back_image }}
         {{ form.id_back_image.errors }}
 
-        <button type="button" class="capture-button" data-capture-button>Capture ID Back</button>
+        <button type="button" class="capture-button" data-capture-button>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Take ID Back Photo
+        </button>
         <div class="camera-panel" data-camera-panel hidden>
-            <video playsinline autoplay muted data-camera-video></video>
+            <div class="camera-frame-wrapper">
+                <video playsinline autoplay muted data-camera-video></video>
+                <div class="camera-frame camera-frame--rect" aria-hidden="true"></div>
+                <p class="camera-guide-text">Fit the ID card inside the rectangle</p>
+            </div>
             <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
                 Switch camera
             </button>
             <p class="camera-msg" data-camera-msg></p>
-            <button type="button" class="btn" data-save-capture>Save</button>
+            <button type="button" class="btn" data-save-capture>Take Photo</button>
         </div>
 
         <div class="kyc-preview{% if app.id_back_image %} is-visible{% endif %}" data-preview-card>
             {% if app.id_back_image %}
-                <img src="{{ app.id_back_image.url }}" alt="ID Back preview" data-preview-image>
+                <img src="{{ app.id_back_image.url }}" alt="ID Back preview" data-preview-image class="kyc-preview-img">
             {% else %}
-                <img src="" alt="ID Back preview" data-preview-image>
+                <img src="" alt="ID Back preview" data-preview-image class="kyc-preview-img">
             {% endif %}
             <div class="kyc-preview-meta">
                 <strong>ID Back</strong>
-                <span class="capture-status captured">Captured</span>
+                <span class="capture-status captured">✓ Captured</span>
             </div>
-            <button type="button" class="recapture-button" data-recapture-button>Recapture</button>
+            <button type="button" class="recapture-button" data-recapture-button>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+                Retake
+            </button>
         </div>
     </section>
 
-    <p class="next-disabled-note" data-disabled-note {% if kyc_complete %}hidden{% endif %}>Capture customer face, ID front, and ID back to continue.</p>
-    <button type="submit" class="btn kyc-next-button" data-next-button {% if not kyc_complete %}disabled{% endif %}>Next</button>
+    <p class="next-disabled-note" data-disabled-note {% if kyc_complete %}hidden{% endif %}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Capture all three photos to continue.
+    </p>
+    <button type="submit" class="btn kyc-next-button new-application-button" data-next-button {% if not kyc_complete %}disabled{% endif %}>Next →</button>
 </form>
 
 <script>
@@ -155,6 +258,49 @@
         var sections = Array.from(form.querySelectorAll("[data-kyc-section]"));
         var nextButton = form.querySelector("[data-next-button]");
         var disabledNote = form.querySelector("[data-disabled-note]");
+        var confirmModal = document.getElementById("kyc-confirm-modal");
+        var confirmImg = confirmModal ? confirmModal.querySelector("[data-confirm-img]") : null;
+        var confirmTitle = confirmModal ? confirmModal.querySelector("[data-confirm-title]") : null;
+        var confirmHint = confirmModal ? confirmModal.querySelector("[data-confirm-hint]") : null;
+        var confirmYes = confirmModal ? document.getElementById("kyc-confirm-yes") : null;
+        var confirmNo = confirmModal ? document.getElementById("kyc-confirm-no") : null;
+
+        var pendingConfirmCallback = null;
+        var pendingRetakeCallback = null;
+
+        function showConfirm(objectUrl, title, hint, onYes, onNo) {
+            if (!confirmModal) { onYes(); return; }
+            if (confirmImg) { confirmImg.src = objectUrl; }
+            if (confirmTitle) { confirmTitle.textContent = title || "Is the image clear?"; }
+            if (confirmHint) { confirmHint.textContent = hint || "Make sure there is no blur or glare."; }
+            pendingConfirmCallback = onYes;
+            pendingRetakeCallback = onNo;
+            confirmModal.hidden = false;
+            document.body.style.overflow = "hidden";
+        }
+
+        function hideConfirm() {
+            if (!confirmModal) { return; }
+            confirmModal.hidden = true;
+            document.body.style.overflow = "";
+            pendingConfirmCallback = null;
+            pendingRetakeCallback = null;
+        }
+
+        if (confirmYes) {
+            confirmYes.addEventListener("click", function () {
+                var cb = pendingConfirmCallback;
+                hideConfirm();
+                if (cb) { cb(); }
+            });
+        }
+        if (confirmNo) {
+            confirmNo.addEventListener("click", function () {
+                var cb = pendingRetakeCallback;
+                hideConfirm();
+                if (cb) { cb(); }
+            });
+        }
 
         function sectionIsCaptured(section) {
             var input = section.querySelector("[data-capture-input]");
@@ -180,9 +326,12 @@
             var previewImage = section.querySelector("[data-preview-image]");
             var status = section.querySelector("[data-status]");
 
+            var confirmTitleText = section.dataset.confirmTitle || "Is the image clear?";
+            var confirmHintText = section.dataset.confirmHint || "Make sure there is no blur or glare.";
             var defaultFacing = section.dataset.defaultFacing || "environment";
             var currentFacing = defaultFacing;
             var stream = null;
+            var pendingBlob = null;
 
             function stopStream() {
                 if (stream) {
@@ -200,6 +349,20 @@
                 cameraPanel.hidden = true;
                 setMsg("");
                 input.click();
+            }
+
+            function applyCapture(blob) {
+                var file = new File([blob], (input.dataset.captureInput || "capture") + ".png", { type: "image/png" });
+                var transfer = new DataTransfer();
+                transfer.items.add(file);
+                input.files = transfer.files;
+                var objectUrl = URL.createObjectURL(file);
+                previewImage.src = objectUrl;
+                previewCard.classList.add("is-visible");
+                status.textContent = "✓ Captured";
+                status.classList.add("captured");
+                section.dataset.existing = "true";
+                refreshNextState();
             }
 
             function openCamera(facing) {
@@ -257,8 +420,13 @@
             });
 
             recaptureButton.addEventListener("click", function () {
+                section.dataset.existing = "false";
+                previewCard.classList.remove("is-visible");
+                status.textContent = "Required";
+                status.classList.remove("captured");
                 currentFacing = defaultFacing;
                 openCamera(currentFacing);
+                refreshNextState();
             });
 
             saveCaptureButton.addEventListener("click", function () {
@@ -273,26 +441,47 @@
                 canvas.getContext("2d").drawImage(cameraVideo, 0, 0);
                 canvas.toBlob(function (blob) {
                     if (!blob) { useFileFallback(); return; }
-                    var file = new File([blob], (input.dataset.captureInput || "capture") + ".png", { type: "image/png" });
-                    var transfer = new DataTransfer();
-                    transfer.items.add(file);
-                    input.files = transfer.files;
-                    input.dispatchEvent(new Event("change", { bubbles: true }));
                     stopStream();
                     cameraPanel.hidden = true;
                     setMsg("");
+                    var objectUrl = URL.createObjectURL(blob);
+                    showConfirm(
+                        objectUrl,
+                        confirmTitleText,
+                        confirmHintText,
+                        function () {
+                            applyCapture(blob);
+                        },
+                        function () {
+                            openCamera(currentFacing);
+                        }
+                    );
                 }, "image/png");
             });
 
             input.addEventListener("change", function () {
                 var file = input.files && input.files[0];
                 if (!file) { refreshNextState(); return; }
-                previewImage.src = URL.createObjectURL(file);
-                previewCard.classList.add("is-visible");
-                status.textContent = "Captured";
-                status.classList.add("captured");
-                section.dataset.existing = "true";
-                refreshNextState();
+                var objectUrl = URL.createObjectURL(file);
+                var name = input.name || "";
+                var isId = name.indexOf("id_") === 0;
+                showConfirm(
+                    objectUrl,
+                    confirmTitleText,
+                    confirmHintText,
+                    function () {
+                        previewImage.src = objectUrl;
+                        previewCard.classList.add("is-visible");
+                        status.textContent = "✓ Captured";
+                        status.classList.add("captured");
+                        section.dataset.existing = "true";
+                        refreshNextState();
+                    },
+                    function () {
+                        input.value = "";
+                        refreshNextState();
+                    }
+                );
             });
         });
 

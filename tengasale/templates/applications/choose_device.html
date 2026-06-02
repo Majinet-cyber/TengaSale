@@ -28,10 +28,28 @@
             <h2>Choose brand</h2>
             <div class="brand-card-grid" role="list">
                 {% for brand_name in brand_names %}
-                    <button class="brand-card" type="button" data-brand="{{ brand_name }}" role="listitem">
-                        <span class="brand-card-logo">{{ brand_name|slice:":1" }}</span>
-                        <span>{{ brand_name }}</span>
-                        <small>View phones</small>
+                    <button class="brand-card brand-card--{{ brand_name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ brand_name }}" role="listitem">
+                        {% if brand_name|lower == "tecno" %}
+                            <span class="brand-card-logo brand-logo-tecno">
+                                <svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">TECNO</text></svg>
+                            </span>
+                        {% elif brand_name|lower == "itel" %}
+                            <span class="brand-card-logo brand-logo-itel">
+                                <svg viewBox="0 0 28 24" width="28" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">itel</text></svg>
+                            </span>
+                        {% elif "samsung" in brand_name|lower %}
+                            <span class="brand-card-logo brand-logo-samsung">
+                                <svg viewBox="0 0 72 18" width="72" height="18" aria-hidden="true"><text x="0" y="16" font-size="14" font-weight="700" fill="currentColor" font-family="Arial,sans-serif" letter-spacing="1">SAMSUNG</text></svg>
+                            </span>
+                        {% elif "redmi" in brand_name|lower or "xiaomi" in brand_name|lower %}
+                            <span class="brand-card-logo brand-logo-xiaomi">
+                                <svg viewBox="0 0 50 24" width="50" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">Redmi</text></svg>
+                            </span>
+                        {% else %}
+                            <span class="brand-card-logo brand-logo-generic">{{ brand_name|slice:":2"|upper }}</span>
+                        {% endif %}
+                        <span class="brand-card-name">{{ brand_name }}</span>
+                        <small class="brand-card-hint">View phones</small>
                     </button>
                 {% endfor %}
             </div>

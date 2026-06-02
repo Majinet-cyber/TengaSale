@@ -522,28 +522,46 @@ def sales_confirm_approve(request, app_id):
                 "approval_guard": approval_guard,
             })
 
-        app.status = "approved"
-        app.review_status = "approved"
-        app.reviewed_by = request.user
-        app.reviewed_at = timezone.now()
-        app.correction_fields = []
-        app.correction_notes = ""
-        app.save(update_fields=[
-            "status", "review_status", "reviewed_by", "reviewed_at",
-            "correction_fields", "correction_notes",
-        ])
-        app.corrections.filter(resolved=False).update(resolved=True)
-        process_application_approval(app, approved_by=request.user)
-        # Create portal PaymentContract + MerchantContractPayout
-        try:
-            from portal.services import create_contract_from_application
-            portal_contract = create_contract_from_application(app, approved_by=request.user)
-        except Exception as exc:
-            import logging
-            logging.getLogger(__name__).warning(
-                "Could not create portal contract for app %s: %s", app.pk, exc
+        from approvals.views import ALREADY_APPROVED_MSG, TERMINAL_STATUSES
+        with transaction.atomic():
+            app_locked = (
+                FinancingApplication.objects.select_for_update()
+                .filter(pk=app_id)
+                .first()
             )
+            if app_locked is None:
+                messages.error(request, "Application not found.")
+                return redirect("sales_home")
+            if app_locked.status in TERMINAL_STATUSES or app_locked.status in ("rejected", "cancelled"):
+                messages.error(request, ALREADY_APPROVED_MSG)
+                return redirect("sales_home")
+            if app_locked.status != "under_review" or app_locked.claimed_by_id != request.user.id:
+                messages.error(request, ALREADY_APPROVED_MSG)
+                return redirect("sales_home")
+
+            app_locked.status = "approved"
+            app_locked.review_status = "approved"
+            app_locked.reviewed_by = request.user
+            app_locked.reviewed_at = timezone.now()
+            app_locked.correction_fields = []
+            app_locked.correction_notes = ""
+            app_locked.save(update_fields=[
+                "status", "review_status", "reviewed_by", "reviewed_at",
+                "correction_fields", "correction_notes",
+            ])
+            app_locked.corrections.filter(resolved=False).update(resolved=True)
+            process_application_approval(app_locked, approved_by=request.user)
             portal_contract = None
+            try:
+                from portal.services import create_contract_from_application
+                portal_contract = create_contract_from_application(app_locked, approved_by=request.user)
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Could not create portal contract for app %s: %s", app_locked.pk, exc
+                )
+            app = app_locked
+
         _audit(request.user, AuditLog.ACTION_APPROVE, "FinancingApplication", app.id,
                {"application_number": app.application_number}, request)
         return render(request, "sales/approve_success.html", {

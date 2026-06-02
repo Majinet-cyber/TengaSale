@@ -30,11 +30,32 @@ def bool_from_post(request, name):
     return None
 
 
+TERMINAL_STATUSES = frozenset({
+    "approved", "rejected", "cancelled", "completed",
+    "contract_terms", "contract_signature", "imei_entry",
+    "contract_creating", "warranty_check", "locking",
+    "deposit_pending", "contract_complete",
+})
+
+ALREADY_APPROVED_MSG = (
+    "This contract has already been approved and is no longer available for underwriting."
+)
+
+
 def review_guard(request, app_id):
     app = get_object_or_404(
         FinancingApplication.objects.select_related("deal", "claimed_by", "created_by"),
         id=app_id,
     )
+    if app.status == "approved" or app.status in TERMINAL_STATUSES - {"rejected", "cancelled"}:
+        messages.error(request, ALREADY_APPROVED_MSG)
+        return app, redirect("sales_home")
+    if app.status == "rejected":
+        messages.error(request, "This application has been rejected and is no longer available for underwriting.")
+        return app, redirect("sales_home")
+    if app.status == "cancelled":
+        messages.error(request, "This application has been cancelled.")
+        return app, redirect("sales_home")
     if app.claimed_by_id and app.claimed_by_id != request.user.id:
         messages.error(request, "This application is assigned to another underwriter.")
         return app, redirect("underwriter_dashboard")
@@ -416,15 +437,31 @@ def confirm_approve(request, app_id):
     if response:
         return response
     if request.method == "POST":
-        app.status = "approved"
-        app.review_status = "approved"
-        app.reviewed_by = request.user
-        app.reviewed_at = timezone.now()
-        app.correction_fields = []
-        app.correction_notes = ""
-        app.save(update_fields=["status", "review_status", "reviewed_by", "reviewed_at", "correction_fields", "correction_notes"])
-        app.corrections.filter(resolved=False).update(resolved=True)
-        process_application_approval(app, approved_by=request.user)
+        with transaction.atomic():
+            app_locked = (
+                FinancingApplication.objects.select_for_update()
+                .filter(pk=app_id)
+                .first()
+            )
+            if app_locked is None:
+                messages.error(request, "Application not found.")
+                return redirect("sales_home")
+            if app_locked.status != "under_review" or app_locked.claimed_by_id != request.user.id:
+                messages.error(request, ALREADY_APPROVED_MSG)
+                return redirect("sales_home")
+            app_locked.status = "approved"
+            app_locked.review_status = "approved"
+            app_locked.reviewed_by = request.user
+            app_locked.reviewed_at = timezone.now()
+            app_locked.correction_fields = []
+            app_locked.correction_notes = ""
+            app_locked.save(update_fields=[
+                "status", "review_status", "reviewed_by", "reviewed_at",
+                "correction_fields", "correction_notes",
+            ])
+            app_locked.corrections.filter(resolved=False).update(resolved=True)
+            process_application_approval(app_locked, approved_by=request.user)
+            app = app_locked
         return render(request, "approvals/approve_success.html", {"app": app})
     return render(request, "approvals/confirm_approve.html", {"app": app})
 

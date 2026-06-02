@@ -62,7 +62,16 @@
 
             <div class="app-card-v2__body">
                 <div class="app-card-v2__name">{{ app.customer_name|default:"Unnamed Customer" }}</div>
-                <div class="app-card-v2__id">{{ app.application_number|default:app.id }}{% if app.deal %} · {{ app.deal.brand.name }} {{ app.deal.model_name }}{% endif %}</div>
+                <div class="app-card-v2__id">
+                    {{ app.application_number|default:app.id }}
+                    {% if app.national_id %} · ID: {{ app.national_id }}{% endif %}
+                </div>
+                {% if app.deal %}
+                <div class="app-card-v2__device">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    {{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}
+                </div>
+                {% endif %}
                 <div class="app-card-v2__meta">
                     <span class="app-card-v2__date">{{ app.created_at|date:"d M Y" }}</span>
                     {% if app.merchant_status_key == "needs_edit" %}
@@ -70,7 +79,10 @@
                     {% endif %}
                 </div>
                 {% if app.merchant_status_key == "under_review" and app.claimed_by %}
-                    <div style="font-size:11px;color:#667085;margin-top:2px;">Underwriter: {{ app.claimed_by.get_full_name|default:app.claimed_by.username }}</div>
+                    <div style="font-size:11px;color:#667085;margin-top:2px;">
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>
+                        {{ app.claimed_by.get_full_name|default:app.claimed_by.username }}
+                    </div>
                 {% endif %}
                 {% if app.merchant_status_key == "needs_edit" and app.correction_field_labels %}
                     <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">

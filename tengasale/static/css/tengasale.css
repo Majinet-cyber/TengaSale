@@ -1650,3 +1650,404 @@ img.ts-logo-wordmark {
   color: #333;
   border: 1px solid #e0e7ef;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MERCHANT DASHBOARD ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.merchant-greeting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.greeting-sub {
+  font-size: 0.78rem;
+  color: var(--muted, #94a3b8);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin: -4px 0 12px;
+}
+
+.trust-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fff7f0 0%, #fff3eb 100%);
+  border: 1.5px solid rgba(255, 90, 0, 0.15);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: var(--ts-orange, #ff5a00);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.trust-card svg {
+  flex-shrink: 0;
+  color: var(--ts-orange, #ff5a00);
+}
+
+/* Primary CTA — NEW CONTRACT */
+.new-contract-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 20px;
+  background: var(--ts-orange, #ff5a00);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-radius: 16px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(255, 90, 0, 0.30);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  min-height: 58px;
+}
+.new-contract-cta:hover,
+.new-contract-cta:focus {
+  background: #e84f00;
+  box-shadow: 0 6px 28px rgba(255, 90, 0, 0.40);
+  transform: translateY(-1px);
+  color: #fff;
+  text-decoration: none;
+}
+.new-contract-cta:active { transform: translateY(0); }
+
+/* Menu-row sub-label */
+.menu-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted, #94a3b8);
+  margin-top: 1px;
+}
+.menu-row .left { display: flex; align-items: center; gap: 12px; }
+.menu-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRAND CARD VISUAL DIFFERENTIATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.brand-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px 14px;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  min-height: 96px;
+}
+.brand-card:hover { border-color: var(--ts-orange, #ff5a00); box-shadow: 0 2px 12px rgba(255,90,0,0.12); }
+.brand-card.active {
+  border-color: var(--ts-orange, #ff5a00);
+  box-shadow: 0 0 0 3px rgba(255,90,0,0.15);
+  background: #fff9f5;
+}
+.brand-card-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+.brand-card-name { font-size: 0.8rem; font-weight: 700; color: #111; }
+.brand-card-hint { font-size: 0.7rem; color: #94a3b8; }
+
+/* Per-brand colour identities */
+.brand-logo-tecno    { background: #e8f0fe; color: #1a56db; }
+.brand-logo-itel     { background: #fee2e2; color: #dc2626; }
+.brand-logo-samsung  { background: #eff6ff; color: #1e40af; }
+.brand-logo-xiaomi,
+.brand-logo-redmi    { background: #fff1f0; color: #e11d48; }
+.brand-logo-generic  { background: #f3f4f6; color: #374151; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KYC FLOW IMPROVEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.kyc-intro-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #fff9f5;
+  border: 1.5px solid rgba(255,90,0,0.15);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.kyc-intro-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--ts-orange-soft, #fff3eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--ts-orange, #ff5a00);
+}
+
+/* KYC section header */
+.kyc-section-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+.kyc-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.kyc-icon-face { background: #eff6ff; color: #2563eb; }
+.kyc-icon-id   { background: #f0fdf4; color: #16a34a; }
+
+/* KYC instruction tips */
+.kyc-instruction-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 12px;
+}
+.kyc-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Camera frame guides */
+.camera-frame-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+}
+.camera-frame-wrapper video {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+}
+.camera-frame {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--ts-orange, #ff5a00);
+  pointer-events: none;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+}
+.camera-frame--oval {
+  border-radius: 50%;
+  top: 8%;
+  left: 15%;
+  right: 15%;
+  bottom: 8%;
+  inset: unset;
+  width: 70%;
+  height: 80%;
+  margin: auto;
+  position: absolute;
+}
+.camera-frame--rect {
+  border-radius: 10px;
+  top: 20%;
+  left: 8%;
+  right: 8%;
+  bottom: 20%;
+  inset: unset;
+  width: 84%;
+  height: 60%;
+  margin: auto;
+  position: absolute;
+}
+.camera-guide-text {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
+
+/* KYC preview image */
+.kyc-preview-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+}
+
+/* Confirmation modal overlay */
+.kyc-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.70);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.kyc-confirm-overlay[hidden] { display: none; }
+.kyc-confirm-card {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px 36px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.kyc-confirm-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 4px;
+}
+.kyc-confirm-hint {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 14px;
+}
+.kyc-confirm-preview {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  margin-bottom: 16px;
+  background: #f8fafc;
+}
+.kyc-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kyc-retake-btn {
+  color: var(--ts-orange, #ff5a00);
+  border-color: var(--ts-orange, #ff5a00);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROLE FORBIDDEN PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.role-forbidden-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 20px 80px;
+}
+.role-forbidden-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fff1f0;
+  border: 2px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  margin-bottom: 20px;
+}
+.role-forbidden-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 8px;
+}
+.role-forbidden-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  max-width: 320px;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APPLICATION CARD — device info line
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-card-v2__device {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PART 10: FOOTER OVERLAP FIX
+   Ensure sticky footer never covers content on mobile.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Global bottom safe-area padding for the main content */
+.content {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+}
+
+/* Non-fixed footer — prevents overlap by flowing naturally */
+.footer {
+  position: relative !important;
+  bottom: auto !important;
+}
+
+/* On long form pages, give extra breathing room */
+.kyc-form,
+.deal-flow,
+.application-form {
+  padding-bottom: 80px;
+}
+
+/* The form submit / next button container — always above fold */
+.kyc-next-button,
+.new-contract-cta {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .new-contract-cta { font-size: 1rem; padding: 16px 16px; }
+  .kyc-confirm-card { padding: 20px 16px 32px; }
+  .role-forbidden-page { padding: 30px 16px 80px; }
+}

@@ -969,3 +969,150 @@ class KulaSellStyleReviewTests(TestCase):
 
         # Should redirect back to final review, not to dashboard
         self.assertRedirects(response, reverse("underwriter_final_review", args=[app.id]))
+
+
+class DuplicateApprovalPreventionTests(TestCase):
+    """
+    PART 1 — Verify that an already-approved contract cannot be approved again.
+    Covers both legacy (approvals.views) and modern (sales.views) endpoints.
+    """
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="dup_merchant", password="pass123")
+        self.underwriter = User.objects.create_user(username="dup_uw", password="pass123")
+        assign_role(self.merchant, "merchant")
+        assign_role(self.underwriter, "underwriter")
+
+    def _under_review_app(self):
+        return FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Test Customer",
+            national_id="ABCD1234",
+            status="under_review",
+            review_status="under_review",
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+            submitted_at=timezone.now(),
+        )
+
+    def _approved_app(self):
+        app = self._under_review_app()
+        app.status = "approved"
+        app.review_status = "approved"
+        app.reviewed_by = self.underwriter
+        app.reviewed_at = timezone.now()
+        app.save(update_fields=["status", "review_status", "reviewed_by", "reviewed_at"])
+        return app
+
+    # ── review_guard blocks approved apps ────────────────────────────────────
+
+    def test_review_guard_blocks_approved_app_on_summary(self):
+        """review_guard must redirect away from an already-approved app."""
+        app = self._approved_app()
+        self.client.login(username="dup_uw", password="pass123")
+
+        response = self.client.get(
+            reverse("underwriter_review_summary", args=[app.id]), follow=True
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = [str(m) for m in response.context["messages"]]
+        self.assertTrue(
+            any("already been approved" in m for m in messages_list),
+            f"Expected approval guard message, got: {messages_list}",
+        )
+
+    def test_review_guard_blocks_approved_app_on_identity_check(self):
+        app = self._approved_app()
+        self.client.login(username="dup_uw", password="pass123")
+
+        response = self.client.get(
+            reverse("underwriter_identity_check", args=[app.id]), follow=True
+        )
+
+        messages_list = [str(m) for m in response.context["messages"]]
+        self.assertTrue(any("already been approved" in m or "approved" in m for m in messages_list))
+
+    # ── Legacy confirm_approve blocks duplicate POST ──────────────────────────
+
+    def test_legacy_confirm_approve_get_blocked_for_approved_app(self):
+        """GET to confirm_approve for an approved app must redirect with error."""
+        app = self._approved_app()
+        self.client.login(username="dup_uw", password="pass123")
+
+        response = self.client.get(
+            reverse("underwriter_confirm_approve", args=[app.id]), follow=True
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages_list = [str(m) for m in response.context["messages"]]
+        self.assertTrue(
+            any("approved" in m.lower() for m in messages_list),
+            f"Expected approval-guard message, got: {messages_list}",
+        )
+
+    def test_legacy_confirm_approve_post_blocked_for_approved_app(self):
+        """POST to confirm_approve for already-approved app must not change status."""
+        app = self._approved_app()
+        original_reviewed_at = app.reviewed_at
+        self.client.login(username="dup_uw", password="pass123")
+
+        response = self.client.post(
+            reverse("underwriter_confirm_approve", args=[app.id]), follow=True
+        )
+
+        app.refresh_from_db()
+        self.assertEqual(app.status, "approved")
+        self.assertEqual(app.reviewed_at, original_reviewed_at)
+        self.assertEqual(response.status_code, 200)
+
+    # ── Approved app leaves active review queue ───────────────────────────────
+
+    def test_approved_app_not_in_under_review_queue(self):
+        """Approved app must not appear in the active review queue."""
+        app = self._approved_app()
+        self.client.login(username="dup_uw", password="pass123")
+
+        active = FinancingApplication.objects.filter(
+            claimed_by=self.underwriter, status="under_review"
+        )
+        self.assertNotIn(app, list(active))
+
+    # ── Sales endpoint blocks duplicate POST ─────────────────────────────────
+
+    def test_sales_confirm_approve_blocked_for_approved_app(self):
+        """sales_confirm_approve endpoint must block re-approval of approved app."""
+        app = self._approved_app()
+        self.client.login(username="dup_uw", password="pass123")
+
+        response = self.client.post(
+            reverse("sales_confirm_approve", args=[app.id]), follow=True
+        )
+
+        app.refresh_from_db()
+        self.assertEqual(app.status, "approved")
+        self.assertEqual(response.status_code, 200)
+
+    # ── Contract statuses also blocked ───────────────────────────────────────
+
+    def test_review_guard_blocks_contract_pipeline_statuses(self):
+        """Apps in post-approval contract pipeline cannot be re-reviewed."""
+        for terminal_status in ["contract_terms", "contract_signature", "imei_entry",
+                                "contract_complete", "completed"]:
+            app = self._under_review_app()
+            app.status = terminal_status
+            app.save(update_fields=["status"])
+
+            self.client.login(username="dup_uw", password="pass123")
+            response = self.client.get(
+                reverse("underwriter_review_summary", args=[app.id]), follow=True
+            )
+
+            self.assertEqual(response.status_code, 200, f"Unexpected status for {terminal_status}")
+            messages_list = [str(m) for m in response.context["messages"]]
+            self.assertTrue(
+                any("approved" in m.lower() or "contract" in m.lower() or "no longer" in m.lower()
+                    for m in messages_list),
+                f"No guard message for status={terminal_status}, messages={messages_list}",
+            )

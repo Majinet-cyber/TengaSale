@@ -887,9 +887,9 @@ class KYCCaptureTests(ApplicationTestCase):
         response = self.client.get(reverse("kyc_capture", args=[app.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Capture Face")
-        self.assertContains(response, "Capture ID Front")
-        self.assertContains(response, "Capture ID Back")
+        self.assertContains(response, "Capture Selfie")
+        self.assertContains(response, "Take ID Front Photo")
+        self.assertContains(response, "Take ID Back Photo")
         self.assertNotContains(response, "Capture Customer Phone")
         self.assertContains(response, 'class="soft-back"')
         self.assertContains(response, 'capture="user"')
@@ -979,7 +979,7 @@ class KYCCaptureTests(ApplicationTestCase):
         original_face_name = app.customer_face_image.name
 
         response = self.client.get(reverse("kyc_capture", args=[app.id]))
-        self.assertContains(response, "Recapture", count=3)
+        self.assertContains(response, "Retake", count=3)
 
         post_response = self.client.post(
             reverse("kyc_capture", args=[app.id]),
