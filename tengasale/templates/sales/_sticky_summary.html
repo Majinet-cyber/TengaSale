@@ -1,0 +1,59 @@
+{% comment %}
+Sticky contract summary banner for underwriter review pages.
+Usage: {% include "sales/_sticky_summary.html" %}
+Context: requires `app` and optionally `contract` variable.
+{% endcomment %}
+{% load ts_filters %}
+{% with contract=app.contract %}
+<div class="ts-sticky-summary" id="ts-sticky-summary">
+  <div class="ts-sticky-summary__inner">
+    <div class="ts-sticky-summary__left">
+      {% if app.customer_face_image %}
+        <img src="{{ app.customer_face_image.url }}" alt="{{ app.customer_name }}" class="ts-sticky-summary__avatar"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="ts-sticky-summary__avatar ts-sticky-summary__avatar--fallback" style="display:none;">
+          {{ app.customer_name|first|upper }}
+        </div>
+      {% else %}
+        <div class="ts-sticky-summary__avatar ts-sticky-summary__avatar--fallback">
+          {{ app.customer_name|first|upper }}
+        </div>
+      {% endif %}
+      <div class="ts-sticky-summary__info">
+        <div class="ts-sticky-summary__name">{{ app.customer_name|default:"—" }}</div>
+        <div class="ts-sticky-summary__ids">
+          {% if contract and contract.contract_number %}
+            <span class="ts-sticky-summary__num ts-sticky-summary__num--orange">{{ contract.contract_number }}</span>
+          {% else %}
+            <span class="ts-sticky-summary__num">{{ app.application_number }}</span>
+          {% endif %}
+          {% if contract and contract.payg_number %}
+            <span class="ts-sticky-summary__sep">·</span>
+            <span class="ts-sticky-summary__num ts-sticky-summary__num--muted">PayG {{ contract.payg_number }}</span>
+          {% endif %}
+          {% if app.imei_number %}
+            <span class="ts-sticky-summary__sep">·</span>
+            <span class="ts-sticky-summary__num ts-sticky-summary__num--muted">IMEI {{ app.imei_number }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="ts-sticky-summary__right">
+      {% if app.deal %}
+        <div class="ts-sticky-summary__device">{{ app.deal }}</div>
+      {% endif %}
+      <div class="ts-sticky-summary__amounts">
+        {% if app.calculated_deposit_amount %}
+          <span><span class="ts-sticky-summary__amt-label">Dep</span> <strong>{{ app.calculated_deposit_amount|mwk }}</strong></span>
+        {% endif %}
+        {% if app.calculated_monthly_payment %}
+          <span><span class="ts-sticky-summary__amt-label">Mo</span> <strong>{{ app.calculated_monthly_payment|mwk }}</strong></span>
+        {% endif %}
+      </div>
+      <span class="ts-sticky-summary__status ts-sticky-summary__status--{{ app.merchant_status_key }}">
+        {{ app.merchant_status_label }}
+      </span>
+    </div>
+  </div>
+</div>
+{% endwith %}

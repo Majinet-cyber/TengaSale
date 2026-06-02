@@ -1058,6 +1058,139 @@
   box-shadow: 0 6px 24px rgba(255, 90, 0, 0.12), 0 2px 8px rgba(0,0,0,0.08);
 }
 
+/* ── Underwriter sticky summary header ─────────────────────────────── */
+
+.ts-sticky-summary {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: #fff;
+  border-bottom: 1.5px solid #f1f5f9;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  animation: ts-slide-up 220ms ease both;
+}
+
+.ts-sticky-summary__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.ts-sticky-summary__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ts-sticky-summary__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 90, 0, 0.18);
+}
+
+.ts-sticky-summary__avatar--fallback {
+  background: linear-gradient(135deg, #ff5a00, #e64d00);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-sticky-summary__info {
+  min-width: 0;
+}
+
+.ts-sticky-summary__name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #101828;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.ts-sticky-summary__ids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.ts-sticky-summary__num {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.ts-sticky-summary__num--orange { color: #ff5a00; }
+.ts-sticky-summary__num--muted  { color: #94a3b8; }
+.ts-sticky-summary__sep         { color: #d1d5db; font-size: 10px; }
+
+.ts-sticky-summary__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  max-width: 150px;
+}
+
+.ts-sticky-summary__device {
+  font-size: 11px;
+  color: #374151;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.ts-sticky-summary__amounts {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: #374151;
+}
+
+.ts-sticky-summary__amt-label {
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ts-sticky-summary__status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.ts-sticky-summary__status--under_review { background: #fef9c3; color: #854d0e; }
+.ts-sticky-summary__status--approved     { background: #dcfce7; color: #166534; }
+.ts-sticky-summary__status--rejected     { background: #fee2e2; color: #991b1b; }
+.ts-sticky-summary__status--sent_back    { background: #fff7ed; color: #9a3412; }
+.ts-sticky-summary__status--active       { background: #dbeafe; color: #1e40af; }
+.ts-sticky-summary__status--pending      { background: #f3f4f6; color: #4b5563; }
+
 /* ── Reduce motion support ──────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

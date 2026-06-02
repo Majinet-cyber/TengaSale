@@ -4,6 +4,7 @@
 {% block page_title %}Final Review — {{ app.application_number }}{% endblock %}
 
 {% block content %}
+{% include "sales/_sticky_summary.html" %}
 <div
   class="sales-main"
   x-data="{ showReject: false }"
