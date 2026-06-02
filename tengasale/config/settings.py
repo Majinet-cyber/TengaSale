@@ -146,7 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Africa/Blantyre"
 
 USE_I18N = True
 
@@ -198,17 +198,7 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/home/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-# Email backend — SendGrid in production, console in development
-_SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-if _SENDGRID_API_KEY and not DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.sendgrid.net"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = "apikey"
-    EMAIL_HOST_PASSWORD = _SENDGRID_API_KEY
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 TENGASALE_WHATSAPP_NUMBER = os.environ.get("TENGASALE_WHATSAPP_NUMBER", "+265883596135")
 TENGASALE_WHATSAPP_LINK = f"https://wa.me/{''.join(char for char in TENGASALE_WHATSAPP_NUMBER if char.isdigit())}"
@@ -223,16 +213,10 @@ SMS_PROVIDER_API_KEY = os.environ.get("SMS_PROVIDER_API_KEY", "")
 SMS_PROVIDER_API_URL = os.environ.get("SMS_PROVIDER_API_URL", "")
 
 # Payment providers
-# PAYMENTS_MODE: "test" | "live" — controls whether real or sandbox API is used
-PAYMENTS_MODE = os.environ.get("PAYMENTS_MODE", "test").lower()
 MOCK_PAYMENTS = os.environ.get("MOCK_PAYMENTS", "true").lower() == "true"
 PAYCHANGU_PUBLIC_KEY = os.environ.get("PAYCHANGU_PUBLIC_KEY", "")
 PAYCHANGU_SECRET_KEY = os.environ.get("PAYCHANGU_SECRET_KEY", "")
 PAYCHANGU_WEBHOOK_SECRET = os.environ.get("PAYCHANGU_WEBHOOK_SECRET", "")
-PAYCHANGU_API_BASE = os.environ.get("PAYCHANGU_API_BASE", "https://api.paychangu.com")
-# Per-operator override (avoids API round-trip for every payment)
-PAYCHANGU_AIRTEL_REF_ID = os.environ.get("PAYCHANGU_AIRTEL_REF_ID", "")
-PAYCHANGU_TNM_REF_ID = os.environ.get("PAYCHANGU_TNM_REF_ID", "")
 AIRTEL_MONEY_CLIENT_ID = os.environ.get("AIRTEL_MONEY_CLIENT_ID", "")
 AIRTEL_MONEY_CLIENT_SECRET = os.environ.get("AIRTEL_MONEY_CLIENT_SECRET", "")
 TNM_MPAMBA_API_KEY = os.environ.get("TNM_MPAMBA_API_KEY", "")
@@ -254,20 +238,14 @@ KNOX_API_URL = os.environ.get("KNOX_API_URL", "https://api.samsungknox.com")
 NUOVOPAY_API_KEY = os.environ.get("NUOVOPAY_API_KEY", "")
 NUOVOPAY_API_URL = os.environ.get("NUOVOPAY_API_URL", "https://api.nuovopay.com")
 
-# Twilio SMS / WhatsApp
+# Twilio SMS
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
-TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER", "")
-
-# TengaSale public base URLs (used for payment callbacks, links in emails/SMS)
-TENGASALE_PUBLIC_BASE_URL = os.environ.get("TENGASALE_PUBLIC_BASE_URL", "")
-TENGASALE_PAYMENT_BASE_URL = os.environ.get("TENGASALE_PAYMENT_BASE_URL", TENGASALE_PUBLIC_BASE_URL)
 
 # SendGrid Email
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@tengasale.com")
-SENDGRID_FROM_EMAIL = os.environ.get("SENDGRID_FROM_EMAIL", DEFAULT_FROM_EMAIL)
 ADMIN_ALERT_EMAIL = os.environ.get("ADMIN_ALERT_EMAIL", "admin@tengasale.com")
 
 # File upload security

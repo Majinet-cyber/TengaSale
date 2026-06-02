@@ -91,10 +91,13 @@
     }
 
     function initImagePreviews() {
-        /* Make all .kyc-preview-img and .kyc-preview images clickable */
-        document.querySelectorAll('.kyc-preview-img, [data-lightbox-img]').forEach(function (img) {
+        /* Make all KYC/lightbox images clickable */
+        document.querySelectorAll('.kyc-preview-img, [data-lightbox-img], .ts-kyc-img img').forEach(function (img) {
             if (!img.src || img.src === window.location.href) return;
             img.style.cursor = 'zoom-in';
+            img.removeAttribute('data-lb-init');
+            if (img.dataset.lbInit) return;
+            img.dataset.lbInit = '1';
             img.addEventListener('click', function () {
                 if (img.src && img.src !== window.location.href) openLightbox(img.src);
             });

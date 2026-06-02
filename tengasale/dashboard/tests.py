@@ -74,7 +74,7 @@ class HomePageTests(TestCase):
         self.assertContains(response, "View all earnings")
         self.assertContains(response, "Spin &amp; Win")
         self.assertContains(response, "0 spins available")
-        self.assertContains(response, "New application")
+        self.assertContains(response, "NEW CONTRACT")
         self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
         self.assertContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
@@ -1380,7 +1380,7 @@ class LayoutRegressionTests(TestCase):
         self.client.login(username="reg_merchant", password="pass123")
         response = self.client.get(reverse("merchant_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "All deals")
+        self.assertContains(response, "All Deals")
 
     def test_merchant_dashboard_no_oversized_hero(self):
         """The orange hero block must not dominate the page."""

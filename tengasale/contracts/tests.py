@@ -182,8 +182,8 @@ class ContractFlowTests(TestCase):
         response = self.client.get(reverse("contract_detail", args=[contract.id]))
 
         self.assertContains(response, contract.contract_number)
-        self.assertContains(response, "Cash price")
-        self.assertContains(response, "Total loan / contract price")
+        self.assertContains(response, "Cash Price")
+        self.assertContains(response, "Total Contract")
         self.assertContains(response, "875,000")
 
     def test_view_contract_link_appears_only_when_contract_exists(self):

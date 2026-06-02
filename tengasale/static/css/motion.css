@@ -1026,6 +1026,38 @@
   display: inline;
 }
 
+/* ── Term chip discount badge ───────────────────────────────────────── */
+
+.term-chip {
+  position: relative;
+}
+
+.term-chip__discount {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #16a34a;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+.term-chip.active .term-chip__discount {
+  color: #fff;
+  opacity: 0.85;
+}
+
+/* ── Deal summary card enhanced ─────────────────────────────────────── */
+
+.deal-summary-card {
+  border: 1.5px solid rgba(255, 90, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(255, 90, 0, 0.06), 0 1px 4px rgba(0,0,0,0.05);
+  transition: box-shadow 200ms ease;
+}
+
+.deal-summary-card:hover {
+  box-shadow: 0 6px 24px rgba(255, 90, 0, 0.12), 0 2px 8px rgba(0,0,0,0.08);
+}
+
 /* ── Reduce motion support ──────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

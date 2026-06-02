@@ -772,9 +772,8 @@ class SignaturePageTests(ApplicationTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<canvas")
-        self.assertContains(response, "Undo")
-        self.assertContains(response, "Clear / Cancel")
-        self.assertContains(response, "Save Signature")
+        self.assertContains(response, "Capture Signature")
+        self.assertContains(response, "Clear")
         self.assertNotContains(response, 'type="file"')
 
     def test_submit_without_signature_fails(self):

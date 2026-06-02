@@ -7,12 +7,17 @@ from django.db import models
 from django.utils import timezone
 
 
+_CONTRACT_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
 def generate_contract_number():
+    """Generate a unique contract number: A + 7 uppercase alphanumeric chars = 8 chars total."""
     for _ in range(100):
-        number = "E" + "".join(random.choices("0123456789", k=8))
+        suffix = "".join(random.choices(_CONTRACT_CHARS, k=7))
+        number = f"A{suffix}"
         if not Contract.objects.filter(contract_number=number).exists():
             return number
-    raise RuntimeError("Could not generate a unique contract number.")
+    raise RuntimeError("Could not generate a unique contract number after 100 attempts.")
 
 
 class Contract(models.Model):
