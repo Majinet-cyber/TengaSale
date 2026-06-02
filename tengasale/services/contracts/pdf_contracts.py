@@ -258,9 +258,20 @@ def get_contract_context(contract) -> dict[str, Any]:
     except Exception:
         pass
 
+    # PayG number and customer payment URL (from linked portal PaymentContract)
+    payg_number = ""
+    payment_url = ""
+    try:
+        payg_number = contract.payg_number or ""
+        payment_url = contract.payment_url or ""
+    except Exception:
+        pass
+
     return {
         # Contract header
         "contract_number": contract.contract_number,
+        "payg_number": payg_number,
+        "payment_url": payment_url,
         "contract_date": contract.created_at.date() if contract.created_at else "",
         "application_id": app.application_number if app else "",
         "contract_status": contract.get_status_display(),

@@ -125,6 +125,7 @@
   <div class="contract-title">Digital Instalment Sale Agreement — Customer Contract Summary</div>
   <div class="completed-badge">CONTRACT COMPLETED</div>
   <div class="ref-line">
+    {% if payg_number %}<strong style="color:#ff5a00;">PayG: {{ payg_number }}</strong> &nbsp;|&nbsp;{% endif %}
     Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
     Date: <strong>{{ contract_date }}</strong> &nbsp;|&nbsp;
     Application: <strong>{{ application_id }}</strong>
@@ -145,6 +146,9 @@
 <!-- DEVICE -->
 <h2>A. Device Details</h2>
 <table class="data-table">
+  {% if payg_number %}
+  <tr><td class="label" style="color:#ff5a00;"><strong>PayG Number</strong></td><td><strong style="color:#ff5a00;">{{ payg_number }}</strong></td></tr>
+  {% endif %}
   <tr><td class="label">Device</td><td>{{ device_name }}</td></tr>
   <tr><td class="label">IMEI Number</td><td>{{ imei_number|default:"Recorded" }}</td></tr>
   {% if serial_number %}<tr><td class="label">Serial Number</td><td>{{ serial_number }}</td></tr>{% endif %}
@@ -181,6 +185,7 @@
   <div class="completion-stamp-title">CONTRACT COMPLETION RECORD</div>
   <table class="data-table" style="border:none;">
     <tr><td class="label" style="border:none;">Contract Number</td><td style="border:none;">{{ stamp_contract_number }}</td></tr>
+    {% if payg_number %}<tr><td class="label" style="border:none;color:#ff5a00;"><strong>PayG Number</strong></td><td style="border:none;"><strong style="color:#ff5a00;">{{ payg_number }}</strong></td></tr>{% endif %}
     <tr><td class="label" style="border:none;">Customer</td><td style="border:none;">{{ stamp_customer }}</td></tr>
     <tr><td class="label" style="border:none;">Customer Phone</td><td style="border:none;">{{ stamp_customer_phone }}</td></tr>
     <tr><td class="label" style="border:none;">Merchant</td><td style="border:none;">{{ stamp_merchant }}</td></tr>

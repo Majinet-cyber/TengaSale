@@ -663,7 +663,7 @@ def search_payment_contract(query: str):
     if not q:
         return None
 
-    # Direct contract number / PayG lookup
+    # Direct contract number / PayG / national ID lookup
     contract = (
         PaymentContract.objects.filter(contract_number__iexact=q).first()
         or PaymentContract.objects.filter(payg_number__iexact=q).first()
@@ -671,6 +671,12 @@ def search_payment_contract(query: str):
     )
     if contract:
         return contract
+
+    # IMEI lookup (exact match — IMEIs are unique per device)
+    if q.isdigit() and len(q) == 15:
+        contract = PaymentContract.objects.filter(imei_number=q).first()
+        if contract:
+            return contract
 
     # Phone lookup — strip country code and match last 9 digits
     digits = "".join(c for c in q if c.isdigit())

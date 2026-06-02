@@ -978,3 +978,46 @@ class ProviderMetadataTest(TestCase):
         )
         c.refresh_from_db()
         self.assertEqual(c.lock_reference, "LOCK-REF-001")
+
+
+# ---------------------------------------------------------------------------
+# IMEI search tests
+# ---------------------------------------------------------------------------
+
+class IMEISearchTest(TestCase):
+    """Verify that search_payment_contract() finds contracts by IMEI."""
+
+    def setUp(self):
+        self.imei = "358588885858365"
+        self.contract = PaymentContract.objects.create(
+            customer_name="IMEI Search Customer",
+            customer_phone="+265889500001",
+            total_amount=Decimal("30000"),
+            imei_number=self.imei,
+        )
+
+    def test_search_by_exact_imei(self):
+        result = search_payment_contract(self.imei)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.pk, self.contract.pk)
+
+    def test_search_by_imei_returns_none_for_unknown(self):
+        result = search_payment_contract("999999999999999")
+        self.assertIsNone(result)
+
+    def test_search_by_imei_ignored_if_not_15_digits(self):
+        # 14-digit string — should not be treated as IMEI, falls to phone lookup
+        result = search_payment_contract("35858888585836")
+        self.assertIsNone(result)
+
+    def test_search_by_payg_still_works(self):
+        payg = self.contract.payg_number
+        result = search_payment_contract(payg)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.pk, self.contract.pk)
+
+    def test_search_by_contract_number_still_works(self):
+        cn = self.contract.contract_number
+        result = search_payment_contract(cn)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.pk, self.contract.pk)

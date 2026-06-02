@@ -148,6 +148,7 @@
   <div class="brand-tagline">Endless Possibilities — Smartphone Financing</div>
   <div class="contract-title">Digital Instalment Sale Agreement — Customer Contract Summary</div>
   <div class="ref-line">
+    {% if payg_number %}<strong style="color:#ff5a00;">PayG: {{ payg_number }}</strong> &nbsp;|&nbsp;{% endif %}
     Contract No: <strong>{{ contract_number }}</strong> &nbsp;|&nbsp;
     Date: <strong>{{ contract_date }}</strong> &nbsp;|&nbsp;
     Application: <strong>{{ application_id }}</strong>
@@ -215,6 +216,12 @@
 <!-- ═══════════════════ A. DEVICE DETAILS ═══════════════════ -->
 <h2>A. Device Details</h2>
 <table class="data-table">
+  {% if payg_number %}
+  <tr>
+    <td class="label" style="color:#ff5a00;"><strong>PayG Number</strong></td>
+    <td><strong style="color:#ff5a00;">{{ payg_number }}</strong>{% if payment_url %} &nbsp;—&nbsp; Payment: {{ payment_url }}{% endif %}</td>
+  </tr>
+  {% endif %}
   <tr>
     <td class="label">Device</td>
     <td>{{ device_name }}</td>

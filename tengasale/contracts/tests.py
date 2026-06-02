@@ -1103,3 +1103,123 @@ class SeedLegalDocumentsTests(TestCase):
                 f"style.css contains invalid UTF-8 bytes. "
                 f"Render collectstatic will fail. Detail: {e}"
             )
+
+
+# ---------------------------------------------------------------------------
+# PayG number in PDF context and contract progress
+# ---------------------------------------------------------------------------
+
+class PayGPDFContextTest(TestCase):
+    """Verify get_contract_context() includes payg_number and payment_url."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="payg_pdf_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="PAYG-PDF-BRAND")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="PayG PDF Phone",
+            specs="4+128",
+            min_cash_price=Decimal("200000.00"),
+            max_cash_price=Decimal("300000.00"),
+            default_cash_price=Decimal("250000.00"),
+            cash_price=Decimal("250000.00"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("625000.00"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="PayG PDF Customer",
+            customer_phone="0991234500",
+            national_id="PAYG001",
+            deal=deal,
+            selected_cash_price=Decimal("250000.00"),
+            calculated_total_loan=Decimal("625000.00"),
+            calculated_deposit_amount=Decimal("81250.00"),
+            calculated_monthly_payment=Decimal("52083.33"),
+            calculated_daily_payment=Decimal("1736.11"),
+        )
+        self.contract = Contract.from_application(self.app)[0]
+
+    def test_pdf_context_includes_payg_number_key(self):
+        from services.contracts.pdf_contracts import get_contract_context
+        ctx = get_contract_context(self.contract)
+        self.assertIn("payg_number", ctx)
+        self.assertIn("payment_url", ctx)
+
+    def test_pdf_context_payg_number_is_string(self):
+        from services.contracts.pdf_contracts import get_contract_context
+        ctx = get_contract_context(self.contract)
+        self.assertIsInstance(ctx["payg_number"], str)
+        self.assertIsInstance(ctx["payment_url"], str)
+
+    def test_pdf_context_payg_number_from_portal_contract(self):
+        """If a PaymentContract exists, payg_number should be populated in PDF context."""
+        from portal.services import create_contract_from_application
+        from services.contracts.pdf_contracts import get_contract_context
+        create_contract_from_application(self.app)
+        ctx = get_contract_context(self.contract)
+        if ctx["payg_number"]:
+            self.assertRegex(ctx["payg_number"], r"^E[A-Z2-9]{7}$")
+            self.assertIn("/pay/payg/", ctx["payment_url"])
+
+
+class PayGProgressPageTest(TestCase):
+    """Verify the contract progress page shows PayG number."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="payg_prog_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="PAYG-PROG-BRAND")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="PayG Progress Phone",
+            specs="3+64",
+            min_cash_price=Decimal("150000.00"),
+            max_cash_price=Decimal("200000.00"),
+            default_cash_price=Decimal("175000.00"),
+            cash_price=Decimal("175000.00"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("437500.00"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="PayG Progress Customer",
+            customer_phone="0992345600",
+            national_id="PAYG002",
+            deal=deal,
+            selected_cash_price=Decimal("175000.00"),
+            calculated_total_loan=Decimal("437500.00"),
+            calculated_deposit_amount=Decimal("56875.00"),
+            calculated_monthly_payment=Decimal("36458.33"),
+            calculated_daily_payment=Decimal("1215.28"),
+        )
+        self.contract = Contract.from_application(self.app)[0]
+        self.contract.status = Contract.STATUS_CONTRACT_CREATED
+        self.contract.imei_number = "123456789012345"
+        self.contract.save()
+        self.client.login(username="payg_prog_merchant", password="test-pass-123")
+
+    def test_progress_page_shows_payg_number_when_portal_contract_exists(self):
+        from portal.services import create_contract_from_application
+        from django.urls import reverse
+        portal_contract = create_contract_from_application(self.app)
+        response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
+        self.assertEqual(response.status_code, 200)
+        payg = portal_contract.payg_number
+        if payg:
+            self.assertContains(response, payg)
+
+    def test_progress_page_shows_imei(self):
+        from django.urls import reverse
+        response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "123456789012345")

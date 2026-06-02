@@ -7,25 +7,74 @@
 
 <h1 class="greeting">Contract Progress</h1>
 
+{# ── PayG Identity Card ─────────────────────────────────────────────── #}
+<div class="card" style="border-left: 4px solid #ff5a00; margin-bottom: 16px;">
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">TengaSale PayG</div>
+            {% if contract.payg_number %}
+                <div style="font-size:22px; font-weight:700; color:#ff5a00; letter-spacing:1px;">{{ contract.payg_number }}</div>
+            {% else %}
+                <div style="font-size:14px; color:#aaa;">Awaiting activation</div>
+            {% endif %}
+        </div>
+        {% if contract.imei_number %}
+        <div style="border-left:1px solid #eee; padding-left:12px;">
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">IMEI</div>
+            <div style="font-size:14px; font-weight:600; font-family:monospace;">{{ contract.imei_number }}</div>
+        </div>
+        {% endif %}
+        {% if contract.customer_name %}
+        <div style="border-left:1px solid #eee; padding-left:12px;">
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">Customer</div>
+            <div style="font-size:14px; font-weight:600;">{{ contract.customer_name }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% if contract.payg_number %}
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #f5f5f5;">
+        <span style="font-size:12px; color:#555;">Payment link: </span>
+        <a href="{{ contract.payment_url }}" style="font-size:12px; color:#ff5a00; font-weight:600;" target="_blank">
+            tengasale.onrender.com{{ contract.payment_url }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Progress Steps ─────────────────────────────────────────────────── #}
 <div class="card">
     <div class="progress-step {% if contract.contract_number %}done{% endif %}">
         <strong>1. Creating contract</strong>
-        <span>{{ contract.contract_number }}</span>
+        <span>
+            {{ contract.contract_number }}
+            {% if contract.payg_number %}&nbsp;— PayG: <strong>{{ contract.payg_number }}</strong>{% endif %}
+        </span>
     </div>
     <div class="progress-step {% if contract.warranty_checked %}done{% endif %}">
-        <strong>2. Checking warranty</strong>
+        <strong>2. Checking warranty &amp; model</strong>
         <span>{% if contract.warranty_checked %}Checked{% else %}Pending{% endif %}</span>
     </div>
     <div class="progress-step {% if contract.phone_locked %}done{% endif %}">
         <strong>3. Locking phone</strong>
-        <span>{% if contract.phone_locked %}Locked{% else %}Pending{% endif %}</span>
+        <span>
+            {% if contract.phone_locked %}Locked{% else %}Pending{% endif %}
+            {% if contract.imei_number %}&nbsp;— IMEI: <code>{{ contract.imei_number }}</code>{% endif %}
+        </span>
     </div>
     <div class="progress-step {% if contract.deposit_paid %}done{% endif %}">
         <strong>4. Waiting for deposit</strong>
-        <span>{% if contract.deposit_paid %}Paid{% else %}Pending{% endif %}</span>
+        <span>
+            {% if contract.deposit_paid %}Paid{% else %}
+                Pending
+                {% if contract.payg_number %}
+                    &nbsp;— Customer pays at:
+                    <a href="{{ contract.payment_url }}" style="color:#ff5a00;">{{ contract.payment_url }}</a>
+                {% endif %}
+            {% endif %}
+        </span>
     </div>
     <div class="progress-step {% if contract.status == 'complete' %}done{% endif %}">
-        <strong>5. Contract complete</strong>
+        <strong>5. Contract active</strong>
         <span>{{ contract.get_status_display }}</span>
     </div>
 </div>
@@ -38,6 +87,12 @@
         <button class="btn primary-button" name="action" value="locked">Mark phone locked</button>
     {% elif not contract.deposit_paid %}
         <p>Deposit due: <strong>{{ contract.deposit_amount|mwk }}</strong></p>
+        {% if contract.payg_number %}
+        <p style="font-size:13px; color:#555;">
+            Share the payment link with the customer:
+            <a href="{{ contract.payment_url }}" style="color:#ff5a00; font-weight:600;">{{ contract.payment_url }}</a>
+        </p>
+        {% endif %}
         <button class="btn primary-button" name="action" value="deposit">Mark deposit paid</button>
     {% else %}
         <a href="{% url 'contract_complete' contract.id %}" class="btn primary-button">Contract complete</a>
