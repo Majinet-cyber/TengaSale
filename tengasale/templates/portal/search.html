@@ -77,7 +77,11 @@
 
   {% if searched %}
     <div class="glass-card mt-8" style="text-align:center; color: var(--muted);">
-      <p>No contract found. Please check the number and try again.</p>
+      {% if error %}
+        <p>{{ error }}</p>
+      {% else %}
+        <p>No contract found. Please check the number and try again.</p>
+      {% endif %}
     </div>
   {% endif %}
 

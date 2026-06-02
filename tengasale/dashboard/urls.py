@@ -34,6 +34,7 @@ urlpatterns = [
     path("tengasale/hq/underwriter-performance/", views.hq_underwriter_performance, name="hq_underwriter_performance"),
     path("tengasale/hq/fraud-checks/", views.hq_fraud_checks, name="hq_fraud_checks"),
     path("tengasale/hq/audit-trail/", views.hq_audit_trail, name="hq_audit_trail"),
+    path("tengasale/hq/payment-intelligence/", views.hq_payment_intelligence, name="hq_payment_intelligence"),
     path("tengasale/hq/preview/merchant/", views.hq_merchant_preview, name="hq_merchant_preview"),
     path("tengasale/hq/preview/underwriter/", views.hq_underwriter_preview, name="hq_underwriter_preview"),
 

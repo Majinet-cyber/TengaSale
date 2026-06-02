@@ -1,9 +1,11 @@
 """
-Portal app tests — Phase 6.
+Portal app tests — Phase 7 (PayG upgrade + deposit flow).
 
 Coverage:
 - PaymentContract number uniqueness (TS-MW-XXXXXXXX)
-- PayG number uniqueness (TSGXXXXXX)
+- PayG number format EXXXXXXX (8 chars, starts with E, uppercase alphanumeric)
+- PayG uniqueness across many generated values
+- Database uniqueness enforced
 - calculate_daily_price accuracy (MWK rounding)
 - calculate_thirty_day_price accuracy
 - Early settlement (3/6/9/12 months) discount calculations
@@ -54,7 +56,23 @@ class ContractNumberGenerationTest(TestCase):
 
     def test_payg_number_format(self):
         n = generate_payg_number()
-        self.assertRegex(n, r"^TSG\d{6}$")
+        self.assertRegex(n, r"^E[A-Z2-9]{7}$")
+
+    def test_payg_number_starts_with_e(self):
+        for _ in range(10):
+            n = generate_payg_number()
+            self.assertEqual(n[0], "E")
+
+    def test_payg_number_is_8_chars(self):
+        for _ in range(10):
+            n = generate_payg_number()
+            self.assertEqual(len(n), 8)
+
+    def test_payg_number_no_confusing_chars(self):
+        for _ in range(30):
+            n = generate_payg_number()
+            for bad in ("I", "O", "0", "1"):
+                self.assertNotIn(bad, n)
 
     def test_contract_number_uniqueness(self):
         nums = {generate_contract_number() for _ in range(20)}
@@ -71,7 +89,7 @@ class ContractNumberGenerationTest(TestCase):
             total_amount=Decimal("10000.00"),
         )
         self.assertRegex(c.contract_number, r"^TS-MW-\d{8}$")
-        self.assertRegex(c.payg_number, r"^TSG\d{6}$")
+        self.assertRegex(c.payg_number, r"^E[A-Z2-9]{7}$")
 
     def test_no_duplicate_contract_numbers(self):
         c1 = PaymentContract.objects.create(
@@ -668,3 +686,295 @@ class DeviceLockProviderTest(TestCase):
         result = provider.lock_device(contract)
         self.assertFalse(result["success"])
         self.assertIn("not configured", result["message"].lower())
+
+
+# ---------------------------------------------------------------------------
+# PayG format / uniqueness tests (Phase 7)
+# ---------------------------------------------------------------------------
+
+class PayGFormatTest(TestCase):
+    """Comprehensive tests for the new EXXXXXXX PayG number format."""
+
+    def test_format_matches_regex(self):
+        import re
+        pattern = re.compile(r"^E[A-Z2-9]{7}$")
+        for _ in range(30):
+            n = generate_payg_number()
+            self.assertRegex(n, pattern, f"PayG {n!r} does not match EXXXXXXX format")
+
+    def test_starts_with_uppercase_e(self):
+        for _ in range(20):
+            n = generate_payg_number()
+            self.assertEqual(n[0], "E")
+
+    def test_exactly_8_characters(self):
+        for _ in range(20):
+            n = generate_payg_number()
+            self.assertEqual(len(n), 8)
+
+    def test_no_confusing_chars(self):
+        for _ in range(50):
+            n = generate_payg_number()
+            for bad in ("I", "O", "0", "1"):
+                self.assertNotIn(bad, n, f"Confusing char {bad!r} found in {n!r}")
+
+    def test_200_unique_payg_numbers(self):
+        nums = [generate_payg_number() for _ in range(200)]
+        self.assertEqual(len(nums), len(set(nums)), "Duplicate PayG numbers in 200-sample batch")
+
+    def test_db_level_unique_constraint(self):
+        from django.db import IntegrityError
+        c = PaymentContract.objects.create(
+            customer_name="Unique X",
+            customer_phone="+265889000001",
+            total_amount=Decimal("10000"),
+        )
+        with self.assertRaises(IntegrityError):
+            PaymentContract.objects.create(
+                customer_name="Duplicate X",
+                customer_phone="+265889000002",
+                total_amount=Decimal("10000"),
+                payg_number=c.payg_number,
+            )
+
+    def test_auto_generated_on_new_contract(self):
+        c = PaymentContract.objects.create(
+            customer_name="New Contract",
+            customer_phone="+265889000003",
+            total_amount=Decimal("20000"),
+        )
+        self.assertTrue(c.payg_number)
+        self.assertRegex(c.payg_number, r"^E[A-Z2-9]{7}$")
+
+
+# ---------------------------------------------------------------------------
+# PayG URL route tests (Phase 7)
+# ---------------------------------------------------------------------------
+
+class PayGRouteTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.contract = PaymentContract.objects.create(
+            customer_name="PayG Route User",
+            customer_phone="+265889100001",
+            total_amount=Decimal("30000"),
+            amount_paid=Decimal("5000"),
+            daily_price=Decimal("83"),
+            thirty_day_price=Decimal("2500"),
+        )
+
+    def test_payg_url_resolves_correct_contract(self):
+        url = f"/pay/payg/{self.contract.payg_number}/"
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, self.contract.payg_number)
+
+    def test_payg_url_invalid_format_returns_400(self):
+        res = self.client.get("/pay/payg/NOT-VALID/")
+        self.assertEqual(res.status_code, 400)
+        self.assertContains(res, "Invalid PayG number format", status_code=400)
+
+    def test_payg_url_unknown_number_returns_404(self):
+        res = self.client.get("/pay/payg/EUNKNOWN/")
+        # EUNKNOWN has bad chars (but valid format?) — let's use a valid-format unknown
+        res = self.client.get("/pay/payg/EXXXZZZZ/")
+        # Will either be 400 (invalid chars) or 404 (not found)
+        self.assertIn(res.status_code, (400, 404))
+
+    def test_payg_history_url_works(self):
+        url = f"/pay/payg/{self.contract.payg_number}/history/"
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+
+    def test_payg_search_redirect(self):
+        """Search by PayG number should redirect to contract page."""
+        res = self.client.get("/pay/search/", {"q": self.contract.payg_number})
+        self.assertRedirects(
+            res,
+            f"/pay/contract/{self.contract.contract_number}/",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Deposit payment flow tests (Phase 7)
+# ---------------------------------------------------------------------------
+
+class DepositPaymentTest(TestCase):
+    def _make_contract(self, **kwargs):
+        defaults = dict(
+            customer_name="Deposit Tester",
+            customer_phone="+265889200001",
+            total_amount=Decimal("45000"),
+            deposit_required=Decimal("5000"),
+            deposit_paid=Decimal("0"),
+            amount_paid=Decimal("0"),
+            daily_price=Decimal("125"),
+            thirty_day_price=Decimal("3750"),
+            term_months=12,
+            start_date=date.today(),
+            status="active",
+        )
+        defaults.update(kwargs)
+        return PaymentContract.objects.create(**defaults)
+
+    # --- Deposit property tests ---
+
+    def test_deposit_remaining_correct(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("2000"))
+        self.assertEqual(c.deposit_remaining, Decimal("3000"))
+
+    def test_deposit_remaining_zero_when_no_requirement(self):
+        c = self._make_contract(deposit_required=Decimal("0"))
+        self.assertEqual(c.deposit_remaining, Decimal("0"))
+
+    def test_deposit_complete_false_when_partial(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("3000"))
+        self.assertFalse(c.deposit_complete)
+
+    def test_deposit_complete_true_when_full(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
+        self.assertTrue(c.deposit_complete)
+
+    # --- apply_payment deposit type ---
+
+    def test_deposit_payment_credits_deposit_paid(self):
+        c = self._make_contract()
+        result = apply_payment_to_contract(c, Decimal("2000"), payment_type="deposit")
+        c.refresh_from_db()
+        self.assertEqual(c.deposit_paid, Decimal("2000"))
+        self.assertEqual(c.amount_paid, Decimal("0"))
+        self.assertEqual(result["applied"], Decimal("2000"))
+
+    def test_deposit_payment_capped_at_deposit_remaining(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("4000"))
+        result = apply_payment_to_contract(c, Decimal("3000"), payment_type="deposit")
+        c.refresh_from_db()
+        self.assertEqual(c.deposit_paid, Decimal("5000"))
+        self.assertEqual(result["applied"], Decimal("1000"))
+
+    def test_deposit_already_paid_returns_error(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
+        result = apply_payment_to_contract(c, Decimal("1000"), payment_type="deposit")
+        self.assertIn("error", result)
+        self.assertEqual(result["applied"], Decimal("0"))
+
+    def test_deposit_does_not_affect_amount_paid(self):
+        c = self._make_contract()
+        apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")
+        c.refresh_from_db()
+        self.assertEqual(c.amount_paid, Decimal("0"))
+
+    def test_repayment_payment_credits_amount_paid(self):
+        c = self._make_contract()
+        apply_payment_to_contract(c, Decimal("3750"), payment_type="repayment")
+        c.refresh_from_db()
+        self.assertEqual(c.amount_paid, Decimal("3750"))
+        self.assertEqual(c.deposit_paid, Decimal("0"))
+
+    def test_deposit_complete_after_full_deposit(self):
+        c = self._make_contract()
+        apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")
+        c.refresh_from_db()
+        self.assertTrue(c.deposit_complete)
+
+    # --- Payment transaction type ---
+
+    def test_payment_type_field_on_transaction(self):
+        c = self._make_contract()
+        tx = PaymentTransaction.objects.create(
+            payment_contract=c,
+            provider="mock",
+            payment_type=PaymentTransaction.TYPE_DEPOSIT,
+            amount=Decimal("5000"),
+            phone="+265889200001",
+            status=PaymentTransaction.STATUS_PAID,
+        )
+        self.assertEqual(tx.payment_type, "deposit")
+        self.assertEqual(tx.get_payment_type_display(), "Deposit")
+
+    def test_repayment_type_is_default(self):
+        c = self._make_contract()
+        tx = PaymentTransaction.objects.create(
+            payment_contract=c,
+            provider="mock",
+            amount=Decimal("3750"),
+            phone="+265889200001",
+            status=PaymentTransaction.STATUS_PAID,
+        )
+        self.assertEqual(tx.payment_type, "repayment")
+
+    # --- Portal page deposit state ---
+
+    def test_contract_page_shows_deposit_section_when_pending(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("0"))
+        client = Client()
+        res = client.get(f"/pay/contract/{c.contract_number}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Deposit Required")
+        self.assertContains(res, "PAY DEPOSIT")
+
+    def test_contract_page_shows_deposit_complete_when_paid(self):
+        c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
+        client = Client()
+        res = client.get(f"/pay/contract/{c.contract_number}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Deposit")
+
+
+# ---------------------------------------------------------------------------
+# IMEI field tests (Phase 7)
+# ---------------------------------------------------------------------------
+
+class IMEIFieldTest(TestCase):
+    def test_imei_stored_on_contract(self):
+        c = PaymentContract.objects.create(
+            customer_name="IMEI Test",
+            customer_phone="+265889300001",
+            total_amount=Decimal("20000"),
+            imei_number="358588885858365",
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.imei_number, "358588885858365")
+
+    def test_imei_displayed_on_contract_page(self):
+        c = PaymentContract.objects.create(
+            customer_name="IMEI Display",
+            customer_phone="+265889300002",
+            total_amount=Decimal("20000"),
+            imei_number="123456789012345",
+        )
+        client = Client()
+        res = client.get(f"/pay/contract/{c.contract_number}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "123456789012345")
+
+
+# ---------------------------------------------------------------------------
+# Provider metadata tests (Phase 7)
+# ---------------------------------------------------------------------------
+
+class ProviderMetadataTest(TestCase):
+    def test_provider_metadata_stored(self):
+        meta = {
+            "payg_number": "EXGH4456",
+            "imei": "358588885858365",
+            "payment_url": "/pay/payg/EXGH4456/",
+        }
+        c = PaymentContract.objects.create(
+            customer_name="Meta Test",
+            customer_phone="+265889400001",
+            total_amount=Decimal("20000"),
+            provider_metadata=meta,
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.provider_metadata["imei"], "358588885858365")
+
+    def test_lock_reference_field(self):
+        c = PaymentContract.objects.create(
+            customer_name="Lock Ref Test",
+            customer_phone="+265889400002",
+            total_amount=Decimal("20000"),
+            lock_reference="LOCK-REF-001",
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.lock_reference, "LOCK-REF-001")

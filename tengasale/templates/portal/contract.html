@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}{{ contract.contract_number }} | TengaSale{% endblock %}
+{% block page_title %}{{ contract.payg_number }} | TengaSale PayG{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.0.0">
@@ -24,12 +24,14 @@
      SECTION 1 — CONTRACT PROGRESS CARD
   ══════════════════════════════════════════════════════════════════ #}
   <div class="cpd-progress-card">
-    {# Header row #}
+    {# Header row — PayG is the primary customer reference #}
     <div class="cpd-progress-card__header">
       <div class="cpd-progress-card__title-group">
-        <div class="cpd-label">Contract Number</div>
-        <div class="cpd-contract-num">{{ contract.contract_number }}</div>
-        <div class="cpd-payg-num">PayG: {{ contract.payg_number }}</div>
+        <div class="cpd-label">TengaSale PayG</div>
+        <div class="cpd-contract-num">{{ contract.payg_number }}</div>
+        {% if contract.customer_name %}
+        <div class="cpd-payg-customer">{{ contract.customer_name }}</div>
+        {% endif %}
       </div>
       <div class="cpd-status-badge cpd-status-badge--{{ contract.status }}">
         {% if contract.status == 'active' %}Active
@@ -298,12 +300,96 @@
   {% endif %}
 
   {# ══════════════════════════════════════════════════════════════════
-     SECTION 4 — SMART PAYMENT OPTIONS
+     SECTION 3b — DEPOSIT PENDING CARD (shown before normal payments)
+  ══════════════════════════════════════════════════════════════════ #}
+  {% if deposit_pending and contract.status != 'completed' %}
+  <div class="cpd-section-card cpd-section-card--deposit">
+    <div class="cpd-section-card__header">
+      <div class="cpd-section-card__title">Deposit Required</div>
+      <div class="cpd-status-badge cpd-status-badge--overdue">Deposit Pending</div>
+    </div>
+
+    <div class="cpd-deposit-summary">
+      <div class="cpd-deposit-row">
+        <span class="cpd-label">Deposit Required</span>
+        <span class="cpd-deposit-val">{{ deposit_required|mwk }}</span>
+      </div>
+      <div class="cpd-deposit-row">
+        <span class="cpd-label">Deposit Paid</span>
+        <span class="cpd-deposit-val cpd-deposit-val--paid">{{ deposit_paid_amt|mwk }}</span>
+      </div>
+      <div class="cpd-deposit-row cpd-deposit-row--highlight">
+        <span class="cpd-label">Deposit Remaining</span>
+        <span class="cpd-deposit-val cpd-deposit-val--remaining">{{ deposit_remaining|mwk }}</span>
+      </div>
+    </div>
+
+    <div x-data="paymentForm({ dailyPrice: 0, thirtyDayPrice: 0, remaining: {{ deposit_remaining }}, recommended: {{ deposit_remaining }} })">
+      <form method="post" action="{% url 'portal_payment' contract.contract_number %}">
+        {% csrf_token %}
+        <input type="hidden" name="payment_type" value="deposit">
+
+        <div class="cpd-form-row">
+          <div class="cpd-field">
+            <label class="cpd-field-label">Mobile Money Number</label>
+            <div class="cpd-phone-row">
+              <span class="cpd-phone-prefix">+265</span>
+              <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}"
+                     placeholder="8X XXX XXXX" required x-model="phone">
+            </div>
+          </div>
+          <div class="cpd-field">
+            <label class="cpd-field-label">Network</label>
+            <select name="provider" class="cpd-select" required x-model="provider">
+              <option value="">— Select —</option>
+              {% for value, label in providers %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cpd-field">
+          <label class="cpd-field-label">Amount (MWK)</label>
+          <input type="number" name="amount" class="cpd-input cpd-input--amount"
+                 min="100" step="1" placeholder="{{ deposit_remaining }}"
+                 x-model="amount" required x-on:input="activeSegment = 'custom'">
+        </div>
+
+        <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit"
+                x-bind:disabled="!amount || !provider || !phone"
+                data-testid="pay-deposit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          PAY DEPOSIT
+          <span x-text="amount ? ' MWK ' + Number(amount).toLocaleString() : ' MWK ' + '{{ deposit_remaining|floatformat:0 }}'">
+            MWK {{ deposit_remaining|floatformat:0 }}
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+  {% elif deposit_required and deposit_complete %}
+  <div class="cpd-deposit-complete-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    Deposit of {{ deposit_required|mwk }} paid — contract active
+  </div>
+  {% endif %}
+
+  {# ══════════════════════════════════════════════════════════════════
+     SECTION 4 — SMART PAYMENT OPTIONS (repayment)
   ══════════════════════════════════════════════════════════════════ #}
   {% if contract.status != 'completed' %}
   <div class="cpd-section-card">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Make Payment</div>
+      <div class="cpd-section-card__title">
+        {% if deposit_pending %}Repayment{% else %}Make Payment{% endif %}
+      </div>
     </div>
 
     <div
@@ -311,6 +397,7 @@
     >
       <form method="post" action="{% url 'portal_payment' contract.contract_number %}">
         {% csrf_token %}
+        <input type="hidden" name="payment_type" value="repayment">
 
         {# Smart amount selector #}
         {% if behaviour.avg_interval_days %}

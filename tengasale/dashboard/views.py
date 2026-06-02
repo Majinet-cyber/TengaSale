@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
-from django.db.models import Count, Sum, Q
+from django.db.models import Avg, Count, Sum, Q, F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from accounts.decorators import hq_required, merchant_required
@@ -2286,6 +2286,152 @@ def hq_audit_trail(request):
         "object_type_filter": object_type_filter,
         "object_types": object_types,
         "all_users": all_users,
+    })
+
+
+@hq_required
+def hq_payment_intelligence(request):
+    """
+    HQ Payment Intelligence Dashboard — Section 12.
+
+    Shows aggregated payment behaviour analytics across all active contracts,
+    broken down by district, occupation, merchant, device model, and underwriter.
+    Uses only real stored data from PaymentContract.analytics_* fields.
+    No fake AI or predictions.
+    """
+    from portal.models import PaymentContract, PaymentTransaction
+
+    # ── Overall portfolio KPIs ─────────────────────────────────────────────
+    all_contracts = PaymentContract.objects.exclude(status="cancelled")
+    total_contracts = all_contracts.count()
+    active_contracts = all_contracts.filter(status="active").count()
+    completed_contracts = all_contracts.filter(status="completed").count()
+    overdue_contracts = all_contracts.filter(status__in=["overdue", "locked"]).count()
+
+    portfolio_agg = all_contracts.aggregate(
+        total_collected=Sum("amount_paid"),
+        total_value=Sum("total_amount"),
+        avg_consistency=Avg("analytics_consistency"),
+        avg_payment_count=Avg("analytics_payment_count"),
+        avg_days_late=Avg("analytics_days_late"),
+    )
+    total_collected = portfolio_agg["total_collected"] or 0
+    total_value = portfolio_agg["total_value"] or 0
+    portfolio_completion = round((completed_contracts / total_contracts * 100) if total_contracts else 0, 1)
+    portfolio_default_rate = round((overdue_contracts / total_contracts * 100) if total_contracts else 0, 1)
+    avg_consistency = round(portfolio_agg["avg_consistency"] or 0, 1)
+    avg_days_late = round(portfolio_agg["avg_days_late"] or 0, 1)
+
+    # ── By District ────────────────────────────────────────────────────────
+    by_district = (
+        all_contracts
+        .filter(source_application__isnull=False)
+        .values(district=F("source_application__district"))
+        .annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            overdue=Count("id", filter=Q(status__in=["overdue", "locked"])),
+            avg_cons=Avg("analytics_consistency"),
+            avg_late=Avg("analytics_days_late"),
+            collected=Sum("amount_paid"),
+        )
+        .exclude(district="")
+        .order_by("-avg_cons")[:20]
+    )
+
+    # ── By Occupation ──────────────────────────────────────────────────────
+    by_occupation = (
+        all_contracts
+        .filter(source_application__isnull=False)
+        .values(occupation=F("source_application__occupation"))
+        .annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            overdue=Count("id", filter=Q(status__in=["overdue", "locked"])),
+            avg_cons=Avg("analytics_consistency"),
+            avg_late=Avg("analytics_days_late"),
+            collected=Sum("amount_paid"),
+        )
+        .exclude(occupation="")
+        .order_by("-avg_cons")[:20]
+    )
+
+    # ── By Merchant (created_by on source_application) ─────────────────────
+    by_merchant = (
+        all_contracts
+        .filter(source_application__isnull=False, source_application__created_by__isnull=False)
+        .values(
+            merchant_id=F("source_application__created_by__id"),
+            merchant_name=F("source_application__created_by__get_full_name"),
+        )
+        .annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            overdue=Count("id", filter=Q(status__in=["overdue", "locked"])),
+            avg_cons=Avg("analytics_consistency"),
+            collected=Sum("amount_paid"),
+        )
+        .order_by("-avg_cons")[:20]
+    )
+
+    # ── By Device Model ────────────────────────────────────────────────────
+    by_device = (
+        all_contracts
+        .exclude(device_model="")
+        .values("device_model")
+        .annotate(
+            total=Count("id"),
+            completed=Count("id", filter=Q(status="completed")),
+            overdue=Count("id", filter=Q(status__in=["overdue", "locked"])),
+            avg_cons=Avg("analytics_consistency"),
+            avg_late=Avg("analytics_days_late"),
+            collected=Sum("amount_paid"),
+        )
+        .order_by("-avg_cons")[:20]
+    )
+
+    # ── Payment method distribution ────────────────────────────────────────
+    by_provider = (
+        PaymentTransaction.objects
+        .filter(status="paid")
+        .values("provider")
+        .annotate(total=Count("id"), volume=Sum("amount"))
+        .order_by("-volume")
+    )
+
+    # ── Discipline distribution ────────────────────────────────────────────
+    discipline_dist = (
+        all_contracts
+        .exclude(analytics_discipline="")
+        .values("analytics_discipline")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    # ── Average completion stats ───────────────────────────────────────────
+    completed_qs = all_contracts.filter(status="completed")
+    avg_completion_payments = completed_qs.aggregate(avg=Avg("analytics_payment_count"))["avg"] or 0
+
+    return render(request, "dashboard/hq_payment_intelligence.html", {
+        # Portfolio KPIs
+        "total_contracts": total_contracts,
+        "active_contracts": active_contracts,
+        "completed_contracts": completed_contracts,
+        "overdue_contracts": overdue_contracts,
+        "total_collected": total_collected,
+        "total_value": total_value,
+        "portfolio_completion": portfolio_completion,
+        "portfolio_default_rate": portfolio_default_rate,
+        "avg_consistency": avg_consistency,
+        "avg_days_late": avg_days_late,
+        "avg_completion_payments": round(avg_completion_payments, 1),
+        # Breakdowns
+        "by_district": list(by_district),
+        "by_occupation": list(by_occupation),
+        "by_merchant": list(by_merchant),
+        "by_device": list(by_device),
+        "by_provider": list(by_provider),
+        "discipline_dist": list(discipline_dist),
     })
 
 

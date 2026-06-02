@@ -408,30 +408,75 @@ def calculate_customer_insights(contract, behaviour: dict) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Payment type helper
+# ---------------------------------------------------------------------------
+
+def calculate_deposit_payment_type(contract, payment_type_hint: str) -> str:
+    """
+    Determine the correct payment type for a new transaction.
+
+    Rules:
+    - If the caller explicitly requests 'deposit' AND the deposit is not yet complete,
+      return TYPE_DEPOSIT.
+    - If the contract has an outstanding deposit (deposit_required > deposit_paid)
+      and no explicit type is specified, default to deposit to prioritise it.
+    - Otherwise return TYPE_REPAYMENT.
+    """
+    from portal.models import PaymentTransaction
+    if payment_type_hint == PaymentTransaction.TYPE_DEPOSIT:
+        if not contract.deposit_complete:
+            return PaymentTransaction.TYPE_DEPOSIT
+    if payment_type_hint not in (
+        PaymentTransaction.TYPE_DEPOSIT,
+        PaymentTransaction.TYPE_REPAYMENT,
+        PaymentTransaction.TYPE_PENALTY,
+        PaymentTransaction.TYPE_ADJUSTMENT,
+        PaymentTransaction.TYPE_REFUND,
+    ):
+        # Auto-detect: if deposit is outstanding, default to deposit
+        if not contract.deposit_complete and contract.deposit_required > Decimal("0"):
+            return PaymentTransaction.TYPE_DEPOSIT
+    return payment_type_hint or PaymentTransaction.TYPE_REPAYMENT
+
+
+# ---------------------------------------------------------------------------
 # Payment allocation
 # ---------------------------------------------------------------------------
 
-def apply_payment_to_contract(contract, amount: Decimal, db_save: bool = True) -> dict:
+def apply_payment_to_contract(
+    contract,
+    amount: Decimal,
+    db_save: bool = True,
+    payment_type: str = "repayment",
+) -> dict:
     """
     Apply a payment to a contract.
 
-    Allocation order:
+    Payment type handling:
+    - TYPE_DEPOSIT: credited to deposit_paid, not amount_paid.
+      Once deposit_required is met, contract can become active.
+    - TYPE_REPAYMENT (default): credited to amount_paid, extends usage days.
+
+    Allocation order (repayment):
     1. First clears any arrears (overdue amount).
     2. Remaining payment extends active usage days.
 
     Guards:
     - Zero or negative amounts return without modifying the contract.
-    - Payments are capped at the remaining balance (no negative remaining).
+    - Payments are capped at the remaining balance / deposit remaining.
     - Completed contracts are not modified.
     - Progress is always capped at 100%.
 
     Returns a dict with allocation details.
     """
+    from portal.models import PaymentTransaction
+
     if amount is None or amount <= Decimal("0"):
         return {
             "applied": Decimal("0"),
             "arrears_cleared": Decimal("0"),
             "days_extended": 0,
+            "payment_type": payment_type,
             "error": "Payment amount must be greater than zero.",
         }
 
@@ -440,9 +485,36 @@ def apply_payment_to_contract(contract, amount: Decimal, db_save: bool = True) -
             "applied": Decimal("0"),
             "arrears_cleared": Decimal("0"),
             "days_extended": 0,
+            "payment_type": payment_type,
             "error": "Contract is already completed.",
         }
 
+    # ── Deposit payment ──────────────────────────────────────────────────────
+    if payment_type == PaymentTransaction.TYPE_DEPOSIT:
+        deposit_remaining = contract.deposit_remaining
+        if deposit_remaining <= Decimal("0"):
+            return {
+                "applied": Decimal("0"),
+                "arrears_cleared": Decimal("0"),
+                "days_extended": 0,
+                "payment_type": payment_type,
+                "error": "Deposit is already fully paid.",
+            }
+        applied = min(amount, deposit_remaining)
+        contract.deposit_paid = (contract.deposit_paid or Decimal("0")) + applied
+        if db_save:
+            contract.save(update_fields=["deposit_paid"])
+        return {
+            "applied": applied,
+            "arrears_cleared": Decimal("0"),
+            "days_extended": 0,
+            "payment_type": payment_type,
+            "deposit_remaining": contract.deposit_remaining,
+            "deposit_complete": contract.deposit_complete,
+            "status": contract.status,
+        }
+
+    # ── Repayment (and other types) ──────────────────────────────────────────
     remaining_before = calculate_remaining_amount(contract)
 
     if remaining_before <= Decimal("0"):
@@ -453,6 +525,7 @@ def apply_payment_to_contract(contract, amount: Decimal, db_save: bool = True) -
             "applied": Decimal("0"),
             "arrears_cleared": Decimal("0"),
             "days_extended": 0,
+            "payment_type": payment_type,
             "error": "Contract is already fully paid.",
         }
 
@@ -506,16 +579,68 @@ def apply_payment_to_contract(contract, amount: Decimal, db_save: bool = True) -
             "amount_paid", "due_date", "lock_date", "status",
             "daily_price", "thirty_day_price",
         ])
+        # Refresh stored analytics after every successful payment
+        try:
+            refresh_contract_analytics(contract, db_save=True)
+        except Exception:
+            logger.exception("Failed to refresh analytics for contract %s", contract.pk)
 
     return {
         "applied": applied,
         "arrears_cleared": arrears_cleared,
         "days_extended": days_extended,
+        "payment_type": payment_type,
         "new_due_date": contract.due_date,
         "new_lock_date": contract.lock_date,
         "remaining": remaining_after,
         "status": contract.status,
     }
+
+
+# ---------------------------------------------------------------------------
+# Analytics snapshot persistence (Section 11)
+# ---------------------------------------------------------------------------
+
+def refresh_contract_analytics(contract, db_save: bool = True) -> None:
+    """
+    Re-compute and persist behaviour analytics onto the PaymentContract row.
+
+    Called automatically after every payment so HQ can query without
+    re-running per-contract calculations at report time.
+    """
+    behaviour = calculate_payment_behaviour(contract)
+    today = timezone.localdate()
+
+    days_late = 0
+    if contract.due_date and contract.due_date < today:
+        days_late = (today - contract.due_date).days
+
+    contract.analytics_payment_count = behaviour["payment_count"]
+    contract.analytics_average_payment = behaviour["average_payment"] or Decimal("0")
+    contract.analytics_largest_payment = behaviour["largest_payment"] or Decimal("0")
+    contract.analytics_smallest_payment = behaviour["smallest_payment"] or Decimal("0")
+    contract.analytics_consistency = behaviour["consistency"]
+    contract.analytics_discipline = behaviour["discipline"]
+    contract.analytics_avg_interval_days = behaviour["avg_interval_days"]
+    contract.analytics_days_late = days_late
+    contract.analytics_preferred_provider = behaviour["preferred_provider"] or ""
+    contract.analytics_preferred_day = behaviour["preferred_day"] or ""
+    contract.analytics_updated_at = timezone.now()
+
+    if db_save:
+        contract.save(update_fields=[
+            "analytics_payment_count",
+            "analytics_average_payment",
+            "analytics_largest_payment",
+            "analytics_smallest_payment",
+            "analytics_consistency",
+            "analytics_discipline",
+            "analytics_avg_interval_days",
+            "analytics_days_late",
+            "analytics_preferred_provider",
+            "analytics_preferred_day",
+            "analytics_updated_at",
+        ])
 
 
 # ---------------------------------------------------------------------------
@@ -577,10 +702,23 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         pass
 
     total_amount = Decimal(application.calculated_total_loan or 0)
-    deposit = Decimal(application.deposit_amount or 0)
-    term = application.term_months or 12
+    deposit_required = Decimal(
+        getattr(application, "calculated_deposit_amount", None)
+        or getattr(application, "deposit_amount", None)
+        or 0
+    )
+    term = getattr(application, "term_months", None) or 12
     daily = calculate_daily_price(total_amount, term)
     monthly = calculate_thirty_day_price(total_amount, term)
+    imei = getattr(application, "imei_number", "") or ""
+
+    # Build provider metadata for lock integration
+    payg_placeholder = ""  # will be set by save() auto-generation
+    provider_meta = {
+        "imei": imei,
+        "customer_phone": application.customer_phone or "",
+        "device_model": str(application.deal) if application.deal else "",
+    }
 
     contract = PaymentContract.objects.create(
         source_application=application,
@@ -588,13 +726,22 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         customer_phone=application.customer_phone or "",
         customer_national_id=application.national_id or "",
         device_model=str(application.deal) if application.deal else "",
+        imei_number=imei,
         total_amount=total_amount,
-        deposit_paid=deposit,
+        deposit_required=deposit_required,
+        deposit_paid=Decimal("0"),
         daily_price=daily,
         thirty_day_price=monthly,
         term_months=term,
         status=PaymentContract.STATUS_ACTIVE,
+        provider_metadata=provider_meta,
     )
+
+    # Now that payg_number is assigned, update provider_metadata with it
+    provider_meta["payg_number"] = contract.payg_number
+    provider_meta["payment_url"] = f"/pay/payg/{contract.payg_number}/"
+    contract.provider_metadata = provider_meta
+    contract.save(update_fields=["provider_metadata"])
     logger.info(
         "Created PaymentContract %s (PayG: %s) from application %s",
         contract.contract_number,

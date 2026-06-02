@@ -3,10 +3,14 @@ Customer Payment Portal views — /pay/
 
 Handles contract search, payment initiation, history, support,
 and webhook placeholder endpoints for payment providers.
+
+PayG routes (/pay/payg/EXXXXXXX/) are the primary customer-facing URLs.
+Contract-number routes (/pay/contract/TS-MW-XXXXXXXX/) remain for backward compat.
 """
 
 import json
 import logging
+import re
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -28,6 +32,8 @@ from .services import (
     calculate_customer_insights,
     search_payment_contract,
 )
+
+_PAYG_RE = re.compile(r"^E[A-Z2-9]{7}$")
 
 logger = logging.getLogger(__name__)
 
@@ -149,14 +155,16 @@ def portal_contract(request, contract_number):
     app = contract.source_application
     device_info = {
         "model": contract.device_model or "—",
-        "imei": "",
+        "imei": contract.imei_number or "",
         "brand": "",
         "merchant_name": "",
         "merchant_branch": "",
         "underwriter_name": "",
     }
     if app:
-        device_info["imei"] = getattr(app, "imei_number", "") or ""
+        # Fall back to application IMEI if contract doesn't have it yet
+        if not device_info["imei"]:
+            device_info["imei"] = getattr(app, "imei_number", "") or ""
         device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
         if not device_info["brand"] and app.deal:
             try:
@@ -175,6 +183,13 @@ def portal_contract(request, contract_number):
         except Exception:
             pass
 
+    # Deposit state
+    deposit_required = contract.deposit_required or Decimal("0")
+    deposit_paid_amt = contract.deposit_paid or Decimal("0")
+    deposit_remaining = contract.deposit_remaining
+    deposit_complete = contract.deposit_complete
+    deposit_pending = deposit_required > 0 and not deposit_complete
+
     # Last payment info for lock card
     last_paid_tx = all_paid[0] if all_paid else None
 
@@ -192,6 +207,12 @@ def portal_contract(request, contract_number):
         "device_info": device_info,
         "last_paid_tx": last_paid_tx,
         "today": today,
+        # Deposit context
+        "deposit_required": deposit_required,
+        "deposit_paid_amt": deposit_paid_amt,
+        "deposit_remaining": deposit_remaining,
+        "deposit_complete": deposit_complete,
+        "deposit_pending": deposit_pending,
         "providers": [
             ("airtel_money", "Airtel Money"),
             ("tnm_mpamba", "TNM Mpamba"),
@@ -216,6 +237,8 @@ def portal_payment(request, contract_number):
     provider_name = request.POST.get("provider", "mock")
     phone_raw = request.POST.get("phone", "").strip()
     amount_raw = request.POST.get("amount", "0").strip()
+    # payment_type: deposit or repayment (from hidden form field)
+    payment_type_raw = request.POST.get("payment_type", "").strip().lower()
 
     # Validate amount
     try:
@@ -232,14 +255,24 @@ def portal_payment(request, contract_number):
         messages.error(request, "Minimum payment is MWK 100.")
         return redirect("portal_contract", contract_number=contract_number)
 
-    remaining = calculate_remaining_amount(contract)
-    if remaining <= Decimal("0"):
-        messages.info(request, "This contract is fully paid.")
-        return redirect("portal_contract", contract_number=contract_number)
+    # Determine whether this is a deposit or repayment
+    from portal.services import calculate_deposit_payment_type
+    payment_type = calculate_deposit_payment_type(contract, payment_type_raw)
 
-    # Cap payment at remaining balance
-    if amount > remaining:
-        amount = remaining
+    if payment_type == PaymentTransaction.TYPE_DEPOSIT:
+        deposit_remaining = contract.deposit_remaining
+        if deposit_remaining <= Decimal("0"):
+            messages.info(request, "Deposit is already fully paid.")
+            return redirect("portal_contract", contract_number=contract_number)
+        if amount > deposit_remaining:
+            amount = deposit_remaining
+    else:
+        remaining = calculate_remaining_amount(contract)
+        if remaining <= Decimal("0"):
+            messages.info(request, "This contract is fully paid.")
+            return redirect("portal_contract", contract_number=contract_number)
+        if amount > remaining:
+            amount = remaining
 
     # Normalise phone number to +265 format
     phone = phone_raw.replace(" ", "")
@@ -250,6 +283,7 @@ def portal_payment(request, contract_number):
     tx = PaymentTransaction.objects.create(
         payment_contract=contract,
         provider=provider_name,
+        payment_type=payment_type,
         amount=amount,
         currency="MWK",
         phone=phone,
@@ -263,7 +297,7 @@ def portal_payment(request, contract_number):
             amount=amount,
             phone=phone,
             reference=tx.internal_reference,
-            description=f"TengaSale contract {contract_number}",
+            description=f"TengaSale PayG {contract.payg_number} — {payment_type}",
         )
     except Exception as exc:
         logger.exception("Payment provider error for %s", tx.internal_reference)
@@ -280,18 +314,21 @@ def portal_payment(request, contract_number):
     tx.raw_response = result.raw
 
     if result.success:
-        # Mock provider and MOCK_PAYMENTS=true: immediately confirm payment
+        # Mock provider: immediately confirm payment
         if getattr(provider, "mode", "") == "mock":
             tx.status = PaymentTransaction.STATUS_PAID
             tx.paid_at = timezone.now()
             tx.save(update_fields=["provider_reference", "status", "paid_at", "raw_response"])
-            apply_result = apply_payment_to_contract(contract, amount)
+            from portal.services import apply_payment_to_contract as _apply
+            apply_result = _apply(contract, amount, payment_type=payment_type)
             _portal_audit(
                 AuditLog.ACTION_PAYMENT,
                 "PaymentContract",
                 contract.id,
                 {
                     "contract_number": contract_number,
+                    "payg_number": contract.payg_number,
+                    "payment_type": payment_type,
                     "amount": str(amount),
                     "provider": provider_name,
                     "reference": tx.internal_reference,
@@ -313,7 +350,6 @@ def portal_payment(request, contract_number):
     else:
         tx.status = PaymentTransaction.STATUS_FAILED
         tx.save(update_fields=["provider_reference", "status", "raw_response"])
-        # Friendly error — do not expose raw provider error to customer
         logger.warning(
             "Payment failed for contract %s: %s",
             contract_number, result.message
@@ -376,6 +412,68 @@ def portal_history(request, contract_number):
 
 def portal_support(request):
     return render(request, "portal/support.html", {})
+
+
+# ---------------------------------------------------------------------------
+# PayG routes — primary customer-facing URLs (/pay/payg/EXXXXXXX/)
+# These resolve the contract by payg_number and delegate to existing views.
+# ---------------------------------------------------------------------------
+
+def _get_contract_by_payg(payg_number):
+    """
+    Look up a PaymentContract by its PayG number.
+    Returns (contract, error_response) — exactly one will be non-None.
+    """
+    payg = payg_number.strip().upper()
+    if not _PAYG_RE.match(payg):
+        return None, "invalid_format"
+    try:
+        return PaymentContract.objects.get(payg_number=payg), None
+    except PaymentContract.DoesNotExist:
+        return None, "not_found"
+
+
+def portal_payg(request, payg_number):
+    """Resolve by PayG number and redirect to the contract detail page."""
+    contract, err = _get_contract_by_payg(payg_number)
+    if err == "invalid_format":
+        return render(request, "portal/search.html", {
+            "searched": True,
+            "query": payg_number,
+            "error": (
+                "Invalid PayG number format. "
+                "A PayG number starts with E and is exactly 8 characters long, e.g. EXGH4456."
+            ),
+        }, status=400)
+    if err == "not_found":
+        return render(request, "portal/search.html", {
+            "searched": True,
+            "query": payg_number,
+            "error": "PayG contract not found. Please check the number or contact support.",
+        }, status=404)
+    return portal_contract(request, contract.contract_number)
+
+
+@require_POST
+def portal_payg_payment(request, payg_number):
+    """Accept a payment POST for a PayG number."""
+    contract, err = _get_contract_by_payg(payg_number)
+    if err:
+        messages.error(request, "PayG contract not found.")
+        return redirect("portal_search")
+    return portal_payment(request, contract.contract_number)
+
+
+def portal_payg_history(request, payg_number):
+    """Payment history for a PayG number."""
+    contract, err = _get_contract_by_payg(payg_number)
+    if err:
+        return render(request, "portal/search.html", {
+            "searched": True,
+            "query": payg_number,
+            "error": "PayG contract not found. Please check the number or contact support.",
+        }, status=404)
+    return portal_history(request, contract.contract_number)
 
 
 # ---------------------------------------------------------------------------

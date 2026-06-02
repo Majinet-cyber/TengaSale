@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}Payment History — {{ contract.contract_number }}{% endblock %}
+{% block page_title %}Payment History — {{ contract.payg_number }}{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.0.0">
@@ -23,24 +23,24 @@
   <div class="cpd-progress-card">
     <div class="cpd-progress-card__header">
       <div class="cpd-progress-card__title-group">
-        <div class="cpd-label">Contract</div>
-        <div class="cpd-contract-num">{{ contract.contract_number }}</div>
-        <div class="cpd-payg-num">PayG: {{ contract.payg_number }}</div>
+        <div class="cpd-label">TengaSale PayG</div>
+        <div class="cpd-contract-num">{{ contract.payg_number }}</div>
+        {% if contract.customer_name %}<div class="cpd-payg-customer">{{ contract.customer_name }}</div>{% endif %}
       </div>
       <div class="cpd-status-badge cpd-status-badge--{{ contract.status }}">{{ contract.get_status_display }}</div>
     </div>
     <div class="cpd-quick-stats" style="margin-top:16px;">
       <div class="cpd-quick-stat">
         <span class="cpd-quick-stat__val">{{ contract.amount_paid|mwk }}</span>
-        <span class="cpd-label">Total Paid</span>
+        <span class="cpd-label">Instalments</span>
+      </div>
+      <div class="cpd-quick-stat">
+        <span class="cpd-quick-stat__val">{{ contract.deposit_paid|mwk }}</span>
+        <span class="cpd-label">Deposit Paid</span>
       </div>
       <div class="cpd-quick-stat">
         <span class="cpd-quick-stat__val">{{ contract.remaining_amount|mwk }}</span>
         <span class="cpd-label">Remaining</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ transactions|length }}</span>
-        <span class="cpd-label">Records</span>
       </div>
       <div class="cpd-quick-stat">
         <span class="cpd-quick-stat__val">{{ contract.progress_percent }}%</span>
@@ -100,6 +100,9 @@
           <div class="cpd-hist-row__top">
             <span class="cpd-hist-row__amount">{{ tx.amount|mwk }}</span>
             <span class="cpd-hist-status cpd-hist-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
+            {% if tx.payment_type %}
+            <span class="cpd-hist-type cpd-hist-type--{{ tx.payment_type }}">{{ tx.get_payment_type_display }}</span>
+            {% endif %}
           </div>
           <div class="cpd-hist-row__meta">
             {{ tx.paid_at|date:"d M Y, H:i"|default:tx.created_at|date:"d M Y, H:i" }}

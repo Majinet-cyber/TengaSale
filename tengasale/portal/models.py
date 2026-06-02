@@ -1,7 +1,8 @@
 """
 Portal models — customer payment portal.
 
-PaymentContract is the public-facing contract (TS-MW-XXXXXXXX / TSGXXXXXX).
+PaymentContract is the public-facing contract (TS-MW-XXXXXXXX).
+payg_number is the customer-facing PayG reference (EXXXXXXX — 8 chars, starts with E).
 PaymentTransaction records each individual payment attempt.
 """
 
@@ -11,6 +12,10 @@ import string
 
 from django.db import models
 from django.utils import timezone
+
+# Characters used in PayG numbers: uppercase A-Z (excl. I, O) + digits 2-9
+# Excludes confusing look-alike characters: I (vs 1), O (vs 0), 0, 1
+_PAYG_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
 def generate_contract_number():
@@ -24,13 +29,21 @@ def generate_contract_number():
 
 
 def generate_payg_number():
-    """Generate a unique TSGXXXXXX PayG number."""
-    for _ in range(100):
-        suffix = "".join(random.choices(string.digits, k=6))
-        number = f"TSG{suffix}"
+    """
+    Generate a unique PayG contract number in the format EXXXXXXX.
+
+    - Exactly 8 characters.
+    - Always starts with uppercase 'E'.
+    - Remaining 7 characters are uppercase letters (A-Z, excl. I, O) and
+      digits (2-9, excl. 0, 1) to avoid look-alike confusion.
+    - Retries up to 50 times; raises RuntimeError if all attempts collide.
+    """
+    for _ in range(50):
+        suffix = "".join(random.choices(_PAYG_CHARS, k=7))
+        number = f"E{suffix}"
         if not PaymentContract.objects.filter(payg_number=number).exists():
             return number
-    raise RuntimeError("Could not generate a unique PayG number after 100 attempts.")
+    raise RuntimeError("Could not generate a unique PayG number after 50 attempts.")
 
 
 def generate_payment_reference():
@@ -61,7 +74,11 @@ class PaymentContract(models.Model):
     ]
 
     contract_number = models.CharField(max_length=15, unique=True, blank=True)
-    payg_number = models.CharField(max_length=10, unique=True, blank=True)
+    payg_number = models.CharField(
+        max_length=8, unique=True, blank=True,
+        help_text="Customer-facing PayG reference — format EXXXXXXX (8 chars, starts with E)",
+        db_index=True,
+    )
 
     # Link to existing financing contract (optional — can also stand alone for demo)
     financing_contract = models.OneToOneField(
@@ -86,9 +103,17 @@ class PaymentContract(models.Model):
     customer_phone = models.CharField(max_length=30)
     customer_national_id = models.CharField(max_length=80, blank=True)
     device_model = models.CharField(max_length=120, blank=True)
+    imei_number = models.CharField(
+        max_length=20, blank=True, default="",
+        help_text="Device IMEI — stored directly for fast portal lookup",
+    )
 
     # Financials
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    deposit_required = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text="Required deposit amount for this contract",
+    )
     deposit_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     daily_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -102,6 +127,27 @@ class PaymentContract(models.Model):
 
     # Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+
+    # Lock provider references (for MDM / PayG integration)
+    lock_reference = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Internal reference sent to lock provider at enrollment",
+    )
+    provider_contract_reference = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Contract reference assigned by lock provider",
+    )
+    provider_device_reference = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="Device reference assigned by lock provider",
+    )
+    provider_metadata = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Metadata sent to/from lock provider, e.g. "
+            '{"payg_number": "EXGH4456", "imei": "...", "payment_url": "..."}'
+        ),
+    )
 
     # Device locking (for PayG / MDM integration)
     LOCK_PROVIDER_NONE = ""
@@ -155,6 +201,33 @@ class PaymentContract(models.Model):
         help_text="Percentage discount for 9-month early settlement",
     )
 
+    # ── Underwriting / Behaviour Analytics (auto-refreshed on payment) ───────
+    # Stored so HQ can query without re-computing across all contracts.
+    analytics_payment_count = models.PositiveIntegerField(default=0)
+    analytics_average_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    analytics_largest_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    analytics_smallest_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    analytics_consistency = models.PositiveSmallIntegerField(
+        default=0, help_text="Payment consistency 0–100 (days covered / days since start)"
+    )
+    analytics_discipline = models.CharField(
+        max_length=30, blank=True, default="",
+        help_text="Excellent / Good / Fair / Needs Improvement"
+    )
+    analytics_avg_interval_days = models.PositiveSmallIntegerField(
+        null=True, blank=True, help_text="Average days between payments"
+    )
+    analytics_days_late = models.PositiveIntegerField(
+        default=0, help_text="Total days currently behind schedule"
+    )
+    analytics_preferred_provider = models.CharField(
+        max_length=30, blank=True, default="", help_text="Most-used payment provider"
+    )
+    analytics_preferred_day = models.CharField(
+        max_length=15, blank=True, default="", help_text="Day-of-week customer most often pays"
+    )
+    analytics_updated_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -162,9 +235,9 @@ class PaymentContract(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["contract_number"]),
-            models.Index(fields=["payg_number"]),
             models.Index(fields=["customer_phone"]),
             models.Index(fields=["customer_national_id"]),
+            models.Index(fields=["imei_number"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -175,7 +248,21 @@ class PaymentContract(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.contract_number} — {self.customer_name}"
+        payg = self.payg_number or self.contract_number
+        return f"{payg} — {self.customer_name}"
+
+    @property
+    def deposit_remaining(self):
+        """Amount still owed to complete the deposit."""
+        from decimal import Decimal
+        if not self.deposit_required:
+            return Decimal("0")
+        return max(self.deposit_required - self.deposit_paid, Decimal("0"))
+
+    @property
+    def deposit_complete(self):
+        """True when the required deposit has been fully collected."""
+        return self.deposit_remaining <= 0
 
     @property
     def remaining_amount(self):
@@ -227,12 +314,30 @@ class PaymentTransaction(models.Model):
         (STATUS_CANCELLED, "Cancelled"),
     ]
 
+    TYPE_DEPOSIT = "deposit"
+    TYPE_REPAYMENT = "repayment"
+    TYPE_PENALTY = "penalty"
+    TYPE_ADJUSTMENT = "adjustment"
+    TYPE_REFUND = "refund"
+
+    PAYMENT_TYPE_CHOICES = [
+        (TYPE_DEPOSIT, "Deposit"),
+        (TYPE_REPAYMENT, "Repayment"),
+        (TYPE_PENALTY, "Penalty"),
+        (TYPE_ADJUSTMENT, "Adjustment"),
+        (TYPE_REFUND, "Refund"),
+    ]
+
     payment_contract = models.ForeignKey(
         PaymentContract,
         on_delete=models.CASCADE,
         related_name="transactions",
     )
     provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default=PROVIDER_MOCK)
+    payment_type = models.CharField(
+        max_length=15, choices=PAYMENT_TYPE_CHOICES, default=TYPE_REPAYMENT,
+        help_text="DEPOSIT for initial deposit, REPAYMENT for regular instalments, etc.",
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     commissionable_amount = models.DecimalField(
         max_digits=12,

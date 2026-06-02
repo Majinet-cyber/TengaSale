@@ -138,6 +138,25 @@ class Contract(models.Model):
         return self.contract_number or f"Contract for {self.application_id}"
 
     @property
+    def payg_number(self):
+        """
+        Customer-facing PayG number from the linked PaymentContract (portal).
+        Returns empty string if not yet created.
+        """
+        try:
+            return self.application.payment_contract.payg_number or ""
+        except Exception:
+            return ""
+
+    @property
+    def payment_url(self):
+        """Canonical customer-facing payment URL using PayG number."""
+        payg = self.payg_number
+        if payg:
+            return f"/pay/payg/{payg}/"
+        return f"/pay/contract/{self.contract_number}/" if self.contract_number else ""
+
+    @property
     def finance_charges(self):
         return max(Decimal("0"), self.total_loan - self.cash_price)
 
