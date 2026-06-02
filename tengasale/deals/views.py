@@ -2,6 +2,31 @@ from django.shortcuts import render
 from accounts.decorators import merchant_required
 from .models import DeviceBrand, DeviceDeal
 
+# Brand accent colours used in the UI
+BRAND_ACCENTS = {
+    "Tecno":        {"color": "#1d4ed8", "bg": "rgba(29,78,216,0.08)"},
+    "Itel":         {"color": "#dc2626", "bg": "rgba(220,38,38,0.08)"},
+    "Redmi/Xiaomi": {"color": "#ea580c", "bg": "rgba(234,88,12,0.08)"},
+    "Samsung":      {"color": "#1d4ed8", "bg": "rgba(29,78,216,0.08)"},
+    "Infinix":      {"color": "#16a34a", "bg": "rgba(22,163,74,0.08)"},
+}
+
+# Canonical brand name mapping (handles DB inconsistencies gracefully)
+BRAND_ALIASES = {
+    "redmi":          "Redmi/Xiaomi",
+    "xiaomi":         "Redmi/Xiaomi",
+    "redmi/xiaomi":   "Redmi/Xiaomi",
+    "redmi / xiaomi": "Redmi/Xiaomi",
+    "tecno":          "Tecno",
+    "itel":           "Itel",
+    "samsung":        "Samsung",
+    "infinix":        "Infinix",
+}
+
+
+def _canonical_brand(name: str) -> str:
+    return BRAND_ALIASES.get(name.strip().lower(), name)
+
 
 @merchant_required
 def all_deals(request):
@@ -10,10 +35,15 @@ def all_deals(request):
         "model_name",
         "specs",
     )
+
+    # Normalise brand name in each deal object for display (no DB write)
+    for deal in deals:
+        deal._canonical_brand = _canonical_brand(deal.brand.name)
+
     deal_options = [
         {
             "id": deal.id,
-            "brand": deal.brand.name,
+            "brand": deal._canonical_brand,
             "brand_logo": deal.brand.logo.url if deal.brand.logo else "",
             "model_name": deal.model_name,
             "specs": deal.specs,
@@ -29,29 +59,36 @@ def all_deals(request):
         }
         for deal in deals
     ]
-    preferred_order = ["Tecno", "Itel", "Redmi/Xiaomi", "Samsung"]
-    deal_brand_names = list(dict.fromkeys(deal.brand.name for deal in deals))
-    brand_names = [name for name in preferred_order if name in deal_brand_names]
-    if not brand_names and not deal_brand_names:
-        brand_names = ["TECNO", "itel", "Redmi"]
-    for deal in deals:
-        if deal.brand.name not in brand_names:
-            brand_names.append(deal.brand.name)
 
-    # Build brand info dict: {name: {logo_url, deal_count}}
-    brand_objects = DeviceBrand.objects.filter(is_active=True, name__in=brand_names)
+    preferred_order = ["Tecno", "Itel", "Redmi/Xiaomi", "Samsung", "Infinix"]
+    # Unique canonical names from actual deals
+    deal_brand_names = list(dict.fromkeys(deal._canonical_brand for deal in deals))
+    brand_names = [name for name in preferred_order if name in deal_brand_names]
+    for name in deal_brand_names:
+        if name not in brand_names:
+            brand_names.append(name)
+
+    # Build brand info dict: {canonical_name: {logo_url, deal_count, accent}}
     brand_info = {}
-    for b in brand_objects:
-        brand_info[b.name] = {
-            "logo_url": b.logo.url if b.logo else "",
-        }
-    deal_counts = {}
-    for deal in deals:
-        deal_counts[deal.brand.name] = deal_counts.get(deal.brand.name, 0) + 1
     for name in brand_names:
-        if name not in brand_info:
-            brand_info[name] = {"logo_url": ""}
-        brand_info[name]["deal_count"] = deal_counts.get(name, 0)
+        brand_info[name] = {
+            "logo_url": "",
+            "deal_count": 0,
+            **BRAND_ACCENTS.get(name, {"color": "#ff5a00", "bg": "rgba(255,90,0,0.08)"}),
+        }
+
+    # Attach logos from DB brands (match by canonical name)
+    brand_objects = DeviceBrand.objects.filter(is_active=True)
+    for b in brand_objects:
+        canon = _canonical_brand(b.name)
+        if canon in brand_info and b.logo:
+            brand_info[canon]["logo_url"] = b.logo.url
+
+    # Count deals per canonical brand
+    for deal in deals:
+        cn = deal._canonical_brand
+        if cn in brand_info:
+            brand_info[cn]["deal_count"] += 1
 
     return render(
         request,

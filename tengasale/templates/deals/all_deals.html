@@ -47,23 +47,27 @@
     <div class="ts-section-label">Choose brand</div>
     <div class="brand-card-grid-v2" role="list">
         {% for brand_name in brand_names %}
-        {% with info=brand_info|default_if_none:brand_name %}
+        {% with binfo=brand_info|default_if_none:brand_name %}
         <button
             class="brand-card-v2"
             type="button"
             data-brand="{{ brand_name }}"
             role="listitem"
             aria-pressed="false"
+            style="--brand-color:{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name %}{{ bi.color }}{% endif %}{% endfor %}{% else %}#ff5a00{% endif %};--brand-bg:{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name %}{{ bi.bg }}{% endif %}{% endfor %}{% else %}rgba(255,90,0,0.08){% endif %};"
         >
-            {% if brand_info and brand_info|dictsort:brand_name %}
-                {% with b=brand_info|default_if_none:brand_name %}
-                {% endwith %}
+            {% if brand_info %}
+                {% for bn, bi in brand_info.items %}
+                    {% if bn == brand_name and bi.logo_url %}
+                        <img src="{{ bi.logo_url }}" alt="{{ brand_name }}" class="brand-card-v2__logo-img" loading="lazy">
+                    {% endif %}
+                {% endfor %}
             {% endif %}
             <div class="brand-card-v2__logo-text" data-brand-logo-container="{{ brand_name }}">
                 {{ brand_name|slice:":1"|upper }}
             </div>
             <div class="brand-card-v2__name">{{ brand_name }}</div>
-            <div class="brand-card-v2__sub" data-brand-count="{{ brand_name }}">
+            <div class="brand-card-v2__sub">
                 {% if brand_info %}
                     {% for bn, binfo in brand_info.items %}
                         {% if bn == brand_name %}{{ binfo.deal_count }} model{% if binfo.deal_count != 1 %}s{% endif %}{% endif %}

@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'choose_device' app.id %}" class="soft-back">
+<a href="{% url 'work_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
@@ -132,13 +132,19 @@
             </span>
         </div>
 
-        {# Agent mode toggle #}
-        <div class="agent-mode-toggle" id="agent-mode-row-0">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/></svg>
-            <label for="agent-mode-toggle-0">Agent Mode</label>
-            <input type="checkbox" id="agent-mode-toggle-0" style="cursor:pointer;" data-agent-mode>
-            <span class="badge">Back Camera</span>
+        {# Agent mode pill toggle #}
+        <div class="kyc-mode-pill" id="agent-mode-row-0">
+            <button type="button" class="kyc-mode-btn kyc-mode-btn--active" id="kyc-mode-customer-0" data-mode-customer>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/></svg>
+                Customer Mode
+            </button>
+            <button type="button" class="kyc-mode-btn" id="kyc-mode-agent-0" data-mode-agent>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Agent Mode
+            </button>
+            <input type="checkbox" id="agent-mode-toggle-0" style="display:none;" data-agent-mode aria-hidden="true">
         </div>
+        <p class="kyc-mode-desc" id="kyc-mode-desc-0">Customer holds the phone — front camera</p>
 
         <div class="kyc-instruction-tips">
             <div class="kyc-tip">
@@ -171,9 +177,8 @@
         <div class="camera-panel" data-camera-panel hidden>
             <div class="camera-frame-wrapper">
                 <video playsinline autoplay muted data-camera-video style="aspect-ratio:3/4;"></video>
-                <div class="camera-frame camera-frame--oval" aria-hidden="true"></div>
             </div>
-            <p class="camera-guide-text" style="position:static; text-align:center; color:#374151; padding:6px 0; font-size:13px; font-weight:600;">Fit customer's face inside the oval</p>
+            <p style="text-align:center; color:#374151; padding:8px 0 4px; font-size:13px; font-weight:600;">Make sure the customer's face is clear and well lit.</p>
             <div class="camera-save-row">
                 <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera" style="display:none;">
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
@@ -252,9 +257,8 @@
         <div class="camera-panel" data-camera-panel hidden>
             <div class="camera-frame-wrapper">
                 <video playsinline autoplay muted data-camera-video style="aspect-ratio:4/3;"></video>
-                <div class="camera-frame camera-frame--rect" aria-hidden="true"></div>
             </div>
-            <p style="text-align:center; color:#374151; padding:6px 0; font-size:13px; font-weight:600;">Fit the ID inside the rectangle</p>
+            <p style="text-align:center; color:#374151; padding:8px 0 4px; font-size:13px; font-weight:600;">Make sure the front of the ID is clear and readable.</p>
             <div class="camera-save-row">
                 <button type="button" class="camera-switch-btn" data-switch-camera aria-label="Switch camera" style="display:none;">
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-7"/><path d="m21 3-4 4 4 4"/><path d="M4 17h7"/><path d="m3 21 4-4-4-4"/></svg>
@@ -371,6 +375,7 @@
     {# ======= STEP 3: Review & Submit ======= #}
     <section class="kyc-guided-step{% if kyc_complete %} active{% endif %}"
              id="kyc-step-3"
+             data-kyc-section
              data-step="3">
 
         <div class="kyc-section-header">
@@ -634,40 +639,88 @@
             refreshSubmitState();
         }
 
+        function startCameraStream(constraints, onSuccess, onFail) {
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(onSuccess)
+                .catch(onFail);
+        }
+
         function openCamera(facing) {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.DataTransfer) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 useFileFallback(); return;
             }
             stopStream();
-            setMsg('');
-            var constraints = { video: { facingMode: { ideal: facing } }, audio: false };
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function (mediaStream) {
-                    stream = mediaStream;
-                    currentFacing = facing;
-                    if (cameraVideo) cameraVideo.srcObject = stream;
-                    if (cameraPanel) cameraPanel.hidden = false;
-                    if (captureButton) captureButton.style.display = 'none';
-                    if (switchBtn) switchBtn.style.display = hasCameraSwitch ? '' : 'none';
-                })
-                .catch(function (err) {
-                    if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
-                        showPermissionModal(
-                            function () { openCamera(facing); },
-                            useFileFallback
-                        );
-                    } else if (facing !== defaultFacing) {
-                        setMsg('Could not switch camera.');
-                        openCamera(defaultFacing);
-                    } else {
-                        useFileFallback();
+            setMsg('Starting camera…');
+
+            function attachStream(mediaStream) {
+                stream = mediaStream;
+                currentFacing = facing;
+                if (cameraVideo) {
+                    cameraVideo.srcObject = stream;
+                    cameraVideo.play().catch(function() {});
+                }
+                if (cameraPanel) cameraPanel.hidden = false;
+                if (captureButton) captureButton.style.display = 'none';
+                if (switchBtn) switchBtn.style.display = hasCameraSwitch ? '' : 'none';
+                setMsg('');
+            }
+
+            // Try with ideal facingMode first
+            var c1 = { video: { facingMode: { ideal: facing } }, audio: false };
+            startCameraStream(c1, attachStream, function(err) {
+                if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+                    setMsg('');
+                    showPermissionModal(function () { openCamera(facing); }, useFileFallback);
+                    return;
+                }
+                // Retry with exact facingMode
+                var c2 = { video: { facingMode: { exact: facing } }, audio: false };
+                startCameraStream(c2, attachStream, function(err2) {
+                    if (err2 && (err2.name === 'NotAllowedError' || err2.name === 'PermissionDeniedError')) {
+                        setMsg('');
+                        showPermissionModal(function () { openCamera(facing); }, useFileFallback);
+                        return;
                     }
+                    // Final fallback: any video
+                    startCameraStream({ video: true, audio: false }, attachStream, function() {
+                        useFileFallback();
+                    });
                 });
+            });
         }
 
         function getEffectiveFacing() {
             if (stepNum === 0 && agentToggle && agentToggle.checked) return 'environment';
             return defaultFacing;
+        }
+
+        var modeCustomerBtn = section.querySelector('[data-mode-customer]');
+        var modeAgentBtn    = section.querySelector('[data-mode-agent]');
+        var modeDescEl      = section.querySelector('.kyc-mode-desc');
+
+        function setModeDesc(isAgent) {
+            if (modeDescEl) modeDescEl.textContent = isAgent
+                ? 'Merchant captures customer — rear camera'
+                : 'Customer holds the phone — front camera';
+        }
+
+        if (modeCustomerBtn) {
+            modeCustomerBtn.addEventListener('click', function () {
+                if (agentToggle) agentToggle.checked = false;
+                modeCustomerBtn.classList.add('kyc-mode-btn--active');
+                if (modeAgentBtn) modeAgentBtn.classList.remove('kyc-mode-btn--active');
+                setModeDesc(false);
+                if (stream) { stopStream(); openCamera(getEffectiveFacing()); }
+            });
+        }
+        if (modeAgentBtn) {
+            modeAgentBtn.addEventListener('click', function () {
+                if (agentToggle) agentToggle.checked = true;
+                modeAgentBtn.classList.add('kyc-mode-btn--active');
+                if (modeCustomerBtn) modeCustomerBtn.classList.remove('kyc-mode-btn--active');
+                setModeDesc(true);
+                if (stream) { stopStream(); openCamera(getEffectiveFacing()); }
+            });
         }
 
         if (agentToggle) {
@@ -679,9 +732,7 @@
         if (switchBtn) {
             switchBtn.addEventListener('click', function () {
                 var next = currentFacing === 'user' ? 'environment' : 'user';
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: next } }, audio: false })
-                    .then(function (ms) { stopStream(); stream = ms; currentFacing = next; if (cameraVideo) cameraVideo.srcObject = ms; setMsg(''); })
-                    .catch(function () { setMsg('Camera switch not supported.'); });
+                openCamera(next);
             });
         }
 
@@ -754,7 +805,7 @@
         }
     });
 
-    /* ── Initial active step determination ── #}
+    // ── Initial active step determination ──
     (function () {
         var selfieDone  = form.dataset.selfieDone   === 'true';
         var idFrontDone = form.dataset.idFrontDone  === 'true';

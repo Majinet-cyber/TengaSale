@@ -200,7 +200,7 @@ def choose_device(request, app_id):
                         "status",
                     ]
                 )
-                return redirect("kyc_capture", app_id=app.id)
+                return redirect("location_details", app_id=app.id)
 
         messages.error(request, form_error)
 
@@ -228,7 +228,7 @@ def kyc_capture(request, app_id):
             app.status = "kyc"
             app.save()
             messages.success(request, "KYC saved.")
-            return redirect("location_details", app_id=app.id)
+            return redirect("signature", app_id=app.id)
     else:
         form = KYCForm(instance=app)
 
@@ -274,7 +274,7 @@ def work_details(request, app_id):
             app.status = "work_details"
             app.save()
             messages.success(request, "Work details saved.")
-            return redirect("signature", app_id=app.id)
+            return redirect("kyc_capture", app_id=app.id)
     else:
         form = WorkProofForm(instance=app)
 

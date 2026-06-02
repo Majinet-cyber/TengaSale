@@ -447,13 +447,7 @@ class FinancingApplication(models.Model):
             return reverse("edit_customer_details", args=[self.id])
 
         if self.status == "device_selection":
-            return reverse("choose_device", args=[self.id])
-
-        if self.status in ["kyc", "kyc_capture"]:
-            return reverse("kyc_capture", args=[self.id])
-
-        if self.status in {"correction_requested", "sent_back"}:
-            return reverse("application_corrections", args=[self.id])
+            return reverse("location_details", args=[self.id])
 
         if self.status in ["location", "location_details"]:
             return reverse("location_details", args=[self.id])
@@ -461,8 +455,14 @@ class FinancingApplication(models.Model):
         if self.status in ["work", "work_details"]:
             return reverse("work_details", args=[self.id])
 
+        if self.status in ["kyc", "kyc_capture"]:
+            return reverse("kyc_capture", args=[self.id])
+
         if self.status == "signature":
             return reverse("signature", args=[self.id])
+
+        if self.status in {"correction_requested", "sent_back"}:
+            return reverse("application_corrections", args=[self.id])
 
         if self.status == "imei_required":
             return reverse("capture_imei", args=[self.id])

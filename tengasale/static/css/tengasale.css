@@ -1849,61 +1849,145 @@ img.ts-logo-wordmark {
   color: #475569;
 }
 
+/* ── Camera panel ─────────────────────────────────────────────── */
+.camera-panel {
+  margin: 0 0 12px;
+}
+
 /* Camera frame guides */
 .camera-frame-wrapper {
   position: relative;
-  display: inline-block;
+  display: block;
   width: 100%;
-  max-width: 340px;
-  margin: 0 auto;
+  max-width: 380px;
+  margin: 0 auto 0;
+  border-radius: 14px;
+  overflow: hidden;          /* clip the guide shadow to the video bounds */
+  background: #000;
+  line-height: 0;
 }
 .camera-frame-wrapper video {
   width: 100%;
-  border-radius: 12px;
   display: block;
+  object-fit: cover;
+  border-radius: 0;          /* radius is on wrapper now */
+  background: #000;
 }
 .camera-frame {
   position: absolute;
-  inset: 0;
-  border: 3px solid var(--ts-orange, #ff5a00);
+  border: 2.5px solid rgba(255,90,0,0.90);
   pointer-events: none;
-  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.42);
+  z-index: 2;
 }
 .camera-frame--oval {
   border-radius: 50%;
-  top: 8%;
-  left: 15%;
-  right: 15%;
-  bottom: 8%;
+  width: 66%;
+  height: 76%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   inset: unset;
-  width: 70%;
-  height: 80%;
-  margin: auto;
-  position: absolute;
 }
 .camera-frame--rect {
   border-radius: 10px;
-  top: 20%;
-  left: 8%;
-  right: 8%;
-  bottom: 20%;
+  width: 86%;
+  height: 62%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   inset: unset;
-  width: 84%;
-  height: 60%;
-  margin: auto;
-  position: absolute;
 }
+/* Instruction text overlay inside video */
 .camera-guide-text {
   position: absolute;
-  bottom: 8px;
+  bottom: 10px;
   left: 0;
   right: 0;
+  z-index: 3;
   text-align: center;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
   pointer-events: none;
+  padding: 0 8px;
+}
+
+/* Save row — button below the video */
+.camera-save-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0 2px;
+}
+
+/* ── Agent/Customer Mode pill ──────────────────────────────────── */
+.kyc-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 99px;
+  padding: 3px;
+  margin: 8px 0 4px;
+}
+.kyc-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  border-radius: 99px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.kyc-mode-btn svg { flex-shrink: 0; }
+.kyc-mode-btn--active {
+  background: #ff5a00;
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(255,90,0,0.30);
+}
+.kyc-mode-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 2px 0 10px;
+  font-style: italic;
+}
+
+/* ── KYC review image grid ─────────────────────────────────────── */
+.ts-img-wrap {
+  position: relative;
+  overflow: hidden;
+  background: #f0f4f8;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+}
+.ts-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
+}
+.ts-img-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-radius: inherit;
 }
 
 /* KYC preview image */

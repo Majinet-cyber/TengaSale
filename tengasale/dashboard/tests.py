@@ -216,6 +216,26 @@ class HomePageTests(TestCase):
         self.assertNotContains(response, "Merchant Portal Preview")
         self.assertNotContains(response, "Underwriter Portal Preview")
 
+    def test_hq_dashboard_has_fixed_sidebar_navigation(self):
+        """HQ dashboard must include the fixed sidebar nav, not just inline card buttons."""
+        self.create_user("hq-nav", "HQ")
+        self.client.login(username="hq-nav", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        # Sidebar container
+        self.assertContains(response, 'id="hq-sidebar"')
+        self.assertContains(response, 'class="hq-layout"')
+        # Essential sidebar links
+        self.assertContains(response, 'hq-sidebar-link')
+        self.assertContains(response, 'Overview')
+        self.assertContains(response, 'Applications')
+        self.assertContains(response, 'Finance')
+        # Portal links
+        self.assertContains(response, 'Merchant Admin')
+        self.assertContains(response, 'Tech Support')
+
     def test_merchant_cannot_access_hq_dashboard(self):
         self.create_user("merchant", "Merchant")
         self.client.login(username="merchant", password="test-pass-123")

@@ -742,12 +742,178 @@
 @media (max-width: 460px) {
   .hq-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── HQ Layout with fixed sidebar ──────────────────────────────── */
+.hq-layout {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - 62px);
+}
+
+.hq-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--hq-surface);
+  border-right: 1px solid var(--hq-border);
+  position: sticky;
+  top: 62px;
+  height: calc(100vh - 62px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0 24px;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.hq-sidebar-section {
+  padding: 0 10px 4px;
+  margin-top: 10px;
+}
+
+.hq-sidebar-section-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--hq-muted);
+  padding: 0 6px;
+  margin-bottom: 4px;
+}
+
+.hq-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hq-ink2);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.hq-sidebar-link svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--hq-muted);
+}
+
+.hq-sidebar-link:hover {
+  background: var(--hq-bg);
+  color: var(--hq-orange);
+}
+.hq-sidebar-link:hover svg { color: var(--hq-orange); }
+
+.hq-sidebar-link--active {
+  background: var(--hq-orange-lt);
+  color: var(--hq-orange);
+}
+.hq-sidebar-link--active svg { color: var(--hq-orange); }
+
+.hq-sidebar-badge {
+  margin-left: auto;
+  background: var(--hq-orange);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.hq-sidebar-divider {
+  border: none;
+  border-top: 1px solid var(--hq-border);
+  margin: 10px 16px 6px;
+}
+
+.hq-sidebar-portal-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hq-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.hq-sidebar-portal-link svg {
+  width: 13px; height: 13px; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
+}
+.hq-sidebar-portal-link:hover { background: var(--hq-bg); color: var(--hq-ink2); }
+
+/* Content area shifts right on desktop */
+.hq-dash.hq-main { flex: 1; min-width: 0; }
+
+/* ── Mobile sidebar (hamburger toggle) ─────────────────────────── */
+.hq-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border: 1.5px solid var(--hq-border);
+  border-radius: 9px;
+  background: var(--hq-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--hq-ink2);
+}
+.hq-sidebar-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+.hq-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 149;
+}
+
+@media (max-width: 860px) {
+  .hq-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.12);
+  }
+  .hq-sidebar.is-open {
+    transform: translateX(0);
+  }
+  .hq-sidebar-overlay.is-open {
+    display: block;
+  }
+  .hq-sidebar-toggle { display: flex; }
+  .hq-dash.hq-main { padding-left: 14px; padding-right: 14px; }
+  .hq-layout { display: block; }
+}
 </style>
 {% endblock %}
 
 
 {% block topbar %}
 <header class="hq-topbar" data-testid="hq-topbar">
+
+  <button class="hq-sidebar-toggle" id="hq-sidebar-btn" aria-label="Open navigation menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
 
   <a href="{% url 'home' %}" class="hq-brand-link" aria-label="TengaSale HQ Home">
     <img src="{% static 'images/Tenga.png' %}" alt="" class="hq-logo-mark ts-logo-icon" aria-hidden="true">
@@ -828,7 +994,120 @@
 {% endblock topbar %}
 
 {% block content %}
-<div class="hq-dash" data-testid="hq-dashboard">
+<div class="hq-sidebar-overlay" id="hq-sidebar-overlay" aria-hidden="true"></div>
+
+<div class="hq-layout">
+
+{# ── Fixed Sidebar Navigation ── #}
+<nav class="hq-sidebar" id="hq-sidebar" aria-label="HQ Navigation">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Dashboard</div>
+    <a href="{% url 'hq_dashboard' %}" class="hq-sidebar-link hq-sidebar-link--active">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Overview
+    </a>
+  </div>
+
+  <hr class="hq-sidebar-divider">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Operations</div>
+    <a href="{% url 'hq_applications' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Applications
+      {% if waiting_count %}<span class="hq-sidebar-badge">{{ waiting_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'hq_underwriter_queue' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Underwriters
+    </a>
+    <a href="{% url 'hq_deals' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      Deals Catalog
+    </a>
+    <a href="{% url 'hq_devices' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      Devices
+    </a>
+    <a href="{% url 'device_lock:hq_lock_centre' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Device Lock
+    </a>
+  </div>
+
+  <hr class="hq-sidebar-divider">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Finance</div>
+    <a href="{% url 'hq_commissions' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Commissions
+    </a>
+    <a href="{% url 'hq_merchant_payouts' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      Merchant Payouts
+      {% if merchant_payout_pending %}<span class="hq-sidebar-badge">!</span>{% endif %}
+    </a>
+    <a href="{% url 'hq_payment_collections' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
+      Collections
+    </a>
+    <a href="{% url 'hq_reconciliation' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Reconciliation
+    </a>
+  </div>
+
+  <hr class="hq-sidebar-divider">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Analytics</div>
+    <a href="{% url 'hq_reports' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Reports
+    </a>
+    <a href="{% url 'hq_audit_trail' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Audit Trail
+    </a>
+    <a href="{% url 'hq_fraud_checks' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Risk &amp; Fraud
+    </a>
+  </div>
+
+  <hr class="hq-sidebar-divider">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Admin</div>
+    <a href="{% url 'hq_users' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Users &amp; Roles
+    </a>
+  </div>
+
+  <hr class="hq-sidebar-divider">
+
+  <div class="hq-sidebar-section">
+    <div class="hq-sidebar-section-label">Portals</div>
+    <a href="{% url 'ma_dashboard' %}" class="hq-sidebar-portal-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Merchant Admin
+    </a>
+    <a href="{% url 'support_dashboard' %}" class="hq-sidebar-portal-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Tech Support
+    </a>
+    <a href="{% url 'sales_home' %}" class="hq-sidebar-portal-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Underwriter Portal
+    </a>
+  </div>
+
+</nav>
+
+<div class="hq-dash hq-main" data-testid="hq-dashboard">
 
 
   <div class="hq-ph">
@@ -1479,7 +1758,9 @@
     <span>v1.0.0 &middot; HQ Dashboard &middot; Malawi</span>
   </div>
 
-</div>
+</div>{# end hq-main #}
+
+</div>{# end hq-layout #}
 {% endblock content %}
 
 {% block page_footer %}{% endblock page_footer %}
@@ -1503,6 +1784,38 @@
     mainContent.style.background = '#f8fafc';
     mainContent.style.padding = '0';
   }
+
+  /* ── Sidebar toggle (mobile) ── */
+  var sidebarBtn     = document.getElementById('hq-sidebar-btn');
+  var sidebar        = document.getElementById('hq-sidebar');
+  var sidebarOverlay = document.getElementById('hq-sidebar-overlay');
+
+  function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.add('is-open');
+    if (sidebarOverlay) { sidebarOverlay.classList.add('is-open'); }
+    if (sidebarBtn) sidebarBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('is-open');
+    if (sidebarOverlay) { sidebarOverlay.classList.remove('is-open'); }
+    if (sidebarBtn) sidebarBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+  if (sidebarBtn) sidebarBtn.addEventListener('click', openSidebar);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeSidebar(); });
+
+  /* Mark active link */
+  var currentPath = window.location.pathname;
+  document.querySelectorAll('.hq-sidebar-link, .hq-sidebar-portal-link').forEach(function(link) {
+    link.classList.remove('hq-sidebar-link--active');
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('hq-sidebar-link--active');
+    }
+  });
 
   /* ── Live clock ── */
   var clockEl = document.getElementById('hq-clock');

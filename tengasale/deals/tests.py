@@ -32,7 +32,8 @@ class AllDealsPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Choose your new smartphone")
         self.assertContains(response, "Compare cash price, deposit, repayments, and early settlement options")
-        for brand_name in ["TECNO", "itel", "Redmi"]:
+        # Brand names are normalised in the view: "TECNO"→"Tecno", "itel"→"Itel", "Redmi"→"Redmi/Xiaomi"
+        for brand_name in ["Tecno", "Itel", "Redmi/Xiaomi"]:
             self.assertContains(response, brand_name)
         self.assertContains(response, "Choose a model")
         self.assertContains(response, "Choose specs")
@@ -221,3 +222,58 @@ class SeedDeviceCatalogCommandTests(TestCase):
 
         self.assertEqual(DeviceDeal.objects.filter(catalog_source="seed_device_catalog").count(), 0)
         self.assertTrue(DeviceDeal.objects.filter(model_name="Owner Created").exists())
+
+
+class NormalizeBrandsCommandTests(TestCase):
+    def _make_brand(self, name):
+        brand, _ = DeviceBrand.objects.get_or_create(name=name, defaults={"is_active": True})
+        return brand
+
+    def _make_deal(self, brand, model="Test Model"):
+        return DeviceDeal.objects.create(
+            brand=brand,
+            model_name=model,
+            specs="4GB+128GB",
+            min_cash_price=Decimal("300000"),
+            max_cash_price=Decimal("400000"),
+            default_cash_price=Decimal("350000"),
+            cash_price=Decimal("350000"),
+            deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"),
+            term_months=12,
+            total_12_month_price=Decimal("875000"),
+        )
+
+    def test_normalize_merges_redmi_into_redmi_xiaomi(self):
+        redmi = self._make_brand("Redmi")
+        redmi_xiaomi = self._make_brand("Redmi/Xiaomi")
+        deal = self._make_deal(redmi, model="Redmi A3")
+
+        call_command("normalize_brands", stdout=StringIO())
+
+        deal.refresh_from_db()
+        self.assertEqual(deal.brand.name, "Redmi/Xiaomi")
+        # Old Redmi brand should be deleted
+        self.assertFalse(DeviceBrand.objects.filter(name="Redmi").exists())
+
+    def test_normalize_dry_run_does_not_change_db(self):
+        redmi = self._make_brand("Redmi")
+        deal = self._make_deal(redmi, model="Redmi Test")
+
+        call_command("normalize_brands", "--dry-run", stdout=StringIO())
+
+        deal.refresh_from_db()
+        # Deal should still point to "Redmi"
+        self.assertEqual(deal.brand.name, "Redmi")
+
+    def test_brand_name_list_has_no_duplicates(self):
+        """After normalisation, view should not list duplicate brand names."""
+        self._make_brand("Redmi")
+        self._make_brand("Redmi/Xiaomi")
+        self._make_brand("TECNO")
+        self._make_brand("Tecno")
+
+        call_command("normalize_brands", stdout=StringIO())
+
+        brand_names = list(DeviceBrand.objects.values_list("name", flat=True))
+        self.assertEqual(len(brand_names), len(set(brand_names)), "Duplicate brand names found")

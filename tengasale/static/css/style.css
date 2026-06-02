@@ -5301,6 +5301,7 @@ body {
     text-decoration: none;
     color: #101828;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
 }
 
 .brand-card-v2:active {
@@ -5309,13 +5310,14 @@ body {
 
 .brand-card-v2.active,
 .brand-card-v2:focus-visible {
-    border-color: #ff5a00;
-    box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.15);
+    border-color: var(--brand-color, #ff5a00);
+    box-shadow: 0 0 0 3px var(--brand-bg, rgba(255,90,0,0.15));
+    background: var(--brand-bg, #fff8f5);
 }
 
-.brand-card-v2__logo {
+.brand-card-v2__logo-img {
     width: 64px;
-    height: 48px;
+    height: 40px;
     object-fit: contain;
     display: block;
 }
@@ -5328,9 +5330,14 @@ body {
     justify-content: center;
     font-size: 22px;
     font-weight: 900;
-    color: #101828;
-    background: #f8fafc;
+    color: var(--brand-color, #101828);
+    background: var(--brand-bg, #f8fafc);
     border-radius: 10px;
+}
+
+/* Hide the letter when a real logo image is shown */
+.brand-card-v2__logo-img ~ .brand-card-v2__logo-text {
+    display: none;
 }
 
 .brand-card-v2__name {
@@ -5342,8 +5349,9 @@ body {
 
 .brand-card-v2__sub {
     font-size: 11px;
-    color: #667085;
+    color: var(--brand-color, #667085);
     text-align: center;
+    font-weight: 600;
 }
 
 /* Product card list */
