@@ -4,9 +4,9 @@
 {% block content %}
 
 {# ── Greeting ── #}
-<div class="merchant-greeting-row">
+<div class="merchant-greeting-row ts-fade-in">
   <div>
-    <h1 class="greeting">Hi, {{ request.user.first_name|default:request.user.username }} 👋</h1>
+    <h1 class="greeting">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
     <p class="greeting-sub">Merchant Dashboard</p>
   </div>
 </div>
@@ -24,10 +24,10 @@
 </a>
 
 {# ── Earnings summary ── #}
-<section class="stat-card earnings-home-card">
+<section class="stat-card earnings-home-card ts-slide-up" style="animation-delay:60ms;">
   <span>TengaSale</span>
   <h2>You are now earning more with TengaSale.</h2>
-  <strong class="amount-positive">Earnings {{ earnings_total|mwk }}</strong>
+  <strong class="amount-positive" data-counter>{{ earnings_total|mwk }}</strong>
   <a href="{% url 'earnings_home' %}" class="btn">View all earnings</a>
 </section>
 
@@ -220,7 +220,7 @@
 </section>
 
 {# ── Contracts ── #}
-<section class="menu-list" aria-labelledby="contracts-title">
+<section class="menu-list ts-stagger" aria-labelledby="contracts-title">
   <h2 id="contracts-title">Contracts</h2>
 
   <a href="{% url 'active_applications' %}" class="menu-row">
@@ -264,7 +264,7 @@
 </section>
 
 {# ── Tools ── #}
-<section class="menu-list" aria-labelledby="tools-title">
+<section class="menu-list ts-stagger" aria-labelledby="tools-title">
   <h2 id="tools-title">Tools</h2>
 
   <a href="{% url 'all_deals' %}" class="menu-row">

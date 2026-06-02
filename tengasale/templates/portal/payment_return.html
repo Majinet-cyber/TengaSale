@@ -1,0 +1,119 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment Status — TengaSale</title>
+<style>
+  :root {--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--dark:#1e293b;--mid:#64748b;--light:#f8fafc;--white:#fff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--light);color:var(--dark);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+  .card{background:var(--white);border-radius:1rem;box-shadow:0 4px 24px rgba(0,0,0,.08);padding:2.5rem 2rem;max-width:460px;width:100%;text-align:center}
+  .icon{font-size:4rem;margin-bottom:1rem}
+  h1{font-size:1.5rem;font-weight:700;margin-bottom:.5rem}
+  .sub{color:var(--mid);margin-bottom:1.5rem}
+  .meta{background:var(--light);border-radius:.75rem;padding:1rem 1.25rem;text-align:left;margin-bottom:1.5rem;font-size:.9rem}
+  .meta dt{color:var(--mid);margin-bottom:.1rem}
+  .meta dd{font-weight:600;margin-bottom:.75rem}
+  .btn{display:inline-block;padding:.75rem 1.75rem;border-radius:.75rem;font-weight:600;text-decoration:none;font-size:1rem;margin:.25rem}
+  .btn-primary{background:#0f172a;color:var(--white)}
+  .btn-secondary{background:var(--light);color:var(--dark);border:1px solid #e2e8f0}
+  .spinner{width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1.5rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .success{color:var(--green)}
+  .pending{color:var(--amber)}
+  .failed{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="card">
+
+{% if status == "success" %}
+  <div class="icon success">✓</div>
+  <h1 class="success">Payment Confirmed!</h1>
+  <p class="sub">Your payment has been received and applied to your contract.</p>
+  {% if tx %}
+  <dl class="meta">
+    <dt>Contract</dt>
+    <dd>{{ contract.contract_number }}</dd>
+    <dt>PayG Number</dt>
+    <dd>{{ contract.payg_number }}</dd>
+    <dt>Amount Paid</dt>
+    <dd>MWK {{ tx.amount|floatformat:0 }}</dd>
+    <dt>Reference</dt>
+    <dd>{{ tx.internal_reference }}</dd>
+    {% if tx.paid_at %}
+    <dt>Paid At</dt>
+    <dd>{{ tx.paid_at|date:"j M Y, H:i" }} CAT</dd>
+    {% endif %}
+  </dl>
+  <a href="/pay/contract/{{ contract.contract_number }}/" class="btn btn-primary">View Contract</a>
+  {% endif %}
+
+{% elif status == "failed" %}
+  <div class="icon failed">✗</div>
+  <h1 class="failed">Payment Failed</h1>
+  <p class="sub">Your payment could not be processed. Please try again or contact support.</p>
+  {% if tx %}
+  <dl class="meta">
+    <dt>Reference</dt>
+    <dd>{{ tx.internal_reference }}</dd>
+  </dl>
+  <a href="/pay/contract/{{ tx.payment_contract.contract_number }}/" class="btn btn-primary">Try Again</a>
+  {% else %}
+  <a href="/pay/" class="btn btn-primary">Return to Portal</a>
+  {% endif %}
+
+{% elif status == "not_found" %}
+  <div class="icon pending">?</div>
+  <h1>Payment Not Found</h1>
+  <p class="sub">We couldn't find your payment reference. If you completed a payment, it may still be processing.</p>
+  <a href="/pay/" class="btn btn-primary">Return to Portal</a>
+
+{% else %}
+  <!-- pending / processing -->
+  <div class="spinner"></div>
+  <h1 class="pending">Processing Payment…</h1>
+  <p class="sub">Your payment is being confirmed. This usually takes 1–2 minutes. Please don't close this page.</p>
+  {% if tx %}
+  <dl class="meta">
+    <dt>Reference</dt>
+    <dd>{{ tx.internal_reference }}</dd>
+    {% if contract %}
+    <dt>Contract</dt>
+    <dd>{{ contract.contract_number }}</dd>
+    {% endif %}
+  </dl>
+  {% endif %}
+  <p style="color:var(--mid);font-size:.85rem;margin-top:1rem">Checking automatically…</p>
+{% endif %}
+
+</div>
+
+{% if status == "pending" and tx_ref %}
+<script>
+(function(){
+  var ref = {{ tx_ref|safe|default:"null" }};
+  if(!ref) return;
+  var tries = 0, max = 30;
+  function poll(){
+    tries++;
+    fetch('/pay/payment-status/?tx_ref=' + encodeURIComponent("{{ tx_ref }}"))
+      .then(r=>r.json())
+      .then(function(d){
+        if(d.status==='success' && d.redirect){
+          window.location.href = d.redirect;
+        } else if(d.status==='failed'){
+          window.location.reload();
+        } else if(tries < max){
+          setTimeout(poll, 3000);
+        }
+      })
+      .catch(function(){ if(tries<max) setTimeout(poll,5000); });
+  }
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endif %}
+</body>
+</html>

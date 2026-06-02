@@ -24,6 +24,7 @@ class AllDealsPageTests(TestCase):
         self.user = get_user_model().objects.create_user(username="merchant", password="test-pass-123")
         assign_role(self.user, "merchant")
         self.client.login(username="merchant", password="test-pass-123")
+        call_command("seed_tengasale", verbosity=0)
 
     def test_all_deals_page_loads_as_guided_selector(self):
         response = self.client.get(reverse("all_deals"))

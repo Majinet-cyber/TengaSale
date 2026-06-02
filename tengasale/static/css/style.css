@@ -271,7 +271,7 @@ img.ts-logo-hero {
 }
 
 .content {
-    padding: 22px 18px 88px;
+    padding: 22px 18px 40px;
 }
 
 .greeting {
@@ -529,11 +529,10 @@ img.ts-logo-hero {
 
 .footer {
     width: 100%;
-    max-width: 520px;
     display: flex;
     justify-content: space-between;
     gap: 14px;
-    position: fixed;
+    position: sticky;
     bottom: 0;
     padding: 13px 18px calc(13px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
@@ -541,6 +540,9 @@ img.ts-logo-hero {
     color: var(--muted);
     font-size: 13px;
     font-weight: 700;
+    z-index: 20;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .auth-shell {

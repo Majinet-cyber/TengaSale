@@ -14,8 +14,9 @@
     <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
     <link rel="icon" type="image/png" href="{% static 'images/icon-192.png' %}" sizes="192x192">
     <link rel="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.0.2">
-    <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.0.3">
+    <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.3">
+    <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=1.0.0">
     {% block extra_head %}{% endblock %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
@@ -89,7 +90,7 @@
     </header>
     {% endblock topbar %}
 
-    <main class="content">
+    <main class="content page-enter">
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags|default:'info' }}">
@@ -115,6 +116,7 @@
 </div>
 
 {% block extra_scripts %}{% endblock %}
+<script src="{% static 'js/tengasale-motion.js' %}?v=1.0.0" defer></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

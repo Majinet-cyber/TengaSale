@@ -13,6 +13,7 @@ import logging
 import re
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -279,6 +280,19 @@ def portal_payment(request, contract_number):
     if not phone.startswith("+265") and not phone.startswith("265"):
         phone = f"+265{phone.lstrip('0')}"
 
+    # Determine network from provider_name
+    network = ""
+    if provider_name == "airtel_money":
+        network = PaymentTransaction.NETWORK_AIRTEL
+    elif provider_name == "tnm_mpamba":
+        network = PaymentTransaction.NETWORK_TNM
+
+    # Snapshot balances before payment
+    balance_before = (
+        contract.deposit_remaining if payment_type == PaymentTransaction.TYPE_DEPOSIT
+        else contract.remaining_amount
+    )
+
     # Create pending transaction record
     tx = PaymentTransaction.objects.create(
         payment_contract=contract,
@@ -287,7 +301,10 @@ def portal_payment(request, contract_number):
         amount=amount,
         currency="MWK",
         phone=phone,
+        network=network,
+        balance_before=balance_before,
         status=PaymentTransaction.STATUS_PENDING,
+        initiated_at=timezone.now(),
     )
 
     # Initiate with provider
@@ -303,7 +320,7 @@ def portal_payment(request, contract_number):
         logger.exception("Payment provider error for %s", tx.internal_reference)
         tx.status = PaymentTransaction.STATUS_FAILED
         tx.raw_response = {"error": str(exc)}
-        tx.save(update_fields=["status", "raw_response"])
+        tx.save(update_fields=["status", "raw_response", "updated_at"])
         messages.error(
             request,
             "Payment provider is temporarily unavailable. Please try again or contact support."
@@ -311,6 +328,7 @@ def portal_payment(request, contract_number):
         return redirect("portal_contract", contract_number=contract_number)
 
     tx.provider_reference = result.provider_reference
+    tx.charge_id = result.charge_id or ""
     tx.raw_response = result.raw
 
     if result.success:
@@ -318,7 +336,7 @@ def portal_payment(request, contract_number):
         if getattr(provider, "mode", "") == "mock":
             tx.status = PaymentTransaction.STATUS_PAID
             tx.paid_at = timezone.now()
-            tx.save(update_fields=["provider_reference", "status", "paid_at", "raw_response"])
+            tx.save(update_fields=["provider_reference", "charge_id", "status", "paid_at", "raw_response", "updated_at"])
             from portal.services import apply_payment_to_contract as _apply
             apply_result = _apply(contract, amount, payment_type=payment_type)
             _portal_audit(
@@ -341,15 +359,22 @@ def portal_payment(request, contract_number):
                 request,
                 f"Payment of MWK {amount:,.0f} applied successfully. Ref: {tx.internal_reference}"
             )
+            _send_payment_notifications(tx, contract)
         else:
             tx.status = PaymentTransaction.STATUS_PROCESSING
-            tx.save(update_fields=["provider_reference", "status", "raw_response"])
+            tx.save(update_fields=["provider_reference", "charge_id", "status", "raw_response", "updated_at"])
             if result.redirect_url:
                 return redirect(result.redirect_url)
-            messages.info(request, "Payment is being processed. Check back shortly.")
+            if result.flow == "momo":
+                messages.info(
+                    request,
+                    f"PIN prompt sent to {phone}. Please enter your PIN on your phone to confirm the payment of MWK {amount:,.0f}. Ref: {tx.internal_reference}"
+                )
+            else:
+                messages.info(request, "Payment is being processed. Check back shortly.")
     else:
         tx.status = PaymentTransaction.STATUS_FAILED
-        tx.save(update_fields=["provider_reference", "status", "raw_response"])
+        tx.save(update_fields=["provider_reference", "charge_id", "status", "raw_response", "updated_at"])
         logger.warning(
             "Payment failed for contract %s: %s",
             contract_number, result.message
@@ -484,18 +509,16 @@ def portal_payg_history(request, payg_number):
 
 @csrf_exempt
 def _webhook_handler(request, provider_name):
-    """Internal webhook handler — logs receipt and returns safe JSON."""
+    """Generic webhook handler for non-PayChangu providers — logs receipt."""
     if request.method not in ("POST", "GET"):
         return JsonResponse({"ok": False, "message": "Method not allowed."}, status=405)
 
-    # Parse body safely
     raw_body = request.body
     try:
         payload = json.loads(raw_body) if raw_body else {}
     except json.JSONDecodeError:
         payload = {"raw": raw_body.decode("utf-8", errors="replace")[:500]}
 
-    # Log webhook receipt
     try:
         _portal_audit(
             AuditLog.ACTION_WEBHOOK,
@@ -513,19 +536,281 @@ def _webhook_handler(request, provider_name):
         logger.exception("Failed to audit webhook for %s", provider_name)
 
     logger.info("Webhook received from provider=%s", provider_name)
-
-    return JsonResponse({
-        "ok": True,
-        "received": True,
-        "provider": provider_name,
-        "message": f"Webhook acknowledged. Processing not yet implemented for {provider_name}.",
-    })
+    return JsonResponse({"ok": True, "received": True, "provider": provider_name})
 
 
 @csrf_exempt
 def webhook_paychangu(request):
-    """PayChangu webhook endpoint."""
-    return _webhook_handler(request, "paychangu")
+    """
+    PayChangu webhook endpoint — processes payment confirmations.
+
+    Verifies HMAC signature, updates transaction status, applies payment to
+    contract, and sends notifications. Always returns HTTP 200 to prevent retries.
+    """
+    from integrations import paychangu_client
+    from portal.services import apply_payment_to_contract
+
+    if request.method not in ("POST",):
+        return JsonResponse({"ok": False}, status=405)
+
+    raw_body = request.body
+
+    # --- Signature verification ---
+    signature = (
+        request.headers.get("Signature", "")
+        or request.headers.get("X-Signature", "")
+        or request.headers.get("X-PayChangu-Signature", "")
+        or request.META.get("HTTP_SIGNATURE", "")
+        or request.META.get("HTTP_X_SIGNATURE", "")
+        or request.META.get("HTTP_X_PAYCHANGU_SIGNATURE", "")
+    ).strip()
+
+    webhook_secret = getattr(settings, "PAYCHANGU_WEBHOOK_SECRET", "")
+    signature_valid = False
+
+    if signature and webhook_secret:
+        signature_valid = paychangu_client.verify_webhook_signature(raw_body, signature)
+        if not signature_valid:
+            logger.warning("PayChangu webhook: signature mismatch — proceeding with caution")
+    elif not webhook_secret:
+        # No secret configured: accept but flag
+        signature_valid = True
+        logger.warning("PayChangu webhook: PAYCHANGU_WEBHOOK_SECRET not set — accepting without verification")
+    else:
+        logger.warning("PayChangu webhook: missing signature header")
+
+    # --- Parse payload ---
+    try:
+        data = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+    except Exception as exc:
+        logger.error("PayChangu webhook: invalid JSON body: %s", exc)
+        return JsonResponse({"ok": True, "message": "Invalid JSON"}, status=200)
+
+    # --- Extract tx_ref ---
+    tx_ref = (
+        data.get("tx_ref")
+        or data.get("reference")
+        or data.get("transaction_id")
+        or data.get("payment_reference")
+        or data.get("transaction_reference")
+        or ""
+    )
+    event_type = data.get("event", "payment.webhook")
+
+    logger.info("PayChangu webhook: tx_ref=%s event=%s sig_valid=%s", tx_ref, event_type, signature_valid)
+
+    _portal_audit(
+        AuditLog.ACTION_WEBHOOK,
+        "PayChangu",
+        tx_ref,
+        {
+            "tx_ref": tx_ref,
+            "event": event_type,
+            "signature_valid": signature_valid,
+            "keys": list(data.keys()),
+        },
+        request,
+    )
+
+    if not tx_ref:
+        logger.warning("PayChangu webhook: no tx_ref in payload, keys=%s", list(data.keys()))
+        return JsonResponse({"ok": True}, status=200)
+
+    # --- Find transaction by internal_reference (= tx_ref sent to PayChangu) ---
+    try:
+        tx = PaymentTransaction.objects.select_related("payment_contract").get(
+            internal_reference=tx_ref
+        )
+    except PaymentTransaction.DoesNotExist:
+        logger.warning("PayChangu webhook: transaction not found for tx_ref=%s", tx_ref)
+        return JsonResponse({"ok": True, "message": "Transaction not found"}, status=200)
+
+    # --- Idempotency: skip if already paid ---
+    if tx.status == PaymentTransaction.STATUS_PAID:
+        logger.info("PayChangu webhook: tx %s already paid — skipping", tx_ref)
+        return JsonResponse({"ok": True, "message": "Already processed"}, status=200)
+
+    # --- Store webhook payload ---
+    tx.webhook_payload = data
+    tx.save(update_fields=["webhook_payload", "updated_at"])
+
+    # --- Verify with PayChangu API ---
+    try:
+        if tx.charge_id:
+            verify_result = paychangu_client.momo_verify(tx.charge_id)
+        else:
+            verify_result = paychangu_client.verify_transaction(tx_ref)
+        verified_status = verify_result.get("status", "PENDING")
+    except Exception as exc:
+        logger.error("PayChangu webhook: verify call failed for %s: %s", tx_ref, exc)
+        # Fall back to event_type from webhook payload
+        verified_status = "SUCCESS" if "success" in event_type.lower() else "PENDING"
+
+    logger.info("PayChangu webhook: verify=%s for tx_ref=%s", verified_status, tx_ref)
+
+    # --- Update transaction status ---
+    from django.utils import timezone as tz
+    contract = tx.payment_contract
+
+    if verified_status == "SUCCESS":
+        balance_before = contract.remaining_amount
+        tx.status = PaymentTransaction.STATUS_PAID
+        tx.paid_at = tz.now()
+        tx.balance_before = balance_before
+        tx.raw_response = verify_result.get("raw_response", {})
+        tx.save(update_fields=["status", "paid_at", "balance_before", "raw_response", "updated_at"])
+
+        # Apply payment to contract
+        try:
+            result = apply_payment_to_contract(
+                contract,
+                tx.amount,
+                payment_type=tx.payment_type,
+            )
+            balance_after = contract.remaining_amount
+            tx.balance_after = balance_after
+            tx.save(update_fields=["balance_after", "updated_at"])
+
+            logger.info(
+                "PayChangu webhook: applied MWK %s to contract %s (type=%s, result=%s)",
+                tx.amount, contract.contract_number, tx.payment_type, result.get("status"),
+            )
+        except Exception as exc:
+            logger.exception("PayChangu webhook: apply_payment_to_contract failed for %s: %s", tx_ref, exc)
+
+        # Activate contract if deposit now complete
+        _maybe_activate_contract_after_deposit(contract, tx)
+
+        # Notifications (best-effort — never crash the webhook)
+        _send_payment_notifications(tx, contract)
+
+        _portal_audit(
+            AuditLog.ACTION_PAYMENT,
+            "PaymentTransaction",
+            tx.id,
+            {
+                "tx_ref": tx_ref,
+                "contract": contract.contract_number,
+                "payg_number": contract.payg_number,
+                "amount": str(tx.amount),
+                "payment_type": tx.payment_type,
+                "status": "paid",
+            },
+            request,
+        )
+
+    elif verified_status == "FAILED":
+        tx.status = PaymentTransaction.STATUS_FAILED
+        tx.raw_response = verify_result.get("raw_response", {})
+        tx.save(update_fields=["status", "raw_response", "updated_at"])
+        logger.info("PayChangu webhook: tx %s FAILED", tx_ref)
+
+    else:
+        # Still PENDING — PayChangu may send more webhooks
+        logger.info("PayChangu webhook: tx %s still PENDING", tx_ref)
+
+    return JsonResponse({"ok": True}, status=200)
+
+
+def _maybe_activate_contract_after_deposit(contract, tx):
+    """
+    After a successful deposit payment, check if deposit is now complete.
+    If so, ensure contract status is active.
+    """
+    if tx.payment_type != PaymentTransaction.TYPE_DEPOSIT:
+        return
+    contract.refresh_from_db()
+    if contract.deposit_complete and contract.status not in (
+        PaymentContract.STATUS_ACTIVE, PaymentContract.STATUS_COMPLETED
+    ):
+        contract.status = PaymentContract.STATUS_ACTIVE
+        contract.save(update_fields=["status"])
+        logger.info(
+            "Contract %s activated after deposit fully paid (deposit_paid=%s)",
+            contract.contract_number, contract.deposit_paid,
+        )
+
+
+def _send_payment_notifications(tx, contract):
+    """Send email/SMS notifications after a confirmed payment. Best-effort."""
+    try:
+        from notifications.services.email import send_payment_receipt_email
+        send_payment_receipt_email(tx, contract)
+    except Exception as exc:
+        logger.warning("Failed to send payment receipt email: %s", exc)
+
+    try:
+        from notifications.services.twilio_sms import send_payment_receipt_sms
+        send_payment_receipt_sms(tx, contract)
+    except Exception as exc:
+        logger.warning("Failed to send payment receipt SMS: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# Payment return / status pages
+# ---------------------------------------------------------------------------
+
+def payment_return(request):
+    """
+    Browser return page after PayChangu checkout.
+    Customer lands here after payment — shows pending/success/fail state.
+    """
+    tx_ref = (
+        request.GET.get("tx_ref")
+        or request.GET.get("reference")
+        or request.GET.get("transaction_id")
+        or ""
+    ).strip()
+
+    context = {"tx_ref": tx_ref, "status": "pending"}
+
+    if tx_ref:
+        try:
+            tx = PaymentTransaction.objects.select_related("payment_contract").get(
+                internal_reference=tx_ref
+            )
+            if tx.status == PaymentTransaction.STATUS_PAID:
+                context["status"] = "success"
+                context["tx"] = tx
+                context["contract"] = tx.payment_contract
+            elif tx.status == PaymentTransaction.STATUS_FAILED:
+                context["status"] = "failed"
+                context["tx"] = tx
+            else:
+                context["status"] = "pending"
+                context["tx"] = tx
+                context["contract"] = tx.payment_contract
+        except PaymentTransaction.DoesNotExist:
+            context["status"] = "not_found"
+
+    return render(request, "portal/payment_return.html", context)
+
+
+def payment_status_json(request):
+    """JSON polling endpoint — client-side can check payment progress."""
+    tx_ref = request.GET.get("tx_ref", "").strip()
+    if not tx_ref:
+        return JsonResponse({"status": "error", "message": "Missing tx_ref"}, status=400)
+
+    try:
+        tx = PaymentTransaction.objects.get(internal_reference=tx_ref)
+    except PaymentTransaction.DoesNotExist:
+        return JsonResponse({"status": "not_found"}, status=404)
+
+    if tx.status == PaymentTransaction.STATUS_PAID:
+        contract = tx.payment_contract
+        return JsonResponse({
+            "status": "success",
+            "message": f"Payment of MWK {tx.amount:,.0f} confirmed.",
+            "redirect": f"/pay/contract/{contract.contract_number}/",
+        })
+    elif tx.status == PaymentTransaction.STATUS_FAILED:
+        return JsonResponse({"status": "failed", "message": "Payment failed. Please try again."})
+    else:
+        return JsonResponse({
+            "status": "pending",
+            "message": "Waiting for payment confirmation...",
+        })
 
 
 @csrf_exempt

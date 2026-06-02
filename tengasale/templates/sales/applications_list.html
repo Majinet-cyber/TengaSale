@@ -43,11 +43,21 @@
       <div class="app-card-v2__body">
         <div class="app-card-v2__name">{{ app.customer_name|default:"—" }}</div>
         <div class="app-card-v2__id">
-          {{ app.application_number }}
+          {% with contract=app.contract %}
+            {% if contract and contract.contract_number %}
+              <span style="font-family:monospace;font-weight:700;color:#ff5a00;font-size:12px;">{{ contract.contract_number }}</span>
+              {% if contract.payg_number %} · <span style="font-family:monospace;font-size:11px;color:#64748b;">PayG {{ contract.payg_number }}</span>{% endif %}
+            {% else %}
+              {{ app.application_number }}
+            {% endif %}
+          {% endwith %}
           {% if app.deal %} · {{ app.deal.brand.name }} {{ app.deal.model_name }}{% endif %}
         </div>
         <div class="app-card-v2__meta">
-          <span class="app-card-v2__date">{{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</span>
+          <span class="app-card-v2__date">{{ app.submitted_at|date:"d M Y, H:i"|default:"Not submitted" }}</span>
+          {% if app.imei_number %}
+            <span style="font-family:monospace;font-size:10px;color:#64748b;">{{ app.imei_number }}</span>
+          {% endif %}
         </div>
       </div>
 

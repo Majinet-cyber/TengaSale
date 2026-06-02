@@ -17,13 +17,31 @@
 
   <p class="ts-section-desc">Call the customer and verify they understand their TengaSale contract obligations.</p>
 
-  <div class="ts-review-card ts-mb-8">
+  <div class="ts-review-card ts-mb-8 ts-slide-up">
     <div class="ts-review-row"><span>Customer</span><strong>{{ app.customer_name }}</strong></div>
     <div class="ts-review-row"><span>Phone</span><strong>+265 {{ app.customer_phone }}</strong></div>
     {% if app.deal %}
       <div class="ts-review-row"><span>Daily Price</span><strong>MWK {{ app.calculated_daily_payment|floatformat:2 }}</strong></div>
       <div class="ts-review-row"><span>30-Day Price</span><strong>MWK {{ app.calculated_monthly_payment|floatformat:0 }}</strong></div>
       <div class="ts-review-row"><span>Total Contract</span><strong>MWK {{ app.calculated_total_loan|floatformat:0 }}</strong></div>
+    {% endif %}
+  </div>
+
+  {# ── Big action buttons ── #}
+  <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+    {% if app.customer_phone %}
+    <a href="tel:+265{{ app.customer_phone }}" class="action-btn-large primary">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/>
+      </svg>
+      <span class="btn-label">CALL PRIMARY CUSTOMER</span>
+    </a>
+    <a href="https://wa.me/265{{ app.customer_phone }}" class="action-btn-large whatsapp" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
+      </svg>
+      <span class="btn-label">WHATSAPP CUSTOMER</span>
+    </a>
     {% endif %}
   </div>
 

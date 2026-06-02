@@ -12,32 +12,70 @@
 {% include "applications/partials/stepper.html" with current_step=6 %}
 <h1 class="greeting">Signature</h1>
 
-<form method="post" class="card" id="signature-form">
+{# ── Full-screen signature modal ── #}
+<div class="sig-fullscreen" id="sig-fullscreen" style="display:none;" aria-modal="true" role="dialog" aria-label="Customer Signature">
+    <div class="sig-fullscreen__topbar">
+        <button type="button" class="sig-fullscreen__icon-btn" id="sig-cancel-btn" aria-label="Cancel signature">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <span class="sig-fullscreen__title">Customer Signature</span>
+        <button type="button" class="sig-fullscreen__icon-btn confirm" id="sig-confirm-btn" aria-label="Save signature">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+    </div>
+    <div class="sig-fullscreen__canvas-area">
+        <canvas class="sig-fullscreen__canvas" id="sig-fullscreen-canvas"></canvas>
+        <p class="sig-fullscreen__hint">Sign using your finger or stylus in the space above</p>
+    </div>
+    <div class="sig-fullscreen__bottom">
+        <button type="button" class="sig-fullscreen__clear" id="sig-clear-btn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+            Clear
+        </button>
+    </div>
+</div>
+
+<form method="post" class="card ts-slide-up" id="signature-form">
     {% csrf_token %}
     {{ form.non_field_errors }}
 
     <div class="form-group{% if 'customer_signature' in app.correction_fields %} has-correction{% endif %}">
-        <label>Customer signature *</label>
-        {% if app.signature_image %}
-            <div class="signature-preview">
-                <img src="{{ app.signature_image.url }}" alt="Saved customer signature">
+        <label>Customer Signature *</label>
+
+        {# Signature preview (shown after save) #}
+        <div class="sig-preview-card{% if app.signature_image %} visible{% endif %}" id="sig-preview-card">
+            <img
+                src="{% if app.signature_image %}{{ app.signature_image.url }}{% else %}{% endif %}"
+                alt="Customer signature"
+                id="sig-preview-img"
+                style="{% if not app.signature_image %}display:none;{% endif %}"
+            >
+            <div class="sig-preview-meta">
+                <span class="section-saved-badge">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Signature saved
+                </span>
+                <button type="button" class="sig-redo-btn" id="sig-redo-btn" title="Redo signature">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Redo
+                </button>
             </div>
-        {% endif %}
-        <div class="signature-pad">
-            <canvas class="signature-canvas" id="signature-canvas"></canvas>
         </div>
+
+        {# Capture button (hidden once signed) #}
+        <button type="button" class="action-btn-large primary" id="sig-open-btn" {% if app.signature_image %}style="display:none;"{% endif %}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span class="btn-label">Capture Signature</span>
+        </button>
+
         {{ form.signature_data }}
         {{ form.signature_data.errors }}
-        <div class="signature-actions">
-            <button type="button" class="btn btn-blue" id="signature-undo">Undo</button>
-            <button type="button" class="btn btn-outline btn-danger-soft" id="signature-clear">Clear / Cancel</button>
-            <button type="button" class="btn" id="signature-save">Save Signature</button>
-        </div>
-        <div class="signature-status{% if app.signature_image %} saved{% endif %}" id="signature-status">
+
+        <div class="signature-status{% if app.signature_image %} saved{% endif %}" id="signature-status" style="margin-top:10px;">
             {% if app.signature_image %}Signature saved{% else %}Signature not saved{% endif %}
         </div>
         <p class="signature-disabled-note" id="signature-disabled-note">
-            Save the signature and confirm terms before submitting.
+            Capture and save the signature, then confirm terms before submitting.
         </p>
     </div>
 
@@ -65,147 +103,180 @@
 </form>
 
 <script>
-    (function () {
-        const canvas = document.getElementById("signature-canvas");
-        const context = canvas.getContext("2d");
-        const hiddenInput = document.getElementById("id_signature_data");
-        const undoButton = document.getElementById("signature-undo");
-        const clearButton = document.getElementById("signature-clear");
-        const saveButton = document.getElementById("signature-save");
-        const submitButton = document.getElementById("signature-submit");
-        const status = document.getElementById("signature-status");
-        const terms = document.getElementById("id_agreed_to_terms");
-        let strokes = [];
-        let currentStroke = null;
-        let signatureSaved = {% if app.signature_image %}true{% else %}false{% endif %};
+(function () {
+    var fullscreenEl = document.getElementById('sig-fullscreen');
+    var canvas       = document.getElementById('sig-fullscreen-canvas');
+    var openBtn      = document.getElementById('sig-open-btn');
+    var cancelBtn    = document.getElementById('sig-cancel-btn');
+    var confirmBtn   = document.getElementById('sig-confirm-btn');
+    var clearBtn     = document.getElementById('sig-clear-btn');
+    var redoBtn      = document.getElementById('sig-redo-btn');
+    var previewCard  = document.getElementById('sig-preview-card');
+    var previewImg   = document.getElementById('sig-preview-img');
+    var hiddenInput  = document.getElementById('id_signature_data');
+    var statusEl     = document.getElementById('signature-status');
+    var submitBtn    = document.getElementById('signature-submit');
+    var termsCheck   = document.getElementById('id_agreed_to_terms');
 
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            const scale = window.devicePixelRatio || 1;
-            canvas.width = Math.max(1, Math.floor(rect.width * scale));
-            canvas.height = Math.max(1, Math.floor(rect.height * scale));
-            context.setTransform(scale, 0, 0, scale, 0, 0);
-            redraw();
+    var ctx = canvas ? canvas.getContext('2d') : null;
+    var strokes = [];
+    var currentStroke = null;
+    var signatureSaved = {% if app.signature_image %}true{% else %}false{% endif %};
+
+    function updateSubmitState() {
+        submitBtn.disabled = !(signatureSaved && termsCheck && termsCheck.checked);
+    }
+
+    if (termsCheck) {
+        termsCheck.addEventListener('change', updateSubmitState);
+    }
+    updateSubmitState();
+
+    function resizeCanvas() {
+        if (!canvas) return;
+        var rect = fullscreenEl.querySelector('.sig-fullscreen__canvas-area').getBoundingClientRect();
+        var dpr  = window.devicePixelRatio || 1;
+        canvas.width  = Math.max(1, Math.floor(rect.width  * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        canvas.style.width  = rect.width  + 'px';
+        canvas.style.height = (rect.height - 44) + 'px'; /* leave room for hint */
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        redraw();
+    }
+
+    function drawStroke(stroke) {
+        if (!stroke || stroke.length < 1) return;
+        ctx.beginPath();
+        ctx.lineWidth   = 2.5;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+        ctx.strokeStyle = '#111111';
+        ctx.moveTo(stroke[0].x, stroke[0].y);
+        for (var i = 1; i < stroke.length; i++) {
+            ctx.lineTo(stroke[i].x, stroke[i].y);
         }
+        ctx.stroke();
+    }
 
-        function drawStroke(stroke) {
-            if (stroke.length < 2) {
-                return;
-            }
-            context.beginPath();
-            context.lineWidth = 3;
-            context.lineCap = "round";
-            context.lineJoin = "round";
-            context.strokeStyle = "#111111";
-            context.moveTo(stroke[0].x, stroke[0].y);
-            stroke.slice(1).forEach(function (point) {
-                context.lineTo(point.x, point.y);
-            });
-            context.stroke();
-        }
+    function redraw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        strokes.forEach(drawStroke);
+        if (currentStroke) drawStroke(currentStroke);
+    }
 
-        function redraw() {
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            strokes.forEach(drawStroke);
-            if (currentStroke) {
-                drawStroke(currentStroke);
-            }
-        }
+    function getPoint(event) {
+        var rect    = canvas.getBoundingClientRect();
+        var pointer = event.touches ? event.touches[0] : event;
+        return {
+            x: pointer.clientX - rect.left,
+            y: pointer.clientY - rect.top
+        };
+    }
 
-        function pointFromEvent(event) {
-            const rect = canvas.getBoundingClientRect();
-            const pointer = event.touches ? event.touches[0] : event;
-            return {
-                x: pointer.clientX - rect.left,
-                y: pointer.clientY - rect.top
-            };
-        }
+    function onStart(e) {
+        e.preventDefault();
+        currentStroke = [getPoint(e)];
+    }
 
-        function markUnsaved() {
-            if (strokes.length) {
-                signatureSaved = false;
-                hiddenInput.value = "";
-                status.textContent = "Signature not saved";
-                status.classList.remove("saved");
-                updateSubmitState();
-            }
-        }
+    function onMove(e) {
+        if (!currentStroke) return;
+        e.preventDefault();
+        currentStroke.push(getPoint(e));
+        redraw();
+    }
 
-        function startStroke(event) {
-            event.preventDefault();
-            currentStroke = [pointFromEvent(event)];
-            markUnsaved();
-        }
+    function onEnd(e) {
+        if (!currentStroke) return;
+        e.preventDefault();
+        if (currentStroke.length > 1) strokes.push(currentStroke);
+        currentStroke = null;
+        redraw();
+    }
 
-        function moveStroke(event) {
-            if (!currentStroke) {
-                return;
-            }
-            event.preventDefault();
-            currentStroke.push(pointFromEvent(event));
-            redraw();
-        }
-
-        function endStroke(event) {
-            if (!currentStroke) {
-                return;
-            }
-            event.preventDefault();
-            if (currentStroke.length > 1) {
-                strokes.push(currentStroke);
-            }
-            currentStroke = null;
-            markUnsaved();
-            redraw();
-        }
-
-        function updateSubmitState() {
-            submitButton.disabled = !(signatureSaved && terms.checked);
-        }
-
-        undoButton.addEventListener("click", function () {
-            strokes.pop();
-            hiddenInput.value = "";
-            signatureSaved = false;
-            status.textContent = "Signature not saved";
-            status.classList.remove("saved");
-            redraw();
-            updateSubmitState();
+    function openFullscreen() {
+        strokes = [];
+        currentStroke = null;
+        fullscreenEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(function () {
+            resizeCanvas();
         });
+        canvas.addEventListener('mousedown',  onStart);
+        canvas.addEventListener('mousemove',  onMove);
+        window.addEventListener('mouseup',    onEnd);
+        canvas.addEventListener('touchstart', onStart, { passive: false });
+        canvas.addEventListener('touchmove',  onMove,  { passive: false });
+        canvas.addEventListener('touchend',   onEnd,   { passive: false });
+    }
 
-        clearButton.addEventListener("click", function () {
+    function closeFullscreen() {
+        fullscreenEl.style.display = 'none';
+        document.body.style.overflow = '';
+        canvas.removeEventListener('mousedown',  onStart);
+        canvas.removeEventListener('mousemove',  onMove);
+        window.removeEventListener('mouseup',    onEnd);
+        canvas.removeEventListener('touchstart', onStart);
+        canvas.removeEventListener('touchmove',  onMove);
+        canvas.removeEventListener('touchend',   onEnd);
+    }
+
+    if (openBtn) {
+        openBtn.addEventListener('click', openFullscreen);
+    }
+
+    if (redoBtn) {
+        redoBtn.addEventListener('click', function () {
+            signatureSaved = false;
+            hiddenInput.value = '';
+            previewCard.classList.remove('visible');
+            previewImg.style.display = 'none';
+            openBtn.style.display = '';
+            statusEl.textContent = 'Signature not saved';
+            statusEl.classList.remove('saved');
+            updateSubmitState();
+            openFullscreen();
+        });
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeFullscreen);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
             strokes = [];
             currentStroke = null;
-            hiddenInput.value = "";
-            signatureSaved = false;
-            status.textContent = "Signature not saved";
-            status.classList.remove("saved");
             redraw();
-            updateSubmitState();
         });
+    }
 
-        saveButton.addEventListener("click", function () {
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
             if (!strokes.length) {
+                alert('Please draw a signature before saving.');
                 return;
             }
-            hiddenInput.value = canvas.toDataURL("image/png");
+            var dataUrl = canvas.toDataURL('image/png');
+            hiddenInput.value = dataUrl;
             signatureSaved = true;
-            status.textContent = "Signature saved";
-            status.classList.add("saved");
+
+            previewImg.src = dataUrl;
+            previewImg.style.display = '';
+            previewCard.classList.add('visible');
+            openBtn.style.display = 'none';
+            statusEl.textContent = 'Signature saved';
+            statusEl.classList.add('saved');
+
+            closeFullscreen();
             updateSubmitState();
         });
+    }
 
-        terms.addEventListener("change", updateSubmitState);
-        canvas.addEventListener("mousedown", startStroke);
-        canvas.addEventListener("mousemove", moveStroke);
-        window.addEventListener("mouseup", endStroke);
-        canvas.addEventListener("touchstart", startStroke, { passive: false });
-        canvas.addEventListener("touchmove", moveStroke, { passive: false });
-        canvas.addEventListener("touchend", endStroke, { passive: false });
-        window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
-        updateSubmitState();
-    })();
+    window.addEventListener('resize', function () {
+        if (fullscreenEl.style.display !== 'none') resizeCanvas();
+    });
+})();
 </script>
 
 {% endblock %}

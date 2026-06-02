@@ -10,16 +10,7 @@ Usage: {% include "sales/_yes_no.html" with field_name="identity_signature_match
     {% if hint %}<p class="ts-yn-hint">{{ hint }}</p>{% endif %}
   </div>
   <div class="yes-no-buttons ts-yn-buttons">
-    <button
-      type="button"
-      class="btn-yn btn-yn--yes ts-yn-btn ts-yn-btn--yes"
-      x-bind:class="{ 'btn-yn--active ts-yn-btn--active': val === 'yes' }"
-      x-on:click="val = 'yes'"
-      aria-label="Yes — confirmed"
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      Yes
-    </button>
+    {# NO always left, YES always right #}
     <button
       type="button"
       class="btn-yn btn-yn--no ts-yn-btn ts-yn-btn--no"
@@ -29,6 +20,16 @@ Usage: {% include "sales/_yes_no.html" with field_name="identity_signature_match
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       No
+    </button>
+    <button
+      type="button"
+      class="btn-yn btn-yn--yes ts-yn-btn ts-yn-btn--yes"
+      x-bind:class="{ 'btn-yn--active ts-yn-btn--active': val === 'yes' }"
+      x-on:click="val = 'yes'"
+      aria-label="Yes — confirmed"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      Yes
     </button>
   </div>
   <input type="hidden" name="{{ field_name }}" x-bind:value="val">

@@ -8,16 +8,22 @@
 <h1 class="greeting">Contract Progress</h1>
 
 {# ── PayG Identity Card ─────────────────────────────────────────────── #}
-<div class="card" style="border-left: 4px solid #ff5a00; margin-bottom: 16px;">
+<div class="card ts-slide-up" style="border-left: 4px solid #ff5a00; margin-bottom: 16px;">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <div>
-            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">TengaSale PayG</div>
-            {% if contract.payg_number %}
-                <div style="font-size:22px; font-weight:700; color:#ff5a00; letter-spacing:1px;">{{ contract.payg_number }}</div>
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">Contract Number</div>
+            {% if contract.contract_number %}
+                <div style="font-size:22px; font-weight:700; color:#ff5a00; letter-spacing:1px; font-family:monospace;">{{ contract.contract_number }}</div>
             {% else %}
-                <div style="font-size:14px; color:#aaa;">Awaiting activation</div>
+                <div style="font-size:14px; color:#aaa;">Generating...</div>
             {% endif %}
         </div>
+        {% if contract.payg_number %}
+        <div style="border-left:1px solid #eee; padding-left:12px;">
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">PayG Number</div>
+            <div style="font-size:18px; font-weight:700; color:#ff5a00; font-family:monospace;">{{ contract.payg_number }}</div>
+        </div>
+        {% endif %}
         {% if contract.imei_number %}
         <div style="border-left:1px solid #eee; padding-left:12px;">
             <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">IMEI</div>
@@ -33,69 +39,147 @@
     </div>
     {% if contract.payg_number %}
     <div style="margin-top:10px; padding-top:10px; border-top:1px solid #f5f5f5;">
-        <span style="font-size:12px; color:#555;">Payment link: </span>
+        <span style="font-size:12px; color:#555;">Customer payment: </span>
         <a href="{{ contract.payment_url }}" style="font-size:12px; color:#ff5a00; font-weight:600;" target="_blank">
-            tengasale.onrender.com{{ contract.payment_url }}
+            tengasale.emajinet.africa{{ contract.payment_url }}
         </a>
     </div>
     {% endif %}
 </div>
 
-{# ── Progress Steps ─────────────────────────────────────────────────── #}
-<div class="card">
-    <div class="progress-step {% if contract.contract_number %}done{% endif %}">
-        <strong>1. Creating contract</strong>
-        <span>
-            {{ contract.contract_number }}
-            {% if contract.payg_number %}&nbsp;— PayG: <strong>{{ contract.payg_number }}</strong>{% endif %}
-        </span>
-    </div>
-    <div class="progress-step {% if contract.warranty_checked %}done{% endif %}">
-        <strong>2. Checking warranty &amp; model</strong>
-        <span>{% if contract.warranty_checked %}Checked{% else %}Pending{% endif %}</span>
-    </div>
-    <div class="progress-step {% if contract.phone_locked %}done{% endif %}">
-        <strong>3. Locking phone</strong>
-        <span>
-            {% if contract.phone_locked %}Locked{% else %}Pending{% endif %}
-            {% if contract.imei_number %}&nbsp;— IMEI: <code>{{ contract.imei_number }}</code>{% endif %}
-        </span>
-    </div>
-    <div class="progress-step {% if contract.deposit_paid %}done{% endif %}">
-        <strong>4. Waiting for deposit</strong>
-        <span>
-            {% if contract.deposit_paid %}Paid{% else %}
-                Pending
-                {% if contract.payg_number %}
-                    &nbsp;— Customer pays at:
-                    <a href="{{ contract.payment_url }}" style="color:#ff5a00;">{{ contract.payment_url }}</a>
-                {% endif %}
-            {% endif %}
-        </span>
-    </div>
-    <div class="progress-step {% if contract.status == 'complete' %}done{% endif %}">
-        <strong>5. Contract active</strong>
-        <span>{{ contract.get_status_display }}</span>
+{# ── Animated progress steps ──────────────────────────────────────────── #}
+<div class="card ts-slide-up" style="animation-delay:60ms;">
+    <h3 style="font-size:15px; font-weight:700; margin:0 0 16px; color:#101828;">Activation Steps</h3>
+    <div class="lock-steps">
+
+        <div class="lock-step {% if contract.contract_number %}done{% else %}current{% endif %}">
+            <div class="ts-status-circle {% if contract.contract_number %}done{% else %}current{% endif %}">
+                {% if contract.contract_number %}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% else %}1{% endif %}
+            </div>
+            <div class="lock-step__body">
+                <div class="lock-step__title {% if contract.contract_number %}done{% else %}current{% endif %}">Creating Contract</div>
+                <div class="lock-step__sub">
+                    {% if contract.contract_number %}
+                        Contract {{ contract.contract_number }}{% if contract.payg_number %} · PayG {{ contract.payg_number }}{% endif %}
+                    {% else %}
+                        <span class="ts-dot-loader"><span></span><span></span><span></span></span> Generating contract number
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="lock-step {% if contract.warranty_checked %}done{% elif contract.contract_number %}current{% else %}pending{% endif %}">
+            <div class="ts-status-circle {% if contract.warranty_checked %}done{% elif contract.contract_number %}current{% else %}pending{% endif %}">
+                {% if contract.warranty_checked %}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% else %}2{% endif %}
+            </div>
+            <div class="lock-step__body">
+                <div class="lock-step__title {% if contract.warranty_checked %}done{% elif contract.contract_number %}current{% else %}pending{% endif %}">Checking Warranty</div>
+                <div class="lock-step__sub">{% if contract.warranty_checked %}Verified{% else %}Pending verification{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="lock-step {% if contract.phone_locked %}done{% elif contract.warranty_checked %}current{% else %}pending{% endif %}">
+            <div class="ts-status-circle {% if contract.phone_locked %}done{% elif contract.warranty_checked %}current{% else %}pending{% endif %}">
+                {% if contract.phone_locked %}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% else %}3{% endif %}
+            </div>
+            <div class="lock-step__body">
+                <div class="lock-step__title {% if contract.phone_locked %}done{% elif contract.warranty_checked %}current{% else %}pending{% endif %}">
+                    {% if contract.phone_locked %}Device Locked{% else %}Locking Device{% endif %}
+                </div>
+                <div class="lock-step__sub">
+                    {% if contract.phone_locked %}
+                        Locked · IMEI {{ contract.imei_number }}
+                    {% elif contract.warranty_checked %}
+                        <span class="ts-dot-loader"><span></span><span></span><span></span></span> Locking...
+                    {% else %}
+                        Awaiting warranty check
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="lock-step {% if contract.deposit_paid %}done{% elif contract.phone_locked %}current{% else %}pending{% endif %}">
+            <div class="ts-status-circle {% if contract.deposit_paid %}done{% elif contract.phone_locked %}current{% else %}pending{% endif %}">
+                {% if contract.deposit_paid %}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% else %}4{% endif %}
+            </div>
+            <div class="lock-step__body">
+                <div class="lock-step__title {% if contract.deposit_paid %}done{% elif contract.phone_locked %}current{% else %}pending{% endif %}">Deposit Payment</div>
+                <div class="lock-step__sub">
+                    {% if contract.deposit_paid %}
+                        Deposit paid · Contract active
+                    {% else %}
+                        Deposit due: {{ contract.deposit_amount|mwk }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="lock-step {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">
+            <div class="ts-status-circle {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">
+                {% if contract.status == 'complete' %}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% else %}5{% endif %}
+            </div>
+            <div class="lock-step__body">
+                <div class="lock-step__title {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">Contract Active</div>
+                <div class="lock-step__sub">
+                    {{ contract.get_status_display }}
+                    {% if contract.status != 'complete' %}
+                        <br><small style="color:#9ca3af; font-size:11px;">Ownership is retained by TengaSale until full repayment.</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<form method="post" class="card">
+{# ── Action area ───────────────────────────────────────────────────── #}
+<form method="post" class="ts-stagger" style="display:flex; flex-direction:column; gap:12px;">
     {% csrf_token %}
     {% if not contract.warranty_checked %}
-        <button class="btn primary-button" name="action" value="warranty">Mark warranty checked</button>
+        <button class="action-btn-large secondary" name="action" value="warranty">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="btn-label">Mark Warranty Checked</span>
+        </button>
     {% elif not contract.phone_locked %}
-        <button class="btn primary-button" name="action" value="locked">Mark phone locked</button>
+        <button class="action-btn-large secondary" name="action" value="locked">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="btn-label">Mark Device Locked</span>
+        </button>
     {% elif not contract.deposit_paid %}
-        <p>Deposit due: <strong>{{ contract.deposit_amount|mwk }}</strong></p>
+        <div class="card" style="background:#fff8f5; border:1.5px solid var(--ts-orange-border); margin:0;">
+            <p style="margin:0 0 8px; font-size:14px; color:#374151; font-weight:600;">Device locked. Deposit payment required.</p>
+            <p style="margin:0 0 12px; font-size:22px; font-weight:900; color:#ff5a00;">{{ contract.deposit_amount|mwk }}</p>
+            {% if contract.payg_number %}
+            <p style="font-size:13px; color:#6b7280; margin:0 0 12px;">
+                Share payment link:
+                <a href="{{ contract.payment_url }}" style="color:#ff5a00; font-weight:600;">{{ contract.payment_url }}</a>
+            </p>
+            {% endif %}
+        </div>
         {% if contract.payg_number %}
-        <p style="font-size:13px; color:#555;">
-            Share the payment link with the customer:
-            <a href="{{ contract.payment_url }}" style="color:#ff5a00; font-weight:600;">{{ contract.payment_url }}</a>
-        </p>
+        <a href="{{ contract.payment_url }}" class="action-btn-large primary" target="_blank">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span class="btn-label">PAY DEPOSIT</span>
+        </a>
         {% endif %}
-        <button class="btn primary-button" name="action" value="deposit">Mark deposit paid</button>
+        <button class="action-btn-large outline" name="action" value="deposit" style="font-size:13px; min-height:46px;">
+            <span class="btn-label">Mark Deposit Paid (Manual)</span>
+        </button>
     {% else %}
-        <a href="{% url 'contract_complete' contract.id %}" class="btn primary-button">Contract complete</a>
+        <a href="{% url 'contract_complete' contract.id %}" class="action-btn-large primary">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span class="btn-label">Contract Complete</span>
+        </a>
     {% endif %}
 </form>
 

@@ -80,7 +80,7 @@ class HomePageTests(TestCase):
         self.assertContains(response, 'aria-label="WhatsApp support"')
         self.assertContains(response, "notification-button")
         self.assertContains(response, "logout-button")
-        self.assertContains(response, "WhatsApp +265883596135")
+        self.assertContains(response, "WhatsApp Support")
         self.assertNotContains(response, "Claim Next")
 
         content = response.content.decode()
@@ -102,23 +102,23 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Locked devices")
 
     def test_merchant_dashboard_contains_applications_and_tools_sections(self):
-        """Applications and Tools navigation sections must be present."""
+        """Contracts and Tools navigation sections must be present."""
         self.create_user("merchant", "Merchant")
         self.client.login(username="merchant", password="test-pass-123")
 
         response = self.client.get(reverse("merchant_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Applications")
-        self.assertContains(response, "Active applications")
-        self.assertContains(response, "Completed applications")
+        self.assertContains(response, "Contracts")
+        self.assertContains(response, "Active Contracts")
+        self.assertContains(response, "Completed Contracts")
         self.assertContains(response, "Tools")
-        self.assertContains(response, "All deals")
-        self.assertContains(response, "My earnings")
+        self.assertContains(response, "All Deals")
+        self.assertContains(response, "My Earnings")
         self.assertContains(response, "Payments")
 
     def test_merchant_dashboard_financial_sections_appear_before_applications(self):
-        """Financial data (earnings, device financing) must come before applications nav."""
+        """Financial data (earnings, device financing) must come before contracts nav."""
         self.create_user("merchant", "Merchant")
         self.client.login(username="merchant", password="test-pass-123")
 
@@ -126,11 +126,11 @@ class HomePageTests(TestCase):
 
         content = response.content.decode()
         self.assertIn("Device Financing", content)
-        self.assertIn("Applications", content)
+        self.assertIn("Active Contracts", content)
         self.assertLess(
             content.index("Device Financing"),
-            content.index("Applications"),
-            "Device Financing section must appear before Applications section",
+            content.index("Active Contracts"),
+            "Device Financing section must appear before Contracts section",
         )
 
     def test_merchant_dashboard_has_compact_header_not_giant_hero(self):
@@ -1374,7 +1374,7 @@ class LayoutRegressionTests(TestCase):
         self.client.login(username="reg_merchant", password="pass123")
         response = self.client.get(reverse("merchant_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Active applications")
+        self.assertContains(response, "Active Contracts")
 
     def test_merchant_dashboard_has_tools_link(self):
         self.client.login(username="reg_merchant", password="pass123")
@@ -1389,15 +1389,15 @@ class LayoutRegressionTests(TestCase):
         self.assertNotContains(response, "mhome-hero")
 
     def test_merchant_dashboard_financial_data_before_apps_nav(self):
-        """Earnings and financing sections appear above the Applications nav."""
+        """Earnings and financing sections appear above the Contracts nav."""
         self.client.login(username="reg_merchant", password="pass123")
         response = self.client.get(reverse("merchant_dashboard"))
         content = response.content.decode()
         earnings_pos = content.index("You are now earning more with TengaSale.")
         financing_pos = content.index("Device Financing")
-        apps_pos = content.index("Active applications")
-        self.assertLess(earnings_pos, apps_pos, "Earnings must appear before Applications nav")
-        self.assertLess(financing_pos, apps_pos, "Device Financing must appear before Applications nav")
+        apps_pos = content.index("Active Contracts")
+        self.assertLess(earnings_pos, apps_pos, "Earnings must appear before Contracts nav")
+        self.assertLess(financing_pos, apps_pos, "Device Financing must appear before Contracts nav")
 
     # ── Underwriter (sales) portal regression ─────────────────────────────────
 

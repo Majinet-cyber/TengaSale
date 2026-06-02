@@ -1,0 +1,1039 @@
+/**
+ * TengaSale Motion System — motion.css
+ * Serious, premium, fintech-grade animations.
+ * Speed: 150ms–350ms. No childish effects.
+ */
+
+/* ── Keyframes ─────────────────────────────────────────────────────── */
+
+@keyframes ts-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ts-slide-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ts-slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ts-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ts-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 90, 0, 0.30); }
+  70%  { box-shadow: 0 0 0 10px rgba(255, 90, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 90, 0, 0); }
+}
+
+@keyframes ts-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+@keyframes ts-spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes ts-progress-fill {
+  from { width: 0%; }
+  to   { width: var(--progress-target, 100%); }
+}
+
+@keyframes ts-count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ts-border-pulse {
+  0%, 100% { border-color: rgba(255, 90, 0, 0.3); }
+  50%       { border-color: rgba(255, 90, 0, 0.7); }
+}
+
+@keyframes ts-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Entrance utilities ─────────────────────────────────────────────── */
+
+.ts-fade-in   { animation: ts-fade-in  250ms ease both; }
+.ts-slide-up  { animation: ts-slide-up 280ms ease both; }
+.ts-scale-in  { animation: ts-scale-in 220ms ease both; }
+
+/* Staggered card sequences */
+.ts-stagger > *      { animation: ts-slide-up 280ms ease both; }
+.ts-stagger > *:nth-child(1)  { animation-delay: 0ms;   }
+.ts-stagger > *:nth-child(2)  { animation-delay: 60ms;  }
+.ts-stagger > *:nth-child(3)  { animation-delay: 120ms; }
+.ts-stagger > *:nth-child(4)  { animation-delay: 180ms; }
+.ts-stagger > *:nth-child(5)  { animation-delay: 240ms; }
+.ts-stagger > *:nth-child(6)  { animation-delay: 300ms; }
+.ts-stagger > *:nth-child(7)  { animation-delay: 360ms; }
+.ts-stagger > *:nth-child(8)  { animation-delay: 420ms; }
+
+/* ── Skeleton loader ────────────────────────────────────────────────── */
+
+.ts-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: ts-shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}
+
+.ts-skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.ts-skeleton-text.wide   { width: 80%; }
+.ts-skeleton-text.medium { width: 55%; }
+.ts-skeleton-text.narrow { width: 35%; }
+
+.ts-skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ts-skeleton-card {
+  height: 96px;
+  border-radius: 14px;
+}
+
+.ts-skeleton-image {
+  width: 100%;
+  padding-bottom: 75%;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Animated counter ───────────────────────────────────────────────── */
+
+[data-counter] {
+  display: inline-block;
+  animation: ts-count-up 320ms ease both;
+}
+
+/* ── Button press effect ────────────────────────────────────────────── */
+
+.btn,
+.capture-button,
+.recapture-button,
+.new-contract-cta,
+[class*="action-btn"],
+[class*="call-btn"] {
+  transition:
+    background-color 160ms ease,
+    border-color     160ms ease,
+    color            160ms ease,
+    box-shadow       160ms ease,
+    transform        100ms ease;
+}
+
+.btn:active,
+.capture-button:active,
+.recapture-button:active,
+.new-contract-cta:active {
+  transform: scale(0.97);
+}
+
+/* ── Card elevation hover ───────────────────────────────────────────── */
+
+.card {
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.card.ts-hoverable:hover {
+  box-shadow: 0 8px 32px rgba(17, 17, 17, 0.12);
+  transform: translateY(-2px);
+}
+
+/* ── Animated status circle ─────────────────────────────────────────── */
+
+.ts-status-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background 300ms ease, border-color 300ms ease;
+}
+
+.ts-status-circle.done {
+  background: #16a34a;
+  color: #fff;
+  animation: ts-scale-in 250ms ease;
+}
+
+.ts-status-circle.current {
+  background: #fff;
+  border: 2px dashed #ff5a00;
+  color: #ff5a00;
+  animation: ts-border-pulse 1.8s ease-in-out infinite;
+}
+
+.ts-status-circle.pending {
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  color: #9ca3af;
+}
+
+.ts-status-circle.failed {
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  color: #ef4444;
+}
+
+/* ── Locking flow progress steps ────────────────────────────────────── */
+
+.lock-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.lock-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  position: relative;
+  animation: ts-slide-up 300ms ease both;
+}
+
+.lock-step + .lock-step::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: -14px;
+  width: 2px;
+  height: 14px;
+  background: #e5e7eb;
+}
+
+.lock-step + .lock-step.done::before {
+  background: #16a34a;
+}
+
+.lock-step__body {
+  flex: 1;
+  padding-top: 8px;
+}
+
+.lock-step__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+}
+
+.lock-step__title.current { color: #ff5a00; }
+.lock-step__title.done    { color: #16a34a; }
+
+.lock-step__sub {
+  font-size: 13px;
+  color: #667085;
+  margin-top: 3px;
+}
+
+/* ── Animated progress bar ──────────────────────────────────────────── */
+
+.ts-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.ts-progress-bar__fill {
+  height: 100%;
+  background: #ff5a00;
+  border-radius: 99px;
+  animation: ts-progress-fill 600ms ease both;
+  transition: width 400ms ease;
+}
+
+/* ── Page transition wrapper ────────────────────────────────────────── */
+
+.page-enter {
+  animation: ts-slide-up 280ms ease both;
+}
+
+/* ── Pulse ring for active state ────────────────────────────────────── */
+
+.ts-pulse {
+  animation: ts-pulse-ring 1.8s ease-in-out infinite;
+}
+
+/* ── Loading spinner (inline) ───────────────────────────────────────── */
+
+.ts-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 90, 0, 0.2);
+  border-top-color: #ff5a00;
+  border-radius: 50%;
+  animation: ts-spin-once 700ms linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.ts-spinner.sm { width: 14px; height: 14px; border-width: 2px; }
+.ts-spinner.lg { width: 28px; height: 28px; border-width: 3px; }
+
+/* ── Image loading skeleton ─────────────────────────────────────────── */
+
+.ts-img-wrap {
+  position: relative;
+  overflow: hidden;
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.ts-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 300ms ease;
+}
+
+.ts-img-wrap img.loading {
+  opacity: 0;
+}
+
+.ts-img-wrap img.loaded {
+  opacity: 1;
+}
+
+.ts-img-wrap .ts-img-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 22px;
+  color: #667085;
+  background: #f3f4f6;
+}
+
+/* ── Big action buttons ─────────────────────────────────────────────── */
+
+.action-btn-large {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  min-height: 56px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 100ms ease;
+}
+
+.action-btn-large:active { transform: scale(0.97); }
+
+.action-btn-large.primary {
+  background: #ff5a00;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 90, 0, 0.28);
+}
+
+.action-btn-large.primary:hover {
+  background: #e64d00;
+  box-shadow: 0 6px 20px rgba(255, 90, 0, 0.36);
+}
+
+.action-btn-large.secondary {
+  background: #101828;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, 0.18);
+}
+
+.action-btn-large.secondary:hover { background: #1d2939; }
+
+.action-btn-large.whatsapp {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1.5px solid rgba(22, 163, 74, 0.30);
+}
+
+.action-btn-large.whatsapp:hover { background: #bbf7d0; }
+
+.action-btn-large.outline {
+  background: #ffffff;
+  color: #101828;
+  border: 1.5px solid #e5e7eb;
+}
+
+.action-btn-large.outline:hover { border-color: #9ca3af; background: #f9fafb; }
+
+.action-btn-large svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.action-btn-large .btn-label { flex: 1; text-align: left; }
+
+/* ── Yes / No buttons ──────────────────────────────────────────────── */
+
+.yes-no-row {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.yes-no-row > * {
+  flex: 1;
+  min-height: 52px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+  transition: background 160ms ease, transform 100ms ease;
+}
+
+.yes-no-row > *:active { transform: scale(0.96); }
+
+.yes-no-row .btn-no {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid rgba(220, 38, 38, 0.25);
+}
+
+.yes-no-row .btn-no:hover { background: #fee2e2; }
+
+.yes-no-row .btn-yes {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+}
+
+.yes-no-row .btn-yes:hover { background: #15803d; }
+
+/* ── KPI counter card ───────────────────────────────────────────────── */
+
+.kpi-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 16px;
+  border: 1px solid #e5e7eb;
+  animation: ts-slide-up 280ms ease both;
+}
+
+.kpi-card .kpi-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: #101828;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kpi-card .kpi-label {
+  font-size: 12px;
+  color: #667085;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Section locked state ───────────────────────────────────────────── */
+
+.section-locked {
+  position: relative;
+}
+
+.section-locked .form-group input,
+.section-locked .form-group select,
+.section-locked .form-group textarea {
+  pointer-events: none;
+  background: #f9fafb !important;
+  color: #374151 !important;
+  border-color: #f3f4f6 !important;
+  cursor: default !important;
+}
+
+.section-edit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667085;
+  cursor: pointer;
+  transition: border-color 160ms, color 160ms;
+}
+
+.section-edit-btn:hover {
+  border-color: #ff5a00;
+  color: #ff5a00;
+}
+
+.section-edit-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.section-lock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 14px;
+}
+
+.section-lock-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.section-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  animation: ts-scale-in 220ms ease;
+}
+
+/* ── Dot loading indicator ──────────────────────────────────────────── */
+
+.ts-dot-loader {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ts-dot-loader span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5a00;
+  animation: ts-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.ts-dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+.ts-dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Fullscreen overlay ─────────────────────────────────────────────── */
+
+.ts-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  animation: ts-fade-in 200ms ease;
+}
+
+.ts-fullscreen-overlay.dark {
+  background: #000000;
+}
+
+/* ── Image lightbox ─────────────────────────────────────────────────── */
+
+.ts-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  animation: ts-fade-in 180ms ease;
+}
+
+.ts-lightbox img {
+  max-width: 96vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  animation: ts-scale-in 220ms ease;
+}
+
+.ts-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: background 160ms ease;
+}
+
+.ts-lightbox-close:hover { background: rgba(255, 255, 255, 0.22); }
+
+.ts-lightbox-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.ts-lightbox-btn {
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.ts-lightbox-btn:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* ── Animated KYC steps ─────────────────────────────────────────────── */
+
+.kyc-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.kyc-step-indicator::-webkit-scrollbar { display: none; }
+
+.kyc-step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+  min-width: 64px;
+}
+
+.kyc-step-dot::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  right: -50%;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+
+.kyc-step-dot:last-child::before { display: none; }
+
+.kyc-step-dot.done::before   { background: #16a34a; }
+.kyc-step-dot.current::before { background: linear-gradient(90deg, #ff5a00, #e5e7eb); }
+
+.kyc-step-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+  transition: background 300ms ease, border-color 300ms ease;
+}
+
+.kyc-step-dot.done    .kyc-step-circle { background: #16a34a; color: #fff; }
+.kyc-step-dot.current .kyc-step-circle { background: #ff5a00; color: #fff; animation: ts-pulse-ring 1.8s ease-in-out infinite; }
+.kyc-step-dot.pending .kyc-step-circle { background: #f3f4f6; color: #9ca3af; border: 2px solid #e5e7eb; }
+
+.kyc-step-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #667085;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.kyc-step-dot.current .kyc-step-label { color: #ff5a00; }
+.kyc-step-dot.done    .kyc-step-label { color: #16a34a; }
+
+/* ── Camera overlay fixed layout ────────────────────────────────────── */
+
+.camera-frame-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+}
+
+.camera-frame-wrapper video {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  display: block;
+}
+
+.camera-frame-wrapper .camera-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.camera-frame--oval::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  padding-bottom: 88%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.camera-frame--rect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 88%;
+  padding-bottom: 56%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.camera-guide-text {
+  position: absolute;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  padding: 0 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.camera-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+/* ── Signature fullscreen modal ─────────────────────────────────────── */
+
+.sig-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  animation: ts-fade-in 180ms ease;
+}
+
+.sig-fullscreen__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.sig-fullscreen__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #101828;
+}
+
+.sig-fullscreen__icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  color: #374151;
+  transition: border-color 160ms, color 160ms, background 160ms;
+}
+
+.sig-fullscreen__icon-btn:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.sig-fullscreen__icon-btn.confirm {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.sig-fullscreen__icon-btn.confirm:hover {
+  background: #dcfce7;
+}
+
+.sig-fullscreen__canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sig-fullscreen__canvas {
+  flex: 1;
+  width: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.sig-fullscreen__hint {
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 8px 16px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.sig-fullscreen__bottom {
+  padding: 12px 18px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sig-fullscreen__clear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667085;
+  cursor: pointer;
+  transition: border-color 160ms, color 160ms;
+}
+
+.sig-fullscreen__clear:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* ── Signature preview (after save) ────────────────────────────────── */
+
+.sig-preview-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  animation: ts-scale-in 220ms ease;
+}
+
+.sig-preview-card.visible { display: flex; }
+
+.sig-preview-card img {
+  width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.sig-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sig-redo-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667085;
+  cursor: pointer;
+  transition: border-color 160ms, color 160ms;
+}
+
+.sig-redo-btn:hover {
+  border-color: #ff5a00;
+  color: #ff5a00;
+}
+
+/* ── Camera permission error ────────────────────────────────────────── */
+
+.camera-permission-card {
+  background: #fef2f2;
+  border: 1.5px solid rgba(220, 38, 38, 0.25);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.camera-permission-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0 0 8px;
+}
+
+.camera-permission-card p {
+  font-size: 13px;
+  color: #7f1d1d;
+  margin: 0 0 14px;
+}
+
+/* ── KYC sequential step (only show active step) ────────────────────── */
+
+.kyc-guided-step {
+  display: none;
+}
+
+.kyc-guided-step.active {
+  display: block;
+  animation: ts-slide-up 280ms ease both;
+}
+
+/* ── Agent mode toggle ──────────────────────────────────────────────── */
+
+.agent-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff8f5;
+  border: 1.5px solid rgba(255, 90, 0, 0.22);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.agent-mode-toggle label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  flex: 1;
+  cursor: pointer;
+}
+
+.agent-mode-toggle .badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #ff5a00;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: none;
+}
+
+.agent-mode-toggle input:checked ~ .badge {
+  display: inline;
+}
+
+/* ── Reduce motion support ──────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

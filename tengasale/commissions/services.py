@@ -279,8 +279,8 @@ def generate_underwriter_monthly_payout(
 
     entries = CommissionLedger.objects.filter(
         user=user,
-        created_at__date__gte=period_start,
-        created_at__date__lte=period_end,
+        period_start=period_start,
+        period_end=period_end,
         entry_type__in=[
             CommissionLedger.ENTRY_REPAYMENT,
             CommissionLedger.ENTRY_ARREARS,

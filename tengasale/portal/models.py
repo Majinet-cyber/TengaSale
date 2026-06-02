@@ -328,6 +328,15 @@ class PaymentTransaction(models.Model):
         (TYPE_REFUND, "Refund"),
     ]
 
+    NETWORK_AIRTEL = "airtel"
+    NETWORK_TNM = "tnm"
+    NETWORK_OTHER = "other"
+    NETWORK_CHOICES = [
+        (NETWORK_AIRTEL, "Airtel Money"),
+        (NETWORK_TNM, "TNM Mpamba"),
+        (NETWORK_OTHER, "Other"),
+    ]
+
     payment_contract = models.ForeignKey(
         PaymentContract,
         on_delete=models.CASCADE,
@@ -347,10 +356,49 @@ class PaymentTransaction(models.Model):
     )
     currency = models.CharField(max_length=5, default="MWK")
     phone = models.CharField(max_length=30)
+
+    # Network: the mobile money operator (airtel / tnm) — separate from gateway provider
+    network = models.CharField(
+        max_length=10, choices=NETWORK_CHOICES, default=NETWORK_OTHER, blank=True,
+        help_text="Mobile money network used: airtel, tnm, or other",
+    )
+
     internal_reference = models.CharField(max_length=30, unique=True, blank=True)
     provider_reference = models.CharField(max_length=120, blank=True)
+
+    # For PayChangu MoMo: charge_id is separate from tx_ref
+    charge_id = models.CharField(
+        max_length=120, blank=True, default="",
+        help_text="PayChangu MoMo charge_id (used for verification calls)",
+    )
+
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default=STATUS_PENDING)
+
+    # Balance snapshots (recorded at payment time for receipt / audit)
+    balance_before = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Contract balance before this payment was applied",
+    )
+    balance_after = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Contract balance after this payment was applied",
+    )
+
+    # Audit payloads
+    raw_request = models.JSONField(
+        default=dict, blank=True,
+        help_text="Raw payload sent to payment provider",
+    )
     raw_response = models.JSONField(default=dict, blank=True)
+    webhook_payload = models.JSONField(
+        default=dict, blank=True,
+        help_text="Raw payload received from provider webhook",
+    )
+
+    initiated_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the payment was first initiated with the provider",
+    )
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

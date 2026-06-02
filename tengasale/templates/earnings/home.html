@@ -27,6 +27,50 @@
     <a href="{% url 'earnings_home' %}?tab=payouts" class="tab-button {% if active_tab == 'payouts' %}active{% endif %}">PAYOUTS</a>
 </nav>
 
+{# ── Spin Money card ── #}
+{% if spin_wallet.available_spins or spin_wallet.total_spins_earned %}
+<section class="card ts-slide-up" style="animation-delay:80ms; background:linear-gradient(135deg,#fff8f2,#fff3eb); border:1.5px solid rgba(255,90,0,0.18);" data-testid="spin-money-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;border-radius:14px;background:rgba(255,90,0,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#ff5a00;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#ff5a00;">Spin Money</div>
+            <div style="font-size:13px;color:#374151;font-weight:600;">Spin &amp; Win Earnings</div>
+        </div>
+        <a href="{% url 'spin_rewards' %}" class="btn" style="margin-left:auto;background:#ff5a00;color:#fff;padding:6px 14px;font-size:13px;">SPIN NOW</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid rgba(255,90,0,0.10);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Available spins</div>
+            <div style="font-size:22px;font-weight:900;color:#ff5a00;" data-counter>{{ spin_wallet.available_spins }}</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid rgba(255,90,0,0.10);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Total Earned</div>
+            <div style="font-size:22px;font-weight:900;color:#101828;" data-counter>{{ spin_wallet.total_spins_earned }}</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid rgba(255,90,0,0.10);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Spin Rewards</div>
+            <div style="font-size:22px;font-weight:900;color:#16a34a;" data-counter>{{ latest_rewards|length }}</div>
+        </div>
+    </div>
+    {% if latest_rewards %}
+    <div style="margin-top:12px;border-top:1px solid rgba(255,90,0,0.10);padding-top:10px;">
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Recent Spin Rewards</div>
+        {% for reward in latest_rewards %}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f6f8;font-size:13px;">
+            <div>
+                <span style="font-weight:600;">{{ reward.get_reward_tier_display }}</span>
+                <span style="color:#94a3b8;font-size:11px;margin-left:6px;">{{ reward.spin_date|date:"d M Y" }}</span>
+            </div>
+            <span style="font-weight:700;color:#16a34a;">+{{ reward.amount|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
 {% if active_tab == "payouts" %}
     <section class="card">
         <h2>Payout batches</h2>
@@ -58,27 +102,29 @@
         {% endfor %}
     </section>
 {% else %}
-    <section class="card">
+    <section class="card ts-slide-up" data-testid="earnings-summary-card">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#ff5a00;margin-bottom:10px;">Earnings Summary</div>
         <div class="metric-grid">
             <div>
                 <span>Total earned</span>
-                <strong class="amount-positive">{{ total_commission_earned|mwk }}</strong>
+                <strong class="amount-positive" data-counter data-prefix="MWK ">{{ total_commission_earned|floatformat:2 }}</strong>
             </div>
             <div>
                 <span>Pending commissions</span>
-                <strong>{{ pending_commission_total|mwk }}</strong>
+                <strong data-counter data-prefix="MWK ">{{ pending_commission_total|floatformat:2 }}</strong>
             </div>
             <div>
-                <span>Paid commissions</span>
-                <strong class="amount-positive">{{ paid_commission_total|mwk }}</strong>
+                <span>Paid out</span>
+                <strong class="amount-positive" data-counter data-prefix="MWK ">{{ paid_commission_total|floatformat:2 }}</strong>
             </div>
             <div>
-                <span>Available spins</span>
-                <strong class="amount-positive">{{ spin_wallet.available_spins }}</strong>
+                <span>Spin balance</span>
+                <strong class="amount-positive" data-counter>{{ spin_wallet.available_spins }}</strong>
+                <span style="font-size:11px;color:#94a3b8;display:block;">spins available</span>
             </div>
         </div>
-        <div class="form-actions">
-            <a href="{% url 'spin_rewards' %}" class="btn">SPIN & WIN</a>
+        <div class="form-actions" style="margin-top:14px;">
+            <a href="{% url 'spin_rewards' %}" class="btn" style="background:#ff5a00;color:#fff;">SPIN & WIN</a>
             <a href="{% url 'merchant_leaderboard' %}" class="btn btn-outline">LEADERBOARD</a>
         </div>
     </section>

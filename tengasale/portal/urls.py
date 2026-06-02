@@ -17,7 +17,11 @@ urlpatterns = [
     path("payg/<str:payg_number>/payment/", views.portal_payg_payment, name="portal_payg_payment"),
     path("payg/<str:payg_number>/history/", views.portal_payg_history, name="portal_payg_history"),
 
-    # Webhook receiver endpoints — protected placeholders
+    # Payment return / status pages
+    path("payment-return/", views.payment_return, name="payment_return"),
+    path("payment-status/", views.payment_status_json, name="payment_status_json"),
+
+    # Webhook receiver endpoints
     path("webhooks/paychangu/", views.webhook_paychangu, name="webhook_paychangu"),
     path("webhooks/paytrigger/", views.webhook_paytrigger, name="webhook_paytrigger"),
     path("webhooks/airtel/", views.webhook_airtel, name="webhook_airtel"),

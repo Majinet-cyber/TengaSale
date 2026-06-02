@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deposit Received — TengaSale</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;margin:0;padding:0}
+.wrapper{max-width:560px;margin:2rem auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08)}
+.header{background:#0f172a;padding:2rem;text-align:center;color:#fff}
+.header h1{font-size:1.4rem;margin:0;font-weight:700}
+.body{padding:2rem}
+.amount-box{background:#eff6ff;border:2px solid #3b82f6;border-radius:8px;padding:1.25rem;text-align:center;margin-bottom:1.5rem}
+.amount{font-size:1.8rem;font-weight:800;color:#1d4ed8}
+.meta{width:100%;border-collapse:collapse;margin-bottom:1.5rem}
+.meta tr{border-bottom:1px solid #f1f5f9}
+.meta td{padding:.6rem 0;font-size:.9rem}
+.meta td:first-child{color:#64748b;width:45%}
+.meta td:last-child{font-weight:600;text-align:right}
+.footer{background:#f8fafc;padding:1.25rem 2rem;text-align:center;font-size:.8rem;color:#94a3b8;border-top:1px solid #e2e8f0}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <h1>TengaSale — Deposit Received</h1>
+  </div>
+  <div class="body">
+    <p>Dear <strong>{{ contract.customer_name }}</strong>,</p>
+    <p style="color:#64748b;margin:.5rem 0 1.5rem">A deposit payment has been received for your contract.</p>
+
+    <div class="amount-box">
+      <div style="color:#1d4ed8;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:.4rem">Deposit Received</div>
+      <div class="amount">MWK {{ amount_formatted }}</div>
+    </div>
+
+    <table class="meta">
+      <tr><td>Contract</td><td>{{ contract.contract_number }}</td></tr>
+      <tr><td>PayG Number</td><td>{{ contract.payg_number }}</td></tr>
+      <tr><td>Total Deposit Required</td><td>MWK {{ contract.deposit_required|floatformat:0 }}</td></tr>
+      <tr><td>Deposit Paid</td><td>MWK {{ contract.deposit_paid|floatformat:0 }}</td></tr>
+      <tr><td>Deposit Still Owed</td><td>MWK {{ deposit_remaining|floatformat:0 }}</td></tr>
+      <tr><td>Deposit Status</td><td>{% if deposit_complete %}✅ Complete{% else %}⏳ Pending{% endif %}</td></tr>
+    </table>
+
+    {% if deposit_complete %}
+    <p style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:1rem;color:#15803d;font-weight:600;">
+      ✅ Your deposit is now fully paid! Your contract is active.
+    </p>
+    {% else %}
+    <p style="color:#64748b;font-size:.9rem">Please pay the remaining deposit of <strong>MWK {{ deposit_remaining|floatformat:0 }}</strong> to activate your contract.</p>
+    {% endif %}
+  </div>
+  <div class="footer">TengaSale &bull; WhatsApp: {{ support_whatsapp }}</div>
+</div>
+</body>
+</html>

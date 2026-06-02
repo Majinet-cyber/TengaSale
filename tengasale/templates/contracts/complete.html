@@ -5,22 +5,38 @@
 
 {% block content %}
 
-<div class="card complete-card">
-    <div class="complete-check">&#10003;</div>
-    <h1>Contract completed</h1>
-    <p>{{ contract.contract_number }}</p>
+<div class="card complete-card ts-scale-in" style="border-top:4px solid #ff5a00; text-align:center; padding:24px 20px;">
+    <div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px; animation: ts-scale-in 300ms ease;">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1 style="font-size:22px;font-weight:900;color:#101828;margin:0 0 6px;">Contract complete</h1>
+    <div style="font-family:monospace;font-size:20px;font-weight:700;color:#ff5a00;letter-spacing:1px;margin-bottom:4px;">{{ contract.contract_number }}</div>
+    {% if contract.payg_number %}<div style="font-family:monospace;font-size:14px;color:#64748b;">PayG: {{ contract.payg_number }}</div>{% endif %}
 </div>
 
-<div class="card detail-card">
+<div class="card detail-card ts-slide-up" style="animation-delay:60ms;">
     <div class="detail-row"><span>Customer</span><strong>{{ contract.customer_name }}</strong></div>
     <div class="detail-row"><span>Device</span><strong>{{ contract.deal_name }}</strong></div>
-    <div class="detail-row"><span>IMEI</span><strong>{{ contract.imei_number }}</strong></div>
-    <div class="detail-row"><span>Deposit</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
-    <div class="detail-row"><span>Total contract price</span><strong>{{ contract.total_loan|mwk }}</strong></div>
+    {% if contract.imei_number %}<div class="detail-row"><span>IMEI</span><strong style="font-family:monospace;">{{ contract.imei_number }}</strong></div>{% endif %}
+    <div class="detail-row"><span>Deposit paid</span><strong>{{ contract.deposit_amount|mwk }}</strong></div>
+    <div class="detail-row"><span>Total contract value</span><strong>{{ contract.total_loan|mwk }}</strong></div>
     {% if contract.completed_at %}
-    <div class="detail-row"><span>Completed at</span><strong>{{ contract.completed_at|date:"d M Y, H:i" }}</strong></div>
+    <div class="detail-row"><span>Activated at</span><strong>{{ contract.completed_at|date:"d M Y, H:i" }}</strong></div>
     {% endif %}
 </div>
+
+{# Legal ownership notice — shown while contract is active and not fully settled #}
+{% if contract.status != 'complete' or not contract.ownership_transfer_at %}
+<div class="card ts-slide-up" style="animation-delay:80ms;background:#fff8f5;border:1.5px solid rgba(255,90,0,0.15);">
+    <div style="display:flex;gap:10px;align-items:flex-start;padding:14px 16px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ff5a00" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p style="margin:0;font-size:13px;color:#374151;line-height:1.5;">
+            <strong>Note:</strong> Ownership of this device is retained by TengaSale until full repayment and final settlement confirmation.
+            Ownership will be transferred only upon complete payment of all outstanding amounts.
+        </p>
+    </div>
+</div>
+{% endif %}
 
 <!-- PDF and delivery status -->
 <div class="card" style="margin-top:16px;">

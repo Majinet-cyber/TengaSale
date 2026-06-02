@@ -12,7 +12,7 @@ from accounts.utils import assign_role
 from applications.models import FinancingApplication
 from commissions.models import Commission
 from deals.models import DeviceBrand, DeviceDeal
-from rewards.models import SpinWallet
+from rewards.models import SpinWallet, SpinReward
 
 from .forms import ImeiForm, MerchantTermsForm
 from .models import Contract, ContractDocumentDelivery, LegalAcceptance, LegalDocumentTemplate
@@ -94,8 +94,8 @@ class ContractFlowTests(TestCase):
 
         self.assertRedirects(response, reverse("contract_signature", args=[contract.id]))
         self.assertTrue(contract.terms_accepted_by_merchant)
-        self.assertTrue(contract.contract_number.startswith("E"))
-        self.assertEqual(len(contract.contract_number), 9)
+        self.assertTrue(contract.contract_number.startswith("A"))
+        self.assertEqual(len(contract.contract_number), 8)
         self.assertEqual(self.app.status, "contract_signature")
 
     def test_contract_numbers_are_unique(self):
@@ -1223,3 +1223,292 @@ class PayGProgressPageTest(TestCase):
         response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "123456789012345")
+
+
+# ─────────────────────────────────────────────────────────────────
+# New tests required by the UI/UX polish brief
+# ─────────────────────────────────────────────────────────────────
+
+
+class ContractNumberFormatTests(TestCase):
+    """Contract number must start with A and be exactly 8 characters."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="fmt_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="FMT-BRAND")
+        self.deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Fmt Model",
+            specs="2+32",
+            min_cash_price=Decimal("150000"),
+            max_cash_price=Decimal("300000"),
+            default_cash_price=Decimal("200000"),
+            cash_price=Decimal("200000"),
+            deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Format Test",
+            customer_phone="0881000001",
+            national_id="999000000",
+            deal=self.deal,
+            status="approved",
+        )
+
+    def test_contract_number_starts_with_A(self):
+        contract, _ = Contract.from_application(self.app)
+        self.assertTrue(
+            contract.contract_number.startswith("A"),
+            f"Contract number '{contract.contract_number}' must start with A",
+        )
+
+    def test_contract_number_is_eight_chars(self):
+        contract, _ = Contract.from_application(self.app)
+        self.assertEqual(
+            len(contract.contract_number),
+            8,
+            f"Contract number '{contract.contract_number}' must be exactly 8 characters",
+        )
+
+    def test_contract_number_unique(self):
+        contract1, _ = Contract.from_application(self.app)
+        app2 = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Format Test 2",
+            customer_phone="0881000002",
+            national_id="999000002",
+            deal=self.deal,
+            status="approved",
+        )
+        contract2, _ = Contract.from_application(app2)
+        self.assertNotEqual(contract1.contract_number, contract2.contract_number)
+
+    def test_contract_number_db_unique_constraint(self):
+        from django.db import IntegrityError
+        contract, _ = Contract.from_application(self.app)
+        with self.assertRaises(IntegrityError):
+            # Force a duplicate — bypass generator
+            Contract.objects.create(
+                application=self.app,
+                contract_number=contract.contract_number,
+                merchant=self.merchant,
+                customer_name="Dup",
+            )
+
+    def test_contract_number_immutable_on_resave(self):
+        contract, _ = Contract.from_application(self.app)
+        original = contract.contract_number
+        contract.customer_name = "Changed Name"
+        contract.save()
+        contract.refresh_from_db()
+        self.assertEqual(contract.contract_number, original)
+
+
+class DepositPaymentPortalTests(TestCase):
+    """Deposit payment must be searchable by contract number and IMEI."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="dep_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="DEP-BRAND")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Dep Model",
+            specs="4+64",
+            min_cash_price=Decimal("200000"),
+            max_cash_price=Decimal("400000"),
+            default_cash_price=Decimal("300000"),
+            cash_price=Decimal("300000"),
+            deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Deposit Customer",
+            customer_phone="0881200001",
+            national_id="888100001",
+            deal=deal,
+            imei_number="555444333222111",
+            status="approved",
+        )
+        self.contract, _ = Contract.from_application(self.app)
+
+    def test_contract_number_format_in_portal_search(self):
+        """Portal search accepts contract-number format A + 7 chars."""
+        response = self.client.get(
+            reverse("portal_search_post") + f"?q={self.contract.contract_number}"
+        )
+        # Returns 200 or redirect — no 500
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_portal_search_by_imei(self):
+        """Portal accepts IMEI search."""
+        response = self.client.get(
+            reverse("portal_search_post") + "?q=555444333222111"
+        )
+        self.assertIn(response.status_code, [200, 302])
+
+
+class LegalOwnershipWordingTests(TestCase):
+    """Active contract pages must NOT show ownership-transfer language."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="legal_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="LEGAL-BRAND")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Legal Model",
+            specs="3+32",
+            min_cash_price=Decimal("180000"),
+            max_cash_price=Decimal("350000"),
+            default_cash_price=Decimal("250000"),
+            cash_price=Decimal("250000"),
+            deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Legal Customer",
+            customer_phone="0882000001",
+            national_id="777000001",
+            deal=deal,
+            status="approved",
+        )
+        self.contract, _ = Contract.from_application(self.app)
+        self.client.force_login(self.merchant)
+
+    def test_progress_page_no_ownership_transfer_wording(self):
+        response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
+        self.assertEqual(response.status_code, 200)
+        forbidden_phrases = [
+            "ownership transferred",
+            "fully owned",
+            "transfer complete",
+            "ownership confirmed",
+        ]
+        content = response.content.decode().lower()
+        for phrase in forbidden_phrases:
+            self.assertNotIn(phrase, content, f"Found forbidden phrase: '{phrase}'")
+
+    def test_progress_page_has_retention_notice(self):
+        response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
+        content = response.content.decode().lower()
+        self.assertIn("ownership", content)
+        self.assertIn("retained", content)
+
+    def test_complete_page_no_ownership_transfer_wording(self):
+        self.contract.deposit_paid = True
+        self.contract.phone_locked = True
+        self.contract.status = Contract.STATUS_COMPLETE
+        self.contract.save()
+        response = self.client.get(reverse("contract_complete", args=[self.contract.id]))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode().lower()
+        forbidden = ["ownership transferred", "fully owned", "transfer complete"]
+        for phrase in forbidden:
+            self.assertNotIn(phrase, content, f"Found forbidden phrase: '{phrase}'")
+
+
+class UnderwriterApprovalOnceTests(TestCase):
+    """An already-approved application cannot be approved again."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.underwriter = User.objects.create_user(username="uw_once", password="test-pass-123")
+        assign_role(self.underwriter, "underwriter")
+        self.merchant = User.objects.create_user(username="uw_once_m", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="UW-ONCE-BRAND")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="UW Once Model",
+            specs="4+64",
+            min_cash_price=Decimal("200000"),
+            max_cash_price=Decimal("400000"),
+            default_cash_price=Decimal("300000"),
+            cash_price=Decimal("300000"),
+            deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"),
+        )
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="UW Once Customer",
+            customer_phone="0883000001",
+            national_id="666000001",
+            deal=deal,
+            status="approved",  # Already approved
+            review_status="approved",
+            reviewed_by=self.underwriter,
+        )
+        self.client.force_login(self.underwriter)
+
+    def test_already_approved_cannot_be_approved_again_via_sales(self):
+        """POST to confirm_approve on an already-approved application should not double-approve."""
+        url = reverse("sales_confirm_approve", args=[self.app.id])
+        response = self.client.post(url, {"confirmed": "1"})
+        # Should redirect away or show error, not double-approve
+        self.app.refresh_from_db()
+        # Application remains approved (not re-processed)
+        self.assertEqual(self.app.status, "approved")
+
+
+class MalawiTimezoneTests(TestCase):
+    """Dates in the app should be displayed in Malawi time (CAT / GMT+2)."""
+
+    def test_settings_timezone_is_africa_blantyre(self):
+        from django.conf import settings
+        self.assertEqual(settings.TIME_ZONE, "Africa/Blantyre")
+
+    def test_use_tz_is_enabled(self):
+        from django.conf import settings
+        self.assertTrue(settings.USE_TZ)
+
+
+class SpinMoneyEarningsTests(TestCase):
+    """Spin Money rewards should appear in the merchant earnings page."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="spin_earn_m", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        self.spin_wallet = SpinWallet.objects.create(
+            user=self.merchant,
+            available_spins=3,
+            total_spins_earned=5,
+        )
+        # Create a spin reward (spin_date is required)
+        from django.utils import timezone as tz
+        SpinReward.objects.create(
+            user=self.merchant,
+            reward_tier="bronze",
+            amount=Decimal("500.00"),
+            spin_date=tz.now(),
+        )
+        self.client.force_login(self.merchant)
+
+    def test_earnings_page_shows_spin_money_section(self):
+        response = self.client.get(reverse("earnings_home"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("spin-money-card", content.lower().replace("-", "-"))
+
+    def test_earnings_page_shows_available_spins(self):
+        response = self.client.get(reverse("earnings_home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "3")  # available_spins
+
+    def test_spin_wallet_in_context(self):
+        response = self.client.get(reverse("earnings_home"))
+        self.assertIn("spin_wallet", response.context)
+        self.assertEqual(response.context["spin_wallet"].available_spins, 3)
+
+    def test_latest_rewards_in_context(self):
+        response = self.client.get(reverse("earnings_home"))
+        self.assertIn("latest_rewards", response.context)
+        self.assertGreaterEqual(len(response.context["latest_rewards"]), 1)

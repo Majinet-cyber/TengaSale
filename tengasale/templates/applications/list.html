@@ -63,13 +63,21 @@
             <div class="app-card-v2__body">
                 <div class="app-card-v2__name">{{ app.customer_name|default:"Unnamed Customer" }}</div>
                 <div class="app-card-v2__id">
-                    {{ app.application_number|default:app.id }}
+                    {% with contract=app.contract %}
+                        {% if contract and contract.contract_number %}
+                            <span style="font-family:monospace;font-weight:700;color:#ff5a00;font-size:12px;">{{ contract.contract_number }}</span>
+                            {% if contract.payg_number %} · <span style="font-family:monospace;font-size:11px;color:#64748b;">PayG {{ contract.payg_number }}</span>{% endif %}
+                        {% else %}
+                            {{ app.application_number|default:app.id }}
+                        {% endif %}
+                    {% endwith %}
                     {% if app.national_id %} · ID: {{ app.national_id }}{% endif %}
                 </div>
                 {% if app.deal %}
                 <div class="app-card-v2__device">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                     {{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}
+                    {% if app.imei_number %} · IMEI: <span style="font-family:monospace;font-size:11px;">{{ app.imei_number }}</span>{% endif %}
                 </div>
                 {% endif %}
                 <div class="app-card-v2__meta">
