@@ -11,7 +11,7 @@ MWK rounding note:
 
 import logging
 from decimal import ROUND_HALF_UP, Decimal
-from datetime import timedelta
+from datetime import timedelta, date as date_type
 
 from django.db import transaction
 from django.utils import timezone
@@ -81,25 +81,37 @@ def calculate_next_due_date(contract) -> "date":
 
 def calculate_early_settlement_options(contract) -> list[dict]:
     """
-    Return early settlement options for 3, 6, 9, 12 months.
+    Return early settlement options for 9, 10, 11, 12 months.
+
+    Discounts are derived from the contract's 9-month discount field,
+    interpolating for 10 and 11 months. 12 months is always no discount.
 
     Each option shows:
       - term_months
       - total_cost
-      - remaining_amount (to pay now)
+      - remaining_to_pay
       - daily_price
       - thirty_day_price
       - discount_percent
+      - savings (vs 12-month option)
+      - final_payoff_date
     """
     remaining = calculate_remaining_amount(contract)
-    options = []
+    today = timezone.localdate()
+
+    discount_9m = Decimal(str(contract.early_settlement_9m_discount))
+    discount_10m = (discount_9m * Decimal("0.67")).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    discount_11m = (discount_9m * Decimal("0.33")).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
 
     settlement_configs = [
-        (3, Decimal(str(contract.early_settlement_3m_discount))),
-        (6, Decimal(str(contract.early_settlement_6m_discount))),
-        (9, Decimal(str(contract.early_settlement_9m_discount))),
-        (12, Decimal("0")),  # No discount for full term
+        (9, discount_9m),
+        (10, discount_10m),
+        (11, discount_11m),
+        (12, Decimal("0")),
     ]
+
+    full_term_total = contract.total_amount
+    options = []
 
     for term_months, discount_percent in settlement_configs:
         if discount_percent > 0:
@@ -108,18 +120,291 @@ def calculate_early_settlement_options(contract) -> list[dict]:
             total_cost = contract.amount_paid + discounted_remaining
         else:
             discounted_remaining = remaining
-            total_cost = contract.total_amount
+            total_cost = full_term_total
+
+        total_cost = total_cost.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        savings = (full_term_total - total_cost).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        final_payoff_date = today + timedelta(days=term_months * 30)
 
         options.append({
             "term_months": term_months,
             "discount_percent": discount_percent,
-            "total_cost": total_cost.quantize(Decimal("1"), rounding=ROUND_HALF_UP),
+            "total_cost": total_cost,
             "remaining_to_pay": discounted_remaining,
             "daily_price": calculate_daily_price(discounted_remaining, max(term_months, 1)),
             "thirty_day_price": calculate_thirty_day_price(discounted_remaining, max(term_months, 1)),
+            "savings": max(savings, Decimal("0")),
+            "final_payoff_date": final_payoff_date,
         })
 
     return options
+
+
+# ---------------------------------------------------------------------------
+# Payment behaviour analytics
+# ---------------------------------------------------------------------------
+
+def calculate_payment_behaviour(contract) -> dict:
+    """
+    Calculate payment behaviour analytics from transaction history.
+    Returns only real data — no estimations or AI.
+    """
+    paid_txns = list(
+        contract.transactions.filter(status="paid")
+        .order_by("paid_at")
+        .values("amount", "paid_at", "provider")
+    )
+
+    empty = {
+        "consistency": 0,
+        "discipline": "No payments yet",
+        "pattern": "No data",
+        "average_payment": Decimal("0"),
+        "largest_payment": Decimal("0"),
+        "smallest_payment": Decimal("0"),
+        "longest_streak": 0,
+        "current_streak": 0,
+        "days_late_this_month": 0,
+        "payment_count": 0,
+        "last_payment_date": None,
+        "last_payment_amount": Decimal("0"),
+        "preferred_day": None,
+        "preferred_provider": None,
+        "avg_interval_days": None,
+    }
+
+    if not paid_txns:
+        return empty
+
+    amounts = [Decimal(str(t["amount"])) for t in paid_txns]
+
+    paid_dates = []
+    for t in paid_txns:
+        dt = t["paid_at"]
+        if dt is None:
+            continue
+        paid_dates.append(dt.date() if hasattr(dt, "date") else dt)
+
+    if not paid_dates:
+        return empty
+
+    avg_payment = sum(amounts) / len(amounts)
+    largest = max(amounts)
+    smallest = min(amounts)
+
+    today = timezone.localdate()
+    days_since_start = max((today - contract.start_date).days, 1)
+
+    daily = contract.daily_price or Decimal("1")
+    if daily > 0:
+        days_paid = int(contract.amount_paid / daily)
+    else:
+        days_paid = 0
+
+    consistency = min(100, round((days_paid / days_since_start) * 100))
+
+    sorted_dates = sorted(set(paid_dates))
+    intervals = [
+        (sorted_dates[i] - sorted_dates[i - 1]).days
+        for i in range(1, len(sorted_dates))
+    ]
+
+    if intervals:
+        avg_interval = sum(intervals) / len(intervals)
+        if avg_interval <= 2:
+            pattern = "Daily"
+        elif avg_interval <= 8:
+            pattern = "Weekly"
+        elif avg_interval <= 18:
+            pattern = "Bi-weekly"
+        else:
+            pattern = "Monthly"
+    else:
+        avg_interval = None
+        pattern = "First payment"
+
+    longest_streak = days_paid
+    current_streak = 0
+    if contract.due_date and contract.due_date >= today:
+        covered_to = contract.due_date
+        current_streak = min((covered_to - today).days + days_paid, days_paid)
+    else:
+        current_streak = max(0, days_paid - (
+            (today - contract.due_date).days if contract.due_date else 0
+        ))
+
+    days_late_this_month = 0
+    first_of_month = today.replace(day=1)
+    if contract.due_date and contract.due_date < first_of_month:
+        days_late_this_month = min((first_of_month - contract.due_date).days, today.day)
+    elif contract.due_date and contract.due_date < today:
+        days_late_this_month = (today - contract.due_date).days
+
+    if consistency >= 95:
+        discipline = "Excellent"
+    elif consistency >= 80:
+        discipline = "Good"
+    elif consistency >= 60:
+        discipline = "Fair"
+    else:
+        discipline = "Needs Improvement"
+
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    day_counts: dict = {}
+    for d in paid_dates:
+        name = day_names[d.weekday()]
+        day_counts[name] = day_counts.get(name, 0) + 1
+    preferred_day = max(day_counts, key=day_counts.get) if day_counts else None
+
+    providers = [t["provider"] for t in paid_txns]
+    provider_counts: dict = {}
+    for p in providers:
+        provider_counts[p] = provider_counts.get(p, 0) + 1
+    preferred_provider = max(provider_counts, key=provider_counts.get) if provider_counts else None
+
+    return {
+        "consistency": consistency,
+        "discipline": discipline,
+        "pattern": pattern,
+        "average_payment": avg_payment.quantize(Decimal("1"), rounding=ROUND_HALF_UP),
+        "largest_payment": largest,
+        "smallest_payment": smallest,
+        "longest_streak": longest_streak,
+        "current_streak": current_streak,
+        "days_late_this_month": days_late_this_month,
+        "payment_count": len(paid_txns),
+        "last_payment_date": sorted_dates[-1] if sorted_dates else None,
+        "last_payment_amount": amounts[-1] if amounts else Decimal("0"),
+        "preferred_day": preferred_day,
+        "preferred_provider": preferred_provider,
+        "avg_interval_days": round(avg_interval) if avg_interval is not None else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Customer financial health score
+# ---------------------------------------------------------------------------
+
+def calculate_health_score(contract, behaviour: dict) -> dict:
+    """
+    Calculate a 0–100 financial health score using only real transaction data.
+    No AI, no predictions — purely auditable arithmetic.
+    """
+    consistency = behaviour.get("consistency", 0)
+    days_late = behaviour.get("days_late_this_month", 0)
+    pattern = behaviour.get("pattern", "")
+    payment_count = behaviour.get("payment_count", 0)
+    progress = contract.progress_percent
+
+    score_consistency = int(consistency * 0.40)
+
+    if days_late == 0:
+        score_late = 20
+    elif days_late <= 3:
+        score_late = 15
+    elif days_late <= 7:
+        score_late = 8
+    else:
+        score_late = 0
+
+    if pattern in ("Daily", "Weekly"):
+        score_freq = 20
+    elif pattern == "Bi-weekly":
+        score_freq = 14
+    elif pattern == "Monthly":
+        score_freq = 8
+    else:
+        score_freq = 5
+
+    score_progress = int(progress * 0.20)
+
+    total = min(100, max(0, score_consistency + score_late + score_freq + score_progress))
+
+    if total >= 85:
+        grade = "Excellent"
+    elif total >= 70:
+        grade = "Good"
+    elif total >= 50:
+        grade = "Fair"
+    else:
+        grade = "Needs Attention"
+
+    reasons = []
+    if days_late == 0 and payment_count > 0:
+        reasons.append({"positive": True, "text": "No overdue days in current period"})
+    elif days_late > 0:
+        reasons.append({"positive": False, "text": f"{days_late} overdue day(s) this period"})
+
+    if pattern in ("Daily", "Weekly"):
+        reasons.append({"positive": True, "text": f"Consistent {pattern.lower()} payment rhythm"})
+    elif pattern == "Monthly":
+        reasons.append({"positive": False, "text": "Monthly payments — more frequent is better"})
+
+    if consistency >= 90:
+        reasons.append({"positive": True, "text": f"{consistency}% of contract days covered"})
+    elif consistency < 60:
+        reasons.append({"positive": False, "text": f"Only {consistency}% of contract days covered"})
+
+    if payment_count >= 20:
+        reasons.append({"positive": True, "text": f"{payment_count} successful payments made"})
+
+    if progress >= 50:
+        reasons.append({"positive": True, "text": f"{progress}% of contract completed"})
+
+    return {
+        "score": total,
+        "grade": grade,
+        "reasons": reasons[:5],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Customer insights
+# ---------------------------------------------------------------------------
+
+def calculate_customer_insights(contract, behaviour: dict) -> list[str]:
+    """
+    Generate plain-English insights using only real contract and payment data.
+    """
+    insights = []
+    today = timezone.localdate()
+
+    progress = contract.progress_percent
+    insights.append(f"You have paid {progress}% of your contract.")
+
+    days_since_start = (today - contract.start_date).days
+    if days_since_start > 0:
+        insights.append(f"You have been on this contract for {days_since_start} days.")
+
+    avg = behaviour.get("average_payment")
+    if avg and avg > 0:
+        insights.append(f"Your average payment is MWK {int(avg):,}.")
+
+    largest = behaviour.get("largest_payment")
+    if largest and largest > 0:
+        insights.append(f"Your largest payment was MWK {int(largest):,}.")
+
+    preferred_day = behaviour.get("preferred_day")
+    if preferred_day:
+        insights.append(f"You usually pay on {preferred_day}s.")
+
+    daily = contract.daily_price
+    if daily and daily > 0 and days_since_start > 0:
+        expected_paid = daily * days_since_start
+        actual_paid = contract.amount_paid
+        diff_days = int((actual_paid - expected_paid) / daily)
+        if diff_days > 0:
+            insights.append(f"You are ahead of schedule by {diff_days} day(s).")
+        elif diff_days < -1:
+            insights.append(f"You are behind schedule by {abs(diff_days)} day(s).")
+        else:
+            insights.append("You are on schedule.")
+
+    interval = behaviour.get("avg_interval_days")
+    if interval:
+        insights.append(f"You typically pay every {interval} day(s).")
+
+    return insights
 
 
 # ---------------------------------------------------------------------------

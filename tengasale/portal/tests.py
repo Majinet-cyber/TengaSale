@@ -151,16 +151,18 @@ class EarlySettlementTest(TestCase):
         opts = calculate_early_settlement_options(self.contract)
         self.assertEqual(len(opts), 4)
 
-    def test_3_month_discount(self):
+    def test_9_month_discount(self):
         opts = calculate_early_settlement_options(self.contract)
-        opt = next(o for o in opts if o["term_months"] == 3)
-        expected_remaining = Decimal("45000") * Decimal("0.75")
+        opt = next(o for o in opts if o["term_months"] == 9)
+        expected_remaining = Decimal("45000") * (1 - Decimal("8") / 100)
         self.assertEqual(opt["remaining_to_pay"], expected_remaining.quantize(Decimal("1")))
 
-    def test_6_month_discount(self):
+    def test_10_month_discount(self):
         opts = calculate_early_settlement_options(self.contract)
-        opt = next(o for o in opts if o["term_months"] == 6)
-        expected_remaining = Decimal("45000") * Decimal("0.85")
+        opt = next(o for o in opts if o["term_months"] == 10)
+        # 10-month discount = 67% of 9-month discount
+        discount_10m = (Decimal("8") * Decimal("0.67")).quantize(Decimal("0.1"))
+        expected_remaining = Decimal("45000") * (1 - discount_10m / 100)
         self.assertEqual(opt["remaining_to_pay"], expected_remaining.quantize(Decimal("1")))
 
     def test_12_month_no_discount(self):
@@ -172,8 +174,8 @@ class EarlySettlementTest(TestCase):
     def test_partial_paid_reduces_remaining(self):
         self.contract.amount_paid = Decimal("10000")
         opts = calculate_early_settlement_options(self.contract)
-        opt = next(o for o in opts if o["term_months"] == 3)
-        expected_remaining = Decimal("35000") * Decimal("0.75")
+        opt = next(o for o in opts if o["term_months"] == 9)
+        expected_remaining = Decimal("35000") * (1 - Decimal("8") / 100)
         self.assertEqual(opt["remaining_to_pay"], expected_remaining.quantize(Decimal("1")))
 
 

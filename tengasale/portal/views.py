@@ -23,6 +23,9 @@ from .services import (
     apply_payment_to_contract,
     calculate_early_settlement_options,
     calculate_remaining_amount,
+    calculate_payment_behaviour,
+    calculate_health_score,
+    calculate_customer_insights,
     search_payment_contract,
 )
 
@@ -84,37 +87,111 @@ def portal_search_post(request):
 # ---------------------------------------------------------------------------
 
 def portal_contract(request, contract_number):
-    """Contract detail page — shows balance, payment form, early settlement."""
+    """Contract detail page — Customer Financial Dashboard."""
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
 
+    today = timezone.localdate()
     remaining = calculate_remaining_amount(contract)
     early_options = calculate_early_settlement_options(contract)
 
-    # Warning lock date
+    # Lock status warning
     lock_warning = None
-    if contract.lock_date and contract.status != "completed":
-        days_until_lock = (contract.lock_date - timezone.localdate()).days
-        if days_until_lock <= 7:
+    lock_status = "safe"
+    if contract.status == "completed":
+        lock_status = "completed"
+    elif contract.lock_date:
+        days_until_lock = (contract.lock_date - today).days
+        hours_until_lock = days_until_lock * 24
+        if days_until_lock < 0:
+            lock_status = "overdue"
+            lock_warning = {
+                "date": contract.lock_date,
+                "amount": remaining,
+                "days": days_until_lock,
+                "hours": hours_until_lock,
+            }
+        elif days_until_lock <= 4:
+            lock_status = "warning"
             lock_warning = {
                 "date": contract.lock_date,
                 "amount": (
                     contract.daily_price * max(days_until_lock, 0)
-                    if contract.daily_price
-                    else remaining
+                    if contract.daily_price else remaining
                 ),
                 "days": days_until_lock,
+                "hours": hours_until_lock,
             }
+        else:
+            lock_status = "safe"
 
-    recent_transactions = contract.transactions.filter(
-        status=PaymentTransaction.STATUS_PAID
-    ).order_by("-paid_at")[:10]
+    # All paid transactions (for analytics + recent display)
+    all_paid = list(
+        contract.transactions.filter(status=PaymentTransaction.STATUS_PAID)
+        .order_by("-paid_at")
+    )
+    recent_transactions = all_paid[:6]
+
+    # Analytics (computed from real data only)
+    behaviour = calculate_payment_behaviour(contract)
+    health = calculate_health_score(contract, behaviour)
+    insights = calculate_customer_insights(contract, behaviour)
+
+    # Recommended payment amount
+    avg_interval = behaviour.get("avg_interval_days")
+    if avg_interval and contract.daily_price:
+        recommended_amount = int(contract.daily_price * avg_interval)
+    elif contract.daily_price:
+        recommended_amount = int(contract.daily_price * 7)
+    else:
+        recommended_amount = int(remaining)
+
+    # Device / application info
+    app = contract.source_application
+    device_info = {
+        "model": contract.device_model or "—",
+        "imei": "",
+        "brand": "",
+        "merchant_name": "",
+        "merchant_branch": "",
+        "underwriter_name": "",
+    }
+    if app:
+        device_info["imei"] = getattr(app, "imei_number", "") or ""
+        device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
+        if not device_info["brand"] and app.deal:
+            try:
+                device_info["brand"] = str(app.deal.brand) if hasattr(app.deal, "brand") else ""
+            except Exception:
+                pass
+        if app.created_by:
+            try:
+                profile = app.created_by.profile
+                if hasattr(profile, "merchant") and profile.merchant:
+                    device_info["merchant_name"] = str(profile.merchant)
+            except Exception:
+                pass
+        try:
+            device_info["underwriter_name"] = app.underwriter_name or ""
+        except Exception:
+            pass
+
+    # Last payment info for lock card
+    last_paid_tx = all_paid[0] if all_paid else None
 
     return render(request, "portal/contract.html", {
         "contract": contract,
         "remaining": remaining,
         "early_options": early_options,
         "lock_warning": lock_warning,
+        "lock_status": lock_status,
         "recent_transactions": recent_transactions,
+        "behaviour": behaviour,
+        "health": health,
+        "insights": insights,
+        "recommended_amount": recommended_amount,
+        "device_info": device_info,
+        "last_paid_tx": last_paid_tx,
+        "today": today,
         "providers": [
             ("airtel_money", "Airtel Money"),
             ("tnm_mpamba", "TNM Mpamba"),
@@ -254,12 +331,42 @@ def portal_payment(request, contract_number):
 # ---------------------------------------------------------------------------
 
 def portal_history(request, contract_number):
-    """Payment history for a contract."""
+    """Enhanced payment history with running balance."""
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
-    transactions = contract.transactions.order_by("-created_at")[:50]
+
+    month_filter = request.GET.get("month", "")
+    method_filter = request.GET.get("method", "")
+
+    qs = contract.transactions.order_by("created_at")
+
+    if month_filter:
+        try:
+            parts = month_filter.split("-")
+            qs = qs.filter(created_at__year=int(parts[0]), created_at__month=int(parts[1]))
+        except (ValueError, IndexError):
+            pass
+
+    if method_filter:
+        qs = qs.filter(provider=method_filter)
+
+    all_txns = list(qs)
+
+    # Compute running balance (chronological order)
+    running_paid = Decimal("0")
+    for tx in all_txns:
+        if tx.status == PaymentTransaction.STATUS_PAID:
+            running_paid += tx.amount
+        tx.balance_after = max(contract.total_amount - running_paid, Decimal("0"))
+
+    # Reverse for display (newest first)
+    all_txns.reverse()
+
     return render(request, "portal/history.html", {
         "contract": contract,
-        "transactions": transactions,
+        "transactions": all_txns,
+        "month_filter": month_filter,
+        "method_filter": method_filter,
+        "providers": PaymentTransaction.PROVIDER_CHOICES,
     })
 
 
