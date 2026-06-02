@@ -12,7 +12,19 @@
 {% include "applications/partials/stepper.html" with current_step=4 %}
 <h1 class="greeting">Work Details</h1>
 
-<form method="post" enctype="multipart/form-data" class="card">
+<form method="post" enctype="multipart/form-data" class="card{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
+    {% if app.work_description %}
+    <div class="section-lock-header">
+      <span class="section-lock-label">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Work Details — saved
+      </span>
+      <button type="button" class="section-edit-btn" data-section-edit-btn aria-label="Edit work details">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      </button>
+    </div>
+    {% endif %}
     {% csrf_token %}
     {{ form.non_field_errors }}
 
