@@ -81,7 +81,7 @@
                 {% if app.merchant_status_key == "under_review" and app.claimed_by %}
                     <div style="font-size:11px;color:#667085;margin-top:2px;">
                         <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>
-                        {{ app.claimed_by.get_full_name|default:app.claimed_by.username }}
+                        Underwriter: {{ app.claimed_by.get_full_name|default:app.claimed_by.username }}
                     </div>
                 {% endif %}
                 {% if app.merchant_status_key == "needs_edit" and app.correction_field_labels %}
