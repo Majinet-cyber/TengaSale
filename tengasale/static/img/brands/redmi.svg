@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" fill="none"/>
+  <!-- Redmi phone with purple accent -->
+  <rect x="25" y="10" width="50" height="80" rx="8" fill="#8b5cf6" stroke="#7c3aed" stroke-width="2"/>
+  <rect x="28" y="15" width="44" height="65" rx="2" fill="#a78bfa"/>
+  <!-- Camera cluster -->
+  <circle cx="65" cy="22" r="6" fill="#6d28d9"/>
+  <circle cx="65" cy="32" r="4" fill="#6d28d9"/>
+  <circle cx="56" cy="27" r="3" fill="#6d28d9"/>
+  <!-- Bottom bezel -->
+  <rect x="42" y="82" width="16" height="3" rx="1.5" fill="#c4b5fd"/>
+</svg>
+

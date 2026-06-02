@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <!-- SAMSUNG logo - Premium with dark blue -->
+  <rect width="120" height="40" rx="8" fill="#eff6ff"/>
+  <text x="60" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#1e3a8a" text-anchor="middle">SAMSUNG</text>
+  <rect x="10" y="15" width="8" height="10" rx="2" fill="#1e3a8a" opacity="0.3"/>
+  <rect x="102" y="15" width="8" height="10" rx="2" fill="#1e3a8a" opacity="0.3"/>
+  <circle cx="14" cy="12" r="2" fill="#60a5fa"/>
+  <circle cx="106" cy="12" r="2" fill="#60a5fa"/>
+</svg>
+

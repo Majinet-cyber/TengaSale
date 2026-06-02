@@ -9,6 +9,7 @@ urlpatterns = [
     path("<int:app_id>/location/", views.location_details, name="location_details"),
     path("<int:app_id>/work/", views.work_details, name="work_details"),
     path("<int:app_id>/signature/", views.signature, name="signature"),
+    path("<int:app_id>/review/", views.application_review, name="application_review"),
     path("<int:app_id>/imei/", views.capture_imei, name="capture_imei"),
     path("<int:app_id>/verify-imei/", views.verify_imei_ajax, name="verify_imei_ajax"),
     path("<int:app_id>/detail/", views.application_detail, name="application_detail"),

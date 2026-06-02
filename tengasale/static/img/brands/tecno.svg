@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <!-- TECNO logo - Africa's bestseller with blue gradient -->
+  <defs>
+    <linearGradient id="tecnoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="40" rx="8" fill="url(#tecnoGrad)" opacity="0.1"/>
+  <text x="60" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#3b82f6" text-anchor="middle">TECNO</text>
+  <path d="M15 12 L21 20 L15 28" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M105 12 L99 20 L105 28" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>
+

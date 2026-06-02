@@ -1099,10 +1099,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Tech Support
     </a>
-    <a href="{% url 'sales_home' %}" class="hq-sidebar-portal-link">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      Underwriter Portal
-    </a>
   </div>
 
 </nav>
@@ -1478,8 +1474,8 @@
 
   </div>
 
-  <p class="hq-sl">Operations</p>
-  <div class="hq-nav-grid" data-testid="hq-nav-grid">
+  <p class="hq-sl hq-duplicate-nav" hidden>Operations</p>
+  <div class="hq-nav-grid hq-duplicate-nav" data-testid="hq-nav-grid" hidden aria-hidden="true">
 
 
     <div class="hq-nav-card">

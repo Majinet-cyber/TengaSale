@@ -511,7 +511,7 @@ class ApplicationContinueUrlTests(ApplicationTestCase):
         app.status = "device_selection"
         app.save(update_fields=["status"])
 
-        self.assertEqual(app.get_continue_url(), reverse("location_details", args=[app.id]))
+        self.assertEqual(app.get_continue_url(), reverse("choose_device", args=[app.id]))
 
     def test_get_continue_url_returns_detail_page_for_terminal_statuses(self):
         app = self.create_application()
@@ -566,7 +566,7 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(response, reverse("choose_device", args=[app.id]))
+        self.assertRedirects(response, reverse("kyc_capture", args=[app.id]))
         self.assertEqual(app.national_id, "AB123CD4")
         self.assertEqual(app.customer_phone, "990870616")
         self.assertEqual(app.status, "customer_details")
@@ -581,8 +581,8 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Choose your new smartphone")
-        self.assertEqual(response.resolver_match.url_name, "choose_device")
+        self.assertContains(response, "KYC Capture")
+        self.assertEqual(response.resolver_match.url_name, "kyc_capture")
 
     def test_invalid_national_id_does_not_proceed(self):
         app = self.create_application()
@@ -732,19 +732,23 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_signature_page_requires_agreed_to_terms_before_submit(self):
         app = self.create_application()
+        app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
+        app.save(update_fields=["signature_image"])
 
-        response = self.client.post(reverse("signature", args=[app.id]), {"signature_data": valid_signature_data()})
+        response = self.client.post(reverse("application_review", args=[app.id]), {})
 
         self.assertEqual(response.status_code, 200)
         app.refresh_from_db()
-        self.assertNotEqual(app.status, "submitted")
+        self.assertNotEqual(app.status, "pending_review")
 
     def test_final_submit_sets_status_pending_review(self):
         app = self.create_application()
+        app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
+        app.save(update_fields=["signature_image"])
 
         response = self.client.post(
-            reverse("signature", args=[app.id]),
-            {"signature_data": valid_signature_data(), "agreed_to_terms": "on"},
+            reverse("application_review", args=[app.id]),
+            {"agreed_to_terms": "on"},
         )
 
         app.refresh_from_db()
@@ -773,23 +777,48 @@ class SignaturePageTests(ApplicationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<canvas")
         self.assertContains(response, "Capture Signature")
-        self.assertContains(response, "Clear")
+        self.assertContains(response, 'aria-label="Clear signature"')
         self.assertNotContains(response, 'type="file"')
+
+    def test_save_signature_redirects_to_review(self):
+        app = self.create_application()
+
+        response = self.client.post(
+            reverse("signature", args=[app.id]),
+            {"save_signature": "1", "signature_data": valid_signature_data()},
+        )
+
+        app.refresh_from_db()
+        self.assertRedirects(response, reverse("application_review", args=[app.id]))
+        self.assertTrue(app.signature_image)
+
+    def test_review_page_shows_saved_signature(self):
+        app = self.create_application()
+        app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
+        app.save(update_fields=["signature_image"])
+
+        response = self.client.get(reverse("application_review", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, app.signature_image.url)
+        self.assertContains(response, "Signature saved")
 
     def test_submit_without_signature_fails(self):
         app = self.create_application()
 
-        response = self.client.post(reverse("signature", args=[app.id]), {"agreed_to_terms": "on"})
+        response = self.client.post(reverse("application_review", args=[app.id]), {"agreed_to_terms": "on"})
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Save the customer signature before submitting.")
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("signature", args=[app.id]))
         app.refresh_from_db()
         self.assertNotEqual(app.status, "submitted")
 
     def test_submit_without_terms_fails(self):
         app = self.create_application()
+        app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
+        app.save(update_fields=["signature_image"])
 
-        response = self.client.post(reverse("signature", args=[app.id]), {"signature_data": valid_signature_data()})
+        response = self.client.post(reverse("application_review", args=[app.id]), {})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "The customer must agree to the terms before submitting.")
@@ -798,10 +827,12 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_submit_with_valid_signature_and_terms_succeeds(self):
         app = self.create_application()
+        app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
+        app.save(update_fields=["signature_image"])
 
         response = self.client.post(
-            reverse("signature", args=[app.id]),
-            {"signature_data": valid_signature_data(), "agreed_to_terms": "on"},
+            reverse("application_review", args=[app.id]),
+            {"agreed_to_terms": "on"},
         )
 
         app.refresh_from_db()
@@ -879,6 +910,15 @@ class KYCCaptureTests(ApplicationTestCase):
         app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
         app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
         app.save()
+
+    def test_get_continue_url_returns_kyc_or_device_based_on_images(self):
+        app = self.create_application()
+        app.status = "kyc"
+        app.save(update_fields=["status"])
+        self.assertEqual(app.get_continue_url(), reverse("kyc_capture", args=[app.id]))
+
+        self.save_existing_images(app)
+        self.assertEqual(app.get_continue_url(), reverse("choose_device", args=[app.id]))
 
     def test_kyc_page_get_shows_live_capture_controls(self):
         app = self.create_application()
@@ -967,7 +1007,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, "ID back image is required.")
         self.assertNotContains(response, "Customer phone image is required.")
 
-    def test_kyc_post_with_all_images_succeeds_and_redirects_to_signature(self):
+    def test_kyc_post_with_all_images_succeeds_and_redirects_to_smartphone(self):
         app = self.create_application()
 
         response = self.client.post(
@@ -980,7 +1020,7 @@ class KYCCaptureTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(response, reverse("signature", args=[app.id]))
+        self.assertRedirects(response, reverse("choose_device", args=[app.id]))
         self.assertEqual(app.status, "kyc")
         self.assertTrue(app.customer_face_image)
         self.assertTrue(app.id_front_image)
@@ -1001,7 +1041,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertNotContains(response, "data-next-button disabled")
 
         post_response = self.client.post(reverse("kyc_capture", args=[app.id]), {})
-        self.assertRedirects(post_response, reverse("signature", args=[app.id]))
+        self.assertRedirects(post_response, reverse("choose_device", args=[app.id]))
 
     def test_recapture_controls_exist_and_new_image_replaces_saved_image(self):
         app = self.create_application()
@@ -1018,7 +1058,7 @@ class KYCCaptureTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(post_response, reverse("signature", args=[app.id]))
+        self.assertRedirects(post_response, reverse("choose_device", args=[app.id]))
         self.assertNotEqual(app.customer_face_image.name, original_face_name)
         self.assertIn("kyc/faces/", app.customer_face_image.name)
 

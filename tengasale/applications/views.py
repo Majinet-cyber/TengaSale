@@ -12,7 +12,16 @@ from core.business_hours import business_hours_context
 from deals.models import DeviceDeal
 from geography.models import Region
 
-from .forms import CustomerDetailsForm, KYCForm, LocationNextOfKinForm, SignatureForm, WorkProofForm
+from deals.brand_utils import BRAND_STATIC_LOGOS, canonical_brand, ordered_brand_names
+
+from .forms import (
+    CustomerDetailsForm,
+    KYCForm,
+    LocationNextOfKinForm,
+    SignatureCaptureForm,
+    SignatureForm,
+    WorkProofForm,
+)
 from .models import ApplicationCorrectionToken, ApplicationFieldReview, FinancingApplication
 
 
@@ -110,7 +119,7 @@ def edit_customer_details(request, app_id):
 
             app.save()
             messages.success(request, "Customer details saved.")
-            return redirect("choose_device", app_id=app.id)
+            return redirect("kyc_capture", app_id=app.id)
     else:
         form = CustomerDetailsForm(instance=app)
 
@@ -132,7 +141,7 @@ def choose_device(request, app_id):
     deal_options = [
         {
             "id": deal.id,
-            "brand": deal.brand.name,
+            "brand": canonical_brand(deal.brand.name),
             "model_name": deal.model_name,
             "specs": deal.specs,
             "min_cash_price": str(deal.min_cash_price),
@@ -147,14 +156,19 @@ def choose_device(request, app_id):
         }
         for deal in deals
     ]
-    preferred_order = ["Tecno", "Itel", "Redmi/Xiaomi", "Samsung"]
-    deal_brand_names = list(dict.fromkeys(deal.brand.name for deal in deals))
-    brand_names = [name for name in preferred_order if name in deal_brand_names]
-    if not brand_names and not deal_brand_names:
-        brand_names = ["TECNO", "itel", "Redmi"]
-    for deal in deals:
-        if deal.brand.name not in brand_names:
-            brand_names.append(deal.brand.name)
+    deal_brand_names = [canonical_brand(deal.brand.name) for deal in deals]
+    brand_names = ordered_brand_names(deal_brand_names)
+    if not brand_names:
+        brand_names = ["Tecno", "Itel", "Redmi/Xiaomi"]
+
+    brand_cards = []
+    for name in brand_names:
+        count = sum(1 for d in deals if canonical_brand(d.brand.name) == name)
+        brand_cards.append({
+            "name": name,
+            "deal_count": count,
+            "logo_static": BRAND_STATIC_LOGOS.get(name, ""),
+        })
     form_error = ""
 
     if request.method == "POST":
@@ -212,6 +226,7 @@ def choose_device(request, app_id):
             "deals": deals,
             "deal_options": deal_options,
             "brand_names": brand_names,
+            "brand_cards": brand_cards,
             "form_error": form_error,
         },
     )
@@ -228,7 +243,7 @@ def kyc_capture(request, app_id):
             app.status = "kyc"
             app.save()
             messages.success(request, "KYC saved.")
-            return redirect("signature", app_id=app.id)
+            return redirect("choose_device", app_id=app.id)
     else:
         form = KYCForm(instance=app)
 
@@ -274,7 +289,7 @@ def work_details(request, app_id):
             app.status = "work_details"
             app.save()
             messages.success(request, "Work details saved.")
-            return redirect("kyc_capture", app_id=app.id)
+            return redirect("signature", app_id=app.id)
     else:
         form = WorkProofForm(instance=app)
 
@@ -284,6 +299,28 @@ def work_details(request, app_id):
 @merchant_required
 def signature(request, app_id):
     app = merchant_application(request, app_id)
+
+    if request.method == "POST" and request.POST.get("save_signature"):
+        form = SignatureCaptureForm(request.POST)
+        if form.is_valid():
+            app.signature_image.save(form.signature_file.name, form.signature_file, save=False)
+            app.status = "signature"
+            app.save(update_fields=["signature_image", "status"])
+            messages.success(request, "Signature saved.")
+            return redirect("application_review", app_id=app.id)
+        messages.error(request, "Could not save signature. Please try again.")
+    elif request.method == "GET" and app.signature_image and not request.GET.get("redo"):
+        return redirect("application_review", app_id=app.id)
+
+    return render(request, "applications/signature.html", {"app": app})
+
+
+@merchant_required
+def application_review(request, app_id):
+    app = merchant_application(request, app_id)
+
+    if not app.signature_image:
+        return redirect("signature", app_id=app.id)
 
     if request.method == "POST":
         form = SignatureForm(request.POST, instance=app)
@@ -298,7 +335,7 @@ def signature(request, app_id):
     else:
         form = SignatureForm(instance=app)
 
-    return render(request, "applications/signature.html", {"app": app, "form": form})
+    return render(request, "applications/review.html", {"app": app, "form": form})
 
 
 @merchant_required

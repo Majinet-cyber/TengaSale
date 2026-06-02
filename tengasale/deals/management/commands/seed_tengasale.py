@@ -65,7 +65,7 @@ class Command(BaseCommand):
         ]
 
         brands = {}
-        for brand_name in ["TECNO", "itel", "Redmi"]:
+        for brand_name in ["TECNO", "itel", "Redmi/Xiaomi"]:
             brand, _ = DeviceBrand.objects.update_or_create(
                 name=brand_name,
                 defaults={"is_active": True},

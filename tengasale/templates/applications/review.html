@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
+
+<a href="{% url 'signature' app.id %}?redo=1" class="soft-back">
+    <span class="soft-back-icon">&larr;</span>
+    <span>Back</span>
+</a>
+
+{% include "applications/partials/stepper.html" with current_step=7 %}
+<h1 class="greeting">Review</h1>
+
+<form method="post" class="card ts-slide-up" id="review-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="form-group{% if 'customer_signature' in app.correction_fields %} has-correction{% endif %}">
+        <label>Customer Signature</label>
+
+        <div class="sig-preview-card visible" id="sig-preview-card">
+            <img
+                src="{{ app.signature_image.url }}"
+                alt="Customer signature"
+                id="sig-preview-img"
+            >
+            <div class="sig-preview-meta">
+                <span class="section-saved-badge">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Signature saved
+                </span>
+                <a href="{% url 'signature' app.id %}?redo=1" class="sig-redo-btn" id="sig-redo-btn" title="Redo signature">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Redo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <label class="check-row{% if 'agreed_to_terms' in app.correction_fields %} has-correction{% endif %}" for="{{ form.agreed_to_terms.id_for_label }}">
+        {{ form.agreed_to_terms }}
+        <span>I confirm the customer agrees to the TengaSale financing terms.</span>
+    </label>
+    {{ form.agreed_to_terms.errors }}
+
+    <div class="summary-card">
+        <span>Total loan</span>
+        <strong>{{ app.calculated_total_loan|mwk }}</strong>
+        <span>Deposit</span>
+        <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
+        <span>Monthly</span>
+        <strong>{{ app.calculated_monthly_payment|mwk }}</strong>
+        <span>Daily</span>
+        <strong>{{ app.calculated_daily_payment|mwk }}</strong>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'signature' app.id %}?redo=1" class="btn btn-outline">Back</a>
+        <button type="submit" class="btn primary-button" id="review-submit">Submit Application</button>
+    </div>
+</form>
+
+<script>
+(function () {
+    var submitBtn  = document.getElementById('review-submit');
+    var termsCheck = document.getElementById('id_agreed_to_terms');
+
+    function updateSubmitState() {
+        if (submitBtn && termsCheck) {
+            submitBtn.disabled = !termsCheck.checked;
+        }
+    }
+
+    if (termsCheck) {
+        termsCheck.addEventListener('change', updateSubmitState);
+    }
+    updateSubmitState();
+})();
+</script>
+
+{% endblock %}

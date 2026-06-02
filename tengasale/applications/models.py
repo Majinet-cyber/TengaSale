@@ -446,8 +446,13 @@ class FinancingApplication(models.Model):
         if self.status in ["started", "customer_details"]:
             return reverse("edit_customer_details", args=[self.id])
 
+        if self.status in ["kyc", "kyc_capture"]:
+            if self.customer_face_image and self.id_front_image and self.id_back_image:
+                return reverse("choose_device", args=[self.id])
+            return reverse("kyc_capture", args=[self.id])
+
         if self.status == "device_selection":
-            return reverse("location_details", args=[self.id])
+            return reverse("choose_device", args=[self.id])
 
         if self.status in ["location", "location_details"]:
             return reverse("location_details", args=[self.id])
@@ -455,10 +460,9 @@ class FinancingApplication(models.Model):
         if self.status in ["work", "work_details"]:
             return reverse("work_details", args=[self.id])
 
-        if self.status in ["kyc", "kyc_capture"]:
-            return reverse("kyc_capture", args=[self.id])
-
         if self.status == "signature":
+            if self.signature_image:
+                return reverse("application_review", args=[self.id])
             return reverse("signature", args=[self.id])
 
         if self.status in {"correction_requested", "sent_back"}:

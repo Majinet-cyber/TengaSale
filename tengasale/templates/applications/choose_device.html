@@ -4,12 +4,12 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
+<a href="{% url 'kyc_capture' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=2 %}
+{% include "applications/partials/stepper.html" with current_step=3 %}
 <h1 class="greeting">Choose your new smartphone</h1>
 
 {% if form_error %}
@@ -27,28 +27,17 @@
         <section class="selection-section{% if 'selected_deal' in app.correction_fields %} has-correction{% endif %}">
             <h2>Choose brand</h2>
             <div class="brand-card-grid" role="list">
-                {% for brand_name in brand_names %}
-                    <button class="brand-card brand-card--{{ brand_name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ brand_name }}" role="listitem">
-                        {% if brand_name|lower == "tecno" %}
-                            <span class="brand-card-logo brand-logo-tecno">
-                                <svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">TECNO</text></svg>
-                            </span>
-                        {% elif brand_name|lower == "itel" %}
-                            <span class="brand-card-logo brand-logo-itel">
-                                <svg viewBox="0 0 28 24" width="28" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">itel</text></svg>
-                            </span>
-                        {% elif "samsung" in brand_name|lower %}
-                            <span class="brand-card-logo brand-logo-samsung">
-                                <svg viewBox="0 0 72 18" width="72" height="18" aria-hidden="true"><text x="0" y="16" font-size="14" font-weight="700" fill="currentColor" font-family="Arial,sans-serif" letter-spacing="1">SAMSUNG</text></svg>
-                            </span>
-                        {% elif "redmi" in brand_name|lower or "xiaomi" in brand_name|lower %}
-                            <span class="brand-card-logo brand-logo-xiaomi">
-                                <svg viewBox="0 0 50 24" width="50" height="24" aria-hidden="true"><text x="0" y="20" font-size="20" font-weight="900" fill="currentColor" font-family="Arial,sans-serif">Redmi</text></svg>
-                            </span>
-                        {% else %}
-                            <span class="brand-card-logo brand-logo-generic">{{ brand_name|slice:":2"|upper }}</span>
-                        {% endif %}
-                        <span class="brand-card-name">{{ brand_name }}</span>
+                {% for card in brand_cards %}
+                    <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" role="listitem">
+                        <span class="brand-card-logo">
+                            {% if card.logo_static %}
+                                <img src="{% static card.logo_static %}" alt="{{ card.name }}" class="brand-card-logo-img" width="56" height="32">
+                            {% else %}
+                                <span class="brand-card-logo-badge">{{ card.name|slice:":3" }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="brand-card-name">{{ card.name }}</span>
+                        <small class="brand-card-meta">{{ card.deal_count }} model{{ card.deal_count|pluralize }}</small>
                         <small class="brand-card-hint">View phones</small>
                     </button>
                 {% endfor %}

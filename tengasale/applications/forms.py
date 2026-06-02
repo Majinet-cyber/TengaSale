@@ -483,6 +483,32 @@ class WorkProofForm(forms.ModelForm):
         return value
 
 
+def signature_data_to_file(signature_data):
+    prefix = "data:image/png;base64,"
+    if not signature_data.startswith(prefix):
+        raise forms.ValidationError("Save a valid PNG signature before submitting.")
+    try:
+        decoded = base64.b64decode(signature_data[len(prefix):], validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise forms.ValidationError("Save a valid PNG signature before submitting.") from exc
+    return ContentFile(decoded, name=f"signature-{uuid.uuid4().hex}.png")
+
+
+class SignatureCaptureForm(forms.Form):
+    signature_data = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.signature_file = None
+
+    def clean_signature_data(self):
+        signature_data = (self.cleaned_data.get("signature_data") or "").strip()
+        if not signature_data:
+            raise forms.ValidationError("Please sign before saving.")
+        self.signature_file = signature_data_to_file(signature_data)
+        return signature_data
+
+
 class SignatureForm(forms.ModelForm):
     signature_data = forms.CharField(required=False, widget=forms.HiddenInput)
 
@@ -500,16 +526,10 @@ class SignatureForm(forms.ModelForm):
         agreed = cleaned_data.get("agreed_to_terms")
 
         if signature_data:
-            prefix = "data:image/png;base64,"
-            if not signature_data.startswith(prefix):
-                self.add_error("signature_data", "Save a valid PNG signature before submitting.")
-            else:
-                try:
-                    decoded = base64.b64decode(signature_data[len(prefix):], validate=True)
-                except (binascii.Error, ValueError):
-                    self.add_error("signature_data", "Save a valid PNG signature before submitting.")
-                else:
-                    self.signature_file = ContentFile(decoded, name=f"signature-{uuid.uuid4().hex}.png")
+            try:
+                self.signature_file = signature_data_to_file(signature_data)
+            except forms.ValidationError as exc:
+                self.add_error("signature_data", exc)
 
         if not self.signature_file and not self.instance.signature_image:
             self.add_error("signature_data", "Save the customer signature before submitting.")

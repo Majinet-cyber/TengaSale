@@ -4,12 +4,12 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'work_details' app.id %}" class="soft-back">
+<a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=5 %}
+{% include "applications/partials/stepper.html" with current_step=2 %}
 <h1 class="greeting">KYC Capture</h1>
 
 {# ── Step indicator ── #}
@@ -155,8 +155,10 @@
             <div class="kyc-tip">Eyes open, no glasses</div>
         </div>
 
-        {{ form.customer_face_image }}
-        {{ form.customer_face_image.errors }}
+        <div class="kyc-file-field">
+            {{ form.customer_face_image }}
+            {{ form.customer_face_image.errors }}
+        </div>
 
         <div class="kyc-preview{% if app.customer_face_image %} is-visible{% endif %}" data-preview-card>
             {% if app.customer_face_image %}
@@ -198,7 +200,7 @@
         </button>
 
         {# Next step button (advance to ID Front) #}
-        <button type="button" class="action-btn-large secondary" id="next-to-step-1" data-next-to="1" {% if not app.customer_face_image %}style="display:none;"{% endif %} style="margin-top:12px;">
+        <button type="button" class="action-btn-large secondary kyc-next-btn" id="next-to-step-1" data-next-to="1"{% if not app.customer_face_image %} hidden{% endif %}>
             <span class="btn-label">Next: ID Front →</span>
         </button>
     </section>
@@ -235,8 +237,10 @@
             <div class="kyc-tip">Text clearly readable</div>
         </div>
 
-        {{ form.id_front_image }}
-        {{ form.id_front_image.errors }}
+        <div class="kyc-file-field">
+            {{ form.id_front_image }}
+            {{ form.id_front_image.errors }}
+        </div>
 
         <div class="kyc-preview{% if app.id_front_image %} is-visible{% endif %}" data-preview-card>
             {% if app.id_front_image %}
@@ -281,7 +285,7 @@
             <button type="button" class="action-btn-large outline" data-prev-step="0" style="flex:0 0 auto; min-width:80px; max-width:100px;">
                 <span class="btn-label" style="text-align:center;">← Back</span>
             </button>
-            <button type="button" class="action-btn-large secondary" data-next-to="2" {% if not app.id_front_image %}style="display:none;"{% endif %} style="flex:1;">
+            <button type="button" class="action-btn-large secondary kyc-next-btn" data-next-to="2"{% if not app.id_front_image %} hidden{% endif %} style="flex:1;">
                 <span class="btn-label">Next: ID Back →</span>
             </button>
         </div>
@@ -319,8 +323,10 @@
             <div class="kyc-tip">All text clearly readable</div>
         </div>
 
-        {{ form.id_back_image }}
-        {{ form.id_back_image.errors }}
+        <div class="kyc-file-field">
+            {{ form.id_back_image }}
+            {{ form.id_back_image.errors }}
+        </div>
 
         <div class="kyc-preview{% if app.id_back_image %} is-visible{% endif %}" data-preview-card>
             {% if app.id_back_image %}
@@ -365,7 +371,7 @@
             <button type="button" class="action-btn-large outline" data-prev-step="1" style="flex:0 0 auto; min-width:80px; max-width:100px;">
                 <span class="btn-label" style="text-align:center;">← Back</span>
             </button>
-            <button type="button" class="action-btn-large secondary" data-next-to="3" {% if not app.id_back_image %}style="display:none;"{% endif %} style="flex:1;">
+            <button type="button" class="action-btn-large secondary kyc-next-btn" data-next-to="3"{% if not app.id_back_image %} hidden{% endif %} style="flex:1;">
                 <span class="btn-label">Review & Submit →</span>
             </button>
         </div>
@@ -424,6 +430,18 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Complete all three photos to submit.
         </p>
+
+        <div class="kyc-review-actions-missing" data-review-missing {% if kyc_complete %}hidden{% endif %}>
+            {% if not app.customer_face_image %}
+            <button type="button" class="action-btn-large outline" data-goto-step="0">Back to Selfie</button>
+            {% endif %}
+            {% if not app.id_front_image %}
+            <button type="button" class="action-btn-large outline" data-goto-step="1">Back to ID Front</button>
+            {% endif %}
+            {% if not app.id_back_image %}
+            <button type="button" class="action-btn-large outline" data-goto-step="2">Back to ID Back</button>
+            {% endif %}
+        </div>
 
         <div style="display:flex; gap:10px; margin-top:12px;">
             <button type="button" class="action-btn-large outline" data-prev-step="2" style="flex:0 0 auto; min-width:80px; max-width:100px;">
@@ -550,6 +568,12 @@
         });
     });
 
+    document.querySelectorAll('[data-goto-step]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            goToStep(parseInt(this.dataset.gotoStep));
+        });
+    });
+
     /* ── Submit state ── */
     function isSectionCaptured(section) {
         var input = section.querySelector('[data-capture-input]');
@@ -563,6 +587,8 @@
             submitBtn.style.opacity = all ? '1' : '0.5';
         }
         if (disabledNote) disabledNote.hidden = all;
+        var reviewMissing = document.querySelector('[data-review-missing]');
+        if (reviewMissing) reviewMissing.hidden = all;
     }
 
     /* ── Per-section camera logic ── */
@@ -622,7 +648,7 @@
             if (previewCard)  previewCard.classList.add('is-visible');
             if (statusEl)     { statusEl.textContent = '✓ Captured'; statusEl.classList.add('captured'); }
             if (captureButton) captureButton.style.display = 'none';
-            if (nextBtn) nextBtn.style.display = '';
+            if (nextBtn) nextBtn.hidden = false;
             section.dataset.existing = 'true';
 
             /* Update review thumbnails */
@@ -636,6 +662,11 @@
             }
 
             refreshSubmitState();
+            if (stepNum < 2) {
+                setTimeout(function () { goToStep(stepNum + 1); }, 350);
+            } else if (stepNum === 2) {
+                setTimeout(function () { goToStep(3); }, 350);
+            }
         }
 
         function startCameraStream(constraints, onSuccess, onFail) {
@@ -748,7 +779,7 @@
                 if (previewCard)  previewCard.classList.remove('is-visible');
                 if (statusEl)     { statusEl.textContent = 'Required'; statusEl.classList.remove('captured'); }
                 if (captureButton) captureButton.style.display = '';
-                if (nextBtn) nextBtn.style.display = 'none';
+                if (nextBtn) nextBtn.hidden = true;
                 currentFacing = getEffectiveFacing();
                 openCamera(currentFacing);
                 refreshSubmitState();
@@ -794,9 +825,14 @@
                         if (previewCard)  previewCard.classList.add('is-visible');
                         if (statusEl)     { statusEl.textContent = '✓ Captured'; statusEl.classList.add('captured'); }
                         if (captureButton) captureButton.style.display = 'none';
-                        if (nextBtn) nextBtn.style.display = '';
+                        if (nextBtn) nextBtn.hidden = false;
                         section.dataset.existing = 'true';
                         refreshSubmitState();
+                        if (stepNum < 2) {
+                            setTimeout(function () { goToStep(stepNum + 1); }, 350);
+                        } else if (stepNum === 2) {
+                            setTimeout(function () { goToStep(3); }, 350);
+                        }
                     },
                     function () { input.value = ''; refreshSubmitState(); }
                 );
