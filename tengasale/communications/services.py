@@ -126,7 +126,6 @@ def generate_phone_otp(phone_number, application=None, contract=None, payment_co
         payment_contract=payment_contract,
         language=language,
     )
-    otp.sms_log = sms_log if hasattr(otp, "sms_log") else None
     status = (
         PhoneOTP.STATUS_SENT
         if sms_log.status in (SMSLog.STATUS_SENT, SMSLog.STATUS_PENDING_CONFIG, SMSLog.STATUS_QUEUED)
