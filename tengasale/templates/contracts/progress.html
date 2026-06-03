@@ -40,15 +40,15 @@
     {% if contract.payg_number %}
     <div style="margin-top:10px; padding-top:10px; border-top:1px solid #f5f5f5;">
         <span style="font-size:12px; color:#555;">Customer payment: </span>
-        <a href="{{ contract.payment_url }}" style="font-size:12px; color:#ff5a00; font-weight:600;" target="_blank">
-            tengasale.emajinet.africa{{ contract.payment_url }}
+        <a href="{{ contract.payment_url }}" style="font-size:12px; color:#ff5a00; font-weight:600;" target="_blank" rel="noopener">
+            {{ contract.payment_url }}
         </a>
     </div>
     {% endif %}
 </div>
 
 
-<div class="card ts-slide-up" style="animation-delay:60ms;">
+<div class="card ts-slide-up ts-activation-stepper" style="animation-delay:60ms;">
     <h3 style="font-size:15px; font-weight:700; margin:0 0 16px; color:#101828;">Activation Steps</h3>
     <div class="lock-steps">
 
@@ -188,7 +188,7 @@
 </form>
 
 {% if show_lock_diagnostics %}
-{% include "device_lock/lock_card_partial.html" with lock_profile=lock_profile lock_readiness=lock_readiness can_control_lock=False %}
+{% include "device_lock/lock_card_partial.html" with lock_profile=lock_profile lock_readiness=lock_readiness can_control_lock=False show_internal_details=True %}
 {% elif lock_profile %}
 <div class="card" style="margin-bottom:16px;">
   <p style="margin:0; font-size:14px; color:#64748b;">Device protection: {% if lock_profile.lock_status == 'locked' %}Active{% elif lock_profile.lock_status in 'enrolled,active,unlocked' %}Enrolled{% else %}Device setup pending{% endif %}</p>

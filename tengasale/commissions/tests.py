@@ -691,6 +691,36 @@ class Phase10CommissionLedgerTests(TestCase):
         ).count()
         self.assertEqual(count, 1)
 
+    def test_finalize_paid_transaction_commission_on_repayment(self):
+        from applications.models import FinancingApplication
+        from portal.services import finalize_paid_transaction_commission
+
+        merchant = User.objects.create_user(username="merch_comm_test", password="pass")
+        assign_role(merchant, "merchant")
+        app = FinancingApplication.objects.create(
+            customer_name="Test Customer",
+            customer_phone="0999000001",
+            status="approved",
+            created_by=merchant,
+            claimed_by=self.underwriter,
+        )
+        self.contract.source_application = app
+        self.contract.save(update_fields=["source_application"])
+
+        txn = PaymentTransaction.objects.create(
+            payment_contract=self.contract,
+            amount=Decimal("50000"),
+            payment_type=PaymentTransaction.TYPE_REPAYMENT,
+            status=PaymentTransaction.STATUS_PAID,
+            provider=PaymentTransaction.PROVIDER_MOCK,
+            phone="0991111111",
+        )
+        entry = finalize_paid_transaction_commission(txn)
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry.amount, Decimal("3500"))
+        txn.refresh_from_db()
+        self.assertEqual(txn.commissionable_amount, Decimal("50000"))
+
     def test_arrears_deduction_14_percent_of_daily_price(self):
         deduction = calculate_arrears_deduction(self.contract, missed_days=1)
         # daily_price=3000 * 0.14 = 420
@@ -751,7 +781,7 @@ class Phase10CommissionLedgerTests(TestCase):
 
 
 class Phase10MerchantPayoutTests(TestCase):
-    """Test merchant payout: cash_price + 1% financed_amount, no WHT."""
+    """Test merchant settlement = cash_price; commission tracked separately."""
 
     def setUp(self):
         self.merchant_user = User.objects.create_user(username="merch_ph10", password="pass")
@@ -790,17 +820,17 @@ class Phase10MerchantPayoutTests(TestCase):
         self.assertIsNotNone(payout)
         self.assertEqual(payout.wht_amount, Decimal("0"))
 
-    def test_merchant_payout_total_payable_includes_commission(self):
+    def test_merchant_settlement_due_equals_cash_price(self):
         payout = create_merchant_payout_for_contract(
             self.contract,
             merchant_user=self.merchant_user,
             created_by=self.merchant_user,
         )
         self.assertIsNotNone(payout)
-        # cash_price = 240000 (phone), financed = 480000, merchant_commission = 4800
-        # total_payable = 240000 + 4800 = 244800
+        # Merchant settlement = cash price only; 1% commission tracked separately
         self.assertEqual(payout.cash_price, Decimal("240000.00"))
-        self.assertEqual(payout.total_payable, Decimal("244800.00"))
+        self.assertEqual(payout.total_payable, Decimal("240000.00"))
+        self.assertEqual(payout.merchant_commission_amount, Decimal("4800"))
 
     def test_create_merchant_payout_is_idempotent(self):
         payout1 = create_merchant_payout_for_contract(

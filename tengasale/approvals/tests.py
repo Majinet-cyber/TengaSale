@@ -161,9 +161,10 @@ class ApprovalQueueTests(TestCase):
 
         response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
 
-        self.assertContains(response, "No selfie uploaded")
-        self.assertContains(response, "No ID front uploaded")
-        self.assertContains(response, "No ID back uploaded")
+        self.assertContains(response, "Missing photo")
+        self.assertContains(response, "ID Card Front")
+        self.assertContains(response, "ID Card Back")
+        self.assertContains(response, "Missing photo")
         # Must not render empty <img> tags without a real src
         self.assertNotContains(response, 'src=""')
 
@@ -221,9 +222,10 @@ class ApprovalQueueTests(TestCase):
 
         response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
 
-        self.assertContains(response, "No selfie uploaded")
-        self.assertContains(response, "No ID front uploaded")
-        self.assertContains(response, "No ID back uploaded")
+        self.assertContains(response, "Missing photo")
+        self.assertContains(response, "ID Card Front")
+        self.assertContains(response, "ID Card Back")
+        self.assertContains(response, "Missing photo")
 
     def test_income_check_renders_guarantor_questions(self):
         """Income check page must render guarantor contact questions."""
@@ -805,9 +807,10 @@ class KulaSellStyleReviewTests(TestCase):
 
         response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
 
-        self.assertContains(response, "No selfie uploaded")
-        self.assertContains(response, "No ID front uploaded")
-        self.assertContains(response, "No ID back uploaded")
+        self.assertContains(response, "Missing photo")
+        self.assertContains(response, "ID Card Front")
+        self.assertContains(response, "ID Card Back")
+        self.assertContains(response, "Missing photo")
         # No bare empty image src attributes
         self.assertNotContains(response, 'src=""')
 
@@ -870,9 +873,10 @@ class KulaSellStyleReviewTests(TestCase):
 
         response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
 
-        self.assertContains(response, "No selfie uploaded")
-        self.assertContains(response, "No ID front uploaded")
-        self.assertContains(response, "No ID back uploaded")
+        self.assertContains(response, "Missing photo")
+        self.assertContains(response, "ID Card Front")
+        self.assertContains(response, "ID Card Back")
+        self.assertContains(response, "Missing photo")
         self.assertNotContains(response, 'src=""')
 
     # ── Income / guarantor questions ─────────────────────────────────────────

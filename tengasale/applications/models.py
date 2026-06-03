@@ -447,33 +447,26 @@ class FinancingApplication(models.Model):
             contract = getattr(self, "contract", None)
             return reverse("contract_detail", args=[contract.id]) if contract else reverse("application_detail", args=[self.id])
 
-        if self.status in ["started", "customer_details"]:
-            return reverse("edit_customer_details", args=[self.id])
-
-        if self.status in ["kyc", "kyc_capture"]:
-            if self.customer_face_image and self.id_front_image and self.id_back_image:
-                return reverse("choose_device", args=[self.id])
-            return reverse("kyc_capture", args=[self.id])
-
-        if self.status == "device_selection":
-            return reverse("choose_device", args=[self.id])
-
-        if self.status in ["location", "location_details"]:
-            return reverse("location_details", args=[self.id])
-
-        if self.status in ["work", "work_details"]:
-            return reverse("work_details", args=[self.id])
-
-        if self.status == "signature":
-            if self.signature_image:
-                return reverse("application_review", args=[self.id])
-            return reverse("signature", args=[self.id])
-
         if self.status in {"correction_requested", "sent_back"}:
             return reverse("application_corrections", args=[self.id])
 
-        if self.status == "imei_required":
-            return reverse("capture_imei", args=[self.id])
+        if self.status in [
+            "started",
+            "customer_details",
+            "kyc",
+            "kyc_capture",
+            "location",
+            "location_details",
+            "work",
+            "work_details",
+            "device_selection",
+            "imei_entry",
+            "imei_required",
+            "signature",
+        ]:
+            from applications.flow_helpers import merchant_application_continue_url
+
+            return merchant_application_continue_url(self)
 
         return reverse("application_detail", args=[self.id])
 

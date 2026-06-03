@@ -23,6 +23,17 @@ from .forms import (
     SignatureForm,
     WorkProofForm,
 )
+from .flow_helpers import (
+    KYC_IMAGE_FIELDS,
+    application_has_complete_deal,
+    kyc_images_complete,
+    merchant_application_continue_url,
+    merchant_next_step_after_deal_selection,
+    redirect_if_deal_required,
+    redirect_if_kyc_required,
+    stored_file_exists,
+)
+from .kyc_utils import process_kyc_upload
 from .models import ApplicationCorrectionToken, ApplicationFieldReview, FinancingApplication
 
 logger = logging.getLogger("tengasale.applications")
@@ -135,6 +146,10 @@ def edit_customer_details(request, app_id):
 @merchant_required
 def choose_device(request, app_id):
     app = merchant_application(request, app_id)
+    if request.method != "POST":
+        blocked = redirect_if_kyc_required(request, app)
+        if blocked:
+            return blocked
     deals = DeviceDeal.objects.filter(is_active=True, brand__is_active=True).select_related("brand").order_by(
         "brand__name",
         "model_name",
@@ -228,7 +243,8 @@ def choose_device(request, app_id):
                             "status",
                         ]
                     )
-                    return redirect("location_details", app_id=app.id)
+                    messages.success(request, "Phone deal selected.")
+                    return redirect(merchant_next_step_after_deal_selection(app))
 
         messages.error(request, form_error)
 
@@ -246,23 +262,6 @@ def choose_device(request, app_id):
     )
 
 
-KYC_IMAGE_FIELDS = ("customer_face_image", "id_front_image", "id_back_image")
-
-
-def stored_file_exists(field_file):
-    if not field_file or not getattr(field_file, "name", ""):
-        return False
-    try:
-        return field_file.storage.exists(field_file.name)
-    except Exception:
-        logger.exception("Could not verify uploaded file exists: %s", field_file.name)
-        return False
-
-
-def kyc_images_complete(app):
-    return all(stored_file_exists(getattr(app, field_name)) for field_name in KYC_IMAGE_FIELDS)
-
-
 @merchant_required
 def kyc_capture(request, app_id):
     app = merchant_application(request, app_id)
@@ -271,11 +270,15 @@ def kyc_capture(request, app_id):
         form = KYCForm(request.POST, request.FILES, instance=app)
         if form.is_valid():
             app = form.save(commit=False)
+            for field_name in KYC_IMAGE_FIELDS:
+                uploaded = request.FILES.get(field_name)
+                if uploaded:
+                    setattr(app, field_name, process_kyc_upload(uploaded, field_name))
             app.status = "kyc"
             app.save()
             if kyc_images_complete(app):
                 messages.success(request, "KYC saved.")
-                return redirect("location_details", app_id=app.id)
+                return redirect(merchant_application_continue_url(app))
             messages.error(request, "Complete all three KYC photos before submitting.")
         elif not kyc_images_complete(app):
             messages.error(request, "Complete all three KYC photos before submitting.")
@@ -303,7 +306,8 @@ def kyc_save_image(request, app_id):
     if content_type and content_type not in allowed_types:
         return JsonResponse({"error": "Upload a JPEG, PNG, or WebP image."}, status=400)
 
-    setattr(app, field_name, uploaded_file)
+    processed = process_kyc_upload(uploaded_file, field_name)
+    setattr(app, field_name, processed)
     app.save(update_fields=[field_name])
     image = getattr(app, field_name)
     if not stored_file_exists(image):
@@ -331,6 +335,9 @@ def kyc_save_image(request, app_id):
 @merchant_required
 def location_details(request, app_id):
     app = merchant_application(request, app_id)
+    blocked = redirect_if_kyc_required(request, app)
+    if blocked:
+        return blocked
 
     if request.method == "POST":
         form = LocationNextOfKinForm(request.POST, request.FILES, instance=app)
@@ -358,6 +365,9 @@ def location_details(request, app_id):
 @merchant_required
 def work_details(request, app_id):
     app = merchant_application(request, app_id)
+    blocked = redirect_if_kyc_required(request, app)
+    if blocked:
+        return blocked
 
     if request.method == "POST":
         form = WorkProofForm(request.POST, request.FILES, instance=app)
@@ -376,6 +386,9 @@ def work_details(request, app_id):
 @merchant_required
 def signature(request, app_id):
     app = merchant_application(request, app_id)
+    blocked = redirect_if_deal_required(request, app)
+    if blocked:
+        return blocked
 
     if request.method == "POST" and request.POST.get("save_signature"):
         form = SignatureCaptureForm(request.POST)
@@ -402,11 +415,17 @@ def signature(request, app_id):
 @merchant_required
 def application_review(request, app_id):
     app = merchant_application(request, app_id)
+    blocked = redirect_if_deal_required(request, app)
+    if blocked:
+        return blocked
 
     if not app.signature_image:
         return redirect("signature", app_id=app.id)
 
     if request.method == "POST":
+        if not application_has_complete_deal(app):
+            messages.error(request, "Select a phone deal before submitting.")
+            return redirect("choose_device", app_id=app.id)
         form = SignatureForm(request.POST, instance=app)
         if form.is_valid():
             app = form.save(commit=False)
@@ -424,7 +443,22 @@ def application_review(request, app_id):
 
 @merchant_required
 def capture_imei(request, app_id):
-    return redirect("kyc_capture", app_id=app_id)
+    app = merchant_application(request, app_id)
+    blocked = redirect_if_deal_required(request, app)
+    if blocked:
+        return blocked
+
+    if request.method == "POST":
+        imei = (request.POST.get("imei_number") or "").strip()
+        if imei:
+            app.imei_number = imei
+            app.status = "imei_entry"
+            app.save(update_fields=["imei_number", "status"])
+            messages.success(request, "IMEI saved.")
+            return redirect(merchant_application_continue_url(app))
+        messages.error(request, "Enter a valid IMEI before continuing.")
+
+    return render(request, "applications/capture_imei.html", {"app": app})
 
 
 @merchant_required

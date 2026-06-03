@@ -67,6 +67,19 @@ class ApplicationTestCase(TestCase):
     def create_application(self):
         return FinancingApplication.objects.create(created_by=self.user)
 
+    def complete_kyc_images(self, app):
+        app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
+        app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
+        app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
+        app.save()
+
+    def complete_location_and_work(self, app):
+        app.region = "Central Region"
+        app.district = "Lilongwe"
+        app.precise_location = "Area 18"
+        app.work_description = "Retail business"
+        app.save()
+
     def create_deal(self):
         brand = DeviceBrand.objects.create(name="TECNO")
         return DeviceDeal.objects.create(
@@ -216,6 +229,7 @@ class NextOfKinAndWorkFormTests(ApplicationTestCase):
 
     def test_location_page_contains_relationship_dropdown_choices(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
 
         response = self.client.get(reverse("location_details", args=[app.id]))
 
@@ -226,6 +240,7 @@ class NextOfKinAndWorkFormTests(ApplicationTestCase):
 
     def test_work_page_contains_relationship_dropdown_choices(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
 
         response = self.client.get(reverse("work_details", args=[app.id]))
 
@@ -509,6 +524,8 @@ class ApplicationContinueUrlTests(ApplicationTestCase):
 
     def test_get_continue_url_returns_device_page_for_device_selection(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
+        self.complete_location_and_work(app)
         app.status = "device_selection"
         app.save(update_fields=["status"])
 
@@ -627,6 +644,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_with_no_deals_does_not_crash(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
 
@@ -635,6 +653,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_contains_seeded_brand_choices(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
         call_command("seed_tengasale")
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -647,6 +666,7 @@ class ApplicationFlowTests(ApplicationTestCase):
     @override_settings(DEBUG=False)
     def test_device_page_with_brand_logos_does_not_500_when_manifest_missing(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
         call_command("seed_tengasale")
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -656,6 +676,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_contains_guided_flow_text_and_hidden_inputs(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
         self.create_deal()
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -685,6 +706,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_valid_deal_selection_saves_calculated_values_and_redirects_to_location(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
         deal = self.create_deal()
 
         response = self.client.post(
@@ -736,13 +758,17 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_kyc_location_and_work_pages_load(self):
         app = self.create_application()
+        self.complete_kyc_images(app)
 
         for name in ["kyc_capture", "location_details", "work_details"]:
             response = self.client.get(reverse(name, args=[app.id]))
             self.assertEqual(response.status_code, 200)
 
     def test_signature_page_requires_agreed_to_terms_before_submit(self):
+        from applications.test_helpers import attach_complete_pricing
+
         app = self.create_application()
+        attach_complete_pricing(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -753,7 +779,10 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertNotEqual(app.status, "pending_review")
 
     def test_final_submit_sets_status_pending_review(self):
+        from applications.test_helpers import attach_complete_pricing
+
         app = self.create_application()
+        attach_complete_pricing(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -775,6 +804,11 @@ class SignaturePageTests(ApplicationTestCase):
         self.settings_override = override_settings(MEDIA_ROOT=self.media_root)
         self.settings_override.enable()
 
+    def prime_for_signature_flow(self, app):
+        from applications.test_helpers import attach_complete_pricing
+
+        attach_complete_pricing(app)
+
     def tearDown(self):
         self.settings_override.disable()
         shutil.rmtree(self.media_root, ignore_errors=True)
@@ -782,6 +816,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_signature_page_contains_live_canvas_controls(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
 
         response = self.client.get(reverse("signature", args=[app.id]))
 
@@ -793,6 +828,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_save_signature_redirects_to_review(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
 
         response = self.client.post(
             reverse("signature", args=[app.id]),
@@ -805,6 +841,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_review_page_shows_saved_signature(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -816,6 +853,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_submit_without_signature_fails(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
 
         response = self.client.post(reverse("application_review", args=[app.id]), {"agreed_to_terms": "on"})
 
@@ -826,6 +864,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_submit_without_terms_fails(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -838,6 +877,7 @@ class SignaturePageTests(ApplicationTestCase):
 
     def test_submit_with_valid_signature_and_terms_succeeds(self):
         app = self.create_application()
+        self.prime_for_signature_flow(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -922,14 +962,14 @@ class KYCCaptureTests(ApplicationTestCase):
         app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
         app.save()
 
-    def test_get_continue_url_returns_kyc_or_device_based_on_images(self):
+    def test_get_continue_url_returns_kyc_or_location_based_on_images(self):
         app = self.create_application()
         app.status = "kyc"
         app.save(update_fields=["status"])
         self.assertEqual(app.get_continue_url(), reverse("kyc_capture", args=[app.id]))
 
         self.save_existing_images(app)
-        self.assertEqual(app.get_continue_url(), reverse("choose_device", args=[app.id]))
+        self.assertEqual(app.get_continue_url(), reverse("location_details", args=[app.id]))
 
     def test_kyc_page_get_shows_live_capture_controls(self):
         app = self.create_application()
@@ -1139,8 +1179,8 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, app.customer_face_image.url)
         self.assertContains(response, app.id_front_image.url)
         self.assertContains(response, app.id_back_image.url)
-        self.assertContains(response, "kyc-review-grid")
-        self.assertContains(response, "kyc-review-card")
+        self.assertContains(response, "kyc-portrait-stack")
+        self.assertContains(response, "kyc-portrait-card")
 
 
 class ApplicationAdminImportTests(TestCase):
@@ -1677,6 +1717,10 @@ class ApplicationPageLoadTests(TestCase):
 
     def test_deals_page_loads_for_merchant(self):
         self._login(self.merchant)
+        self.app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
+        self.app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
+        self.app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
+        self.app.save()
         url = reverse("choose_device", args=[self.app.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

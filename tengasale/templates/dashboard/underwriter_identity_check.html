@@ -43,134 +43,25 @@
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
             Tap any image to open full size. Compare selfie with ID document photo.
         </p>
-        <div class="uw-image-grid">
+        <div class="kyc-portrait-stack">
+            {% if app.customer_face_image %}
+            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" card_type="selfie" status="missing" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
+            {% endif %}
+            {% if app.id_front_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image.url card_type="id_front" status="ready" show_send_back=True field_name="id_front_image" correction=corrections.id_front_image %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" card_type="id_front" status="missing" show_send_back=True field_name="id_front_image" correction=corrections.id_front_image %}
+            {% endif %}
+            {% if app.id_back_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image.url card_type="id_back" status="ready" show_send_back=True field_name="id_back_image" correction=corrections.id_back_image %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" card_type="id_back" status="missing" show_send_back=True field_name="id_back_image" correction=corrections.id_back_image %}
+            {% endif %}
+        </div>
 
-            <div class="uw-image-block">
-                {% if app.customer_face_image %}
-                    <a href="{{ app.customer_face_image.url }}" target="_blank" rel="noopener noreferrer" title="Open selfie full size">
-                        <img src="{{ app.customer_face_image.url }}" alt="Customer selfie" loading="lazy"
-                             onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling&&(this.parentElement.nextElementSibling.hidden=false);">
-                    </a>
-                    <div hidden class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                        Selfie unavailable
-                    </div>
-                {% else %}
-                    <div class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                        No selfie uploaded
-                    </div>
-                {% endif %}
-                <div class="uw-kyc-label-row">
-                    <span class="review-field__label">Selfie Image</span>
-                    <button
-                        type="button"
-                        class="review-edit-btn{% if corrections.customer_face_image %} review-edit-btn--active{% endif %}"
-                        aria-label="Mark selfie image for correction"
-                        data-correction-open
-                        data-field-name="customer_face_image"
-                        data-field-label="Selfie Image"
-                        data-field-section="Images"
-                        data-correction-note="{{ corrections.customer_face_image.note|default:'' }}"
-                        data-correction-active="{% if corrections.customer_face_image %}true{% else %}false{% endif %}"
-                    >
-                        {% if corrections.customer_face_image %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
-                        {% else %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-                        {% endif %}
-                    </button>
-                </div>
-                {% if corrections.customer_face_image.note %}
-                    <span class="review-field__note">{{ corrections.customer_face_image.note }}</span>
-                {% endif %}
-            </div>
-
-
-            <div class="uw-image-block">
-                {% if app.id_front_image %}
-                    <a href="{{ app.id_front_image.url }}" target="_blank" rel="noopener noreferrer" title="Open ID front full size">
-                        <img src="{{ app.id_front_image.url }}" alt="ID card front" loading="lazy"
-                             onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling&&(this.parentElement.nextElementSibling.hidden=false);">
-                    </a>
-                    <div hidden class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h8"/></svg>
-                        ID front unavailable
-                    </div>
-                {% else %}
-                    <div class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h8"/></svg>
-                        No ID front uploaded
-                    </div>
-                {% endif %}
-                <div class="uw-kyc-label-row">
-                    <span class="review-field__label">ID Card Front</span>
-                    <button
-                        type="button"
-                        class="review-edit-btn{% if corrections.id_front_image %} review-edit-btn--active{% endif %}"
-                        aria-label="Mark ID front image for correction"
-                        data-correction-open
-                        data-field-name="id_front_image"
-                        data-field-label="ID Card Front"
-                        data-field-section="Images"
-                        data-correction-note="{{ corrections.id_front_image.note|default:'' }}"
-                        data-correction-active="{% if corrections.id_front_image %}true{% else %}false{% endif %}"
-                    >
-                        {% if corrections.id_front_image %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
-                        {% else %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-                        {% endif %}
-                    </button>
-                </div>
-                {% if corrections.id_front_image.note %}
-                    <span class="review-field__note">{{ corrections.id_front_image.note }}</span>
-                {% endif %}
-            </div>
-
-
-            <div class="uw-image-block">
-                {% if app.id_back_image %}
-                    <a href="{{ app.id_back_image.url }}" target="_blank" rel="noopener noreferrer" title="Open ID back full size">
-                        <img src="{{ app.id_back_image.url }}" alt="ID card back" loading="lazy"
-                             onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling&&(this.parentElement.nextElementSibling.hidden=false);">
-                    </a>
-                    <div hidden class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6"/></svg>
-                        ID back unavailable
-                    </div>
-                {% else %}
-                    <div class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6"/></svg>
-                        No ID back uploaded
-                    </div>
-                {% endif %}
-                <div class="uw-kyc-label-row">
-                    <span class="review-field__label">ID Card Back</span>
-                    <button
-                        type="button"
-                        class="review-edit-btn{% if corrections.id_back_image %} review-edit-btn--active{% endif %}"
-                        aria-label="Mark ID back image for correction"
-                        data-correction-open
-                        data-field-name="id_back_image"
-                        data-field-label="ID Card Back"
-                        data-field-section="Images"
-                        data-correction-note="{{ corrections.id_back_image.note|default:'' }}"
-                        data-correction-active="{% if corrections.id_back_image %}true{% else %}false{% endif %}"
-                    >
-                        {% if corrections.id_back_image %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
-                        {% else %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-                        {% endif %}
-                    </button>
-                </div>
-                {% if corrections.id_back_image.note %}
-                    <span class="review-field__note">{{ corrections.id_back_image.note }}</span>
-                {% endif %}
-            </div>
-
-
+        <div class="uw-image-grid" style="margin-top:20px;">
             <div class="uw-image-block">
                 {% if app.signature_image %}
                     <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer" title="Open signature full size">

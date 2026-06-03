@@ -371,6 +371,10 @@ def portal_payment(request, contract_number):
             tx.save(update_fields=["provider_reference", "charge_id", "status", "paid_at", "raw_response", "updated_at"])
             from portal.services import apply_payment_to_contract as _apply
             apply_result = _apply(contract, amount, payment_type=payment_type)
+            tx.balance_after = contract.remaining_amount
+            tx.save(update_fields=["balance_after", "updated_at"])
+            from portal.services import finalize_paid_transaction_commission
+            finalize_paid_transaction_commission(tx)
             _portal_audit(
                 AuditLog.ACTION_PAYMENT,
                 "PaymentContract",
@@ -430,7 +434,13 @@ def portal_history(request, contract_number):
     month_filter = request.GET.get("month", "")
     method_filter = request.GET.get("method", "")
 
-    qs = contract.transactions.order_by("created_at")
+    from portal.models import PaymentTransaction
+
+    qs = (
+        contract.transactions.filter(amount__gt=0)
+        .exclude(status=PaymentTransaction.STATUS_FAILED)
+        .order_by("created_at")
+    )
 
     if month_filter:
         try:
@@ -444,12 +454,19 @@ def portal_history(request, contract_number):
 
     all_txns = list(qs)
 
-    # Compute running balance (chronological order)
-    running_paid = Decimal("0")
+    # Compute running instalment balance (chronological order; deposits tracked separately)
+    running_instalments = Decimal("0")
     for tx in all_txns:
         if tx.status == PaymentTransaction.STATUS_PAID:
-            running_paid += tx.amount
-        tx.balance_after = max(contract.total_amount - running_paid, Decimal("0"))
+            if tx.payment_type == PaymentTransaction.TYPE_DEPOSIT:
+                tx.ledger_kind = "deposit"
+            else:
+                running_instalments += tx.amount
+                tx.ledger_kind = "repayment"
+            tx.balance_after = max(contract.total_amount - running_instalments, Decimal("0"))
+        else:
+            tx.ledger_kind = tx.payment_type or "repayment"
+            tx.balance_after = None
 
     # Reverse for display (newest first)
     all_txns.reverse()
@@ -702,6 +719,9 @@ def webhook_paychangu(request):
             balance_after = contract.remaining_amount
             tx.balance_after = balance_after
             tx.save(update_fields=["balance_after", "updated_at"])
+
+            from portal.services import finalize_paid_transaction_commission
+            finalize_paid_transaction_commission(tx)
 
             logger.info(
                 "PayChangu webhook: applied MWK %s to contract %s (type=%s, result=%s)",

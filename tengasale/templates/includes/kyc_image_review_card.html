@@ -1,0 +1,64 @@
+{% comment %}
+Portrait KYC evidence card.
+Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missing|broken),
+      retake_step (optional int), show_send_back (bool), correction (optional), field_name (for send-back)
+{% endcomment %}
+
+<article class="kyc-portrait-card kyc-portrait-card--{{ card_type|default:'selfie' }}">
+  <div class="kyc-portrait-card__head">
+    <h3 class="kyc-portrait-card__label">{{ label }}</h3>
+    {% if show_send_back and field_name %}
+    <button
+      type="button"
+      class="review-edit-btn{% if correction %} review-edit-btn--active{% endif %}"
+      aria-label="Request retake for {{ label }}"
+      data-correction-open
+      data-field-name="{{ field_name }}"
+      data-field-label="{{ label }}"
+      data-field-section="Images"
+      data-correction-note="{{ correction.note|default:'' }}"
+      data-correction-active="{% if correction %}true{% else %}false{% endif %}"
+    >
+      {% if correction %}
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
+      {% else %}
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+      {% endif %}
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="kyc-portrait-card__frame">
+    {% if status == 'ready' and image_url %}
+    <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer" class="kyc-portrait-card__link" title="View full {{ label }}">
+      <img
+        src="{{ image_url }}"
+        alt="{{ label }}"
+        class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
+        loading="lazy"
+        data-kyc-portrait-img
+      >
+    </a>
+    {% elif status == 'broken' %}
+    <div class="kyc-portrait-card__placeholder kyc-portrait-card__placeholder--broken">
+      <p>Photo unavailable</p>
+      <span>Request retake</span>
+    </div>
+    {% else %}
+    <div class="kyc-portrait-card__placeholder">
+      <p>Missing photo</p>
+      <span>Request retake</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if correction.note %}
+  <p class="kyc-portrait-card__note">{{ correction.note }}</p>
+  {% endif %}
+
+  {% if retake_step is not None %}
+  <button type="button" class="kyc-portrait-card__retake" data-goto-step="{{ retake_step }}" aria-label="Retake {{ label }}">
+    Retake photo
+  </button>
+  {% endif %}
+</article>

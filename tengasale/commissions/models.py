@@ -211,7 +211,7 @@ class UnderwriterMonthlyPayout(models.Model):
 class MerchantContractPayout(models.Model):
     """
     Payout record linking a portal PaymentContract to a merchant.
-    Merchant receives cash_price + 1% commission on financed_amount (no WHT).
+    Merchant settlement due = cash_price. Optional 1% commission on financed amount is separate.
     """
 
     STATUS_PENDING = "pending"
@@ -277,6 +277,11 @@ class MerchantContractPayout(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Merchant Contract Payout"
         verbose_name_plural = "Merchant Contract Payouts"
+
+    @property
+    def merchant_settlement_due(self):
+        """Phone cash price owed to merchant (excludes separate commission)."""
+        return self.cash_price
 
     @property
     def wht_amount(self):

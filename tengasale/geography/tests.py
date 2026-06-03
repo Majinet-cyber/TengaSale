@@ -6,7 +6,10 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
+from django.core.files.base import ContentFile
+
 from applications.models import FinancingApplication
+from applications.tests import PNG_BYTES
 from accounts.utils import assign_role
 
 from .models import District, Region, TraditionalAuthority
@@ -39,6 +42,10 @@ class LocationGeographyTests(TestCase):
             created_by=self.user,
             customer_phone="990870616",
         )
+        self.app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
+        self.app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
+        self.app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
+        self.app.save()
 
     def location_data(self, **overrides):
         data = {

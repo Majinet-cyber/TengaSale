@@ -7,7 +7,8 @@ Rules:
   - Deposit excluded from underwriter commission.
   - Underwriter earns 7% on each actual repayment after deposit.
   - Missed day creates 14% arrears deduction on contract.daily_price.
-  - Merchant earns cash_price + 1% of financed_amount (no WHT).
+  - Merchant settlement due = cash_price (phone selling price).
+  - Optional merchant commission (1% financed) tracked separately from settlement.
   - Underwriter monthly payout has 20% WHT on positive gross.
 """
 
@@ -101,24 +102,27 @@ def create_commission_for_payment(payment, underwriter=None) -> Optional[Commiss
         return None
 
     if underwriter is None:
+        from portal.services import resolve_underwriter_for_contract
+
         contract = payment.payment_contract
-        app = getattr(contract, "financing_application", None)
-        if app is None:
-            try:
-                from applications.models import FinancingApplication
-                from django.db.models import Q
-                app = FinancingApplication.objects.filter(
-                    status__in=["approved", "completed", "contract_complete"]
-                ).filter(
-                    Q(claimed_by__isnull=False)
-                ).order_by("-reviewed_at").first()
-            except Exception:
-                pass
-        underwriter = getattr(app, "claimed_by", None) or getattr(app, "reviewed_by", None)
+        underwriter = resolve_underwriter_for_contract(contract) if contract else None
 
     if underwriter is None:
         logger.warning("create_commission_for_payment: no underwriter found for payment %s", payment.pk)
         return None
+
+    paid_at = getattr(payment, "paid_at", None) or getattr(payment, "created_at", None)
+    period_start = None
+    period_end = None
+    if paid_at is not None:
+        paid_date = paid_at.date() if hasattr(paid_at, "date") else paid_at
+        period_start = paid_date.replace(day=1)
+        if paid_date.month == 12:
+            period_end = paid_date.replace(day=31)
+        else:
+            from calendar import monthrange
+            last_day = monthrange(paid_date.year, paid_date.month)[1]
+            period_end = paid_date.replace(day=last_day)
 
     try:
         entry = CommissionLedger.objects.create(
@@ -130,6 +134,8 @@ def create_commission_for_payment(payment, underwriter=None) -> Optional[Commiss
             rate=UNDERWRITER_COMMISSION_RATE,
             description=f"7% commission on MWK {commissionable} repayment (ref: {payment.internal_reference})",
             source_payment=payment,
+            period_start=period_start,
+            period_end=period_end,
         )
         _audit(underwriter, "commission_created", "CommissionLedger", entry.pk,
                {"amount": str(commission_amount), "payment_ref": payment.internal_reference})
@@ -222,8 +228,9 @@ def calculate_merchant_commission(contract) -> Decimal:
 def create_merchant_payout_for_contract(contract, merchant_user=None, created_by=None) -> Optional[MerchantContractPayout]:
     """
     Idempotently create a MerchantContractPayout for a portal PaymentContract.
-    Merchant total payable = cash_price + 1% of financed_amount.
-    No WHT.
+    Merchant settlement due = cash_price (phone cash price).
+    merchant_commission_amount is tracked separately (1% of financed amount).
+    No WHT on merchant settlement.
     """
     existing = MerchantContractPayout.objects.filter(contract=contract).first()
     if existing:
@@ -245,7 +252,7 @@ def create_merchant_payout_for_contract(contract, merchant_user=None, created_by
         return None
 
     merchant_commission = _round(financed_amount * MERCHANT_COMMISSION_RATE)
-    total_payable = _money(cash_price + merchant_commission)
+    total_payable = _money(cash_price)
 
     if merchant_user is None:
         logger.warning("create_merchant_payout_for_contract: no merchant_user provided for contract %s", contract.pk)

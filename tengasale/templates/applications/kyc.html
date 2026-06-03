@@ -398,55 +398,22 @@
         </div>
 
 
-        <div class="kyc-review-grid">
-            <article class="kyc-review-card">
-                <div class="kyc-review-card-image">
-                    {% if app.customer_face_image %}
-                        <img src="{{ app.customer_face_image.url }}" alt="Selfie" id="review-selfie" data-review-img="selfie" data-skip-img-fallback="1">
-                        <div class="kyc-review-card-empty" id="review-selfie-empty" hidden>No photo yet</div>
-                    {% else %}
-                        <img src="" alt="Selfie" id="review-selfie" data-review-img="selfie" hidden>
-                        <div class="kyc-review-card-empty" id="review-selfie-empty">No photo yet</div>
-                    {% endif %}
-                    <span class="kyc-review-card-label">Selfie</span>
-                </div>
-                <button type="button" class="kyc-review-retake" data-goto-step="0" aria-label="Retake selfie">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-                    Retake
-                </button>
-            </article>
-            <article class="kyc-review-card">
-                <div class="kyc-review-card-image">
-                    {% if app.id_front_image %}
-                        <img src="{{ app.id_front_image.url }}" alt="ID Front" id="review-id-front" data-review-img="id-front" data-skip-img-fallback="1">
-                        <div class="kyc-review-card-empty" id="review-id-front-empty" hidden>No photo yet</div>
-                    {% else %}
-                        <img src="" alt="ID Front" id="review-id-front" data-review-img="id-front" hidden>
-                        <div class="kyc-review-card-empty" id="review-id-front-empty">No photo yet</div>
-                    {% endif %}
-                    <span class="kyc-review-card-label">ID Front</span>
-                </div>
-                <button type="button" class="kyc-review-retake" data-goto-step="1" aria-label="Retake ID front">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-                    Retake
-                </button>
-            </article>
-            <article class="kyc-review-card">
-                <div class="kyc-review-card-image">
-                    {% if app.id_back_image %}
-                        <img src="{{ app.id_back_image.url }}" alt="ID Back" id="review-id-back" data-review-img="id-back" data-skip-img-fallback="1">
-                        <div class="kyc-review-card-empty" id="review-id-back-empty" hidden>No photo yet</div>
-                    {% else %}
-                        <img src="" alt="ID Back" id="review-id-back" data-review-img="id-back" hidden>
-                        <div class="kyc-review-card-empty" id="review-id-back-empty">No photo yet</div>
-                    {% endif %}
-                    <span class="kyc-review-card-label">ID Back</span>
-                </div>
-                <button type="button" class="kyc-review-retake" data-goto-step="2" aria-label="Retake ID back">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-                    Retake
-                </button>
-            </article>
+        <div class="kyc-portrait-stack">
+            {% if app.customer_face_image %}
+            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" retake_step=0 %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" card_type="selfie" status="missing" retake_step=0 %}
+            {% endif %}
+            {% if app.id_front_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image.url card_type="id_front" status="ready" retake_step=1 %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" card_type="id_front" status="missing" retake_step=1 %}
+            {% endif %}
+            {% if app.id_back_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image.url card_type="id_back" status="ready" retake_step=2 %}
+            {% else %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" card_type="id_back" status="missing" retake_step=2 %}
+            {% endif %}
         </div>
 
         <p class="next-disabled-note" data-disabled-note {% if kyc_complete %}hidden{% endif %}>

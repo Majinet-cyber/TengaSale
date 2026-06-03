@@ -831,3 +831,45 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
 
     sync_merchant_contract_from_application(application)
     return contract
+
+
+# ---------------------------------------------------------------------------
+# Payment commission (underwriter 7% on repayments)
+# ---------------------------------------------------------------------------
+
+def resolve_underwriter_for_contract(contract):
+    """Underwriter assigned at approval (claimed_by / reviewed_by on source application)."""
+    app = getattr(contract, "source_application", None)
+    if app is None:
+        return None
+    return getattr(app, "claimed_by", None) or getattr(app, "reviewed_by", None)
+
+
+def finalize_paid_transaction_commission(tx):
+    """
+    Set commissionable_amount and create underwriter ledger entry for paid repayments.
+    Deposits and non-repayment types do not earn commission.
+    """
+    from portal.models import PaymentTransaction
+    from commissions.services import create_commission_for_payment
+
+    if tx.status != PaymentTransaction.STATUS_PAID:
+        return None
+
+    if tx.amount is None or tx.amount <= Decimal("0"):
+        return None
+
+    if tx.payment_type == PaymentTransaction.TYPE_REPAYMENT:
+        commissionable = Decimal(tx.amount)
+    else:
+        commissionable = Decimal("0")
+
+    if tx.commissionable_amount != commissionable:
+        tx.commissionable_amount = commissionable
+        tx.save(update_fields=["commissionable_amount", "updated_at"])
+
+    if commissionable <= 0:
+        return None
+
+    underwriter = resolve_underwriter_for_contract(tx.payment_contract)
+    return create_commission_for_payment(tx, underwriter=underwriter)
