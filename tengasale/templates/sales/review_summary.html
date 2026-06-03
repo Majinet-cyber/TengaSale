@@ -18,7 +18,7 @@
 
   <div class="ts-app-num">{{ app.application_number }} &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</div>
 
-  {# ── Application Summary ───────────────────────────────────────── #}
+
   <div class="ts-review-card" style="border-top:3px solid #ff5a00;margin-top:8px;">
     <div class="ts-review-card__title">Customer</div>
     <div class="ts-review-row"><span>Full Name</span><strong>{{ app.customer_name|default:"Not captured" }}</strong></div>
@@ -64,7 +64,7 @@
   </div>
   {% endif %}
 
-  {# ── KYC Images ────────────────────────────────────────────────── #}
+
   <div class="ts-review-card ts-mb-16">
     <div class="ts-review-card__title">KYC Images</div>
     <div class="ts-kyc-row">

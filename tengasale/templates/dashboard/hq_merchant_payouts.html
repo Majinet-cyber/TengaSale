@@ -5,24 +5,27 @@
 
 {% block extra_head %}
 <style>
-.mpo-wrap { max-width:1000px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
-.mpo-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
+.mpo-wrap { max-width:1000px; margin:0 auto; padding:20px 16px; overflow-x:hidden; box-sizing:border-box; }
+.mpo-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid #e2e8f0; }
 .mpo-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
 .mpo-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
 .mpo-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
 .mpo-stat {
-  background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.80); border-radius:12px;
-  padding:16px; box-shadow:0 2px 8px rgba(15,23,42,0.06);
-  text-align:center; border-left:3px solid var(--mpo-accent,#ff5a00);
+  background:#fff;
+  border:1px solid #e2e8f0; border-radius:12px;
+  padding:14px; box-shadow:0 2px 8px rgba(15,23,42,0.04);
+  text-align:left; border-left:3px solid var(--mpo-accent,#ff5a00);
 }
-.mpo-stat-val { font-size:1.2rem; font-weight:900; color:var(--mpo-accent,#ff5a00); line-height:1; }
-.mpo-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
+.mpo-stat-val { font-size:1.12rem; font-weight:900; color:#0f172a; line-height:1.1; }
+.mpo-stat-lbl { font-size:0.72rem; color:#64748b; font-weight:700; margin-top:5px; }
 .mpo-card {
-  background:rgba(255,255,255,0.90); backdrop-filter:blur(10px);
-  border:1.5px solid rgba(255,255,255,0.78); border-radius:14px;
-  overflow:hidden; box-shadow:0 2px 8px rgba(15,23,42,0.06); margin-bottom:16px;
+  background:#fff;
+  border:1px solid #e2e8f0; border-radius:14px;
+  overflow:hidden; box-shadow:0 2px 8px rgba(15,23,42,0.04); margin-bottom:16px;
 }
+.mpo-filter { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+.mpo-filter input, .mpo-filter select { min-height:40px; padding:8px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:0.85rem; background:#fff; }
+.mpo-filter button { min-height:40px; background:#ff5a00; color:#fff; border:none; padding:8px 16px; border-radius:10px; font-weight:800; cursor:pointer; font-size:0.85rem; }
 .mpo-note { font-size:0.75rem; color:#64748b; text-align:center; margin-top:12px; }
 </style>
 {% endblock %}
@@ -44,7 +47,6 @@
     </div>
   {% endif %}
 
-  {# ── KPI Cards ── #}
   <div class="mpo-stats">
     <div class="mpo-stat" style="--mpo-accent:#d97706;">
       <div class="mpo-stat-val">{{ pending_total|mwk }}</div>
@@ -64,18 +66,17 @@
     </div>
   </div>
 
-  {# ── Filters ── #}
-  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+  <form method="get" class="mpo-filter">
     <input type="text" name="merchant" placeholder="Merchant username…" value="{{ merchant_filter }}"
-           style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;min-width:180px;">
-    <select name="status" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;">
+           style="min-width:180px;">
+    <select name="status">
       <option value="">All Status</option>
       <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
       <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
       <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
       <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
     </select>
-    <button type="submit" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.85rem;">Filter</button>
+    <button type="submit">Filter</button>
     <a href="{% url 'hq_merchant_payouts' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 

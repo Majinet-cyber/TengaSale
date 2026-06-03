@@ -25,7 +25,7 @@
     {% endif %}
 </div>
 
-{# Legal ownership notice — shown while contract is active and not fully settled #}
+
 {% if contract.status != 'complete' or not contract.ownership_transfer_at %}
 <div class="card ts-slide-up" style="animation-delay:80ms;background:#fff8f5;border:1.5px solid rgba(255,90,0,0.15);">
     <div style="display:flex;gap:10px;align-items:flex-start;padding:14px 16px;">

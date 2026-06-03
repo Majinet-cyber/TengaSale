@@ -237,8 +237,18 @@ def choose_device(request, app_id):
 KYC_IMAGE_FIELDS = ("customer_face_image", "id_front_image", "id_back_image")
 
 
+def stored_file_exists(field_file):
+    if not field_file or not getattr(field_file, "name", ""):
+        return False
+    try:
+        return field_file.storage.exists(field_file.name)
+    except Exception:
+        logger.exception("Could not verify uploaded file exists: %s", field_file.name)
+        return False
+
+
 def kyc_images_complete(app):
-    return all(getattr(app, field_name) for field_name in KYC_IMAGE_FIELDS)
+    return all(stored_file_exists(getattr(app, field_name)) for field_name in KYC_IMAGE_FIELDS)
 
 
 @merchant_required
@@ -251,9 +261,11 @@ def kyc_capture(request, app_id):
             app = form.save(commit=False)
             app.status = "kyc"
             app.save()
-            messages.success(request, "KYC saved.")
-            return redirect("choose_device", app_id=app.id)
-        if not kyc_images_complete(app):
+            if kyc_images_complete(app):
+                messages.success(request, "KYC saved.")
+                return redirect("location_details", app_id=app.id)
+            messages.error(request, "Complete all three KYC photos before submitting.")
+        elif not kyc_images_complete(app):
             messages.error(request, "Complete all three KYC photos before submitting.")
     else:
         form = KYCForm(instance=app)
@@ -282,15 +294,26 @@ def kyc_save_image(request, app_id):
     setattr(app, field_name, uploaded_file)
     app.save(update_fields=[field_name])
     image = getattr(app, field_name)
-    media_url = request.build_absolute_uri(image.url)
+    if not stored_file_exists(image):
+        logger.warning("KYC upload did not persist app_id=%s field=%s name=%s", app.id, field_name, getattr(image, "name", ""))
+        return JsonResponse({"error": "Photo did not save. Please retake or upload it again."}, status=500)
+
+    relative_url = image.url
+    media_url = request.build_absolute_uri(relative_url)
     logger.info(
-        "Photo uploaded app_id=%s field=%s url=%s path=%s",
+        "Photo uploaded app_id=%s field=%s url=%s name=%s",
         app.id,
         field_name,
         media_url,
-        image.path,
+        image.name,
     )
-    return JsonResponse({"ok": True, "field": field_name, "url": media_url})
+    return JsonResponse({
+        "ok": True,
+        "field": field_name,
+        "url": media_url,
+        "relative_url": relative_url,
+        "absolute_url": media_url,
+    })
 
 
 @merchant_required
@@ -350,10 +373,10 @@ def signature(request, app_id):
             app.save(update_fields=["signature_image", "status"])
             sig = app.signature_image
             logger.info(
-                "Signature saved app_id=%s url=%s path=%s",
+                "Signature saved app_id=%s url=%s name=%s",
                 app.id,
                 sig.url if sig else "",
-                sig.path if sig else "",
+                sig.name if sig else "",
             )
             messages.success(request, "Signature saved.")
             return redirect("application_review", app_id=app.id)

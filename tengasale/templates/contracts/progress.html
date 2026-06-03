@@ -7,7 +7,7 @@
 
 <h1 class="greeting">Contract Progress</h1>
 
-{# ── PayG Identity Card ─────────────────────────────────────────────── #}
+
 <div class="card ts-slide-up" style="border-left: 4px solid #ff5a00; margin-bottom: 16px;">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <div>
@@ -47,7 +47,7 @@
     {% endif %}
 </div>
 
-{# ── Animated progress steps ──────────────────────────────────────────── #}
+
 <div class="card ts-slide-up" style="animation-delay:60ms;">
     <h3 style="font-size:15px; font-weight:700; margin:0 0 16px; color:#101828;">Activation Steps</h3>
     <div class="lock-steps">
@@ -142,7 +142,7 @@
     </div>
 </div>
 
-{# ── Action area ───────────────────────────────────────────────────── #}
+
 <form method="post" class="ts-stagger" style="display:flex; flex-direction:column; gap:12px;">
     {% csrf_token %}
     {% if not contract.warranty_checked %}

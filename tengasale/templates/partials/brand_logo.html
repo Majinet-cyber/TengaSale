@@ -1,11 +1,5 @@
 {% load static %}
-{#
-  brand_logo.html — reusable brand logo partial
-  Usage:
-    compact: {% include "partials/brand_logo.html" with variant="compact" %}
-    full:    {% include "partials/brand_logo.html" with variant="full" %}
-  Default is compact.
-#}
+
 {% if variant == "full" %}
 <div class="logo-full-showcase">
   <img

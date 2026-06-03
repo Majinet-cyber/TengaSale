@@ -19,7 +19,7 @@
 
   {% include "sales/_step_bar.html" with step=step total_steps=total_steps %}
 
-  {# Completeness Score #}
+
   <div class="ts-score-row">
     <div class="ts-score-ring" style="--pct:{{ score }}">
       <svg viewBox="0 0 36 36">
@@ -49,7 +49,7 @@
     {% if app.third_party_phone_user_risk_flagged %}<div class="ts-review-row"><span></span><strong style="color:#e85d04;">⚠️ Third-party phone use flagged</strong></div>{% endif %}
   </div>
 
-  {# ── Existing Exposure / Fraud Check ── #}
+
   {% if exposure and exposure.has_exposure %}
   <div class="ts-review-card ts-mb-8" style="border-left:4px solid #ef4444;">
     <div class="ts-review-card__title" style="color:#ef4444;">⚠️ Existing Customer Exposure</div>
@@ -75,7 +75,7 @@
   </div>
   {% endif %}
 
-  {# ── IMEI Verification ── #}
+
   {% if imei_check_enabled %}
   <div class="ts-review-card ts-mb-8" style="{% if imei_status == 'mismatch' and not imei_override %}border-left:4px solid #dc2626;{% elif imei_status == 'matched' %}border-left:4px solid #16a34a;{% elif imei_status == 'possible_match' %}border-left:4px solid #d97706;{% else %}border-left:4px solid #94a3b8;{% endif %}">
     <div class="ts-review-card__title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -152,7 +152,7 @@
     </details>
     {% endif %}
 
-    {# Override section (HQ / staff only) #}
+
     {% if imei_status == 'mismatch' and not imei_override and can_override_imei %}
     <div style="margin-top:12px;padding-top:12px;border-top:1.5px solid #f1f5f9;">
       <form method="post" action="{% url 'sales_imei_override' app.id %}">
@@ -174,7 +174,7 @@
     </div>
     {% endif %}
 
-    {# Recheck button #}
+
     {% if imei_number and can_override_imei %}
     <form method="post" action="{% url 'sales_imei_recheck' app.id %}" style="margin-top:10px;">
       {% csrf_token %}
@@ -230,7 +230,7 @@
     {% endif %}
   {% endwith %}
 
-  {# Decision Form #}
+
   <form method="post" x-show="!showReject">
     {% csrf_token %}
     <div class="ts-review-card ts-mb-8">
@@ -253,7 +253,7 @@
     </button>
   </form>
 
-  {# Reject Panel #}
+
   <div x-show="showReject" x-cloak>
     <form method="post">
       {% csrf_token %}

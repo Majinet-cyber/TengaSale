@@ -20,7 +20,7 @@
     </div>
   {% endif %}
 
-  {# ── KPI Cards ── #}
+
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">
     <div class="glass-card" style="padding:14px;text-align:center;">
       <div style="font-size:0.72rem;color:var(--muted);">Enrolled</div>
@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  {# ── Filters ── #}
+
   <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
     <input type="text" name="search" placeholder="Contract / customer / phone / device…" value="{{ search }}"
            style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;min-width:220px;">
@@ -61,7 +61,7 @@
     <a href="{% url 'hq_devices' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 
-  {# ── Devices Table ── #}
+
   <div class="glass-card" style="padding:0;overflow:hidden;">
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">

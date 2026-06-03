@@ -10,7 +10,7 @@
 {% block content %}
 <div class="cpd-shell">
 
-  {# ── Back nav ───────────────────────────────────────────────────── #}
+
   <div class="cpd-nav-row">
     <a href="{% url 'portal_contract' contract.contract_number %}" class="cpd-back-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -19,7 +19,7 @@
     <span class="cpd-nav-label">Payment History</span>
   </div>
 
-  {# Summary card #}
+
   <div class="cpd-progress-card">
     <div class="cpd-progress-card__header">
       <div class="cpd-progress-card__title-group">
@@ -49,7 +49,7 @@
     </div>
   </div>
 
-  {# Filters #}
+
   <div class="cpd-section-card">
     <form method="get" class="cpd-filter-row">
       <div class="cpd-field" style="flex:1;min-width:140px;">
@@ -76,7 +76,7 @@
     </form>
   </div>
 
-  {# Transactions list #}
+
   <div class="cpd-section-card">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Transactions</div>

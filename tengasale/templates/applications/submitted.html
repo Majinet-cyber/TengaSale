@@ -4,25 +4,23 @@
 
 {% block content %}
 
-{% if app.merchant_status_key == "under_review" %}
-    <h1 class="greeting">Your application is being reviewed</h1>
-{% elif app.merchant_status_key == "pending_review" %}
-    <h1 class="greeting">Pending Review</h1>
-{% else %}
-    <h1 class="greeting">{{ app.merchant_status_label }}</h1>
-{% endif %}
+<h1 class="greeting">
+    {% if app.merchant_status_key == "under_review" %}Application in review
+    {% elif app.merchant_status_key == "pending_review" %}Pending review
+    {% else %}{{ app.merchant_status_label }}{% endif %}
+</h1>
 
-<div class="card application-status-card submitted-status-card">
+<div class="card application-status-card submitted-status-card" style="padding:18px;gap:12px;">
     <div>
         {% if app.merchant_status_key == "under_review" %}
-            <h2>Your application is being reviewed</h2>
-            <p>A TengaSale underwriter has started reviewing this application.</p>
+            <h2 style="margin-bottom:6px;">We are reviewing this application</h2>
+            <p style="margin:0;color:#64748b;">A TengaSale underwriter has started the review.</p>
         {% elif app.merchant_status_key == "pending_review" %}
-            <h2>Your application is pending review</h2>
-            <p>A TengaSale underwriter will begin reviewing it soon and contact you if there are any questions.</p>
+            <h2 style="margin-bottom:6px;">Application sent for review</h2>
+            <p style="margin:0;color:#64748b;">A TengaSale underwriter will pick it up soon and contact you if anything is needed.</p>
         {% else %}
-            <h2>{{ app.merchant_status_label }}</h2>
-            <p>Review the latest application status below.</p>
+            <h2 style="margin-bottom:6px;">{{ app.merchant_status_label }}</h2>
+            <p style="margin:0;color:#64748b;">Review the latest application status below.</p>
         {% endif %}
     </div>
     <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
@@ -61,9 +59,9 @@
     {% endif %}
 </div>
 
-<div class="form-actions">
-    <a href="{% url 'merchant_dashboard' %}" class="btn">HOME</a>
-    <a href="{{ tengasale_whatsapp_link }}" class="btn btn-outline">WHATSAPP SUPPORT</a>
+<div class="form-actions" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+    <a href="{% url 'merchant_dashboard' %}" class="btn" style="min-height:46px;display:flex;align-items:center;justify-content:center;">Home</a>
+    <a href="{{ tengasale_whatsapp_link }}" class="btn btn-outline" style="min-height:46px;display:flex;align-items:center;justify-content:center;">WhatsApp Support</a>
 </div>
 
 {% endblock %}

@@ -4,46 +4,39 @@
 {% block page_title %}{{ contract.payg_number }} | TengaSale PayG{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.0.0">
+<link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.1.0">
 {% endblock %}
 
 {% block content %}
-<div class="cpd-shell">
-
-  {# ── Back nav ───────────────────────────────────────────────────── #}
+<div class="cpd-shell cpd-shell--simple">
   <div class="cpd-nav-row">
     <a href="{% url 'portal_search' %}" class="cpd-back-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </a>
     <span class="cpd-nav-label">My Contract</span>
-    <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-nav-action">Full History</a>
+    <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-nav-action">History</a>
   </div>
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 1 — CONTRACT PROGRESS CARD
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="cpd-progress-card">
-    {# Header row — PayG is the primary customer reference #}
-    <div class="cpd-progress-card__header">
-      <div class="cpd-progress-card__title-group">
+  <section class="cpd-card-clean cpd-summary-card">
+    <div class="cpd-summary-top">
+      <div>
         <div class="cpd-label">TengaSale PayG</div>
-        <div class="cpd-contract-num">{{ contract.payg_number }}</div>
+        <h1 class="cpd-contract-num">{{ contract.payg_number }}</h1>
         {% if contract.customer_name %}
-        <div class="cpd-payg-customer">{{ contract.customer_name }}</div>
+        <p class="cpd-payg-customer">{{ contract.customer_name }}</p>
         {% endif %}
       </div>
-      <div class="cpd-status-badge cpd-status-badge--{{ contract.status }}">
+      <span class="cpd-status-badge cpd-status-badge--{{ contract.status }}">
         {% if contract.status == 'active' %}Active
         {% elif contract.status == 'completed' %}Completed
         {% elif contract.status == 'overdue' %}Overdue
         {% elif contract.status == 'locked' %}Locked
         {% else %}{{ contract.get_status_display }}{% endif %}
-      </div>
+      </span>
     </div>
 
-    {# Device row #}
-    <div class="cpd-device-row">
+    <div class="cpd-device-row cpd-device-row--compact">
       <div class="cpd-device-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
       </div>
@@ -53,741 +46,287 @@
       </div>
     </div>
 
-    {# Progress bar #}
-    <div class="cpd-prog-section">
-      <div class="cpd-prog-bar-wrap">
-        <div class="cpd-prog-bar">
-          <div class="cpd-prog-fill {% if contract.progress_percent >= 80 %}cpd-prog-fill--green{% elif contract.progress_percent >= 50 %}cpd-prog-fill--orange{% else %}cpd-prog-fill--red{% endif %}"
-               style="width: {{ contract.progress_percent }}%">
-          </div>
-        </div>
-        <div class="cpd-prog-pct">{{ contract.progress_percent }}%</div>
+    <div class="cpd-progress-simple">
+      <div class="cpd-prog-bar">
+        <div class="cpd-prog-fill {% if contract.progress_percent >= 80 %}cpd-prog-fill--green{% elif contract.progress_percent >= 50 %}cpd-prog-fill--orange{% else %}cpd-prog-fill--red{% endif %}" style="width: {{ contract.progress_percent }}%"></div>
       </div>
-      <div class="cpd-prog-amounts">
-        <div class="cpd-prog-paid">
-          <span class="cpd-label">Paid</span>
-          <span class="cpd-prog-paid__val">{{ contract.amount_paid|mwk }}</span>
-        </div>
-        <div class="cpd-prog-remaining">
-          <span class="cpd-label">Remaining</span>
-          <span class="cpd-prog-remaining__val">{{ remaining|mwk }}</span>
-        </div>
-        <div class="cpd-prog-total">
-          <span class="cpd-label">Total</span>
-          <span class="cpd-prog-total__val">{{ contract.total_amount|mwk }}</span>
-        </div>
-      </div>
+      <span>{{ contract.progress_percent }}% paid</span>
     </div>
 
-    {# Date row #}
-    <div class="cpd-dates-row">
+    <div class="cpd-money-grid">
+      <div><span class="cpd-label">Paid</span><strong>{{ contract.amount_paid|mwk }}</strong></div>
+      <div><span class="cpd-label">Remaining</span><strong>{{ remaining|mwk }}</strong></div>
+      <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk }}</strong></div>
+    </div>
+
+    <div class="cpd-meta-grid">
       {% if contract.start_date %}
-      <div class="cpd-date-item">
-        <span class="cpd-label">Started</span>
-        <span class="cpd-date-val">{{ contract.start_date|date:"d M Y" }}</span>
-      </div>
+      <div><span class="cpd-label">Started</span><strong>{{ contract.start_date|date:"d M Y" }}</strong></div>
       {% endif %}
       {% if contract.due_date %}
-      <div class="cpd-date-item">
-        <span class="cpd-label">Due Date</span>
-        <span class="cpd-date-val">{{ contract.due_date|date:"d M Y" }}</span>
-      </div>
+      <div><span class="cpd-label">Due</span><strong>{{ contract.due_date|date:"d M Y" }}</strong></div>
       {% endif %}
-      {% if contract.lock_date and contract.status != 'completed' %}
-      <div class="cpd-date-item">
-        <span class="cpd-label">Lock Date</span>
-        <span class="cpd-date-val {% if contract.lock_date <= today %}cpd-date-val--danger{% endif %}">
-          {{ contract.lock_date|date:"d M Y" }}
-        </span>
-      </div>
-      {% endif %}
-      <div class="cpd-date-item">
-        <span class="cpd-label">Term</span>
-        <span class="cpd-date-val">{{ contract.term_months }} months</span>
-      </div>
+      <div><span class="cpd-label">Term</span><strong>{{ contract.term_months }} months</strong></div>
     </div>
+  </section>
 
-    {# Quick stats #}
-    <div class="cpd-quick-stats">
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.daily_price|mwk }}</span>
-        <span class="cpd-label">Daily</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.thirty_day_price|mwk }}</span>
-        <span class="cpd-label">30-Day</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ behaviour.payment_count }}</span>
-        <span class="cpd-label">Payments</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ behaviour.consistency }}%</span>
-        <span class="cpd-label">Consistency</span>
-      </div>
-    </div>
-  </div>
-
-  {# ══════════════════════════════════════════════════════════════════
-     LOCK WARNING CARD
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if contract.status == 'completed' %}
-    {# Shown in completion section below #}
-  {% elif lock_status == 'overdue' %}
-  <div class="cpd-lock-card cpd-lock-card--red">
-    <div class="cpd-lock-card__icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    </div>
-    <div class="cpd-lock-card__body">
-      <div class="cpd-lock-card__title">Device is Overdue</div>
-      <div class="cpd-lock-card__desc">Your device may lock at any time. Pay now to restore full access.</div>
-      {% if last_paid_tx %}<div class="cpd-lock-card__meta">Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }}</div>{% endif %}
-    </div>
-  </div>
-  {% elif lock_status == 'warning' and lock_warning %}
-  <div class="cpd-lock-card cpd-lock-card--yellow">
-    <div class="cpd-lock-card__icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    </div>
-    <div class="cpd-lock-card__body">
-      <div class="cpd-lock-card__title">Device will lock in {{ lock_warning.days }} day{{ lock_warning.days|pluralize }}</div>
-      <div class="cpd-lock-card__desc">Pay {{ lock_warning.amount|mwk }} before {{ lock_warning.date|date:"d M Y" }} to keep your device unlocked.</div>
-      {% if last_paid_tx %}<div class="cpd-lock-card__meta">Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }} · {{ last_paid_tx.amount|mwk }}</div>{% endif %}
-    </div>
-  </div>
-  {% else %}
-  <div class="cpd-lock-card cpd-lock-card--green">
-    <div class="cpd-lock-card__icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><polyline points="9 12 11 14 15 10"/></svg>
-    </div>
-    <div class="cpd-lock-card__body">
-      <div class="cpd-lock-card__title">Your device is safe</div>
-      <div class="cpd-lock-card__desc">
-        {% if contract.due_date %}Next payment due {{ contract.due_date|date:"d M Y" }}.{% endif %}
-        {% if last_paid_tx %}Last payment {{ last_paid_tx.paid_at|date:"d M Y" }}.{% endif %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 2 — PAYMENT BEHAVIOUR CARD
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if behaviour.payment_count > 0 %}
-  <div class="cpd-section-card">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Payment Behaviour</div>
-      <div class="cpd-discipline-badge cpd-discipline-badge--{{ behaviour.discipline|lower|cut:' ' }}">{{ behaviour.discipline }}</div>
-    </div>
-
-    <div class="cpd-behaviour-grid">
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val cpd-bstat__val--large">{{ behaviour.consistency }}%</div>
-        <div class="cpd-bstat__label">Consistency</div>
-      </div>
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val">{{ behaviour.pattern }}</div>
-        <div class="cpd-bstat__label">Pattern</div>
-      </div>
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val">{{ behaviour.average_payment|mwk }}</div>
-        <div class="cpd-bstat__label">Avg Payment</div>
-      </div>
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val">{{ behaviour.longest_streak }}</div>
-        <div class="cpd-bstat__label">Days Covered</div>
-      </div>
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val {% if behaviour.days_late_this_month > 0 %}cpd-bstat__val--warn{% else %}cpd-bstat__val--safe{% endif %}">
-          {{ behaviour.days_late_this_month }}
-        </div>
-        <div class="cpd-bstat__label">Days Late</div>
-      </div>
-      <div class="cpd-bstat">
-        <div class="cpd-bstat__val">{{ behaviour.payment_count }}</div>
-        <div class="cpd-bstat__label">Total Payments</div>
-      </div>
-    </div>
-
-    {% if behaviour.largest_payment %}
-    <div class="cpd-behaviour-extra">
-      <div class="cpd-bextra-item">
-        <span class="cpd-label">Largest Payment</span>
-        <span class="cpd-bextra-val">{{ behaviour.largest_payment|mwk }}</span>
-      </div>
-      {% if behaviour.preferred_day %}
-      <div class="cpd-bextra-item">
-        <span class="cpd-label">Favourite Day</span>
-        <span class="cpd-bextra-val">{{ behaviour.preferred_day }}</span>
-      </div>
-      {% endif %}
-      {% if behaviour.avg_interval_days %}
-      <div class="cpd-bextra-item">
-        <span class="cpd-label">Avg Interval</span>
-        <span class="cpd-bextra-val">{{ behaviour.avg_interval_days }} day(s)</span>
-      </div>
-      {% endif %}
-      {% if behaviour.last_payment_date %}
-      <div class="cpd-bextra-item">
-        <span class="cpd-label">Last Payment</span>
-        <span class="cpd-bextra-val">{{ behaviour.last_payment_date|date:"d M Y" }}</span>
-      </div>
-      {% endif %}
-    </div>
+  {% if contract.status != 'completed' %}
+    {% if lock_status == 'overdue' %}
+    <section class="cpd-alert-card cpd-alert-card--danger">
+      <strong>Device payment is overdue</strong>
+      <span>Your device may lock at any time. Pay now to restore full access.</span>
+      {% if last_paid_tx %}<small>Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }}</small>{% endif %}
+    </section>
+    {% elif lock_status == 'warning' and lock_warning %}
+    <section class="cpd-alert-card cpd-alert-card--warning">
+      <strong>Device will lock in {{ lock_warning.days }} day{{ lock_warning.days|pluralize }}</strong>
+      <span>Pay {{ lock_warning.amount|mwk }} before {{ lock_warning.date|date:"d M Y" }} to keep your device unlocked.</span>
+      {% if last_paid_tx %}<small>Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }} · {{ last_paid_tx.amount|mwk }}</small>{% endif %}
+    </section>
+    {% else %}
+    <section class="cpd-alert-card cpd-alert-card--safe">
+      <strong>Your device is safe</strong>
+      <span>{% if contract.due_date %}Next payment due {{ contract.due_date|date:"d M Y" }}.{% else %}Your account is in good standing.{% endif %}</span>
+    </section>
     {% endif %}
-
-    {# Recent payment timeline #}
-    {% if recent_transactions %}
-    <div class="cpd-timeline-header">Recent Payments</div>
-    <div class="cpd-timeline">
-      {% for tx in recent_transactions %}
-      <div class="cpd-timeline-item">
-        <div class="cpd-timeline-dot {% if tx.status == 'paid' %}cpd-timeline-dot--green{% elif tx.status == 'failed' %}cpd-timeline-dot--red{% else %}cpd-timeline-dot--amber{% endif %}"></div>
-        <div class="cpd-timeline-body">
-          <div class="cpd-timeline-top">
-            <span class="cpd-timeline-amount {% if tx.status == 'paid' %}cpd-timeline-amount--green{% elif tx.status == 'failed' %}cpd-timeline-amount--red{% endif %}">
-              {{ tx.amount|mwk }}
-            </span>
-            <span class="cpd-timeline-status cpd-timeline-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
-          </div>
-          <div class="cpd-timeline-meta">
-            {{ tx.paid_at|date:"d M Y"|default:tx.created_at|date:"d M Y" }}
-            · {{ tx.get_provider_display }}
-            {% if tx.internal_reference %}· {{ tx.internal_reference }}{% endif %}
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 3 — PAY EARLY, PAY LESS
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if contract.status != 'completed' and early_options %}
-  <div class="cpd-section-card">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Pay Early, Pay Less</div>
-      <div class="cpd-section-card__sub">Save up to {{ early_options.0.discount_percent }}%</div>
-    </div>
-
-    <div class="cpd-early-grid" x-data="earlyOptions()">
-      {% for opt in early_options %}
-      <div class="cpd-early-opt {% if opt.discount_percent > 0 %}cpd-early-opt--highlight{% endif %} {% if forloop.last %}cpd-early-opt--standard{% endif %}"
-           x-bind:class="selected === {{ opt.term_months }} ? 'cpd-early-opt--selected' : ''"
-           x-on:click="selected = {{ opt.term_months }}">
-        <div class="cpd-early-opt__term">{{ opt.term_months }} Months</div>
-        {% if opt.discount_percent > 0 %}
-        <div class="cpd-early-opt__badge">{{ opt.discount_percent }}% Off</div>
-        {% endif %}
-        <div class="cpd-early-opt__total">{{ opt.total_cost|mwk }}</div>
-        {% if opt.savings > 0 %}
-        <div class="cpd-early-opt__save">Save {{ opt.savings|mwk }}</div>
-        {% else %}
-        <div class="cpd-early-opt__standard">Standard</div>
-        {% endif %}
-        <div class="cpd-early-opt__breakdown">
-          <span>Daily: {{ opt.daily_price|mwk }}</span>
-          <span>Monthly: {{ opt.thirty_day_price|mwk }}</span>
-        </div>
-        <div class="cpd-early-opt__payoff">Pays off {{ opt.final_payoff_date|date:"d M Y" }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 3b — DEPOSIT PENDING CARD (shown before normal payments)
-  ══════════════════════════════════════════════════════════════════ #}
   {% if deposit_pending and contract.status != 'completed' %}
-  <div class="cpd-section-card cpd-section-card--deposit">
+  <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Deposit Required</div>
-      <div class="cpd-status-badge cpd-status-badge--overdue">Deposit Pending</div>
+      <span class="cpd-status-badge cpd-status-badge--overdue">Pending</span>
     </div>
-
-    <div class="cpd-deposit-summary">
-      <div class="cpd-deposit-row">
-        <span class="cpd-label">Deposit Required</span>
-        <span class="cpd-deposit-val">{{ deposit_required|mwk }}</span>
-      </div>
-      <div class="cpd-deposit-row">
-        <span class="cpd-label">Deposit Paid</span>
-        <span class="cpd-deposit-val cpd-deposit-val--paid">{{ deposit_paid_amt|mwk }}</span>
-      </div>
-      <div class="cpd-deposit-row cpd-deposit-row--highlight">
-        <span class="cpd-label">Deposit Remaining</span>
-        <span class="cpd-deposit-val cpd-deposit-val--remaining">{{ deposit_remaining|mwk }}</span>
-      </div>
+    <div class="cpd-money-grid cpd-money-grid--deposit">
+      <div><span class="cpd-label">Deposit required</span><strong>{{ deposit_required|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit paid</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit remaining</span><strong>{{ deposit_remaining|mwk }}</strong></div>
     </div>
-
-    <div x-data="paymentForm({ dailyPrice: 0, thirtyDayPrice: 0, remaining: {{ deposit_remaining }}, recommended: {{ deposit_remaining }} })">
-      <form method="post" action="{% url 'portal_payment' contract.contract_number %}">
-        {% csrf_token %}
-        <input type="hidden" name="payment_type" value="deposit">
-
-        <div class="cpd-form-row">
-          <div class="cpd-field">
-            <label class="cpd-field-label">Mobile Money Number</label>
-            <div class="cpd-phone-row">
-              <span class="cpd-phone-prefix">+265</span>
-              <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}"
-                     placeholder="8X XXX XXXX" required x-model="phone">
-            </div>
-          </div>
-          <div class="cpd-field">
-            <label class="cpd-field-label">Network</label>
-            <select name="provider" class="cpd-select" required x-model="provider">
-              <option value="">— Select —</option>
-              {% for value, label in providers %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
+    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
+      {% csrf_token %}
+      <input type="hidden" name="payment_type" value="deposit">
+      <div class="cpd-form-row">
         <div class="cpd-field">
-          <label class="cpd-field-label">Amount (MWK)</label>
-          <input type="number" name="amount" class="cpd-input cpd-input--amount"
-                 min="100" step="1" placeholder="{{ deposit_remaining }}"
-                 x-model="amount" required x-on:input="activeSegment = 'custom'">
+          <label class="cpd-field-label">Mobile money number</label>
+          <div class="cpd-phone-row">
+            <span class="cpd-phone-prefix">+265</span>
+            <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}" placeholder="8X XXX XXXX" required data-payment-phone>
+          </div>
         </div>
-
-        <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit"
-                x-bind:disabled="!amount || !provider || !phone"
-                data-testid="pay-deposit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-          </svg>
-          PAY DEPOSIT
-          <span x-text="amount ? ' MWK ' + Number(amount).toLocaleString() : ' MWK ' + '{{ deposit_remaining|floatformat:0 }}'">
-            MWK {{ deposit_remaining|floatformat:0 }}
-          </span>
-        </button>
-      </form>
-    </div>
-  </div>
+        <div class="cpd-field">
+          <label class="cpd-field-label">Network</label>
+          <select name="provider" class="cpd-select" required data-payment-provider>
+            <option value="">Select network</option>
+            {% for value, label in providers %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="cpd-field">
+        <label class="cpd-field-label">Amount</label>
+        <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" value="{{ deposit_remaining|floatformat:0 }}" required data-payment-amount>
+      </div>
+      <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit" disabled data-payment-submit>
+        PAY DEPOSIT <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
+      </button>
+    </form>
+  </section>
   {% elif deposit_required and deposit_complete %}
-  <div class="cpd-deposit-complete-banner">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-         stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-    Deposit of {{ deposit_required|mwk }} paid — contract active
-  </div>
+  <section class="cpd-alert-card cpd-alert-card--safe">
+    <strong>Deposit paid</strong>
+    <span>Deposit of {{ deposit_required|mwk }} is complete.</span>
+  </section>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 4 — SMART PAYMENT OPTIONS (repayment)
-  ══════════════════════════════════════════════════════════════════ #}
   {% if contract.status != 'completed' %}
-  <div class="cpd-section-card">
+  <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">
-        {% if deposit_pending %}Repayment{% else %}Make Payment{% endif %}
+      <div class="cpd-section-card__title">Repayment</div>
+    </div>
+    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|default:0|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|default:0|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
+      {% csrf_token %}
+      <input type="hidden" name="payment_type" value="repayment">
+      <div class="cpd-amount-seg">
+        <button type="button" class="cpd-seg-btn" data-amount-mode="today" data-amount-multiplier="1"><span class="cpd-seg-btn__label">Today</span><span class="cpd-seg-btn__val">{{ contract.daily_price|mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="7d" data-amount-multiplier="7"><span class="cpd-seg-btn__label">7 Days</span><span class="cpd-seg-btn__val" data-seven-day-label></span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="30d" data-amount-value="{{ contract.thirty_day_price|default:0|floatformat:0 }}"><span class="cpd-seg-btn__label">30 Days</span><span class="cpd-seg-btn__val">{{ contract.thirty_day_price|mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="full" data-amount-value="{{ remaining|floatformat:0 }}"><span class="cpd-seg-btn__label">Full</span><span class="cpd-seg-btn__val">{{ remaining|mwk }}</span></button>
       </div>
-    </div>
-
-    <div
-      x-data="paymentForm({ dailyPrice: {{ contract.daily_price|default:0 }}, thirtyDayPrice: {{ contract.thirty_day_price|default:0 }}, remaining: {{ remaining }}, recommended: {{ recommended_amount }} })"
-    >
-      <form method="post" action="{% url 'portal_payment' contract.contract_number %}">
-        {% csrf_token %}
-        <input type="hidden" name="payment_type" value="repayment">
-
-        {# Smart amount selector #}
-        {% if behaviour.avg_interval_days %}
-        <div class="cpd-recommendation">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z"/><path d="M12 6v6l4 2"/></svg>
-          <span>You usually pay every {{ behaviour.avg_interval_days }} day(s) — suggested: <strong>MWK {{ recommended_amount|tsnum }}</strong></span>
-        </div>
-        {% endif %}
-
-        {# Segmented amount buttons #}
-        <div class="cpd-amount-seg">
-          <button type="button" class="cpd-seg-btn" x-on:click="setAmount(dailyPrice)" x-bind:class="activeSegment === '1d' ? 'cpd-seg-btn--active' : ''" x-on:click.once="activeSegment='1d'">
-            <span class="cpd-seg-btn__label">Today</span>
-            <span class="cpd-seg-btn__val" x-text="fmt(dailyPrice)"></span>
-          </button>
-          <button type="button" class="cpd-seg-btn" x-on:click="setAmount(dailyPrice * 7); activeSegment='7d'" x-bind:class="activeSegment === '7d' ? 'cpd-seg-btn--active' : ''">
-            <span class="cpd-seg-btn__label">7 Days</span>
-            <span class="cpd-seg-btn__val" x-text="fmt(dailyPrice * 7)"></span>
-          </button>
-          <button type="button" class="cpd-seg-btn" x-on:click="setAmount(thirtyDayPrice); activeSegment='30d'" x-bind:class="activeSegment === '30d' ? 'cpd-seg-btn--active' : ''">
-            <span class="cpd-seg-btn__label">30 Days</span>
-            <span class="cpd-seg-btn__val" x-text="fmt(thirtyDayPrice)"></span>
-          </button>
-          <button type="button" class="cpd-seg-btn" x-on:click="setAmount(remaining); activeSegment='full'" x-bind:class="activeSegment === 'full' ? 'cpd-seg-btn--active' : ''">
-            <span class="cpd-seg-btn__label">Full</span>
-            <span class="cpd-seg-btn__val" x-text="fmt(remaining)"></span>
-          </button>
-        </div>
-
-        {# Phone + provider #}
-        <div class="cpd-form-row">
-          <div class="cpd-field">
-            <label class="cpd-field-label">Mobile Money Number</label>
-            <div class="cpd-phone-row">
-              <span class="cpd-phone-prefix">+265</span>
-              <input
-                type="tel"
-                name="phone"
-                class="cpd-input"
-                maxlength="9"
-                pattern="\d{9}"
-                placeholder="8X XXX XXXX"
-                required
-                x-model="phone"
-              >
-            </div>
-          </div>
-          <div class="cpd-field">
-            <label class="cpd-field-label">Network</label>
-            <select name="provider" class="cpd-select" required x-model="provider">
-              <option value="">— Select —</option>
-              {% for value, label in providers %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
-        {# Custom amount input #}
+      <div class="cpd-form-row">
         <div class="cpd-field">
-          <label class="cpd-field-label">Amount (MWK)</label>
-          <input
-            type="number"
-            name="amount"
-            class="cpd-input cpd-input--amount"
-            min="100"
-            step="1"
-            placeholder="Custom amount"
-            x-model="amount"
-            required
-            x-on:input="activeSegment = 'custom'"
-          >
-          <div class="cpd-field-hint" x-show="amount > 0">
-            Paying <strong x-text="fmtAmt(amount)"></strong>
-            <span x-show="dailyPrice > 0"> · covers <strong x-text="days(amount)"></strong> day(s)</span>
+          <label class="cpd-field-label">Mobile money number</label>
+          <div class="cpd-phone-row">
+            <span class="cpd-phone-prefix">+265</span>
+            <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}" placeholder="8X XXX XXXX" required data-payment-phone>
           </div>
         </div>
-
-        <button
-          type="submit"
-          class="cpd-pay-btn"
-          x-bind:disabled="!amount || !provider || !phone"
-          data-testid="make-payment"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Pay <span x-text="amount ? 'MWK ' + Number(amount).toLocaleString() : 'Now'">Now</span>
-        </button>
-      </form>
-    </div>
-  </div>
+        <div class="cpd-field">
+          <label class="cpd-field-label">Network</label>
+          <select name="provider" class="cpd-select" required data-payment-provider>
+            <option value="">Select network</option>
+            {% for value, label in providers %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="cpd-field">
+        <label class="cpd-field-label">Amount</label>
+        <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" placeholder="MWK amount" required data-payment-amount>
+        <div class="cpd-field-hint" data-payment-hint hidden></div>
+      </div>
+      <button type="submit" class="cpd-pay-btn" disabled data-payment-submit>
+        Pay Now <span data-payment-submit-label></span>
+      </button>
+    </form>
+  </section>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 5 — PAYMENT HISTORY (RECENT)
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if recent_transactions %}
-  <div class="cpd-section-card">
+  {% if contract.status != 'completed' and early_options %}
+  <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Payment History</div>
-      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-section-link">View all →</a>
+      <div class="cpd-section-card__title">Pay Early, Pay Less</div>
+      <div class="cpd-section-card__sub">Optional payoff plans</div>
     </div>
+    <div class="cpd-early-strip">
+      {% for opt in early_options %}
+      <article class="cpd-early-opt cpd-early-opt--simple {% if forloop.first %}cpd-early-opt--selected{% endif %}">
+        <div class="cpd-early-opt__term">{{ opt.term_months }} months</div>
+        {% if opt.discount_percent > 0 %}<div class="cpd-early-opt__badge">{{ opt.discount_percent }}% off</div>{% endif %}
+        <div class="cpd-early-opt__total">{{ opt.total_cost|mwk }}</div>
+        {% if opt.savings > 0 %}<div class="cpd-early-opt__save">Save {{ opt.savings|mwk }}</div>{% endif %}
+        <div class="cpd-early-opt__breakdown">
+          <span>Daily {{ opt.daily_price|mwk }}</span>
+          <span>Monthly {{ opt.thirty_day_price|mwk }}</span>
+        </div>
+        <div class="cpd-early-opt__payoff">Pays off {{ opt.final_payoff_date|date:"d M Y" }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
+  {% if recent_transactions %}
+  <section class="cpd-card-clean">
+    <div class="cpd-section-card__header">
+      <div class="cpd-section-card__title">Recent Payment History</div>
+      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-section-link">View all</a>
+    </div>
     <div class="cpd-history-list">
       {% for tx in recent_transactions %}
-      <div class="cpd-hist-row {% if tx.status == 'paid' %}cpd-hist-row--success{% elif tx.status == 'failed' %}cpd-hist-row--failed{% else %}cpd-hist-row--pending{% endif %}">
-        <div class="cpd-hist-row__icon">
-          {% if tx.status == 'paid' %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          {% elif tx.status == 'failed' %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          {% else %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          {% endif %}
-        </div>
+      <div class="cpd-hist-row">
         <div class="cpd-hist-row__body">
           <div class="cpd-hist-row__top">
             <span class="cpd-hist-row__amount">{{ tx.amount|mwk }}</span>
             <span class="cpd-hist-status cpd-hist-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
           </div>
-          <div class="cpd-hist-row__meta">
-            {{ tx.paid_at|date:"d M Y"|default:tx.created_at|date:"d M Y" }}
-            · {{ tx.get_provider_display }}
-            · {{ tx.internal_reference }}
-          </div>
+          <div class="cpd-hist-row__meta">{{ tx.paid_at|date:"d M Y"|default:tx.created_at|date:"d M Y" }} · {{ tx.get_provider_display }}{% if tx.internal_reference %} · {{ tx.internal_reference }}{% endif %}</div>
         </div>
       </div>
       {% endfor %}
     </div>
-  </div>
+  </section>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 6 — CUSTOMER FINANCIAL HEALTH
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if behaviour.payment_count > 0 %}
-  <div class="cpd-health-card">
-    <div class="cpd-health-card__header">
-      <div>
-        <div class="cpd-section-card__title">Financial Health</div>
-        <div class="cpd-health-card__sub">Based on your actual payment data</div>
-      </div>
-      <div class="cpd-health-score-wrap">
-        <svg class="cpd-health-ring" viewBox="0 0 56 56">
-          <circle class="cpd-health-ring__bg" cx="28" cy="28" r="23" fill="none" stroke-width="5"/>
-          <circle class="cpd-health-ring__fill {% if health.score >= 85 %}cpd-health-ring__fill--green{% elif health.score >= 70 %}cpd-health-ring__fill--orange{% elif health.score >= 50 %}cpd-health-ring__fill--amber{% else %}cpd-health-ring__fill--red{% endif %}"
-            cx="28" cy="28" r="23" fill="none" stroke-width="5"
-            stroke-dasharray="{{ health.score|floatformat:0 }}.{{ health.score|floatformat:0 }}, 144.5"
-            style="stroke-dasharray: calc({{ health.score }} * 1.445px) 144.5px;"
-          />
-        </svg>
-        <div class="cpd-health-score-val">
-          <span class="cpd-health-score-num">{{ health.score }}</span>
-          <span class="cpd-health-score-denom">/100</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cpd-health-grade cpd-health-grade--{{ health.grade|lower|cut:' ' }}">{{ health.grade }}</div>
-
-    {% if health.reasons %}
-    <ul class="cpd-health-reasons">
-      {% for reason in health.reasons %}
-      <li class="cpd-health-reason {% if reason.positive %}cpd-health-reason--ok{% else %}cpd-health-reason--warn{% endif %}">
-        {% if reason.positive %}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        {% else %}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        {% endif %}
-        {{ reason.text }}
-      </li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 7 — CUSTOMER INSIGHTS
-  ══════════════════════════════════════════════════════════════════ #}
-  {% if insights %}
-  <div class="cpd-section-card">
+  {% if behaviour.payment_count > 0 and health.reasons %}
+  <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Your Insights</div>
-      <div class="cpd-section-card__sub">Real data · No AI</div>
+      <div class="cpd-section-card__title">Payment Health</div>
+      <span class="cpd-health-grade cpd-health-grade--{{ health.grade|lower|cut:' ' }}">{{ health.grade }}</span>
     </div>
-    <ul class="cpd-insights-list">
-      {% for insight in insights %}
-      <li class="cpd-insight-item">
-        <div class="cpd-insight-dot"></div>
-        {{ insight }}
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
+    <div class="cpd-money-grid">
+      <div><span class="cpd-label">Consistency</span><strong>{{ behaviour.consistency }}%</strong></div>
+      <div><span class="cpd-label">Payments</span><strong>{{ behaviour.payment_count }}</strong></div>
+      <div><span class="cpd-label">Average</span><strong>{{ behaviour.average_payment|mwk }}</strong></div>
+    </div>
+  </section>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 8 — DEVICE INFORMATION
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="cpd-section-card">
+  <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Device Information</div>
     </div>
-    <div class="cpd-device-card">
-      <div class="cpd-device-card__image">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/><line x1="9" y1="6" x2="15" y2="6"/></svg>
-      </div>
-      <div class="cpd-device-card__details">
-        <div class="cpd-detail-grid">
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Device</span>
-            <span class="cpd-detail-val">{{ contract.device_model|default:"—" }}</span>
-          </div>
-          {% if device_info.brand %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Brand</span>
-            <span class="cpd-detail-val">{{ device_info.brand }}</span>
-          </div>
-          {% endif %}
-          {% if device_info.imei %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">IMEI</span>
-            <span class="cpd-detail-val cpd-detail-val--mono">{{ device_info.imei }}</span>
-          </div>
-          {% endif %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Contract Start</span>
-            <span class="cpd-detail-val">{{ contract.start_date|date:"d M Y" }}</span>
-          </div>
-          {% if device_info.merchant_name %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Merchant</span>
-            <span class="cpd-detail-val">{{ device_info.merchant_name }}</span>
-          </div>
-          {% endif %}
-          {% if device_info.underwriter_name %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Underwriter</span>
-            <span class="cpd-detail-val">{{ device_info.underwriter_name }}</span>
-          </div>
-          {% endif %}
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Lock Provider</span>
-            <span class="cpd-detail-val">{{ contract.device_lock_provider|default:"Standard" }}</span>
-          </div>
-          <div class="cpd-detail-item">
-            <span class="cpd-label">Device Status</span>
-            <span class="cpd-detail-val">{{ contract.device_lock_status|capfirst|default:"Unknown" }}</span>
-          </div>
-        </div>
-      </div>
+    <div class="cpd-detail-grid cpd-detail-grid--simple">
+      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{{ contract.device_model|default:"Pending sync" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{{ device_info.brand|default:"Pending sync" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{{ device_info.imei|default:"Not synced yet" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Contract start</span><span class="cpd-detail-val">{{ contract.start_date|date:"d M Y"|default:"Pending sync" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Lock provider</span><span class="cpd-detail-val">{{ contract.device_lock_provider|default:"Pending sync" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Device status</span><span class="cpd-detail-val">{% if contract.device_lock_status and contract.device_lock_status != 'unknown' %}{{ contract.device_lock_status|capfirst }}{% else %}Not synced yet{% endif %}</span></div>
     </div>
-  </div>
+  </section>
 
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 9 — CONTRACT DOCUMENTS
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="cpd-section-card">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Documents</div>
-    </div>
-    <div class="cpd-docs-list">
-      <div class="cpd-doc-item">
-        <div class="cpd-doc-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        </div>
-        <div class="cpd-doc-body">
-          <div class="cpd-doc-name">Contract Agreement</div>
-          <div class="cpd-doc-desc">Your TengaSale financing agreement</div>
-        </div>
-        <a href="{% url 'portal_support' %}" class="cpd-doc-btn">Request</a>
-      </div>
-      <div class="cpd-doc-item">
-        <div class="cpd-doc-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        </div>
-        <div class="cpd-doc-body">
-          <div class="cpd-doc-name">Payment Statement</div>
-          <div class="cpd-doc-desc">Full payment history export</div>
-        </div>
-        <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-doc-btn">View</a>
-      </div>
-      {% if contract.status == 'completed' %}
-      <div class="cpd-doc-item cpd-doc-item--featured">
-        <div class="cpd-doc-icon cpd-doc-icon--green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
-        </div>
-        <div class="cpd-doc-body">
-          <div class="cpd-doc-name">Completion Certificate</div>
-          <div class="cpd-doc-desc">Device fully owned — contract complete</div>
-        </div>
-        <a href="{% url 'portal_support' %}" class="cpd-doc-btn cpd-doc-btn--green">Request</a>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  {# ══════════════════════════════════════════════════════════════════
-     SECTION 10 — COMPLETION EXPERIENCE
-  ══════════════════════════════════════════════════════════════════ #}
   {% if contract.status == 'completed' %}
-  <div class="cpd-completion-card">
-    <div class="cpd-completion-card__badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
-    </div>
-    <div class="cpd-completion-card__title">Contract Completed</div>
-    <div class="cpd-completion-card__sub">Your device is fully owned</div>
-
-    <div class="cpd-completion-stats">
-      <div class="cpd-cstat">
-        <div class="cpd-cstat__val">{{ contract.total_amount|mwk }}</div>
-        <div class="cpd-cstat__label">Total Paid</div>
-      </div>
-      <div class="cpd-cstat">
-        <div class="cpd-cstat__val">{{ behaviour.payment_count }}</div>
-        <div class="cpd-cstat__label">Payments</div>
-      </div>
-      <div class="cpd-cstat">
-        <div class="cpd-cstat__val">{{ contract.start_date|date:"M Y" }}</div>
-        <div class="cpd-cstat__label">Started</div>
-      </div>
-    </div>
-
-    <div class="cpd-completion-actions">
-      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-completion-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        View Full Statement
-      </a>
-      <a href="{% url 'portal_support' %}" class="cpd-completion-btn cpd-completion-btn--ghost">
-        Request Certificate
-      </a>
-    </div>
-  </div>
+  <section class="cpd-alert-card cpd-alert-card--safe">
+    <strong>Contract completed</strong>
+    <span>Your device is fully owned. View your payment statement anytime.</span>
+    <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-inline-action">View statement</a>
+  </section>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     SUPPORT CARD
-  ══════════════════════════════════════════════════════════════════ #}
-  <div class="cpd-support-card">
-    <div class="cpd-support-card__title">Need Help?</div>
-    <div class="cpd-support-card__desc">Payment help, contract questions, or account support.</div>
-    <div class="cpd-support-links">
-      <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Z"/></svg>
-        WhatsApp
-      </a>
-      <a href="mailto:support@tengasale.africa" class="cpd-support-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        Email
-      </a>
-      <a href="tel:+265000000000" class="cpd-support-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72 12.08 12.08 0 0 0 .65 2.65 2 2 0 0 1-.45 2.11L7.77 8.5a16 16 0 0 0 6.18 6.18l1.02-1.03a2 2 0 0 1 2.11-.45 12.08 12.08 0 0 0 2.65.65A2 2 0 0 1 22 16.92Z"/></svg>
-        Call
-      </a>
+  <section class="cpd-support-card cpd-support-card--simple">
+    <div>
+      <div class="cpd-support-card__title">Need Help?</div>
+      <div class="cpd-support-card__desc">Payment help, contract questions, or account support.</div>
     </div>
-  </div>
+    <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">WhatsApp Support</a>
+  </section>
+</div>
 
-</div>{# /cpd-shell #}
-{% endblock %}
-
-{% block extra_scripts %}
 <script>
-function paymentForm({ dailyPrice, thirtyDayPrice, remaining, recommended }) {
-  return {
-    dailyPrice,
-    thirtyDayPrice,
-    remaining,
-    recommended,
-    amount: "",
-    phone: "",
-    provider: "",
-    activeSegment: "",
-    fmt(val) {
-      return "MWK " + Math.round(val).toLocaleString();
-    },
-    fmtAmt(val) {
-      return "MWK " + Number(val).toLocaleString();
-    },
-    days(val) {
-      if (!this.dailyPrice || this.dailyPrice <= 0) return 0;
-      return Math.floor(Number(val) / this.dailyPrice);
-    },
-    setAmount(val) {
-      this.amount = Math.min(Math.round(val), Math.round(this.remaining)).toString();
-    },
-  };
-}
+(function () {
+  function fmt(amount) {
+    var value = Number(amount || 0);
+    return 'MWK ' + value.toLocaleString();
+  }
 
-function earlyOptions() {
-  return { selected: 12 };
-}
+  function validPhone(value) {
+    return /^\d{9}$/.test((value || '').trim());
+  }
+
+  document.querySelectorAll('[data-payment-form]').forEach(function (form) {
+    var daily = Number(form.dataset.daily || 0);
+    var amountInput = form.querySelector('[data-payment-amount]');
+    var providerInput = form.querySelector('[data-payment-provider]');
+    var phoneInput = form.querySelector('[data-payment-phone]');
+    var submitBtn = form.querySelector('[data-payment-submit]');
+    var submitLabel = form.querySelector('[data-payment-submit-label]');
+    var hint = form.querySelector('[data-payment-hint]');
+
+    var sevenDay = form.querySelector('[data-seven-day-label]');
+    if (sevenDay) sevenDay.textContent = fmt(daily * 7);
+
+    function setAmount(amount, clickedButton) {
+      if (!amountInput || !amount) return;
+      amountInput.value = Math.round(Number(amount));
+      form.querySelectorAll('[data-amount-mode]').forEach(function (btn) {
+        btn.classList.toggle('cpd-seg-btn--active', btn === clickedButton);
+      });
+      validate();
+    }
+
+    form.querySelectorAll('[data-amount-mode]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var amount = btn.dataset.amountValue ? Number(btn.dataset.amountValue) : daily * Number(btn.dataset.amountMultiplier || 1);
+        setAmount(amount, btn);
+      });
+    });
+
+    function validate() {
+      var amount = Number(amountInput && amountInput.value);
+      var valid = amount >= 100 && providerInput && providerInput.value && phoneInput && validPhone(phoneInput.value);
+      if (submitBtn) submitBtn.disabled = !valid;
+      if (submitLabel) submitLabel.textContent = amount > 0 ? fmt(amount) : '';
+      if (hint) {
+        hint.hidden = !(amount > 0);
+        hint.textContent = amount > 0 ? 'Selected amount: ' + fmt(amount) : '';
+      }
+    }
+
+    [amountInput, providerInput, phoneInput].forEach(function (el) {
+      if (el) el.addEventListener('input', validate);
+      if (el) el.addEventListener('change', validate);
+    });
+
+    validate();
+  });
+})();
 </script>
 {% endblock %}

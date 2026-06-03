@@ -10,7 +10,7 @@
         <span>Back to Dashboard</span>
     </a>
 
-    {# ── Page header ─────────────────────────────────────────────── #}
+
     <header class="uw-header">
         <div>
             <span class="uw-kicker">{% if is_hub %}Application Review{% else %}Summary Review{% endif %}</span>
@@ -24,7 +24,7 @@
         &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}
     </p>
 
-    {# ── Application summary card ─────────────────────────────────── #}
+
     <section class="uw-card" style="border-top:3px solid var(--orange);">
         <h2>Application Summary</h2>
 
@@ -67,7 +67,7 @@
                 </div>
             </div>
         {% else %}
-            {# Summary review step: show fields with edit icons so corrections work #}
+
             {% include "dashboard/partials/review_field.html" with field_name="customer_name" section="Customer" label="Full Name" value=app.customer_name correction=corrections.customer_name %}
             {% include "dashboard/partials/review_field.html" with field_name="national_id" section="Customer" label="National ID" value=app.national_id correction=corrections.national_id %}
             {% include "dashboard/partials/review_field.html" with field_name="date_of_birth" section="Customer" label="Date of Birth" value=app.date_of_birth correction=corrections.date_of_birth %}
@@ -203,14 +203,14 @@
         {% endif %}
     </section>
 
-    {# ── KYC images ───────────────────────────────────────────────── #}
+
     <section class="uw-card">
         <h2>KYC Images</h2>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
             Tap any image to open full size. Compare selfie with ID document photo.
         </p>
         <div class="uw-image-grid">
-            {# Selfie #}
+
             <div class="uw-image-block">
                 {% if app.customer_face_image %}
                     <a href="{{ app.customer_face_image.url }}" target="_blank" rel="noopener noreferrer" title="Open selfie full size">
@@ -247,7 +247,7 @@
                 </div>
             </div>
 
-            {# ID Front #}
+
             <div class="uw-image-block">
                 {% if app.id_front_image %}
                     <a href="{{ app.id_front_image.url }}" target="_blank" rel="noopener noreferrer" title="Open ID front full size">
@@ -284,7 +284,7 @@
                 </div>
             </div>
 
-            {# ID Back #}
+
             <div class="uw-image-block">
                 {% if app.id_back_image %}
                     <a href="{{ app.id_back_image.url }}" target="_blank" rel="noopener noreferrer" title="Open ID back full size">
@@ -321,7 +321,7 @@
                 </div>
             </div>
 
-            {# Signature #}
+
             <div class="uw-image-block">
                 {% if app.signature_image %}
                     <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer" title="Open signature full size">
@@ -360,7 +360,7 @@
         </div>
     </section>
 
-    {# ── Risk / Confidence score ────────────────────────────────────── #}
+
     {% if confidence %}
     <section class="uw-card" style="background:linear-gradient(135deg,rgba(255,90,0,0.04),rgba(255,255,255,0.98));border:1.5px solid rgba(255,90,0,0.15);">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
@@ -398,7 +398,7 @@
     {% endif %}
 
     {% if is_hub %}
-    {# ── Review checklist (hub mode) ──────────────────────────────── #}
+
     <section class="uw-card">
         <h2>Review Checklist</h2>
         {% if correction_count %}
@@ -416,7 +416,7 @@
     </section>
 
     {% else %}
-    {# ── Summary review question ───────────────────────────────────── #}
+
     <form method="post" class="uw-card">
         {% csrf_token %}
         <h2>Summary Check</h2>

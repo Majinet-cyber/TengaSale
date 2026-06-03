@@ -1018,7 +1018,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, "ID back image is required.")
         self.assertNotContains(response, "Customer phone image is required.")
 
-    def test_kyc_post_with_all_images_succeeds_and_redirects_to_smartphone(self):
+    def test_kyc_post_with_all_images_succeeds_and_redirects_to_location(self):
         app = self.create_application()
 
         response = self.client.post(
@@ -1031,7 +1031,7 @@ class KYCCaptureTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(response, reverse("choose_device", args=[app.id]))
+        self.assertRedirects(response, reverse("location_details", args=[app.id]))
         self.assertEqual(app.status, "kyc")
         self.assertTrue(app.customer_face_image)
         self.assertTrue(app.id_front_image)
@@ -1052,7 +1052,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertNotContains(response, "data-next-button disabled")
 
         post_response = self.client.post(reverse("kyc_capture", args=[app.id]), {})
-        self.assertRedirects(post_response, reverse("choose_device", args=[app.id]))
+        self.assertRedirects(post_response, reverse("location_details", args=[app.id]))
 
     def test_recapture_controls_exist_and_new_image_replaces_saved_image(self):
         app = self.create_application()
@@ -1069,7 +1069,7 @@ class KYCCaptureTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(post_response, reverse("choose_device", args=[app.id]))
+        self.assertRedirects(post_response, reverse("location_details", args=[app.id]))
         self.assertNotEqual(app.customer_face_image.name, original_face_name)
         self.assertIn("kyc/faces/", app.customer_face_image.name)
 

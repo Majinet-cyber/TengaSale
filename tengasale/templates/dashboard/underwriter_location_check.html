@@ -18,7 +18,7 @@
         <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
     </header>
 
-    {# ── C. Location ─────────────────────────────────────────────── #}
+
     <section class="uw-card">
         <h2>C. Location</h2>
         {% include "dashboard/partials/review_field.html" with field_name="precise_location" section="Location" label="Home Address" value=app.precise_location correction=corrections.precise_location %}
@@ -37,7 +37,7 @@
         {% endif %}
     </section>
 
-    {# ── Neighbour / Contact at location ─────────────────────────── #}
+
     <section class="uw-card">
         <h2>Neighbour / Location Contact</h2>
         {% include "dashboard/partials/review_field.html" with field_name="next_of_kin_1_name" section="Location" label="Neighbour Name" value=app.next_of_kin_1_name correction=corrections.next_of_kin_1_name %}
@@ -55,7 +55,7 @@
         </div>
     </section>
 
-    {# ── Location Yes/No Questions ─────────────────────────────────── #}
+
     <form method="post" class="uw-card">
         {% csrf_token %}
         <h2>Location Questions</h2>

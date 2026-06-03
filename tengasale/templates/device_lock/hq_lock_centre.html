@@ -85,7 +85,7 @@
     </div>
   {% endif %}
 
-  {# ── KPI Cards ── #}
+
   <div class="kpi-grid">
     <div class="kpi-card kpi-orange">
       <div class="kpi-value">{{ stats.lockable }}</div>
@@ -121,7 +121,7 @@
     </div>
   </div>
 
-  {# ── A: Devices needing enrollment ── #}
+
   <div class="dlc-card">
     <div class="card-header">📋 A — Devices Needing Enrollment ({{ needs_enrollment|length }})</div>
     <div class="card-body">
@@ -160,7 +160,7 @@
     </div>
   </div>
 
-  {# ── B: Overdue Lock Candidates ── #}
+
   <div class="dlc-card">
     <div class="card-header">⚠️ B — Overdue Lock Candidates ({{ overdue_candidates|length }})</div>
     <div class="card-body">
@@ -207,7 +207,7 @@
     </div>
   </div>
 
-  {# ── C: Locked Devices ── #}
+
   <div class="dlc-card">
     <div class="card-header">🔒 C — Locked Devices ({{ locked_devices|length }})</div>
     <div class="card-body">
@@ -254,7 +254,7 @@
     </div>
   </div>
 
-  {# ── D: Failed Actions ── #}
+
   <div class="dlc-card">
     <div class="card-header">❌ D — Failed Lock / Unlock Actions ({{ failed_actions|length }})</div>
     <div class="card-body">
@@ -293,7 +293,7 @@
     </div>
   </div>
 
-  {# ── E: Recently Synced ── #}
+
   <div class="dlc-card">
     <div class="card-header">🔄 E — Recently Synced Devices</div>
     <div class="card-body">
@@ -321,7 +321,7 @@
     </div>
   </div>
 
-  {# ── Recent Audit Events ── #}
+
   <div class="dlc-card">
     <div class="card-header">📜 Recent Lock Events (Audit Log)</div>
     <div class="card-body">
@@ -352,7 +352,7 @@
     </div>
   </div>
 
-  {# ── Active Policies ── #}
+
   {% if policies %}
   <div class="dlc-card">
     <div class="card-header">📋 Lock Policies</div>

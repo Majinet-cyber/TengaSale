@@ -23,7 +23,7 @@
   <div class="app-card-list" style="margin-top:10px;">
   {% for app in apps %}
     <a href="{% url 'sales_review_summary' app.id %}" class="app-card-v2">
-      {# Customer photo #}
+
       {% if app.customer_face_image %}
         <img
           src="{{ app.customer_face_image.url }}"

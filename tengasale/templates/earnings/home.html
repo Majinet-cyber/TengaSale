@@ -27,7 +27,7 @@
     <a href="{% url 'earnings_home' %}?tab=payouts" class="tab-button {% if active_tab == 'payouts' %}active{% endif %}">PAYOUTS</a>
 </nav>
 
-{# ── Spin Money card ── #}
+
 {% if spin_wallet.available_spins or spin_wallet.total_spins_earned %}
 <section class="card ts-slide-up" style="animation-delay:80ms; background:linear-gradient(135deg,#fff8f2,#fff3eb); border:1.5px solid rgba(255,90,0,0.18);" data-testid="spin-money-card">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">

@@ -22,7 +22,7 @@
     </div>
   {% endif %}
 
-  {# ── Summary ── #}
+
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">
     <div class="glass-card" style="padding:14px;text-align:center;">
       <div style="font-size:0.72rem;color:var(--muted);">Eligible for Auto-Approval</div>
@@ -38,14 +38,14 @@
     </div>
   </div>
 
-  {# ── Bulk approve ── #}
+
   {% if eligible_count > 0 %}
   <form method="post" id="bulk-approve-form">
     {% csrf_token %}
     <input type="hidden" name="action" value="approve_selected">
   {% endif %}
 
-  {# ── Application eligibility list ── #}
+
   {% for item in eligibility_results %}
     <div class="glass-card" style="padding:16px;margin-bottom:12px;border-left:4px solid {% if item.result.eligible %}#16a34a{% else %}#dc2626{% endif %};">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -86,7 +86,7 @@
         </div>
       </div>
 
-      {# Blocks #}
+
       {% if item.result.blocks %}
         <div style="margin-top:10px;">
           <p style="font-size:0.78rem;font-weight:700;color:var(--danger);margin:0 0 4px 0;">Blocking Issues:</p>
@@ -96,7 +96,7 @@
         </div>
       {% endif %}
 
-      {# Warnings #}
+
       {% if item.result.warnings %}
         <div style="margin-top:8px;">
           <p style="font-size:0.78rem;font-weight:700;color:#d97706;margin:0 0 4px 0;">Warnings (non-blocking):</p>
@@ -106,7 +106,7 @@
         </div>
       {% endif %}
 
-      {# Passed checks #}
+
       {% if item.result.reasons %}
         <details style="margin-top:8px;">
           <summary style="font-size:0.77rem;color:var(--muted);cursor:pointer;">{{ item.result.reasons|length }} check(s) passed</summary>

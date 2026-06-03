@@ -18,7 +18,7 @@
         <span class="status-pill status-{{ app.merchant_status_key }}">{{ app.merchant_status_label }}</span>
     </header>
 
-    {# ── A. Income ───────────────────────────────────────────────── #}
+
     <section class="uw-card">
         <h2>A. Income</h2>
         {% include "dashboard/partials/review_field.html" with field_name="income_band" section="Income" label="Income Band" value=app.income_band correction=corrections.income_band %}
@@ -35,7 +35,7 @@
         {% include "dashboard/partials/review_field.html" with field_name="proof_of_income_type" section="Income" label="Proof of Income Type" value=app.proof_of_income_type correction=corrections.proof_of_income_type %}
     </section>
 
-    {# ── B. Contacts / Guarantor ─────────────────────────────────── #}
+
     <section class="uw-card">
         <h2>B. Contacts Provided</h2>
         {% include "dashboard/partials/review_field.html" with field_name="proof_contact_name" section="Contacts" label="Company Contact Name" value=app.proof_contact_name correction=corrections.proof_contact_name %}
@@ -55,7 +55,7 @@
         </div>
     </section>
 
-    {# ── Affordability Calculation ────────────────────────────────── #}
+
     <section class="uw-card" style="background:#f8fafb;">
         <h2>Affordability Calculation</h2>
         <div class="review-field"><div class="review-field__copy"><span class="review-field__label">Declared Monthly Income</span><strong class="review-field__value">MWK {{ monthly_income|floatformat:0 }}</strong></div></div>
@@ -69,7 +69,7 @@
         {% endif %}
     </section>
 
-    {# ── Income Yes/No Questions ──────────────────────────────────── #}
+
     <form method="post" class="uw-card">
         {% csrf_token %}
         <h2>Income Questions</h2>

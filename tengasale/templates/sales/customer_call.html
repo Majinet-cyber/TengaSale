@@ -28,7 +28,7 @@
     {% endif %}
   </div>
 
-  {# ── Big action buttons ── #}
+
   <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
     {% if app.customer_phone %}
     <a href="tel:+265{{ app.customer_phone }}" class="action-btn-large primary">
@@ -69,7 +69,7 @@
       {% include "sales/_yes_no.html" with field_name="customer_notified_recording" label="Was the customer notified that this call may be recorded for quality and compliance?" current_value=None %}
     </div>
 
-    {# ── Optional Call Recording Upload ── #}
+
     <div class="ts-review-card ts-mb-8">
       <div class="ts-review-card__title">📎 Call Recording (Optional)</div>
       {% if call_evidence %}

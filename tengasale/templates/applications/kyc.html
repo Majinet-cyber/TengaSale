@@ -12,7 +12,7 @@
 {% include "applications/partials/stepper.html" with current_step=2 %}
 <h1 class="greeting">KYC Capture</h1>
 
-{# ── Step indicator ── #}
+
 <div class="kyc-step-indicator" id="kyc-step-indicator" aria-label="KYC progress">
     <div class="kyc-step-dot {% if app.customer_face_image %}done{% else %}current{% endif %}" data-step-dot="0">
         <div class="kyc-step-circle">
@@ -48,13 +48,13 @@
     </div>
 </div>
 
-{# ── KYC Review modal (after each capture) ── #}
+
 <div class="kyc-confirm-overlay" id="kyc-confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="kyc-confirm-title">
     <div class="kyc-confirm-card">
         <h3 id="kyc-confirm-title" class="kyc-confirm-title" data-confirm-title>Is the image clear?</h3>
         <p class="kyc-confirm-hint" data-confirm-hint>Make sure there is no blur or glare.</p>
         <img src="" alt="Preview" class="kyc-confirm-preview" data-confirm-img>
-        {# ID checklist shown for ID captures #}
+
         <ul class="kyc-id-checklist" id="kyc-id-checklist" style="display:none; list-style:none; margin:8px 0; padding:0; font-size:13px; color:#374151;">
             <li style="margin-bottom:5px;">☐ All 4 corners visible</li>
             <li style="margin-bottom:5px;">☐ No glare or reflections</li>
@@ -74,7 +74,7 @@
     </div>
 </div>
 
-{# ── Camera permission error modal ── #}
+
 <div class="kyc-confirm-overlay" id="camera-permission-modal" hidden role="dialog" aria-label="Camera permission error">
     <div class="kyc-confirm-card">
         <div class="camera-permission-card" style="background:none; border:none; padding:0;">
@@ -108,7 +108,7 @@
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    {# ======= STEP 0: Customer Face (Selfie) ======= #}
+
     <section class="kyc-guided-step{% if not app.customer_face_image %} active{% else %}{% if not app.id_front_image %} active{% endif %}{% endif %}"
              id="kyc-step-0"
              data-kyc-section
@@ -134,7 +134,7 @@
             </span>
         </div>
 
-        {# Agent mode pill toggle #}
+
         <div class="kyc-mode-pill" id="agent-mode-row-0">
             <button type="button" class="kyc-mode-btn kyc-mode-btn--active" id="kyc-mode-customer-0" data-mode-customer>
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/></svg>
@@ -201,13 +201,13 @@
             <span class="btn-label">Capture Selfie</span>
         </button>
 
-        {# Next step button (advance to ID Front) #}
+
         <button type="button" class="action-btn-large secondary kyc-next-btn" id="next-to-step-1" data-next-to="1"{% if not app.customer_face_image %} hidden{% endif %}>
             <span class="btn-label">Next: ID Front →</span>
         </button>
     </section>
 
-    {# ======= STEP 1: ID Front ======= #}
+
     <section class="kyc-guided-step{% if app.customer_face_image and not app.id_front_image %} active{% endif %}"
              id="kyc-step-1"
              data-kyc-section
@@ -293,7 +293,7 @@
         </div>
     </section>
 
-    {# ======= STEP 2: ID Back ======= #}
+
     <section class="kyc-guided-step{% if app.id_front_image and not app.id_back_image %} active{% endif %}"
              id="kyc-step-2"
              data-kyc-section
@@ -379,7 +379,7 @@
         </div>
     </section>
 
-    {# ======= STEP 3: Review & Submit ======= #}
+
     <section class="kyc-guided-step{% if kyc_complete %} active{% endif %}"
              id="kyc-step-3"
              data-kyc-section
@@ -397,12 +397,13 @@
             </div>
         </div>
 
-        {# Review image cards #}
+
         <div class="kyc-review-grid">
             <article class="kyc-review-card">
                 <div class="kyc-review-card-image">
                     {% if app.customer_face_image %}
                         <img src="{{ app.customer_face_image.url }}" alt="Selfie" id="review-selfie" data-review-img="selfie" data-skip-img-fallback="1">
+                        <div class="kyc-review-card-empty" id="review-selfie-empty" hidden>No photo yet</div>
                     {% else %}
                         <img src="" alt="Selfie" id="review-selfie" data-review-img="selfie" hidden>
                         <div class="kyc-review-card-empty" id="review-selfie-empty">No photo yet</div>
@@ -418,6 +419,7 @@
                 <div class="kyc-review-card-image">
                     {% if app.id_front_image %}
                         <img src="{{ app.id_front_image.url }}" alt="ID Front" id="review-id-front" data-review-img="id-front" data-skip-img-fallback="1">
+                        <div class="kyc-review-card-empty" id="review-id-front-empty" hidden>No photo yet</div>
                     {% else %}
                         <img src="" alt="ID Front" id="review-id-front" data-review-img="id-front" hidden>
                         <div class="kyc-review-card-empty" id="review-id-front-empty">No photo yet</div>
@@ -433,6 +435,7 @@
                 <div class="kyc-review-card-image">
                     {% if app.id_back_image %}
                         <img src="{{ app.id_back_image.url }}" alt="ID Back" id="review-id-back" data-review-img="id-back" data-skip-img-fallback="1">
+                        <div class="kyc-review-card-empty" id="review-id-back-empty" hidden>No photo yet</div>
                     {% else %}
                         <img src="" alt="ID Back" id="review-id-back" data-review-img="id-back" hidden>
                         <div class="kyc-review-card-empty" id="review-id-back-empty">No photo yet</div>
@@ -508,14 +511,32 @@
         2: 'review-id-back'
     };
 
+    var photoState = {
+        0: { saved: form && form.dataset.selfieDone === 'true', previewOk: false },
+        1: { saved: form && form.dataset.idFrontDone === 'true', previewOk: false },
+        2: { saved: form && form.dataset.idBackDone === 'true', previewOk: false }
+    };
+
     function getCsrfToken() {
         var input = form && form.querySelector('[name=csrfmiddlewaretoken]');
         return input ? input.value : '';
     }
 
     function showKycError(msg) {
-        console.error(msg);
         if (typeof window.showError === 'function') window.showError(msg);
+    }
+
+    function getReviewStep(img) {
+        for (var step in reviewKeyMap) {
+            if (reviewKeyMap[step] === img.id) return parseInt(step);
+        }
+        return null;
+    }
+
+    function setSectionSaved(stepNum, isSaved) {
+        var section = document.querySelector('[data-kyc-section][data-step="' + stepNum + '"]');
+        if (section) section.dataset.existing = isSaved ? 'true' : 'false';
+        if (photoState[stepNum]) photoState[stepNum].saved = !!isSaved;
     }
 
     function bindReviewImageLoad(img) {
@@ -523,37 +544,59 @@
         var src = (img.getAttribute('src') || '').trim();
         if (!src || src === window.location.href) return;
         img.dataset.loadBound = '1';
-        img.addEventListener('load', function () {
-            console.log('Image URL:', img.src);
-        });
-        img.addEventListener('error', function () {
-            showKycError('Photo failed to load');
-            var emptyId = img.id + '-empty';
-            var empty = document.getElementById(emptyId);
+
+        function markLoaded() {
+            var stepNum = getReviewStep(img);
+            if (photoState[stepNum]) photoState[stepNum].previewOk = true;
+            var empty = document.getElementById(img.id + '-empty');
+            if (empty) empty.hidden = true;
+            img.hidden = false;
+            refreshSubmitState();
+        }
+
+        function markFailed() {
+            var stepNum = getReviewStep(img);
+            if (photoState[stepNum]) photoState[stepNum].previewOk = false;
+            setSectionSaved(stepNum, false);
+            showKycError('Photo could not load. Please retake or upload it again.');
+            var empty = document.getElementById(img.id + '-empty');
             if (empty) {
-                empty.textContent = 'Photo failed to load';
+                empty.textContent = 'Photo could not load. Retake or upload it again.';
                 empty.hidden = false;
             }
             img.hidden = true;
-        });
+            refreshSubmitState();
+        }
+
+        img.addEventListener('load', markLoaded);
+        img.addEventListener('error', markFailed);
+        if (img.complete) {
+            if (img.naturalWidth > 0) markLoaded();
+            else markFailed();
+        }
     }
 
-    function updateReviewImage(stepNum, url) {
+    function updateReviewImage(stepNum, url, serverSaved) {
         var reviewId = reviewKeyMap[stepNum];
         if (!reviewId) return;
         var img = document.getElementById(reviewId);
         var empty = document.getElementById(reviewId + '-empty');
         if (!url) {
-            showKycError('Photo failed to load');
+            showKycError('Photo could not load. Please retake or upload it again.');
             return;
         }
-        console.log('Image URL:', url);
+        if (photoState[stepNum]) {
+            photoState[stepNum].previewOk = false;
+            if (typeof serverSaved === 'boolean') photoState[stepNum].saved = serverSaved;
+        }
         if (img) {
-            bindReviewImageLoad(img);
+            img.dataset.loadBound = '';
             img.src = url;
+            bindReviewImageLoad(img);
             img.hidden = false;
         }
         if (empty) empty.hidden = true;
+        refreshSubmitState();
     }
 
     function saveCaptureToServer(stepNum, file, previewUrl) {
@@ -575,16 +618,18 @@
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (data && data.ok && data.url) {
-                    console.log('Image URL:', data.url);
-                    updateReviewImage(stepNum, data.url);
+                    setSectionSaved(stepNum, true);
+                    updateReviewImage(stepNum, data.url, true);
                 } else {
-                    showKycError(data && data.error ? data.error : 'Photo failed to save');
-                    if (previewUrl) updateReviewImage(stepNum, previewUrl);
+                    setSectionSaved(stepNum, false);
+                    showKycError(data && data.error ? data.error : 'Photo did not save. Please retake or upload it again.');
+                    if (previewUrl) updateReviewImage(stepNum, previewUrl, false);
                 }
             })
             .catch(function () {
-                showKycError('Photo failed to save');
-                if (previewUrl) updateReviewImage(stepNum, previewUrl);
+                setSectionSaved(stepNum, false);
+                showKycError('Photo did not save. Please retake or upload it again.');
+                if (previewUrl) updateReviewImage(stepNum, previewUrl, false);
             });
     }
 
@@ -689,8 +734,9 @@
 
     /* ── Submit state ── */
     function isSectionCaptured(section) {
-        var input = section.querySelector('[data-capture-input]');
-        return section.dataset.existing === 'true' || (input && input.files && input.files.length > 0);
+        var stepNum = parseInt(section.dataset.step);
+        var state = photoState[stepNum];
+        return !!(state && state.saved && state.previewOk);
     }
 
     function refreshSubmitState() {
@@ -762,9 +808,9 @@
             if (statusEl)     { statusEl.textContent = '✓ Captured'; statusEl.classList.add('captured'); }
             if (captureButton) captureButton.style.display = 'none';
             if (nextBtn) nextBtn.hidden = false;
-            section.dataset.existing = 'true';
+            setSectionSaved(stepNum, false);
 
-            updateReviewImage(stepNum, url);
+            updateReviewImage(stepNum, url, false);
             saveCaptureToServer(stepNum, file, url);
 
             refreshSubmitState();
@@ -882,6 +928,10 @@
         if (recaptureBtn) {
             recaptureBtn.addEventListener('click', function () {
                 section.dataset.existing = 'false';
+                if (photoState[stepNum]) {
+                    photoState[stepNum].saved = false;
+                    photoState[stepNum].previewOk = false;
+                }
                 if (previewCard)  previewCard.classList.remove('is-visible');
                 if (statusEl)     { statusEl.textContent = 'Required'; statusEl.classList.remove('captured'); }
                 if (captureButton) captureButton.style.display = '';
@@ -932,8 +982,8 @@
                         if (statusEl)     { statusEl.textContent = '✓ Captured'; statusEl.classList.add('captured'); }
                         if (captureButton) captureButton.style.display = 'none';
                         if (nextBtn) nextBtn.hidden = false;
-                        section.dataset.existing = 'true';
-                        updateReviewImage(stepNum, url);
+                        setSectionSaved(stepNum, false);
+                        updateReviewImage(stepNum, url, false);
                         saveCaptureToServer(stepNum, file, url);
                         refreshSubmitState();
                         if (stepNum < 2) {

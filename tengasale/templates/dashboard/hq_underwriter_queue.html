@@ -13,7 +13,7 @@
     </div>
   </div>
 
-  {# ── Underwriter Performance ── #}
+
   {% if uw_stats %}
   <div class="glass-card" style="padding:16px;margin-bottom:20px;">
     <h2 style="font-size:0.95rem;font-weight:700;margin-bottom:12px;">Underwriter Activity Today</h2>
@@ -46,7 +46,7 @@
   </div>
   {% endif %}
 
-  {# ── Application Queue ── #}
+
   <form method="get" style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
     <input type="text" name="search" placeholder="App number / customer name…" value="{{ search|default:'' }}"
            style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;min-width:220px;">

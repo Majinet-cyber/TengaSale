@@ -12,7 +12,7 @@
   </a>
 </div>
 
-{# ── Commission Summary Card ── #}
+
 <div class="wallet-balance-card">
   <div class="wallet-balance-card__label">Available Commission Balance</div>
   <div class="wallet-balance-card__amount">
@@ -39,7 +39,7 @@
   </div>
 </div>
 
-{# ── Tabs ── #}
+
 <div class="earnings-kpi-grid">
   <div class="earnings-kpi">
     <span>Gross Earnings</span>
@@ -95,7 +95,7 @@
     >Request Payout</button>
   </div>
 
-  {# ── Earnings Tab (Commission Ledger) ── #}
+
   <div x-show="tab === 'earnings'">
     {% if ledger_rows %}
       {% for row in ledger_rows %}
@@ -137,7 +137,7 @@
     {% endif %}
   </div>
 
-  {# ── Deductions Tab (Arrears) ── #}
+
   <div x-show="tab === 'deductions'" x-cloak>
     {% if ledger_rows %}
       {% for row in ledger_rows %}
@@ -159,7 +159,7 @@
     {% endif %}
   </div>
 
-  {# ── Payouts Tab (UnderwriterMonthlyPayout with WHT) ── #}
+
   <div x-show="tab === 'payouts'" x-cloak>
     {% if monthly_payouts %}
       {% for payout in monthly_payouts %}
@@ -206,7 +206,7 @@
         </div>
       {% endfor %}
     {% elif payout_records %}
-      {# Legacy fallback #}
+
       {% for payout in payout_records %}
         <div class="glass-card payout-card mb-8">
           <div class="payout-card__header">
@@ -234,7 +234,7 @@
     {% endif %}
   </div>
 
-  {# ── Request Payout Tab ── #}
+
   <div x-show="tab === 'request'" x-cloak>
     <div class="glass-card mt-8">
       <div class="review-card__title">Request Payout</div>

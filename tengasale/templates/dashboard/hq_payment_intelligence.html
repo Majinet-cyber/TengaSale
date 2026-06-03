@@ -157,7 +157,7 @@
 {% block content %}
 <div class="pi-wrap" data-testid="hq-payment-intelligence">
 
-  {# Header #}
+
   <div class="pi-hdr">
     <div>
       <div style="margin-bottom:6px;">
@@ -172,13 +172,13 @@
     </div>
   </div>
 
-  {# Info note #}
+
   <div class="pi-info-note">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     Analytics update automatically after each customer payment. Run <code>python manage.py refresh_analytics</code> to backfill historical contracts. Breakdowns by district and occupation require contracts linked to financing applications.
   </div>
 
-  {# ── Portfolio KPIs ─────────────────────────────────────────────── #}
+
   <div class="pi-kpi-row">
     <div class="pi-kpi k-orange">
       <div class="pi-kpi__val">{{ total_contracts|tsnum }}</div>
@@ -224,7 +224,7 @@
     </div>
   </div>
 
-  {# ── Discipline distribution ────────────────────────────────────── #}
+
   <div class="pi-card" style="margin-bottom:24px;">
     <div class="pi-card__hdr">
       <div class="pi-card__hdr-title">Payment Discipline Distribution</div>
@@ -244,7 +244,7 @@
     {% endif %}
   </div>
 
-  {# ── By District + By Occupation ───────────────────────────────── #}
+
   <div class="pi-grid-2">
 
     <div class="pi-card">
@@ -349,7 +349,7 @@
 
   </div>
 
-  {# ── By Merchant + By Device ───────────────────────────────────── #}
+
   <div class="pi-grid-2">
 
     <div class="pi-card">
@@ -454,7 +454,7 @@
 
   </div>
 
-  {# ── Payment Method Distribution ───────────────────────────────── #}
+
   <div class="pi-card" style="margin-bottom:24px;">
     <div class="pi-card__hdr">
       <div class="pi-card__hdr-title">Payment Method Preference</div>
@@ -483,7 +483,7 @@
     {% endif %}
   </div>
 
-  {# ── Customer Intelligence Summary (Section 13) ────────────────── #}
+
   <div class="pi-card" style="margin-bottom:24px;">
     <div class="pi-card__hdr">
       <div class="pi-card__hdr-title">Customer Intelligence Summary</div>

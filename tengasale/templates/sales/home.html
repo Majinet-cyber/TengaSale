@@ -16,7 +16,7 @@
   x-init="init()"
 >
 
-  {# ── Greeting Row ── #}
+
   <div class="ts-greeting-row">
     <div>
       <p class="ts-greeting">Hi, {{ request.user.first_name|default:request.user.username }}</p>
@@ -46,10 +46,10 @@
     </span>
   </div>
 
-  {# ── Toast ── #}
+
   <div class="ts-toast" x-show="toast" x-transition x-text="toastMsg" x-cloak></div>
 
-  {# ── Claim Card ── #}
+
   <div x-show="canClaim && cooldownRemaining <= 0">
     <form method="post" action="{% url 'sales_claim_next' %}">
       {% csrf_token %}
@@ -91,7 +91,7 @@
     {% endif %}
   </div>
 
-  {# ── MY ACTIVE card ── #}
+
   <a href="{% url 'sales_applications' %}" class="ts-active-card" aria-label="My active applications">
     <div class="ts-active-card__left">
       <span class="ts-active-card__label">MY ACTIVE</span>
@@ -104,7 +104,7 @@
     </div>
   </a>
 
-  {# ── Active Applications Quick List ── #}
+
   {% if active_apps %}
     <div class="ts-section-label">In Progress</div>
     {% for app in active_apps %}
@@ -121,7 +121,7 @@
     {% endfor %}
   {% endif %}
 
-  {# ── Applications Section ── #}
+
   <div class="ts-section-label">Applications</div>
   <div class="ts-menu-section">
     <a href="{% url 'sales_applications' %}?tab=active" class="ts-menu-row">
@@ -156,7 +156,7 @@
     </a>
   </div>
 
-  {# ── Tools Section ── #}
+
   <div class="ts-section-label">Tools</div>
   <div class="ts-menu-section">
     <a href="{% url 'sales_wallet' %}" class="ts-menu-row">

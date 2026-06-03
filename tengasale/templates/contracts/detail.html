@@ -24,7 +24,7 @@
 
 {% block content %}
 
-{# ── Top summary card ── #}
+
 <div class="ts-summary-card" style="margin-top:14px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
@@ -62,7 +62,7 @@
     </div>
 </div>
 
-{# ── Terms review banner ── #}
+
 {% if contract.terms_confirmed_at %}
 <div style="margin:0 14px 10px;padding:12px 14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;display:flex;align-items:center;gap:10px;">
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -81,9 +81,9 @@
 </div>
 {% endif %}
 
-{# ── Collapsible sections ── #}
 
-{# Customer #}
+
+
 <div class="contract-section-card" x-data="{open: true}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
         <span class="contract-section-card__title">
@@ -103,7 +103,7 @@
     </div>
 </div>
 
-{# Device #}
+
 <div class="contract-section-card" x-data="{open: true}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
         <span class="contract-section-card__title">
@@ -121,7 +121,7 @@
     </div>
 </div>
 
-{# Finance #}
+
 <div class="contract-section-card" x-data="{open: true}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
         <span class="contract-section-card__title">
@@ -142,7 +142,7 @@
     </div>
 </div>
 
-{# Contacts / Guarantors #}
+
 {% if application.next_of_kin_1_name or application.next_of_kin_2_name %}
 <div class="contract-section-card" x-data="{open: false}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
@@ -173,7 +173,7 @@
 </div>
 {% endif %}
 
-{# Contract Documents #}
+
 <div class="contract-section-card" x-data="{open: true}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
         <span class="contract-section-card__title">
@@ -221,7 +221,7 @@
     </div>
 </div>
 
-{# Technical Details (admin only, collapsed) #}
+
 {% if is_hq or request.user.is_staff %}
 <div class="contract-section-card" x-data="{open: false}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
@@ -246,7 +246,7 @@
 </div>
 {% endif %}
 
-{# WhatsApp delivery ── #}
+
 {% if deliveries %}
 <div class="contract-section-card" x-data="{open: false}">
     <button type="button" class="contract-section-card__header" @click="open = !open">
