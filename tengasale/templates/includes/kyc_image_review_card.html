@@ -32,6 +32,7 @@ Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missi
     {% if status == 'ready' and image_url %}
     <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer" class="kyc-portrait-card__link" title="View full {{ label }}">
       <img
+        {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
         src="{{ image_url }}"
         alt="{{ label }}"
         class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"

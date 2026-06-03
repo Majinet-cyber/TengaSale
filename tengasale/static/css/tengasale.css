@@ -2491,6 +2491,14 @@ img.ts-logo-wordmark {
   display: flex;
   gap: 10px;
   margin-top: 16px;
+  position: relative;
+  z-index: 5;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  pointer-events: auto;
+}
+
+.kyc-review-submit-row .action-btn-large {
+  pointer-events: auto;
 }
 
 .kyc-review-submit-row .action-btn-large.outline {

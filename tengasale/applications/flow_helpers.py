@@ -15,19 +15,50 @@ logger = logging.getLogger("tengasale.applications")
 
 KYC_IMAGE_FIELDS = ("customer_face_image", "id_front_image", "id_back_image")
 
+KYC_IMAGE_LABELS = {
+    "customer_face_image": "Selfie",
+    "id_front_image": "ID Card Front",
+    "id_back_image": "ID Card Back",
+}
+
+
+def kyc_image_field_present(field_file) -> bool:
+    """True when the model field has a file name (matches template {% if app.field %})."""
+    return bool(field_file and getattr(field_file, "name", ""))
+
 
 def stored_file_exists(field_file):
-    if not field_file or not getattr(field_file, "name", ""):
+    if not kyc_image_field_present(field_file):
         return False
     try:
         return field_file.storage.exists(field_file.name)
     except Exception:
         logger.exception("Could not verify uploaded file exists: %s", field_file.name)
-        return False
+        return kyc_image_field_present(field_file)
 
 
-def kyc_images_complete(app):
-    return all(stored_file_exists(getattr(app, field_name)) for field_name in KYC_IMAGE_FIELDS)
+def kyc_image_field_ready(field_file) -> bool:
+    """True when the image is present and reachable (storage check with name fallback)."""
+    return stored_file_exists(field_file)
+
+
+def kyc_images_complete(app) -> bool:
+    return all(kyc_image_field_ready(getattr(app, field_name)) for field_name in KYC_IMAGE_FIELDS)
+
+
+def kyc_missing_image_labels(app) -> list[str]:
+    return [
+        KYC_IMAGE_LABELS[field_name]
+        for field_name in KYC_IMAGE_FIELDS
+        if not kyc_image_field_ready(getattr(app, field_name))
+    ]
+
+
+def kyc_completion_flags(app) -> dict[str, bool]:
+    return {
+        field_name: kyc_image_field_ready(getattr(app, field_name))
+        for field_name in KYC_IMAGE_FIELDS
+    }
 
 
 def application_has_complete_deal(app) -> bool:

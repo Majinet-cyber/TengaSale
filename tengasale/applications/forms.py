@@ -296,11 +296,13 @@ class KYCForm(forms.ModelForm):
             "id_back_image": "ID back image",
         }
 
+        from applications.flow_helpers import kyc_image_field_ready
+
         for field_name, label in labels.items():
             uploaded_file = self.files.get(field_name)
             saved_file = getattr(self.instance, field_name, None)
 
-            if not uploaded_file and not saved_file:
+            if not uploaded_file and not kyc_image_field_ready(saved_file):
                 self.add_error(field_name, f"{label} is required.")
                 continue
 

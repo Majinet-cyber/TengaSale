@@ -1182,6 +1182,82 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, "kyc-portrait-stack")
         self.assertContains(response, "kyc-portrait-card")
 
+    def test_kyc_review_no_images_shows_missing_and_disabled_submit(self):
+        app = self.create_application()
+        response = self.client.get(reverse("kyc_capture", args=[app.id]))
+
+        self.assertContains(response, 'data-kyc-complete="false"')
+        self.assertContains(response, "Missing: Selfie, ID Card Front, ID Card Back")
+        self.assertContains(response, 'id="kyc-submit-btn"')
+        self.assertRegex(
+            response.content.decode(),
+            r'id="kyc-submit-btn"[^>]*\bdisabled\b',
+        )
+
+    def test_kyc_review_selfie_only_shows_missing_id_messages(self):
+        app = self.create_application()
+        app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=True)
+
+        response = self.client.get(reverse("kyc_capture", args=[app.id]))
+
+        self.assertContains(response, 'data-kyc-complete="false"')
+        self.assertContains(response, "Missing: ID Card Front, ID Card Back")
+        self.assertRegex(
+            response.content.decode(),
+            r'id="kyc-submit-btn"[^>]*\bdisabled\b',
+        )
+
+    def test_kyc_review_selfie_and_front_shows_missing_back(self):
+        app = self.create_application()
+        app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
+        app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=True)
+
+        response = self.client.get(reverse("kyc_capture", args=[app.id]))
+
+        self.assertContains(response, 'data-kyc-complete="false"')
+        self.assertContains(response, "Missing: ID Card Back")
+        self.assertRegex(
+            response.content.decode(),
+            r'id="kyc-submit-btn"[^>]*\bdisabled\b',
+        )
+
+    def test_kyc_review_all_images_enables_submit_and_post_redirects(self):
+        app = self.create_application()
+        self.save_existing_images(app)
+
+        response = self.client.get(reverse("kyc_capture", args=[app.id]))
+
+        self.assertContains(response, 'data-kyc-complete="true"')
+        self.assertContains(response, 'id="review-selfie"')
+        self.assertContains(response, 'id="review-id-front"')
+        self.assertContains(response, 'id="review-id-back"')
+        self.assertContains(response, 'data-disabled-note hidden')
+        self.assertContains(response, 'id="kyc-submit-btn"')
+        self.assertNotRegex(
+            response.content.decode(),
+            r'id="kyc-submit-btn"[^>]*\bdisabled\b',
+        )
+
+        post_response = self.client.post(reverse("kyc_capture", args=[app.id]), {})
+        app.refresh_from_db()
+        self.assertRedirects(post_response, reverse("location_details", args=[app.id]))
+        self.assertEqual(app.status, "kyc")
+
+    def test_kyc_retake_replaces_image_and_submit_still_works(self):
+        app = self.create_application()
+        self.save_existing_images(app)
+        original_back = app.id_back_image.name
+
+        self.client.post(
+            reverse("kyc_save_image", args=[app.id]),
+            {"field": "id_back_image", "image": self.image_upload("new-back.png")},
+        )
+        app.refresh_from_db()
+        self.assertNotEqual(app.id_back_image.name, original_back)
+
+        post_response = self.client.post(reverse("kyc_capture", args=[app.id]), {})
+        self.assertRedirects(post_response, reverse("location_details", args=[app.id]))
+
 
 class ApplicationAdminImportTests(TestCase):
     def test_importing_applications_admin_does_not_crash(self):

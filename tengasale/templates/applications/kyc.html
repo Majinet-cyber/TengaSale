@@ -102,6 +102,7 @@
 <form method="post" enctype="multipart/form-data" class="kyc-form" data-kyc-form
     data-app-id="{{ app.id }}"
     data-save-url="{% url 'kyc_save_image' app.id %}"
+    data-kyc-complete="{% if kyc_complete %}true{% else %}false{% endif %}"
     data-selfie-done="{% if app.customer_face_image %}true{% else %}false{% endif %}"
     data-id-front-done="{% if app.id_front_image %}true{% else %}false{% endif %}"
     data-id-back-done="{% if app.id_back_image %}true{% else %}false{% endif %}">
@@ -418,7 +419,11 @@
 
         <p class="next-disabled-note" data-disabled-note {% if kyc_complete %}hidden{% endif %}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {% if kyc_missing_labels %}
+            Missing: {{ kyc_missing_labels|join:", " }}
+            {% else %}
             Complete all three photos to submit.
+            {% endif %}
         </p>
 
         <div class="kyc-review-actions-missing" data-review-missing {% if kyc_complete %}hidden{% endif %}>
@@ -478,10 +483,18 @@
         2: 'review-id-back'
     };
 
+    function serverPhotoReady(stepNum) {
+        if (!form) return false;
+        if (stepNum === 0) return form.dataset.selfieDone === 'true';
+        if (stepNum === 1) return form.dataset.idFrontDone === 'true';
+        if (stepNum === 2) return form.dataset.idBackDone === 'true';
+        return false;
+    }
+
     var photoState = {
-        0: { saved: form && form.dataset.selfieDone === 'true', previewOk: false },
-        1: { saved: form && form.dataset.idFrontDone === 'true', previewOk: false },
-        2: { saved: form && form.dataset.idBackDone === 'true', previewOk: false }
+        0: { saved: serverPhotoReady(0), previewOk: serverPhotoReady(0) },
+        1: { saved: serverPhotoReady(1), previewOk: serverPhotoReady(1) },
+        2: { saved: serverPhotoReady(2), previewOk: serverPhotoReady(2) }
     };
 
     function getCsrfToken() {
@@ -523,6 +536,11 @@
 
         function markFailed() {
             var stepNum = getReviewStep(img);
+            if (serverPhotoReady(stepNum)) {
+                if (photoState[stepNum]) photoState[stepNum].previewOk = true;
+                refreshSubmitState();
+                return;
+            }
             if (photoState[stepNum]) photoState[stepNum].previewOk = false;
             setSectionSaved(stepNum, false);
             showKycError('Photo could not load. Please retake or upload it again.');
@@ -586,6 +604,13 @@
             .then(function (data) {
                 if (data && data.ok && data.url) {
                     setSectionSaved(stepNum, true);
+                    if (stepNum === 0) form.dataset.selfieDone = 'true';
+                    if (stepNum === 1) form.dataset.idFrontDone = 'true';
+                    if (stepNum === 2) form.dataset.idBackDone = 'true';
+                    if (photoState[stepNum]) photoState[stepNum].previewOk = true;
+                    if (serverPhotoReady(0) && serverPhotoReady(1) && serverPhotoReady(2)) {
+                        form.dataset.kycComplete = 'true';
+                    }
                     updateReviewImage(stepNum, data.url, true);
                 } else {
                     setSectionSaved(stepNum, false);
@@ -701,16 +726,23 @@
 
     /* ── Submit state ── */
     function isSectionCaptured(section) {
-        var stepNum = parseInt(section.dataset.step);
+        var stepNum = parseInt(section.dataset.step, 10);
+        if (serverPhotoReady(stepNum)) return true;
         var state = photoState[stepNum];
         return !!(state && state.saved && state.previewOk);
     }
 
     function refreshSubmitState() {
-        var all = sections.filter(function (s) { return s.dataset.step !== undefined && parseInt(s.dataset.step) <= 2; }).every(isSectionCaptured);
+        var serverComplete = form && form.dataset.kycComplete === 'true';
+        var clientComplete = sections
+            .filter(function (s) { return s.dataset.step !== undefined && parseInt(s.dataset.step, 10) <= 2; })
+            .every(isSectionCaptured);
+        var all = serverComplete || clientComplete;
         if (submitBtn) {
             submitBtn.disabled = !all;
+            submitBtn.classList.toggle('is-disabled', !all);
             submitBtn.style.opacity = all ? '1' : '0.5';
+            submitBtn.style.pointerEvents = all ? 'auto' : 'none';
         }
         if (disabledNote) disabledNote.hidden = all;
         var reviewMissing = document.querySelector('[data-review-missing]');

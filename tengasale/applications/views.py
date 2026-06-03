@@ -26,7 +26,9 @@ from .forms import (
 from .flow_helpers import (
     KYC_IMAGE_FIELDS,
     application_has_complete_deal,
+    kyc_completion_flags,
     kyc_images_complete,
+    kyc_missing_image_labels,
     merchant_application_continue_url,
     merchant_next_step_after_deal_selection,
     redirect_if_deal_required,
@@ -276,17 +278,57 @@ def kyc_capture(request, app_id):
                     setattr(app, field_name, process_kyc_upload(uploaded, field_name))
             app.status = "kyc"
             app.save()
+            app.refresh_from_db()
             if kyc_images_complete(app):
+                next_url = merchant_application_continue_url(app)
+                logger.info(
+                    "KYC submit app_id=%s missing=[] submit_enabled=True next=%s",
+                    app.id,
+                    next_url,
+                )
                 messages.success(request, "KYC saved.")
-                return redirect(merchant_application_continue_url(app))
-            messages.error(request, "Complete all three KYC photos before submitting.")
-        elif not kyc_images_complete(app):
-            messages.error(request, "Complete all three KYC photos before submitting.")
+                return redirect(next_url)
+            missing = kyc_missing_image_labels(app)
+            logger.info(
+                "KYC submit incomplete app_id=%s missing=%s submit_enabled=False",
+                app.id,
+                missing,
+            )
+            messages.error(request, f"Missing: {', '.join(missing)}")
+        else:
+            app.refresh_from_db()
+            missing = kyc_missing_image_labels(app)
+            if missing:
+                logger.info(
+                    "KYC submit validation failed app_id=%s missing=%s",
+                    app.id,
+                    missing,
+                )
+                messages.error(request, f"Missing: {', '.join(missing)}")
     else:
         form = KYCForm(instance=app)
 
+    app.refresh_from_db()
     kyc_complete = kyc_images_complete(app)
-    return render(request, "applications/kyc.html", {"app": app, "form": form, "kyc_complete": kyc_complete})
+    flags = kyc_completion_flags(app)
+    logger.info(
+        "KYC review render app_id=%s has_selfie=%s has_id_front=%s has_id_back=%s submit_enabled=%s",
+        app.id,
+        flags["customer_face_image"],
+        flags["id_front_image"],
+        flags["id_back_image"],
+        kyc_complete,
+    )
+    return render(
+        request,
+        "applications/kyc.html",
+        {
+            "app": app,
+            "form": form,
+            "kyc_complete": kyc_complete,
+            "kyc_missing_labels": kyc_missing_image_labels(app),
+        },
+    )
 
 
 @merchant_required

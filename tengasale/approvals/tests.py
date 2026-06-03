@@ -847,9 +847,10 @@ class KulaSellStyleReviewTests(TestCase):
 
         response = self.client.get(reverse("sales_review_summary", args=[app.id]))
 
-        self.assertContains(response, "No Selfie")
-        self.assertContains(response, "No ID Front")
-        self.assertContains(response, "No ID Back")
+        self.assertContains(response, "Selfie Image")
+        self.assertContains(response, "ID Card Front")
+        self.assertContains(response, "ID Card Back")
+        self.assertContains(response, "Missing photo", count=4)
         self.assertNotContains(response, 'src=""')
 
     # ── Identity check ───────────────────────────────────────────────────────
