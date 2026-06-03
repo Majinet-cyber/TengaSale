@@ -143,7 +143,7 @@ class SeedTengaSaleCommandTests(TestCase):
     def test_seed_tengasale_creates_required_brands_and_deals(self):
         call_command("seed_tengasale")
 
-        for brand_name in ["TECNO", "itel", "Redmi"]:
+        for brand_name in ["TECNO", "itel", "Redmi/Xiaomi"]:
             brand = DeviceBrand.objects.get(name=brand_name)
             self.assertTrue(DeviceDeal.objects.filter(brand=brand).exists())
 
