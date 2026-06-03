@@ -163,15 +163,18 @@ def portal_contract(request, contract_number):
         "underwriter_name": "",
     }
     if app:
-        # Fall back to application IMEI if contract doesn't have it yet
         if not device_info["imei"]:
             device_info["imei"] = getattr(app, "imei_number", "") or ""
-        device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
-        if not device_info["brand"] and app.deal:
+        if app.deal_id:
             try:
-                device_info["brand"] = str(app.deal.brand) if hasattr(app.deal, "brand") else ""
+                device_info["brand"] = app.deal.brand.name
+                device_info["model"] = str(app.deal)
             except Exception:
                 pass
+        if not device_info["brand"]:
+            device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
+        if not device_info["model"] and contract.device_model:
+            device_info["model"] = contract.device_model
         if app.created_by:
             try:
                 profile = app.created_by.profile
@@ -193,6 +196,32 @@ def portal_contract(request, contract_number):
 
     # Last payment info for lock card
     last_paid_tx = all_paid[0] if all_paid else None
+
+    from core.commercial import pricing_from_application
+
+    commercial = pricing_from_application(app) if app else None
+    if commercial is None and contract.pricing_complete:
+        commercial = {
+            "cash_price": contract.cash_price,
+            "deposit_required": contract.deposit_required,
+            "contract_total": contract.total_amount,
+            "daily_repayment": contract.daily_price,
+            "monthly_repayment": contract.thirty_day_price,
+            "term_months": contract.term_months,
+        }
+    pricing_complete = contract.pricing_complete
+
+    lock_provider_label = "Device setup pending"
+    if contract.device_lock_provider:
+        provider_labels = {
+            "mock": "Sandbox",
+            "knox": "Knox",
+            "nuovopay": "NuovoPay",
+            "upya": "Upya",
+        }
+        lock_provider_label = provider_labels.get(
+            contract.device_lock_provider, contract.device_lock_provider.replace("_", " ").title()
+        )
 
     return render(request, "portal/contract.html", {
         "contract": contract,
@@ -218,6 +247,9 @@ def portal_contract(request, contract_number):
             ("airtel_money", "Airtel Money"),
             ("tnm_mpamba", "TNM Mpamba"),
         ],
+        "commercial": commercial,
+        "pricing_complete": pricing_complete,
+        "lock_provider_label": lock_provider_label,
     })
 
 

@@ -232,7 +232,17 @@ def create_merchant_payout_for_contract(contract, merchant_user=None, created_by
     total_amount = Decimal(getattr(contract, "total_amount", 0) or 0)
     deposit_amount = Decimal(getattr(contract, "deposit_paid", 0) or 0)
     financed_amount = max(total_amount - deposit_amount, Decimal("0"))
-    cash_price = Decimal(getattr(contract, "total_amount", 0) or 0)
+
+    cash_price = Decimal(getattr(contract, "cash_price", 0) or 0)
+    if cash_price <= 0:
+        app = getattr(contract, "source_application", None)
+        if app is not None:
+            cash_price = Decimal(getattr(app, "selected_cash_price", 0) or 0)
+    if cash_price <= 0:
+        logger.warning(
+            "create_merchant_payout_for_contract: missing cash_price on contract %s", contract.pk
+        )
+        return None
 
     merchant_commission = _round(financed_amount * MERCHANT_COMMISSION_RATE)
     total_payable = _money(cash_price + merchant_commission)

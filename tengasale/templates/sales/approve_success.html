@@ -18,7 +18,22 @@
     <div class="ts-review-card ts-mb-8" style="text-align:left;">
       <div class="ts-review-row"><span>Contract Number</span><strong>{{ portal_contract.contract_number }}</strong></div>
       <div class="ts-review-row"><span>PayG Number</span><strong>{{ portal_contract.payg_number }}</strong></div>
-      <div class="ts-review-row"><span>Total Amount</span><strong>{{ portal_contract.total_amount|mwk }}</strong></div>
+      <div class="ts-review-row"><span>Customer</span><strong>{{ app.customer_name }}</strong></div>
+      <div class="ts-review-row"><span>Device</span><strong>{% if app.deal %}{{ app.deal }}{% else %}Pending setup{% endif %}</strong></div>
+      <div class="ts-review-row"><span>IMEI</span><strong>{% if app.imei_number %}{{ app.imei_number }}{% else %}IMEI pending{% endif %}</strong></div>
+      <div class="ts-review-row"><span>Cash price</span><strong>{{ portal_contract.cash_price|mwk_if:"Pending pricing" }}</strong></div>
+      <div class="ts-review-row"><span>Deposit required</span><strong>{{ portal_contract.deposit_required|mwk_if:"Pending pricing" }}</strong></div>
+      <div class="ts-review-row"><span>Contract total</span><strong>{{ portal_contract.total_amount|mwk_if:"Pending pricing" }}</strong></div>
+      <div class="ts-review-row"><span>Daily repayment</span><strong>{{ portal_contract.daily_price|daily_mwk }}</strong></div>
+      <div class="ts-review-row"><span>Monthly repayment</span><strong>{{ portal_contract.thirty_day_price|monthly_mwk }}</strong></div>
+      <div class="ts-review-row"><span>Term</span><strong>{{ portal_contract.term_months }} months</strong></div>
+    </div>
+    {% elif app.calculated_total_loan %}
+    <div class="ts-review-card ts-mb-8" style="text-align:left;">
+      <div class="ts-review-row"><span>Cash price</span><strong>{{ app.selected_cash_price|mwk_if }}</strong></div>
+      <div class="ts-review-row"><span>Contract total</span><strong>{{ app.calculated_total_loan|mwk_if }}</strong></div>
+      <div class="ts-review-row"><span>Daily repayment</span><strong>{{ app.calculated_daily_payment|daily_mwk }}</strong></div>
+      <div class="ts-review-row"><span>Term</span><strong>{{ app.term_months }} months</strong></div>
     </div>
     {% endif %}
     <p class="ts-success-sub">The merchant will be notified to complete the IMEI entry and device setup.</p>

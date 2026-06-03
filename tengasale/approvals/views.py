@@ -437,6 +437,16 @@ def confirm_approve(request, app_id):
     if response:
         return response
     if request.method == "POST":
+        from core.commercial import validate_application_pricing
+
+        pricing_ok, pricing_missing = validate_application_pricing(app)
+        if not pricing_ok:
+            messages.error(
+                request,
+                "Cannot approve yet. Missing: " + ", ".join(pricing_missing) + ".",
+            )
+            return render(request, "approvals/confirm_approve.html", {"app": app})
+
         with transaction.atomic():
             app_locked = (
                 FinancingApplication.objects.select_for_update()

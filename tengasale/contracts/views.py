@@ -378,11 +378,25 @@ def contract_progress(request, contract_id):
     except Exception:
         pass
 
+    deposit_due = contract.deposit_amount
+    pricing_complete = contract.total_loan > 0 and contract.daily_payment > 0
+    try:
+        portal_pc = application.payment_contract
+        if portal_pc.deposit_required > 0:
+            deposit_due = portal_pc.deposit_remaining
+        if portal_pc.total_amount > 0:
+            pricing_complete = True
+    except Exception:
+        pass
+
     return render(request, "contracts/progress.html", {
         "contract": contract,
         "application": application,
         "lock_profile": lock_profile,
         "lock_readiness": lock_readiness,
+        "deposit_due": deposit_due,
+        "pricing_complete": pricing_complete,
+        "show_lock_diagnostics": _user_is_hq(request.user),
     })
 
 

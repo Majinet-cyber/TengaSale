@@ -121,13 +121,19 @@ class DeviceDeal(models.Model):
         total_loan = self.calculated_total_loan(cash_price)
         return round((total_loan * self.deposit_percent) / Decimal("100"), 2)
 
-    def calculated_monthly_payment(self, cash_price=None):
+    def calculated_monthly_payment(self, cash_price=None, term_months=None):
         total_loan = self.calculated_total_loan(cash_price)
-        return round(total_loan / Decimal(self.term_months), 2)
+        term = int(term_months or self.term_months or 12)
+        if term <= 0:
+            term = 12
+        return round(total_loan / Decimal(term), 2)
 
-    def calculated_daily_payment(self, cash_price=None):
+    def calculated_daily_payment(self, cash_price=None, term_months=None):
         total_loan = self.calculated_total_loan(cash_price)
-        return round(total_loan / Decimal(self.term_months * 30), 2)
+        term = int(term_months or self.term_months or 12)
+        if term <= 0:
+            term = 12
+        return round(total_loan / Decimal(term * 30), 2)
 
     def calculated_6_month_total(self, cash_price=None):
         return round(self.calculated_total_loan(cash_price) * Decimal("0.85"), 2)

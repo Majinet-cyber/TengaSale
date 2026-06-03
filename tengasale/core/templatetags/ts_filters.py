@@ -35,6 +35,41 @@ def format_mwk(value):
     return f"MWK {d:,.2f}"
 
 
+@register.filter(name="mwk_if")
+def format_mwk_if(value, pending_label="Pending setup"):
+    """Format MWK when value is set and > 0; otherwise show pending label."""
+    if value is None:
+        return pending_label
+    d = _to_decimal(value)
+    if d <= 0:
+        return pending_label
+    return format_mwk(d)
+
+
+@register.filter(name="daily_mwk")
+def format_daily_mwk(value):
+    """Daily repayment display: MWK 2,566 / day"""
+    d = _to_decimal(value)
+    if d <= 0:
+        return "Pending setup"
+    amount = int(d) if d == d.to_integral_value() else d
+    if isinstance(amount, int):
+        return f"MWK {amount:,} / day"
+    return f"MWK {amount:,.2f} / day"
+
+
+@register.filter(name="monthly_mwk")
+def format_monthly_mwk(value):
+    """30-day repayment display: MWK 76,980 / 30 days"""
+    d = _to_decimal(value)
+    if d <= 0:
+        return "Pending setup"
+    amount = int(d) if d == d.to_integral_value() else d
+    if isinstance(amount, int):
+        return f"MWK {amount:,} / 30 days"
+    return f"MWK {amount:,.2f} / 30 days"
+
+
 @register.filter(name="mwk_short")
 def format_mwk_short(value):
     """Format large MWK amounts in short form. E.g. 1250000 → MWK 1.25M"""

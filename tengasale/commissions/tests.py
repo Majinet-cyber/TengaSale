@@ -11,6 +11,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from applications.models import FinancingApplication
+from applications.test_helpers import attach_complete_pricing
 from core.models import BusinessSetting
 from rewards.models import SpinWallet
 
@@ -42,7 +43,17 @@ class CommissionApprovalTests(TestCase):
             "calculated_total_loan": Decimal("1000000.00"),
         }
         data.update(overrides)
-        return FinancingApplication.objects.create(**data)
+        explicit_loan = data.get("calculated_total_loan")
+        app = FinancingApplication.objects.create(**data)
+        if not app.deal_id:
+            cash = Decimal("350000")
+            if explicit_loan:
+                cash = (Decimal(explicit_loan) / Decimal("2.5")).quantize(Decimal("0.01"))
+            attach_complete_pricing(app, cash_price=cash)
+            if explicit_loan:
+                app.calculated_total_loan = explicit_loan
+                app.save(update_fields=["calculated_total_loan"])
+        return app
 
     def test_approving_application_creates_default_commissions_and_spin(self):
         app = self.create_application()
@@ -748,6 +759,7 @@ class Phase10MerchantPayoutTests(TestCase):
         self.contract = PaymentContract.objects.create(
             customer_name="Ali Kamwendo",
             customer_phone="0882222222",
+            cash_price=Decimal("240000"),
             total_amount=Decimal("600000"),
             deposit_paid=Decimal("120000"),
             daily_price=Decimal("2000"),
@@ -785,10 +797,10 @@ class Phase10MerchantPayoutTests(TestCase):
             created_by=self.merchant_user,
         )
         self.assertIsNotNone(payout)
-        # cash_price = total_amount = 600000
-        # financed = 480000, merchant_commission = 4800
-        # total_payable = 600000 + 4800 = 604800
-        self.assertEqual(payout.total_payable, Decimal("604800.00"))
+        # cash_price = 240000 (phone), financed = 480000, merchant_commission = 4800
+        # total_payable = 240000 + 4800 = 244800
+        self.assertEqual(payout.cash_price, Decimal("240000.00"))
+        self.assertEqual(payout.total_payable, Decimal("244800.00"))
 
     def test_create_merchant_payout_is_idempotent(self):
         payout1 = create_merchant_payout_for_contract(

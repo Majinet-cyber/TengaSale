@@ -136,6 +136,7 @@ class Contract(models.Model):
                 "deposit_amount": application.calculated_deposit_amount or Decimal("0"),
                 "monthly_payment": application.calculated_monthly_payment or Decimal("0"),
                 "daily_payment": application.calculated_daily_payment or Decimal("0"),
+                "term_months": getattr(application, "term_months", None) or 12,
             },
         )
 

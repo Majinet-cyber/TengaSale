@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from accounts.utils import assign_role
 from applications.models import ApplicationCorrection, FinancingApplication
+from applications.test_helpers import attach_complete_pricing
 from approvals.models import UnderwriterReview
 
 
@@ -27,7 +28,8 @@ class ApprovalQueueTests(TestCase):
             "submitted_at": timezone.now(),
         }
         data.update(overrides)
-        return FinancingApplication.objects.create(**data)
+        app = FinancingApplication.objects.create(**data)
+        return attach_complete_pricing(app)
 
     def test_underwriter_url_names_resolve(self):
         self.assertEqual(reverse("underwriter_dashboard"), "/tengasale/underwriter/")
@@ -757,7 +759,8 @@ class KulaSellStyleReviewTests(TestCase):
             "customer_phone": "0999001122",
         }
         defaults.update(kwargs)
-        return FinancingApplication.objects.create(**defaults)
+        app = FinancingApplication.objects.create(**defaults)
+        return attach_complete_pricing(app)
 
     # ── Hub review page ──────────────────────────────────────────────────────
 

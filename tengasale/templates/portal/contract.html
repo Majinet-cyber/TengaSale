@@ -54,10 +54,16 @@
     </div>
 
     <div class="cpd-money-grid">
-      <div><span class="cpd-label">Paid</span><strong>{{ contract.amount_paid|mwk }}</strong></div>
-      <div><span class="cpd-label">Remaining</span><strong>{{ remaining|mwk }}</strong></div>
-      <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk }}</strong></div>
+      <div><span class="cpd-label">Paid</span><strong>{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}Pending setup{% endif %}</strong></div>
+      <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}Pending setup{% endif %}</strong></div>
+      <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
     </div>
+    {% if pricing_complete and contract.deposit_required > 0 %}
+    <div class="cpd-meta-grid" style="margin-top:10px;">
+      <div><span class="cpd-label">Deposit required</span><strong>{{ contract.deposit_required|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit paid</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
+    </div>
+    {% endif %}
 
     <div class="cpd-meta-grid">
       {% if contract.start_date %}
@@ -137,18 +143,18 @@
   </section>
   {% endif %}
 
-  {% if contract.status != 'completed' %}
+  {% if contract.status != 'completed' and not deposit_pending and pricing_complete %}
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Repayment</div>
     </div>
-    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|default:0|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|default:0|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
+    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="repayment">
       <div class="cpd-amount-seg">
-        <button type="button" class="cpd-seg-btn" data-amount-mode="today" data-amount-multiplier="1"><span class="cpd-seg-btn__label">Today</span><span class="cpd-seg-btn__val">{{ contract.daily_price|mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="today" data-amount-multiplier="1"><span class="cpd-seg-btn__label">Today</span><span class="cpd-seg-btn__val">{{ contract.daily_price|daily_mwk }}</span></button>
         <button type="button" class="cpd-seg-btn" data-amount-mode="7d" data-amount-multiplier="7"><span class="cpd-seg-btn__label">7 Days</span><span class="cpd-seg-btn__val" data-seven-day-label></span></button>
-        <button type="button" class="cpd-seg-btn" data-amount-mode="30d" data-amount-value="{{ contract.thirty_day_price|default:0|floatformat:0 }}"><span class="cpd-seg-btn__label">30 Days</span><span class="cpd-seg-btn__val">{{ contract.thirty_day_price|mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="30d" data-amount-value="{{ contract.thirty_day_price|floatformat:0 }}"><span class="cpd-seg-btn__label">30 Days</span><span class="cpd-seg-btn__val">{{ contract.thirty_day_price|monthly_mwk }}</span></button>
         <button type="button" class="cpd-seg-btn" data-amount-mode="full" data-amount-value="{{ remaining|floatformat:0 }}"><span class="cpd-seg-btn__label">Full</span><span class="cpd-seg-btn__val">{{ remaining|mwk }}</span></button>
       </div>
       <div class="cpd-form-row">
@@ -179,7 +185,7 @@
   </section>
   {% endif %}
 
-  {% if contract.status != 'completed' and early_options %}
+  {% if contract.status != 'completed' and early_options and pricing_complete %}
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Pay Early, Pay Less</div>
@@ -244,11 +250,11 @@
       <div class="cpd-section-card__title">Device Information</div>
     </div>
     <div class="cpd-detail-grid cpd-detail-grid--simple">
-      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{{ contract.device_model|default:"Pending sync" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{{ device_info.brand|default:"Pending sync" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{{ device_info.imei|default:"Not synced yet" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Contract start</span><span class="cpd-detail-val">{{ contract.start_date|date:"d M Y"|default:"Pending sync" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Lock provider</span><span class="cpd-detail-val">{{ contract.device_lock_provider|default:"Pending sync" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{% if device_info.model or contract.device_model %}{{ device_info.model|default:contract.device_model }}{% else %}Pending setup{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{% if device_info.brand %}{{ device_info.brand }}{% else %}Pending setup{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{% if device_info.imei %}{{ device_info.imei }}{% else %}Not entered yet{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Contract start</span><span class="cpd-detail-val">{{ contract.start_date|date:"d M Y" }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Lock provider</span><span class="cpd-detail-val">{{ lock_provider_label }}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">Device status</span><span class="cpd-detail-val">{% if contract.device_lock_status and contract.device_lock_status != 'unknown' %}{{ contract.device_lock_status|capfirst }}{% else %}Not synced yet{% endif %}</span></div>
     </div>
   </section>

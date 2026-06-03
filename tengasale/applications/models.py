@@ -210,6 +210,10 @@ class FinancingApplication(models.Model):
     calculated_3_month_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     calculated_3_month_monthly = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     calculated_3_month_daily = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    term_months = models.PositiveIntegerField(
+        default=12,
+        help_text="Selected contract term in months: 3, 6, or 12",
+    )
     imei_number = models.CharField(max_length=80, blank=True)
 
     # ── IMEI Verification ─────────────────────────────────────────────────────
@@ -595,15 +599,18 @@ class FinancingApplication(models.Model):
         self.correction_id_back_image = "id_back_image" in self.correction_fields
         self.correction_customer_phone_image = "customer_phone_image" in self.correction_fields
 
-    def apply_deal_selection(self, deal, selected_cash_price):
+    def apply_deal_selection(self, deal, selected_cash_price, term_months=None):
+        from core.commercial import normalize_term_months
+
         self.deal = deal
         self.selected_cash_price = selected_cash_price
         self.selected_deposit_percent = deal.deposit_percent
         self.selected_loan_multiplier = deal.loan_multiplier
+        self.term_months = normalize_term_months(term_months or self.term_months or deal.term_months, for_new_contract=True)
         self.calculated_total_loan = deal.calculated_total_loan(selected_cash_price)
         self.calculated_deposit_amount = deal.calculated_deposit(selected_cash_price)
-        self.calculated_monthly_payment = deal.calculated_monthly_payment(selected_cash_price)
-        self.calculated_daily_payment = deal.calculated_daily_payment(selected_cash_price)
+        self.calculated_monthly_payment = deal.calculated_monthly_payment(selected_cash_price, self.term_months)
+        self.calculated_daily_payment = deal.calculated_daily_payment(selected_cash_price, self.term_months)
         self.calculated_6_month_total = deal.calculated_6_month_total(selected_cash_price)
         self.calculated_6_month_monthly = deal.calculated_6_month_monthly(selected_cash_price)
         self.calculated_6_month_daily = deal.calculated_6_month_daily(selected_cash_price)

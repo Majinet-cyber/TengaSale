@@ -1348,7 +1348,7 @@ def hq_simulations(request):
         "result": result,
         "form_data": form_data,
         "deposit_options": ["15", "20", "30"],
-        "term_options": [6, 9, 12, 18, 24],
+        "term_options": [3, 6, 12],
     })
 
 

@@ -23,6 +23,7 @@
         {% csrf_token %}
         <input type="hidden" name="deal_id" id="selected-deal-id">
         <input type="hidden" name="selected_cash_price" id="selected-cash-price">
+        <input type="hidden" name="term_months" id="selected-term-months" value="12">
 
         <section class="selection-section{% if 'selected_deal' in app.correction_fields %} has-correction{% endif %}">
             <h2>Choose brand</h2>
@@ -74,6 +75,15 @@
                     <span class="deal-mini-badge deal-mini-badge--lock" data-offer-lock>Lock-ready</span>
                 </div>
 
+                <div class="term-chip-row" style="margin-bottom:14px;">
+                    <span style="display:block;font-size:13px;color:#64748b;margin-bottom:8px;">Contract term</span>
+                    <div class="term-chips" role="group" aria-label="Contract term">
+                        <button type="button" class="term-chip" data-term-months="3">3 months</button>
+                        <button type="button" class="term-chip" data-term-months="6">6 months</button>
+                        <button type="button" class="term-chip term-chip--active" data-term-months="12">12 months</button>
+                    </div>
+                </div>
+
                 <div class="price-row">
                     <span>Selected cash price</span>
                     <strong>MWK <span data-cash-output></span></strong>
@@ -108,7 +118,7 @@
                         <strong>MWK <span data-monthly></span></strong>
                     </div>
                     <div>
-                        <span>12 months daily</span>
+                        <span><span data-term-copy-daily>12</span> months daily</span>
                         <strong>MWK <span data-daily></span></strong>
                     </div>
                 </div>
@@ -169,11 +179,14 @@
         const slider = document.getElementById("cash-price-slider");
         const hiddenDeal = document.getElementById("selected-deal-id");
         const hiddenPrice = document.getElementById("selected-cash-price");
+        const hiddenTerm = document.getElementById("selected-term-months");
         const form = document.getElementById("deal-form");
+        const termChips = document.querySelectorAll(".term-chip");
 
         let selectedBrand = "";
         let selectedModel = "";
         let selectedDeal = null;
+        let selectedTermMonths = 12;
 
         function money(value) {
             return formatter.format(Math.round(Number(value)));
@@ -260,8 +273,15 @@
             document.querySelector("[data-offer-condition]").textContent = deal.condition || "New";
             document.querySelector("[data-offer-stock]").textContent = deal.stock_status || "Available";
             document.querySelector("[data-offer-lock]").textContent = deal.is_lock_ready ? "Lock-ready" : "Lock pending";
-            document.querySelector("[data-term-months]").textContent = deal.term_months || 12;
-            document.querySelector("[data-term-copy]").textContent = deal.term_months || 12;
+            selectedTermMonths = selectedTermMonths || 12;
+            document.querySelectorAll("[data-term-copy]").forEach(function (el) {
+                el.textContent = selectedTermMonths;
+            });
+            document.querySelectorAll("[data-term-copy-daily]").forEach(function (el) {
+                el.textContent = selectedTermMonths;
+            });
+            document.querySelector("[data-term-months]").textContent = selectedTermMonths;
+            if (hiddenTerm) hiddenTerm.value = selectedTermMonths;
             document.querySelector("[data-min-cash]").textContent = money(deal.min_cash_price);
             document.querySelector("[data-max-cash]").textContent = money(deal.max_cash_price);
             document.querySelector("[data-deposit-percent]").textContent = Math.round(Number(deal.deposit_percent));
@@ -277,9 +297,17 @@
             const cash = Number(slider.value);
             const totalLoan = cash * Number(selectedDeal.loan_multiplier);
             const deposit = totalLoan * Number(selectedDeal.deposit_percent) / 100;
-            const termMonths = Number(selectedDeal.term_months || 12);
+            const termMonths = Number(selectedTermMonths || 12);
             const monthly = totalLoan / termMonths;
             const daily = totalLoan / (termMonths * 30);
+            if (hiddenTerm) hiddenTerm.value = termMonths;
+            document.querySelectorAll("[data-term-copy]").forEach(function (el) {
+                el.textContent = termMonths;
+            });
+            document.querySelectorAll("[data-term-copy-daily]").forEach(function (el) {
+                el.textContent = termMonths;
+            });
+            document.querySelector("[data-term-months]").textContent = termMonths;
             const sixTotal = totalLoan * 0.85;
             const threeTotal = totalLoan * 0.75;
 
@@ -297,6 +325,16 @@
             document.querySelector("[data-three-monthly]").textContent = money(threeTotal / 3);
             document.querySelector("[data-three-daily]").textContent = money(threeTotal / 90);
         }
+
+        termChips.forEach(function (chip) {
+            chip.addEventListener("click", function () {
+                selectedTermMonths = Number(chip.dataset.termMonths || 12);
+                termChips.forEach(function (item) {
+                    item.classList.toggle("term-chip--active", item === chip);
+                });
+                updatePricing();
+            });
+        });
 
         brandButtons.forEach(function (button) {
             button.addEventListener("click", function () {

@@ -81,39 +81,37 @@ def calculate_next_due_date(contract) -> "date":
 
 def calculate_early_settlement_options(contract) -> list[dict]:
     """
-    Return early settlement options for 9, 10, 11, 12 months.
+    Early payoff plans for 3, 6, and/or 12 months based on the contract term.
 
-    Discounts are derived from the contract's 9-month discount field,
-    interpolating for 10 and 11 months. 12 months is always no discount.
-
-    Each option shows:
-      - term_months
-      - total_cost
-      - remaining_to_pay
-      - daily_price
-      - thirty_day_price
-      - discount_percent
-      - savings (vs 12-month option)
-      - final_payoff_date
+    Only terms allowed by core.commercial.allowed_early_payoff_terms are shown.
+    No option is returned when pricing is incomplete or remaining balance is zero.
     """
+    from core.commercial import allowed_early_payoff_terms, EARLY_PAYOFF_DISCOUNTS, has_valid_pricing
+
+    if not has_valid_pricing(contract.total_amount):
+        return []
+
     remaining = calculate_remaining_amount(contract)
+    if remaining <= Decimal("0"):
+        return []
+
     today = timezone.localdate()
-
-    discount_9m = Decimal(str(contract.early_settlement_9m_discount))
-    discount_10m = (discount_9m * Decimal("0.67")).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-    discount_11m = (discount_9m * Decimal("0.33")).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-
-    settlement_configs = [
-        (9, discount_9m),
-        (10, discount_10m),
-        (11, discount_11m),
-        (12, Decimal("0")),
-    ]
+    contract_term = int(contract.term_months or 12)
+    payoff_terms = allowed_early_payoff_terms(contract_term)
+    if not payoff_terms:
+        return []
 
     full_term_total = contract.total_amount
     options = []
 
-    for term_months, discount_percent in settlement_configs:
+    discount_map = {
+        3: Decimal(str(contract.early_settlement_3m_discount or EARLY_PAYOFF_DISCOUNTS[3])),
+        6: Decimal(str(contract.early_settlement_6m_discount or EARLY_PAYOFF_DISCOUNTS[6])),
+        12: Decimal("0"),
+    }
+
+    for term_months in payoff_terms:
+        discount_percent = discount_map.get(term_months, Decimal("0"))
         if discount_percent > 0:
             discounted_remaining = remaining * (1 - discount_percent / 100)
             discounted_remaining = discounted_remaining.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
@@ -123,18 +121,24 @@ def calculate_early_settlement_options(contract) -> list[dict]:
             total_cost = full_term_total
 
         total_cost = total_cost.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        if total_cost <= Decimal("0"):
+            continue
+
         savings = (full_term_total - total_cost).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        final_payoff_date = today + timedelta(days=term_months * 30)
+        daily = calculate_daily_price(discounted_remaining, max(term_months, 1))
+        monthly = calculate_thirty_day_price(discounted_remaining, max(term_months, 1))
+        if daily <= Decimal("0") and discounted_remaining > Decimal("0"):
+            continue
 
         options.append({
             "term_months": term_months,
             "discount_percent": discount_percent,
             "total_cost": total_cost,
             "remaining_to_pay": discounted_remaining,
-            "daily_price": calculate_daily_price(discounted_remaining, max(term_months, 1)),
-            "thirty_day_price": calculate_thirty_day_price(discounted_remaining, max(term_months, 1)),
+            "daily_price": daily,
+            "thirty_day_price": monthly,
             "savings": max(savings, Decimal("0")),
-            "final_payoff_date": final_payoff_date,
+            "final_payoff_date": today + timedelta(days=term_months * 30),
         })
 
     return options
@@ -708,6 +712,43 @@ def search_payment_contract(query: str):
 # Contract creation from approved FinancingApplication
 # ---------------------------------------------------------------------------
 
+def _apply_pricing_to_payment_contract(contract, pricing: dict) -> None:
+    """Update PaymentContract commercial fields from a pricing snapshot."""
+    contract.cash_price = pricing["cash_price"]
+    contract.total_amount = pricing["contract_total"]
+    contract.deposit_required = pricing["deposit_required"]
+    contract.daily_price = pricing["daily_repayment"]
+    contract.thirty_day_price = pricing["monthly_repayment"]
+    contract.term_months = pricing["term_months"]
+    if pricing.get("device_model") and not contract.device_model:
+        contract.device_model = pricing["device_model"]
+
+
+def sync_merchant_contract_from_application(application) -> None:
+    """Keep contracts.Contract in sync with application pricing."""
+    from contracts.models import Contract
+    from core.commercial import pricing_from_application
+
+    pricing = pricing_from_application(application)
+    if not pricing:
+        return
+    contract, _ = Contract.from_application(application)
+    contract.cash_price = pricing["cash_price"]
+    contract.total_loan = pricing["contract_total"]
+    contract.deposit_amount = pricing["deposit_required"]
+    contract.monthly_payment = pricing["monthly_repayment"]
+    contract.daily_payment = pricing["daily_repayment"]
+    contract.term_months = pricing["term_months"]
+    if application.imei_number and not contract.imei_number:
+        contract.imei_number = application.imei_number
+    contract.save(
+        update_fields=[
+            "cash_price", "total_loan", "deposit_amount",
+            "monthly_payment", "daily_payment", "term_months", "imei_number",
+        ]
+    )
+
+
 @transaction.atomic
 def create_contract_from_application(application, approved_by=None) -> "PaymentContract":
     """
@@ -716,30 +757,34 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
     Returns the (possibly existing) PaymentContract.
     """
     from portal.models import PaymentContract
+    from core.commercial import pricing_from_application, sync_application_pricing_fields
 
-    # Idempotent: return existing contract if already created
+    sync_application_pricing_fields(application, save=True)
+    pricing = pricing_from_application(application)
+    if not pricing:
+        raise ValueError("Cannot create payment contract: deal pricing is incomplete.")
+
+    # Idempotent: return or repair existing contract
     try:
-        return application.payment_contract
+        existing = application.payment_contract
+        if existing.total_amount <= Decimal("0") or existing.daily_price <= Decimal("0"):
+            _apply_pricing_to_payment_contract(existing, pricing)
+            existing.save(
+                update_fields=[
+                    "cash_price", "total_amount", "deposit_required",
+                    "daily_price", "thirty_day_price", "term_months", "device_model",
+                ]
+            )
+        sync_merchant_contract_from_application(application)
+        return existing
     except PaymentContract.DoesNotExist:
         pass
 
-    total_amount = Decimal(application.calculated_total_loan or 0)
-    deposit_required = Decimal(
-        getattr(application, "calculated_deposit_amount", None)
-        or getattr(application, "deposit_amount", None)
-        or 0
-    )
-    term = getattr(application, "term_months", None) or 12
-    daily = calculate_daily_price(total_amount, term)
-    monthly = calculate_thirty_day_price(total_amount, term)
     imei = getattr(application, "imei_number", "") or ""
-
-    # Build provider metadata for lock integration
-    payg_placeholder = ""  # will be set by save() auto-generation
     provider_meta = {
         "imei": imei,
         "customer_phone": application.customer_phone or "",
-        "device_model": str(application.deal) if application.deal else "",
+        "device_model": pricing.get("device_model", ""),
     }
 
     contract = PaymentContract.objects.create(
@@ -747,14 +792,15 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         customer_name=application.customer_name or "",
         customer_phone=application.customer_phone or "",
         customer_national_id=application.national_id or "",
-        device_model=str(application.deal) if application.deal else "",
+        device_model=pricing.get("device_model", ""),
         imei_number=imei,
-        total_amount=total_amount,
-        deposit_required=deposit_required,
+        cash_price=pricing["cash_price"],
+        total_amount=pricing["contract_total"],
+        deposit_required=pricing["deposit_required"],
         deposit_paid=Decimal("0"),
-        daily_price=daily,
-        thirty_day_price=monthly,
-        term_months=term,
+        daily_price=pricing["daily_repayment"],
+        thirty_day_price=pricing["monthly_repayment"],
+        term_months=pricing["term_months"],
         status=PaymentContract.STATUS_ACTIVE,
         provider_metadata=provider_meta,
     )
@@ -783,4 +829,5 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
     except Exception as exc:
         logger.warning("Could not create MerchantContractPayout for contract %s: %s", contract.pk, exc)
 
+    sync_merchant_contract_from_application(application)
     return contract

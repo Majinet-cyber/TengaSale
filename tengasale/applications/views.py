@@ -176,6 +176,7 @@ def choose_device(request, app_id):
     if request.method == "POST":
         deal_id = request.POST.get("deal_id")
         selected_cash_price_raw = request.POST.get("selected_cash_price")
+        term_months_raw = request.POST.get("term_months")
         try:
             deal_pk = int(deal_id or "")
         except (TypeError, ValueError):
@@ -195,28 +196,39 @@ def choose_device(request, app_id):
             elif selected_cash_price < deal.min_cash_price or selected_cash_price > deal.max_cash_price:
                 form_error = "Cash price must stay within the selected deal price range."
             else:
-                app.apply_deal_selection(deal, selected_cash_price)
-                app.status = "device_selection"
-                app.save(
-                    update_fields=[
-                        "deal",
-                        "selected_cash_price",
-                        "selected_deposit_percent",
-                        "selected_loan_multiplier",
-                        "calculated_total_loan",
-                        "calculated_deposit_amount",
-                        "calculated_monthly_payment",
-                        "calculated_daily_payment",
-                        "calculated_6_month_total",
-                        "calculated_6_month_monthly",
-                        "calculated_6_month_daily",
-                        "calculated_3_month_total",
-                        "calculated_3_month_monthly",
-                        "calculated_3_month_daily",
-                        "status",
-                    ]
-                )
-                return redirect("location_details", app_id=app.id)
+                from core.commercial import ALLOWED_CONTRACT_TERMS, normalize_term_months
+
+                try:
+                    term_months = int(term_months_raw or 12)
+                except (TypeError, ValueError):
+                    term_months = 12
+                if term_months not in ALLOWED_CONTRACT_TERMS:
+                    form_error = "Contract term must be 3, 6, or 12 months."
+                else:
+                    term_months = normalize_term_months(term_months, for_new_contract=True)
+                    app.apply_deal_selection(deal, selected_cash_price, term_months=term_months)
+                    app.status = "device_selection"
+                    app.save(
+                        update_fields=[
+                            "deal",
+                            "selected_cash_price",
+                            "selected_deposit_percent",
+                            "selected_loan_multiplier",
+                            "term_months",
+                            "calculated_total_loan",
+                            "calculated_deposit_amount",
+                            "calculated_monthly_payment",
+                            "calculated_daily_payment",
+                            "calculated_6_month_total",
+                            "calculated_6_month_monthly",
+                            "calculated_6_month_daily",
+                            "calculated_3_month_total",
+                            "calculated_3_month_monthly",
+                            "calculated_3_month_daily",
+                            "status",
+                        ]
+                    )
+                    return redirect("location_details", app_id=app.id)
 
         messages.error(request, form_error)
 

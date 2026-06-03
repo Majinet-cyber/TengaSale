@@ -522,6 +522,21 @@ def sales_confirm_approve(request, app_id):
                 "approval_guard": approval_guard,
             })
 
+        from core.commercial import validate_application_pricing
+
+        pricing_ok, pricing_missing = validate_application_pricing(app)
+        if not pricing_ok:
+            messages.error(
+                request,
+                "Cannot approve yet. Missing: " + ", ".join(pricing_missing) + ".",
+            )
+            return render(request, "sales/confirm_approve.html", {
+                "app": app,
+                "page_heading": "Confirm Approve",
+                "fraud_check": fraud_check,
+                "approval_guard": approval_guard,
+            })
+
         from approvals.views import ALREADY_APPROVED_MSG, TERMINAL_STATUSES
         with transaction.atomic():
             app_locked = (

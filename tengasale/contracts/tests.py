@@ -1326,15 +1326,18 @@ class DepositPaymentPortalTests(TestCase):
             deposit_percent=Decimal("13"),
             loan_multiplier=Decimal("2.5"),
         )
+        from applications.test_helpers import attach_complete_pricing
+
         self.app = FinancingApplication.objects.create(
             created_by=self.merchant,
             customer_name="Deposit Customer",
-            customer_phone="0881200001",
-            national_id="888100001",
+            customer_phone="881200001",
+            national_id="88810001",
             deal=deal,
             imei_number="555444333222111",
             status="approved",
         )
+        attach_complete_pricing(self.app, cash_price=Decimal("300000"))
         self.contract, _ = Contract.from_application(self.app)
 
     def test_contract_number_format_in_portal_search(self):

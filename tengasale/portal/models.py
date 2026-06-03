@@ -112,6 +112,10 @@ class PaymentContract(models.Model):
     )
 
     # Financials
+    cash_price = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text="Phone cash price — merchant settlement basis",
+    )
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     deposit_required = models.DecimalField(
         max_digits=12, decimal_places=2, default=0,
@@ -274,9 +278,14 @@ class PaymentContract(models.Model):
 
     @property
     def progress_percent(self):
-        if not self.total_amount:
+        if not self.total_amount or self.total_amount <= 0:
             return 0
         return min(100, round((self.amount_paid / self.total_amount) * 100))
+
+    @property
+    def pricing_complete(self):
+        from core.commercial import has_valid_pricing
+        return has_valid_pricing(self.total_amount) and has_valid_pricing(self.daily_price)
 
     @property
     def masked_phone(self):

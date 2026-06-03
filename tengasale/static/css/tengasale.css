@@ -2448,3 +2448,26 @@ label,
   font-size: 17px;
   font-weight: 700;
 }
+
+.term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.term-chip {
+  border: 1.5px solid var(--ts-border);
+  background: #fff;
+  color: var(--ts-text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.term-chip--active {
+  border-color: var(--ts-orange);
+  background: #fff8f5;
+  color: var(--ts-orange);
+}
