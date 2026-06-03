@@ -1,5 +1,8 @@
 """Canonical device brand names for display and deduplication."""
 
+from django.conf import settings
+from django.contrib.staticfiles.storage import staticfiles_storage
+
 BRAND_ALIASES = {
     "redmi": "Redmi/Xiaomi",
     "xiaomi": "Redmi/Xiaomi",
@@ -37,3 +40,14 @@ def ordered_brand_names(raw_names):
         if name not in ordered:
             ordered.append(name)
     return ordered
+
+
+def brand_logo_url(static_path: str) -> str:
+    """Resolve a static brand logo path without crashing on missing manifest entries."""
+    if not static_path:
+        return ""
+    try:
+        return staticfiles_storage.url(static_path)
+    except (ValueError, OSError):
+        base = settings.STATIC_URL.rstrip("/")
+        return f"{base}/{static_path.lstrip('/')}"

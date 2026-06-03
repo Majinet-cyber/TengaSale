@@ -2205,3 +2205,150 @@ img.ts-logo-wordmark {
   .kyc-confirm-card { padding: 20px 16px 32px; }
   .role-forbidden-page { padding: 30px 16px 80px; }
 }
+
+/* ── KYC review cards ──────────────────────────────────────────── */
+.kyc-review-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.kyc-review-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kyc-review-card-image {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+}
+
+.kyc-review-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.kyc-review-card-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.kyc-review-card-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 6px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.kyc-review-retake {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kyc-review-submit-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.kyc-review-submit-row .action-btn-large.outline {
+  flex: 0 0 auto;
+  min-width: 96px;
+  max-width: 120px;
+}
+
+.kyc-review-submit-row .action-btn-large.primary {
+  flex: 1;
+}
+
+.kyc-review-submit-row .action-btn-large.primary[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Typography restoration (readable mobile scale) ─────────────── */
+body {
+  font-size: 16px;
+}
+
+.greeting,
+h1.greeting {
+  font-size: clamp(30px, 7vw, 42px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.kyc-section h2,
+.kyc-guided-step h2 {
+  font-size: clamp(22px, 5vw, 26px);
+  font-weight: 800;
+}
+
+.kyc-section p,
+.kyc-guided-step .text-muted {
+  font-size: 15px;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  font-size: 18px;
+}
+
+label,
+.ts-field-label,
+.application-progress-meta {
+  font-size: 14px;
+}
+
+.application-progress-meta-step,
+.application-progress-meta-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.action-btn-large,
+.new-application-button,
+.new-contract-cta {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.action-btn-large .btn-label {
+  font-size: 17px;
+  font-weight: 700;
+}

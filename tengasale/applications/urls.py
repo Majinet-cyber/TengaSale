@@ -6,6 +6,7 @@ urlpatterns = [
     path("<int:app_id>/customer/", views.edit_customer_details, name="edit_customer_details"),
     path("<int:app_id>/device/", views.choose_device, name="choose_device"),
     path("<int:app_id>/kyc/", views.kyc_capture, name="kyc_capture"),
+    path("<int:app_id>/kyc/save-image/", views.kyc_save_image, name="kyc_save_image"),
     path("<int:app_id>/location/", views.location_details, name="location_details"),
     path("<int:app_id>/work/", views.work_details, name="work_details"),
     path("<int:app_id>/signature/", views.signature, name="signature"),

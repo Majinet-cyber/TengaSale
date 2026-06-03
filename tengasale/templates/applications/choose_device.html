@@ -30,8 +30,8 @@
                 {% for card in brand_cards %}
                     <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" role="listitem">
                         <span class="brand-card-logo">
-                            {% if card.logo_static %}
-                                <img src="{% static card.logo_static %}" alt="{{ card.name }}" class="brand-card-logo-img" width="56" height="32">
+                            {% if card.logo_url %}
+                                <img src="{{ card.logo_url }}" alt="{{ card.name }}" class="brand-card-logo-img" width="56" height="32">
                             {% else %}
                                 <span class="brand-card-logo-badge">{{ card.name|slice:":3" }}</span>
                             {% endif %}

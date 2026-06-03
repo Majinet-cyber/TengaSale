@@ -12,7 +12,7 @@ from core.business_hours import business_hours_context
 from deals.models import DeviceDeal
 from geography.models import Region
 
-from deals.brand_utils import BRAND_STATIC_LOGOS, canonical_brand, ordered_brand_names
+from deals.brand_utils import BRAND_STATIC_LOGOS, brand_logo_url, canonical_brand, ordered_brand_names
 
 from .forms import (
     CustomerDetailsForm,
@@ -167,7 +167,7 @@ def choose_device(request, app_id):
         brand_cards.append({
             "name": name,
             "deal_count": count,
-            "logo_static": BRAND_STATIC_LOGOS.get(name, ""),
+            "logo_url": brand_logo_url(BRAND_STATIC_LOGOS.get(name, "")),
         })
     form_error = ""
 
@@ -232,6 +232,13 @@ def choose_device(request, app_id):
     )
 
 
+KYC_IMAGE_FIELDS = ("customer_face_image", "id_front_image", "id_back_image")
+
+
+def kyc_images_complete(app):
+    return all(getattr(app, field_name) for field_name in KYC_IMAGE_FIELDS)
+
+
 @merchant_required
 def kyc_capture(request, app_id):
     app = merchant_application(request, app_id)
@@ -244,11 +251,36 @@ def kyc_capture(request, app_id):
             app.save()
             messages.success(request, "KYC saved.")
             return redirect("choose_device", app_id=app.id)
+        if not kyc_images_complete(app):
+            messages.error(request, "Complete all three KYC photos before submitting.")
     else:
         form = KYCForm(instance=app)
 
-    kyc_complete = bool(app.customer_face_image and app.id_front_image and app.id_back_image)
+    kyc_complete = kyc_images_complete(app)
     return render(request, "applications/kyc.html", {"app": app, "form": form, "kyc_complete": kyc_complete})
+
+
+@merchant_required
+@require_POST
+def kyc_save_image(request, app_id):
+    app = merchant_application(request, app_id)
+    field_name = (request.POST.get("field") or "").strip()
+    if field_name not in KYC_IMAGE_FIELDS:
+        return JsonResponse({"error": "Invalid image field."}, status=400)
+
+    uploaded_file = request.FILES.get("image")
+    if not uploaded_file:
+        return JsonResponse({"error": "No image uploaded."}, status=400)
+
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
+    content_type = getattr(uploaded_file, "content_type", None)
+    if content_type and content_type not in allowed_types:
+        return JsonResponse({"error": "Upload a JPEG, PNG, or WebP image."}, status=400)
+
+    setattr(app, field_name, uploaded_file)
+    app.save(update_fields=[field_name])
+    image = getattr(app, field_name)
+    return JsonResponse({"ok": True, "field": field_name, "url": image.url})
 
 
 @merchant_required

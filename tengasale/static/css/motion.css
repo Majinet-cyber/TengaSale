@@ -710,12 +710,11 @@
 .kyc-step-dot.pending .kyc-step-circle { background: #f3f4f6; color: #9ca3af; border: 2px solid #e5e7eb; }
 
 .kyc-step-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #667085;
   text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 

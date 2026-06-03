@@ -639,9 +639,19 @@ class ApplicationFlowTests(ApplicationTestCase):
         response = self.client.get(reverse("choose_device", args=[app.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "TECNO")
-        self.assertContains(response, "itel")
-        self.assertContains(response, "Redmi")
+        self.assertContains(response, "Tecno")
+        self.assertContains(response, "Itel")
+        self.assertContains(response, "Redmi/Xiaomi")
+
+    @override_settings(DEBUG=False)
+    def test_device_page_with_brand_logos_does_not_500_when_manifest_missing(self):
+        app = self.create_application()
+        call_command("seed_tengasale")
+
+        response = self.client.get(reverse("choose_device", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choose brand")
 
     def test_device_page_contains_guided_flow_text_and_hidden_inputs(self):
         app = self.create_application()
@@ -1086,6 +1096,35 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertEqual(post_response.status_code, 404)
         self.assertFalse(app.customer_face_image)
         self.assertNotEqual(app.status, "kyc")
+
+    def test_kyc_save_image_ajax_persists_single_photo(self):
+        app = self.create_application()
+
+        response = self.client.post(
+            reverse("kyc_save_image", args=[app.id]),
+            {"field": "customer_face_image", "image": self.image_upload("face.png")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertIn("/media/", payload["url"])
+
+        app.refresh_from_db()
+        self.assertTrue(app.customer_face_image)
+        self.assertIn("kyc/faces/", app.customer_face_image.name)
+
+    def test_kyc_review_shows_saved_image_urls(self):
+        app = self.create_application()
+        self.save_existing_images(app)
+
+        response = self.client.get(reverse("kyc_capture", args=[app.id]))
+
+        self.assertContains(response, app.customer_face_image.url)
+        self.assertContains(response, app.id_front_image.url)
+        self.assertContains(response, app.id_back_image.url)
+        self.assertContains(response, "kyc-review-grid")
+        self.assertContains(response, "kyc-review-card")
 
 
 class ApplicationAdminImportTests(TestCase):
