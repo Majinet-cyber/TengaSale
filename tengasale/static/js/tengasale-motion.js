@@ -124,25 +124,31 @@
         });
     }
 
-    /* ── Smart image loading (general broken image handling) ─────────── */
+    /* ── Broken image handling (never show initials placeholders) ───── */
+    function showImageLoadError(img) {
+        if (img.dataset.fbDone) return;
+        img.dataset.fbDone = '1';
+        var src = img.src || '';
+        console.error('Image failed to load:', src);
+        img.style.display = 'none';
+        var parent = img.parentElement;
+        if (!parent || parent.querySelector('.ts-img-fallback')) return;
+        var fb = document.createElement('div');
+        fb.className = 'ts-img-fallback ts-img-fallback--error';
+        fb.setAttribute('role', 'alert');
+        fb.textContent = 'Photo failed to load';
+        fb.style.cssText = 'width:100%;height:100%;min-height:48px;display:flex;align-items:center;justify-content:center;background:#fef2f2;color:#b42318;font-size:12px;font-weight:600;border-radius:inherit;padding:8px;text-align:center;';
+        parent.appendChild(fb);
+        if (typeof window.showError === 'function') {
+            window.showError('Photo failed to load');
+        }
+    }
+
     function initBrokenImages() {
         document.querySelectorAll('img[src]').forEach(function (img) {
-            img.addEventListener('error', function () {
-                /* Only replace once and only for real image attempts */
-                if (img.dataset.fbDone) return;
-                img.dataset.fbDone = '1';
-                var alt = img.alt || '';
-                var initials = alt.split(' ').slice(0, 2).map(function (w) { return w[0] || ''; }).join('').toUpperCase() || '?';
-                img.style.display = 'none';
-                var parent = img.parentElement;
-                if (parent && !parent.querySelector('.ts-img-fallback')) {
-                    var fb = document.createElement('div');
-                    fb.className = 'ts-img-fallback';
-                    fb.textContent = initials;
-                    fb.style.cssText = 'width:100%;height:100%;min-height:48px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#667085;font-size:18px;font-weight:700;border-radius:inherit;';
-                    parent.appendChild(fb);
-                }
-            });
+            if (img.dataset.skipImgFallback === '1') return;
+            if (!img.src || img.src === window.location.href) return;
+            img.addEventListener('error', function () { showImageLoadError(img); });
         });
     }
 

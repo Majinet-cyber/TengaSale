@@ -4,6 +4,7 @@ from decimal import Decimal
 from importlib import import_module
 import shutil
 import tempfile
+from unittest.mock import patch
 
 from django.contrib import admin
 from django.contrib.auth import get_user_model
@@ -1771,3 +1772,203 @@ class ApprovalStatusTests(TestCase):
         url = reverse("application_detail", args=[self.app.id])
         response = self.client.get(url)
         self.assertContains(response, 'status-approved')
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Production stability: media, placeholders, end-to-end flow
+# ──────────────────────────────────────────────────────────────────────────────
+
+from pathlib import Path
+
+from django.conf import settings as django_settings
+
+from contracts.models import Contract
+
+
+class ProductionMediaServeTests(ApplicationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.media_root = tempfile.mkdtemp()
+        self.settings_override = override_settings(
+            DEBUG=False,
+            MEDIA_ROOT=self.media_root,
+            ROOT_URLCONF="config.urls",
+        )
+        self.settings_override.enable()
+
+    def tearDown(self):
+        self.settings_override.disable()
+        shutil.rmtree(self.media_root, ignore_errors=True)
+        super().tearDown()
+
+    def test_authenticated_user_can_load_uploaded_kyc_media(self):
+        app = self.create_application()
+        app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=True)
+        media_url = app.customer_face_image.url
+
+        response = self.client.get(media_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+
+
+class MotionJsRegressionTests(TestCase):
+    def test_motion_js_does_not_render_initials_from_alt_text(self):
+        motion_path = Path(django_settings.BASE_DIR) / "static" / "js" / "tengasale-motion.js"
+        source = motion_path.read_text(encoding="utf-8")
+        self.assertNotIn("slice(0, 2).map", source)
+        self.assertIn("Photo failed to load", source)
+
+
+class ApplicationStabilityE2ETests(ApplicationTestCase):
+    """
+    Merchant application → contract complete → PDF open.
+    Asserts real media URLs render and no initials-placeholder regressions.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.media_root = tempfile.mkdtemp()
+        self.settings_override = override_settings(MEDIA_ROOT=self.media_root)
+        self.settings_override.enable()
+        call_command("seed_legal_documents", verbosity=0)
+
+    def tearDown(self):
+        self.settings_override.disable()
+        shutil.rmtree(self.media_root, ignore_errors=True)
+        super().tearDown()
+
+    def image_upload(self, name):
+        return SimpleUploadedFile(name, PNG_BYTES, content_type="image/png")
+
+    def location_data(self):
+        return {
+            "region": "Central",
+            "district": "Lilongwe",
+            "traditional_authority": "TA Chadza",
+            "precise_location": "Area 25",
+            "next_of_kin_1_name": "Mary Banda",
+            "next_of_kin_1_phone": "991111111",
+            "next_of_kin_1_relationship": "Family",
+        }
+
+    def work_data(self):
+        return {
+            "work_description": "Runs a grocery stall",
+            "next_of_kin_2_name": "Peter Phiri",
+            "next_of_kin_2_phone": "992222222",
+            "next_of_kin_2_relationship": "Friend",
+            "proof_of_income_type": "MoMo",
+            "proof_contact_name": "Airtel Agent",
+            "proof_contact_phone": "993333333",
+            "proof_notes": "",
+        }
+
+    def test_full_merchant_flow_images_signature_and_pdf(self):
+        deal = self.create_deal()
+        app = self.create_application()
+        app.customer_name = "Jane Banda"
+        app.customer_phone = "990870616"
+        app.national_id = "RQXFVZC9"
+        app.save(update_fields=["customer_name", "customer_phone", "national_id"])
+
+        for field in ("customer_face_image", "id_front_image", "id_back_image"):
+            response = self.client.post(
+                reverse("kyc_save_image", args=[app.id]),
+                {"field": field, "image": self.image_upload(f"{field}.png")},
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+            self.assertTrue(response.json()["ok"])
+
+        app.refresh_from_db()
+        kyc_response = self.client.get(reverse("kyc_capture", args=[app.id]))
+        self.assertEqual(kyc_response.status_code, 200)
+        self.assertContains(kyc_response, app.customer_face_image.url)
+        self.assertContains(kyc_response, app.id_front_image.url)
+        self.assertContains(kyc_response, app.id_back_image.url)
+        self.assertNotContains(kyc_response, 'class="ts-img-fallback"')
+
+        self.client.post(
+            reverse("choose_device", args=[app.id]),
+            {"deal_id": deal.id, "selected_cash_price": "350000"},
+        )
+        self.client.post(reverse("location_details", args=[app.id]), self.location_data())
+        self.client.post(reverse("work_details", args=[app.id]), self.work_data())
+        self.client.post(
+            reverse("signature", args=[app.id]),
+            {"save_signature": "1", "signature_data": valid_signature_data()},
+        )
+
+        app.refresh_from_db()
+        review_response = self.client.get(reverse("application_review", args=[app.id]))
+        self.assertEqual(review_response.status_code, 200)
+        self.assertContains(review_response, app.signature_image.url)
+        self.assertNotContains(review_response, ">CS<")
+
+        self.client.post(
+            reverse("application_review", args=[app.id]),
+            {"agreed_to_terms": "on"},
+        )
+        app.refresh_from_db()
+        app.status = "approved"
+        app.calculated_total_loan = deal.total_12_month_price
+        app.calculated_deposit_amount = Decimal("113750.00")
+        app.calculated_monthly_payment = Decimal("72916.67")
+        app.calculated_daily_payment = Decimal("2430.56")
+        app.selected_cash_price = Decimal("350000.00")
+        app.save()
+
+        self.client.post(reverse("contract_terms", args=[app.id]), {
+            "confirmed_terms": "on",
+            "accept_contract_summary": "on",
+            "accept_master_terms": "on",
+            "consent_device_management": "on",
+            "consent_communication": "on",
+            "confirm_information_true": "on",
+        })
+        contract = Contract.objects.get(application=app)
+        self.client.post(
+            reverse("contract_signature", args=[contract.id]),
+            {"signature_data": valid_signature_data(), "customer_terms_accepted": "on"},
+        )
+        contract.refresh_from_db()
+        contract.status = Contract.STATUS_IMEI_ENTERED
+        contract.imei_number = "123456789012345"
+        contract.save()
+
+        for action in ("warranty", "locked", "deposit"):
+            self.client.post(reverse("contract_progress", args=[contract.id]), {"action": action})
+
+        contract.refresh_from_db()
+        self.assertEqual(contract.status, Contract.STATUS_COMPLETE)
+
+        pdf_response = self.client.get(reverse("contract_pdf_initial", args=[contract.id]))
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response["Content-Type"], "application/pdf")
+        self.assertGreater(int(pdf_response.get("Content-Length", 0) or 0), 100)
+
+        detail_response = self.client.get(reverse("application_detail", args=[app.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, app.signature_image.url)
+        self.assertNotContains(detail_response, ">TN<")
+        self.assertNotContains(detail_response, ">CS<")
+        self.assertNotContains(detail_response, 'class="ts-img-fallback"')
+
+    def test_pdf_json_error_not_raw_500_when_generation_fails(self):
+        app = self.create_application()
+        app.status = "approved"
+        app.save(update_fields=["status"])
+        contract = Contract.from_application(app)[0]
+        contract.initial_pdf = None
+        contract.save(update_fields=["initial_pdf"])
+
+        with patch(
+            "services.contracts.pdf_contracts.generate_customer_contract_pdf",
+            return_value=None,
+        ):
+            response = self.client.get(
+                reverse("contract_pdf_initial", args=[contract.id]),
+                HTTP_ACCEPT="application/json",
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["error"], "Unable to generate contract PDF")

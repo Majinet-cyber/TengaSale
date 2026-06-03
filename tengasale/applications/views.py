@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -24,6 +25,7 @@ from .forms import (
 )
 from .models import ApplicationCorrectionToken, ApplicationFieldReview, FinancingApplication
 
+logger = logging.getLogger("tengasale.applications")
 
 ACTIVE_STATUSES = [
     "draft",
@@ -280,6 +282,13 @@ def kyc_save_image(request, app_id):
     setattr(app, field_name, uploaded_file)
     app.save(update_fields=[field_name])
     image = getattr(app, field_name)
+    logger.info(
+        "Photo uploaded app_id=%s field=%s url=%s path=%s",
+        app.id,
+        field_name,
+        image.url,
+        image.path,
+    )
     return JsonResponse({"ok": True, "field": field_name, "url": image.url})
 
 
@@ -338,6 +347,13 @@ def signature(request, app_id):
             app.signature_image.save(form.signature_file.name, form.signature_file, save=False)
             app.status = "signature"
             app.save(update_fields=["signature_image", "status"])
+            sig = app.signature_image
+            logger.info(
+                "Signature saved app_id=%s url=%s path=%s",
+                app.id,
+                sig.url if sig else "",
+                sig.path if sig else "",
+            )
             messages.success(request, "Signature saved.")
             return redirect("application_review", app_id=app.id)
         messages.error(request, "Could not save signature. Please try again.")

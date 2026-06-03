@@ -513,12 +513,41 @@
         return input ? input.value : '';
     }
 
+    function showKycError(msg) {
+        console.error(msg);
+        if (typeof window.showError === 'function') window.showError(msg);
+    }
+
+    function bindReviewImageLoad(img) {
+        if (!img || img.dataset.loadBound) return;
+        img.dataset.loadBound = '1';
+        img.addEventListener('load', function () {
+            console.log('Image URL:', img.src);
+        });
+        img.addEventListener('error', function () {
+            showKycError('Photo failed to load');
+            var emptyId = img.id + '-empty';
+            var empty = document.getElementById(emptyId);
+            if (empty) {
+                empty.textContent = 'Photo failed to load';
+                empty.hidden = false;
+            }
+            img.hidden = true;
+        });
+    }
+
     function updateReviewImage(stepNum, url) {
         var reviewId = reviewKeyMap[stepNum];
         if (!reviewId) return;
         var img = document.getElementById(reviewId);
         var empty = document.getElementById(reviewId + '-empty');
+        if (!url) {
+            showKycError('Photo failed to load');
+            return;
+        }
+        console.log('Image URL:', url);
         if (img) {
+            bindReviewImageLoad(img);
             img.src = url;
             img.hidden = false;
         }
@@ -544,12 +573,15 @@
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (data && data.ok && data.url) {
+                    console.log('Image URL:', data.url);
                     updateReviewImage(stepNum, data.url);
-                } else if (previewUrl) {
-                    updateReviewImage(stepNum, previewUrl);
+                } else {
+                    showKycError(data && data.error ? data.error : 'Photo failed to save');
+                    if (previewUrl) updateReviewImage(stepNum, previewUrl);
                 }
             })
             .catch(function () {
+                showKycError('Photo failed to save');
                 if (previewUrl) updateReviewImage(stepNum, previewUrl);
             });
     }
@@ -928,6 +960,10 @@
         goToStep(startStep);
         refreshSubmitState();
     })();
+
+    ['review-selfie', 'review-id-front', 'review-id-back'].forEach(function (id) {
+        bindReviewImageLoad(document.getElementById(id));
+    });
 })();
 </script>
 

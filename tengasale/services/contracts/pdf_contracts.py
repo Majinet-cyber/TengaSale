@@ -9,10 +9,13 @@ from database records using xhtml2pdf (HTML → PDF).
 
 from __future__ import annotations
 
+import base64
 import io
 import logging
+import mimetypes
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 from django.conf import settings
@@ -227,13 +230,8 @@ def get_contract_context(contract) -> dict[str, Any]:
         date_of_birth = str(app.date_of_birth) if app.date_of_birth else ""
         gender = app.get_gender_display() if app.gender else ""
 
-    # Signatures
-    customer_sig_url = ""
-    if contract.customer_contract_signature:
-        try:
-            customer_sig_url = contract.customer_contract_signature.url
-        except Exception:
-            pass
+    # Signatures — embed as data URI so xhtml2pdf can render without HTTP/media URLs
+    customer_sig_url = _filefield_data_uri(contract.customer_contract_signature)
 
     # Approval
     approved_by_name = ""
@@ -467,6 +465,60 @@ def _user_display(user) -> str:
     return user.get_full_name() or getattr(user, "username", "System")
 
 
+def _filefield_data_uri(file_field) -> str:
+    """Return a data: URI for an ImageField/FileField, or empty string."""
+    if not file_field:
+        return ""
+    try:
+        path = Path(file_field.path)
+        if not path.is_file():
+            return file_field.url if hasattr(file_field, "url") else ""
+        mime, _ = mimetypes.guess_type(str(path))
+        if not mime:
+            mime = "image/png"
+        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+        return f"data:{mime};base64,{encoded}"
+    except Exception:
+        logger.warning("Could not embed file as data URI: %s", getattr(file_field, "name", ""))
+        try:
+            return file_field.url
+        except Exception:
+            return ""
+
+
+def _pdf_link_callback(uri: str, rel: str) -> str:
+    """Resolve /media/ and file paths for embedded images (signatures) in PDFs."""
+    if not uri:
+        return uri
+    if uri.startswith("data:"):
+        return uri
+    if uri.startswith("file://"):
+        return uri
+
+    media_url = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
+    def _local_file_uri(rel_path: str) -> str:
+        local = Path(settings.MEDIA_ROOT) / rel_path.replace("\\", "/").lstrip("/")
+        if local.is_file():
+            return local.resolve().as_uri()
+        logger.warning("PDF image not on disk: %s", local)
+        return ""
+
+    if uri.startswith(media_url):
+        resolved = _local_file_uri(uri[len(media_url):])
+        if resolved:
+            return resolved
+
+    if uri.startswith("/"):
+        resolved = _local_file_uri(uri.lstrip("/"))
+        if resolved:
+            return resolved
+
+    if os.path.isfile(uri):
+        return Path(uri).resolve().as_uri()
+
+    return uri
+
+
 def _html_to_pdf(html: str) -> Optional[bytes]:
     """Convert HTML string to PDF bytes using xhtml2pdf."""
     try:
@@ -477,6 +529,7 @@ def _html_to_pdf(html: str) -> Optional[bytes]:
             src=io.StringIO(html),
             dest=buf,
             encoding="utf-8",
+            link_callback=_pdf_link_callback,
         )
         if result.err:
             logger.error("xhtml2pdf reported errors: %s", result.err)

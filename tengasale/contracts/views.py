@@ -16,7 +16,8 @@ from commissions.services import process_contract_completion
 from .forms import ContractSignatureForm, ImeiForm, MerchantTermsForm
 from .models import Contract, ContractDocumentDelivery, LegalAcceptance, LegalDocumentTemplate
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("tengasale.contracts")
+pdf_logger = logging.getLogger("tengasale.contracts.pdf")
 
 
 def _user_is_hq(user):
@@ -449,6 +450,63 @@ def contract_detail(request, contract_id):
 # PDF download views
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _wants_json_pdf_error(request) -> bool:
+    accept = request.headers.get("Accept", "")
+    return (
+        "application/json" in accept
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    )
+
+
+def _pdf_unavailable_response(request, message: str, *, status: int = 503):
+    if _wants_json_pdf_error(request):
+        return JsonResponse({"error": message}, status=status)
+    return HttpResponse(message, status=status, content_type="text/plain")
+
+
+def _serve_contract_pdf_file(request, contract, file_field, filename: str):
+    """Open a stored PDF field; log and return a safe error response on failure."""
+    pdf_file = getattr(contract, file_field, None)
+    if not pdf_file:
+        pdf_logger.error(
+            "PDF missing contract_id=%s user=%s field=%s",
+            contract.id,
+            request.user.pk,
+            file_field,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+    pdf_path = ""
+    try:
+        pdf_path = pdf_file.path
+    except Exception:
+        pdf_path = pdf_file.name
+
+    try:
+        pdf_logger.info(
+            "Serving PDF contract_id=%s number=%s user=%s path=%s",
+            contract.id,
+            contract.contract_number,
+            request.user.pk,
+            pdf_path,
+        )
+        return FileResponse(
+            pdf_file.open("rb"),
+            as_attachment=False,
+            filename=filename,
+            content_type="application/pdf",
+        )
+    except Exception:
+        pdf_logger.exception(
+            "PDF read failed contract_id=%s number=%s user=%s path=%s",
+            contract.id,
+            contract.contract_number,
+            request.user.pk,
+            pdf_path,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+
 @merchant_required
 def contract_pdf_initial(request, contract_id):
     """Serve or generate the initial signed PDF."""
@@ -457,20 +515,36 @@ def contract_pdf_initial(request, contract_id):
     if not is_hq and not can_access_contract_flow(request.user, contract.application):
         raise PermissionDenied
 
-    if not contract.initial_pdf:
-        from services.contracts.pdf_contracts import generate_customer_contract_pdf
-        generate_customer_contract_pdf(contract, generated_by=request.user)
-        contract.refresh_from_db()
+    try:
+        if not contract.initial_pdf:
+            from services.contracts.pdf_contracts import generate_customer_contract_pdf
 
-    if not contract.initial_pdf:
-        raise Http404("Initial contract PDF not available")
+            generate_customer_contract_pdf(contract, generated_by=request.user)
+            contract.refresh_from_db()
 
-    return FileResponse(
-        contract.initial_pdf.open("rb"),
-        as_attachment=False,
-        filename=f"TengaSale_Contract_{contract.contract_number}.pdf",
-        content_type="application/pdf",
-    )
+        if not contract.initial_pdf:
+            pdf_logger.error(
+                "Initial PDF generation returned empty contract_id=%s number=%s user=%s",
+                contract.id,
+                contract.contract_number,
+                request.user.pk,
+            )
+            return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+        return _serve_contract_pdf_file(
+            request,
+            contract,
+            "initial_pdf",
+            f"TengaSale_Contract_{contract.contract_number}.pdf",
+        )
+    except Exception:
+        pdf_logger.exception(
+            "contract_pdf_initial failed contract_id=%s number=%s user=%s",
+            contract.id,
+            getattr(contract, "contract_number", "?"),
+            request.user.pk,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
 
 
 @merchant_required
@@ -481,20 +555,36 @@ def contract_pdf_bundle(request, contract_id):
     if not is_hq and not can_access_contract_flow(request.user, contract.application):
         raise PermissionDenied
 
-    if not contract.contract_bundle_pdf:
-        from services.contracts.pdf_contracts import generate_contract_bundle_pdf
-        generate_contract_bundle_pdf(contract, generated_by=request.user)
-        contract.refresh_from_db()
+    try:
+        if not contract.contract_bundle_pdf:
+            from services.contracts.pdf_contracts import generate_contract_bundle_pdf
 
-    if not contract.contract_bundle_pdf:
-        raise Http404("Contract bundle PDF not available")
+            generate_contract_bundle_pdf(contract, generated_by=request.user)
+            contract.refresh_from_db()
 
-    return FileResponse(
-        contract.contract_bundle_pdf.open("rb"),
-        as_attachment=False,
-        filename=f"TengaSale_Contract_{contract.contract_number}_Bundle.pdf",
-        content_type="application/pdf",
-    )
+        if not contract.contract_bundle_pdf:
+            pdf_logger.error(
+                "Bundle PDF generation returned empty contract_id=%s number=%s user=%s",
+                contract.id,
+                contract.contract_number,
+                request.user.pk,
+            )
+            return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+        return _serve_contract_pdf_file(
+            request,
+            contract,
+            "contract_bundle_pdf",
+            f"TengaSale_Contract_{contract.contract_number}_Bundle.pdf",
+        )
+    except Exception:
+        pdf_logger.exception(
+            "contract_pdf_bundle failed contract_id=%s number=%s user=%s",
+            contract.id,
+            contract.contract_number,
+            request.user.pk,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
 
 
 @merchant_required
@@ -505,22 +595,40 @@ def contract_pdf_completed_bundle(request, contract_id):
     if not is_hq and not can_access_contract_flow(request.user, contract.application):
         raise PermissionDenied
 
-    if not contract.completed_bundle_pdf:
-        if contract.status != Contract.STATUS_COMPLETE:
-            raise Http404("Contract not yet completed")
-        from services.contracts.pdf_contracts import generate_completed_contract_bundle_pdf
-        generate_completed_contract_bundle_pdf(contract, generated_by=request.user)
-        contract.refresh_from_db()
+    try:
+        if not contract.completed_bundle_pdf:
+            if contract.status != Contract.STATUS_COMPLETE:
+                raise Http404("Contract not yet completed")
+            from services.contracts.pdf_contracts import generate_completed_contract_bundle_pdf
 
-    if not contract.completed_bundle_pdf:
-        raise Http404("Completed bundle PDF not available")
+            generate_completed_contract_bundle_pdf(contract, generated_by=request.user)
+            contract.refresh_from_db()
 
-    return FileResponse(
-        contract.completed_bundle_pdf.open("rb"),
-        as_attachment=False,
-        filename=f"TengaSale_Contract_{contract.contract_number}_Bundle_Completed.pdf",
-        content_type="application/pdf",
-    )
+        if not contract.completed_bundle_pdf:
+            pdf_logger.error(
+                "Completed bundle PDF empty contract_id=%s number=%s user=%s",
+                contract.id,
+                contract.contract_number,
+                request.user.pk,
+            )
+            return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+        return _serve_contract_pdf_file(
+            request,
+            contract,
+            "completed_bundle_pdf",
+            f"TengaSale_Contract_{contract.contract_number}_Bundle_Completed.pdf",
+        )
+    except Http404:
+        raise
+    except Exception:
+        pdf_logger.exception(
+            "contract_pdf_completed_bundle failed contract_id=%s number=%s user=%s",
+            contract.id,
+            contract.contract_number,
+            request.user.pk,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
 
 
 @merchant_required
@@ -546,22 +654,40 @@ def contract_pdf_completed(request, contract_id):
     if not is_hq and not can_access_contract_flow(request.user, contract.application):
         raise PermissionDenied
 
-    if not contract.completed_pdf:
-        if contract.status != Contract.STATUS_COMPLETE:
-            raise Http404("Contract not yet completed")
-        from services.contracts.pdf_contracts import generate_completed_contract_pdf
-        generate_completed_contract_pdf(contract, generated_by=request.user)
-        contract.refresh_from_db()
+    try:
+        if not contract.completed_pdf:
+            if contract.status != Contract.STATUS_COMPLETE:
+                raise Http404("Contract not yet completed")
+            from services.contracts.pdf_contracts import generate_completed_contract_pdf
 
-    if not contract.completed_pdf:
-        raise Http404("Completed contract PDF not available")
+            generate_completed_contract_pdf(contract, generated_by=request.user)
+            contract.refresh_from_db()
 
-    return FileResponse(
-        contract.completed_pdf.open("rb"),
-        as_attachment=False,
-        filename=f"TengaSale_Contract_{contract.contract_number}_Completed.pdf",
-        content_type="application/pdf",
-    )
+        if not contract.completed_pdf:
+            pdf_logger.error(
+                "Completed PDF empty contract_id=%s number=%s user=%s",
+                contract.id,
+                contract.contract_number,
+                request.user.pk,
+            )
+            return _pdf_unavailable_response(request, "Unable to generate contract PDF")
+
+        return _serve_contract_pdf_file(
+            request,
+            contract,
+            "completed_pdf",
+            f"TengaSale_Contract_{contract.contract_number}_Completed.pdf",
+        )
+    except Http404:
+        raise
+    except Exception:
+        pdf_logger.exception(
+            "contract_pdf_completed failed contract_id=%s number=%s user=%s",
+            contract.id,
+            contract.contract_number,
+            request.user.pk,
+        )
+        return _pdf_unavailable_response(request, "Unable to generate contract PDF")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

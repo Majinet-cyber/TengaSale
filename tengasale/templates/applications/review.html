@@ -24,6 +24,7 @@
                 src="{{ app.signature_image.url }}"
                 alt="Customer signature"
                 id="sig-preview-img"
+                data-skip-img-fallback="1"
             >
             <div class="sig-preview-meta">
                 <span class="section-saved-badge">
@@ -76,6 +77,28 @@
         termsCheck.addEventListener('change', updateSubmitState);
     }
     updateSubmitState();
+
+    var sigImg = document.getElementById('sig-preview-img');
+    if (sigImg) {
+        console.log('Image URL:', sigImg.src);
+        sigImg.addEventListener('load', function () {
+            console.log('Image URL:', sigImg.src);
+        });
+        sigImg.addEventListener('error', function () {
+            console.error('Signature image failed to load:', sigImg.src);
+            var card = document.getElementById('sig-preview-card');
+            if (card) {
+                var err = document.createElement('p');
+                err.className = 'sig-load-error';
+                err.setAttribute('role', 'alert');
+                err.textContent = 'Signature failed to load. Please sign again.';
+                err.style.cssText = 'color:#b42318;font-size:13px;margin:8px 0;';
+                if (!card.querySelector('.sig-load-error')) card.appendChild(err);
+            }
+            sigImg.style.display = 'none';
+            if (typeof window.showError === 'function') window.showError('Signature failed to load');
+        });
+    }
 })();
 </script>
 

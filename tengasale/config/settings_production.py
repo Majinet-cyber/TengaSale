@@ -122,5 +122,9 @@ LOGGING = {
         "risk": {"handlers": ["console"], "level": "INFO"},
         "commissions": {"handlers": ["console"], "level": "INFO"},
         "portal": {"handlers": ["console"], "level": "INFO"},
+        "tengasale.applications": {"handlers": ["console"], "level": "INFO"},
+        "tengasale.contracts": {"handlers": ["console"], "level": "INFO"},
+        "tengasale.contracts.pdf": {"handlers": ["console"], "level": "INFO"},
+        "tengasale.media": {"handlers": ["console"], "level": "INFO"},
     },
 }

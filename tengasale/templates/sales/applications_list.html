@@ -29,6 +29,7 @@
           src="{{ app.customer_face_image.url }}"
           alt="{{ app.customer_name }}"
           class="app-card-v2__photo"
+          data-skip-img-fallback="1"
           onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
         >
         <div class="app-card-v2__photo-placeholder" style="display:none;">
