@@ -132,7 +132,20 @@ def edit_customer_details(request, app_id):
                         **bh,
                     })
 
+            previous_phone = app.__class__.objects.filter(pk=app.pk).values_list("customer_phone", flat=True).first()
+            phone_changed = bool(app.customer_phone and app.customer_phone != previous_phone)
+            if phone_changed:
+                app.phone_verified = False
+                app.phone_verification_status = "not_sent"
             app.save()
+            if app.customer_phone and app.phone_verification_status in ("not_sent", "failed") and not app.phone_verified:
+                try:
+                    from communications.services import generate_phone_otp
+                    generate_phone_otp(app.customer_phone, application=app)
+                except Exception:
+                    logger.exception("Failed to generate OTP for application %s", app.pk)
+                    app.phone_verification_status = "failed"
+                    app.save(update_fields=["phone_verification_status"])
             messages.success(request, "Customer details saved.")
             return redirect("kyc_capture", app_id=app.id)
     else:
@@ -143,6 +156,48 @@ def edit_customer_details(request, app_id):
         "form": form,
         **bh,
     })
+
+
+@merchant_required
+@require_POST
+def send_phone_otp(request, app_id):
+    app = merchant_application(request, app_id)
+    if not app.customer_phone:
+        messages.warning(request, "Save the customer phone number before sending an OTP.")
+        return redirect("edit_customer_details", app_id=app.id)
+    try:
+        from communications.services import generate_phone_otp
+        generate_phone_otp(app.customer_phone, application=app)
+        messages.success(request, "Phone OTP sent.")
+    except Exception:
+        logger.exception("Failed to send OTP for application %s", app.pk)
+        app.phone_verification_status = "failed"
+        app.save(update_fields=["phone_verification_status"])
+        messages.warning(request, "OTP could not be sent right now. You can continue and retry later.")
+    return redirect("edit_customer_details", app_id=app.id)
+
+
+@merchant_required
+@require_POST
+def verify_phone_otp(request, app_id):
+    app = merchant_application(request, app_id)
+    otp_code = (request.POST.get("otp_code") or "").strip()
+    if not otp_code:
+        app.phone_verification_status = "skipped"
+        app.phone_verified = False
+        app.save(update_fields=["phone_verification_status", "phone_verified"])
+        messages.info(request, "Phone OTP skipped. You can continue the application.")
+        return redirect("edit_customer_details", app_id=app.id)
+    try:
+        from communications.services import verify_phone_otp as _verify_phone_otp
+        if _verify_phone_otp(app.customer_phone, otp_code, application=app):
+            messages.success(request, "Phone number verified.")
+        else:
+            messages.warning(request, "OTP did not match. You can continue or retry.")
+    except Exception:
+        logger.exception("Failed to verify OTP for application %s", app.pk)
+        messages.warning(request, "OTP verification failed. You can continue the application.")
+    return redirect("edit_customer_details", app_id=app.id)
 
 
 @merchant_required
@@ -491,14 +546,24 @@ def capture_imei(request, app_id):
         return blocked
 
     if request.method == "POST":
-        imei = (request.POST.get("imei_number") or "").strip()
-        if imei:
+        from applications.services.imei_validation import (
+            IMEI_DUPLICATE_MESSAGE,
+            get_active_imei_conflict,
+            is_valid_imei,
+            normalize_imei,
+        )
+
+        imei = normalize_imei(request.POST.get("imei_number"))
+        if not is_valid_imei(imei):
+            messages.error(request, "Enter a valid 15-digit IMEI before continuing.")
+        elif get_active_imei_conflict(imei, exclude_application_id=app.id):
+            messages.error(request, IMEI_DUPLICATE_MESSAGE)
+        else:
             app.imei_number = imei
             app.status = "imei_entry"
             app.save(update_fields=["imei_number", "status"])
             messages.success(request, "IMEI saved.")
             return redirect(merchant_application_continue_url(app))
-        messages.error(request, "Enter a valid IMEI before continuing.")
 
     return render(request, "applications/capture_imei.html", {"app": app})
 

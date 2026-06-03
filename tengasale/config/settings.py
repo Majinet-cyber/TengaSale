@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "support.apps.SupportConfig",
     "device_lock.apps.DeviceLockConfig",
     "notifications.apps.NotificationsConfig",
+    "communications.apps.CommunicationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -239,9 +240,11 @@ NUOVOPAY_API_KEY = os.environ.get("NUOVOPAY_API_KEY", "")
 NUOVOPAY_API_URL = os.environ.get("NUOVOPAY_API_URL", "https://api.nuovopay.com")
 
 # Twilio SMS
+SMS_ENABLED = os.getenv("SMS_ENABLED", "False").lower() == "true"
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
+DEFAULT_SMS_LANGUAGE = os.getenv("DEFAULT_SMS_LANGUAGE", "ny")
 
 # SendGrid Email
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")

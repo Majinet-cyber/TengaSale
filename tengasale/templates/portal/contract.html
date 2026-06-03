@@ -22,7 +22,11 @@
     <div class="cpd-summary-top">
       <div>
         <div class="cpd-label">TengaSale PayG</div>
+        {% if contract.payg_number %}
         <h1 class="cpd-contract-num">{{ contract.payg_number }}</h1>
+        {% else %}
+        <h1 class="cpd-contract-num cpd-contract-num--pending">Payment code pending device setup.</h1>
+        {% endif %}
         {% if contract.customer_name %}
         <p class="cpd-payg-customer">{{ contract.customer_name }}</p>
         {% endif %}

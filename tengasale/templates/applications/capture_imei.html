@@ -1,30 +1,162 @@
 {% extends "base/base.html" %}
+{% load static %}
 
 {% block page_title %}IMEI Capture{% endblock %}
 
+{% block extra_head %}
+<style>
+.imei-page { max-width: 520px; margin: 0 auto; padding: 0 16px 40px; }
+.imei-card {
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,90,0,0.15);
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(15,23,42,0.08);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.imei-device { font-size: 1rem; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+.imei-customer { font-size: 0.85rem; color: #64748b; margin: 0; }
+.imei-label { font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 8px; color: #0f172a; }
+.imei-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  outline: none;
+}
+.imei-input:focus { border-color: #ff5a00; box-shadow: 0 0 0 3px rgba(255,90,0,0.12); }
+.imei-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px; flex-wrap: wrap; }
+.imei-counter { font-size: 0.78rem; color: #64748b; font-weight: 700; }
+.imei-status { font-size: 0.78rem; font-weight: 700; min-height: 1.1em; }
+.imei-status[data-state="valid"] { color: #16a34a; }
+.imei-status[data-state="invalid"] { color: #dc2626; }
+.imei-status[data-state="neutral"] { color: #64748b; }
+.imei-helper { font-size: 0.78rem; color: #64748b; margin: 12px 0 0; }
+.imei-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.btn-scan, .btn-paste {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.btn-scan { background: #ff5a00; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-scan:hover { background: #e05a12; }
+.btn-paste { background: #fff; color: #0f172a; border: 1.5px solid #e2e8f0; }
+.scanner-panel {
+  margin-top: 14px;
+  border: 1.5px dashed rgba(255,90,0,0.25);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fffaf5;
+}
+.scanner-fallback { font-size: 0.82rem; color: #b45309; font-weight: 600; text-align: center; padding: 12px; }
+#imei-scanner-mount { width: 100%; min-height: 180px; border-radius: 10px; overflow: hidden; }
+.btn-submit-imei {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5a00;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-submit-imei:disabled { background: #94a3b8; cursor: not-allowed; }
+.form-actions { display: flex; gap: 10px; margin-top: 12px; }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="imei-page">
+  <a href="{% url 'choose_device' app.id %}" class="soft-back">
+    <span class="soft-back-icon">&larr;</span>
+    <span>Back</span>
+  </a>
 
-<div class="card">
-    <h2>{{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}</h2>
-    <p>Customer: {{ app.customer_name }}</p>
-</div>
+  <h1 class="greeting" style="margin-bottom:16px;">Phone IMEI</h1>
 
-<form method="post" class="card">
+  <div class="imei-card">
+    <p class="imei-device">{{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}</p>
+    <p class="imei-customer">Customer: {{ app.customer_name }}</p>
+  </div>
+
+  <form method="post" class="imei-card" id="imei-capture-form">
     {% csrf_token %}
 
-    <div class="form-group">
-        <label>IMEI Number *</label>
-        <input type="text" name="imei_number" required>
+    <label class="imei-label" for="imei_number">IMEI Number *</label>
+    <input
+      type="text"
+      name="imei_number"
+      id="imei_number"
+      class="imei-input"
+      value="{{ app.imei_number|default:'' }}"
+      autocomplete="off"
+      inputmode="numeric"
+      maxlength="15"
+      required
+    >
+    <div class="imei-meta">
+      <span class="imei-counter" id="imei-counter">0 / 15 digits</span>
+      <span class="imei-status" id="imei-status" data-state="neutral"></span>
+    </div>
+    <p class="imei-helper">Dial <strong>*#06#</strong> on the phone to view the IMEI.</p>
+
+    <div class="imei-actions">
+      <button type="button" class="btn-scan" id="btn-scan-imei">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+        Scan IMEI
+      </button>
+      <button type="button" class="btn-paste" id="btn-paste-imei">Paste IMEI</button>
     </div>
 
-    <button type="button" class="big-button" style="background:#333;">
-        📷 SCAN IMEI
-    </button>
+    <div class="scanner-panel" id="scanner-panel" hidden>
+      <div id="imei-scanner-mount"></div>
+      <p class="scanner-fallback" id="scanner-fallback" hidden></p>
+    </div>
+
+    <details style="margin-top:12px;">
+      <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">Technical details</summary>
+      <pre id="scanner-technical" style="font-size:0.65rem;white-space:pre-wrap;margin-top:6px;color:#64748b;"></pre>
+    </details>
+
+    <button type="submit" class="btn-submit-imei" id="btn-submit-imei" disabled>Submit</button>
 
     <div class="form-actions">
-        <a href="{% url 'choose_device' app.id %}" class="btn btn-outline">← Back</a>
-        <button type="submit" class="btn">Submit</button>
+      <a href="{% url 'choose_device' app.id %}" class="btn btn-outline">← Back</a>
     </div>
-</form>
+  </form>
+</div>
+{% endblock %}
 
+{% block extra_scripts %}
+<script src="{% static 'js/imei-scanner.js' %}?v=1.0.0"></script>
+<script>
+(function () {
+  var technical = document.getElementById('scanner-technical');
+  if (window.TengaSaleImeiScanner) {
+    TengaSaleImeiScanner.init({
+      input: document.getElementById('imei_number'),
+      submitBtn: document.getElementById('btn-submit-imei'),
+      counterEl: document.getElementById('imei-counter'),
+      statusEl: document.getElementById('imei-status'),
+      pasteBtn: document.getElementById('btn-paste-imei'),
+      scanBtn: document.getElementById('btn-scan-imei'),
+      scannerPanel: document.getElementById('scanner-panel'),
+      scannerMount: document.getElementById('imei-scanner-mount'),
+      scannerFallback: document.getElementById('scanner-fallback'),
+      technicalDetails: technical
+    });
+  }
+})();
+</script>
 {% endblock %}

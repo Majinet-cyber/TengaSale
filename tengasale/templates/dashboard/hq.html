@@ -719,6 +719,85 @@
   letter-spacing: -0.01em;
 }
 
+.hq-sms-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hq-sms-stat {
+  background: var(--hq-surface);
+  border: 1px solid var(--hq-border);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--hq-shadow);
+}
+
+.hq-sms-stat strong {
+  display: block;
+  font-size: 18px;
+  color: var(--hq-ink);
+  line-height: 1.1;
+}
+
+.hq-sms-stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--hq-muted);
+  font-weight: 700;
+}
+
+.hq-sms-table-wrap {
+  background: var(--hq-surface);
+  border: 1px solid var(--hq-border);
+  border-radius: 14px;
+  box-shadow: var(--hq-shadow);
+  overflow-x: auto;
+  margin-bottom: 26px;
+}
+
+.hq-sms-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-size: 12px;
+}
+
+.hq-sms-table th,
+.hq-sms-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hq-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.hq-sms-table th {
+  color: var(--hq-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #f8fafc;
+}
+
+.hq-sms-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  border: 1px solid var(--hq-border);
+  color: var(--hq-muted);
+  background: #f8fafc;
+}
+
+.hq-sms-badge--sent { background: var(--hq-green-lt); color: var(--hq-green); border-color: rgba(22,163,74,0.24); }
+.hq-sms-badge--failed { background: var(--hq-red-lt); color: var(--hq-red); border-color: rgba(220,38,38,0.24); }
+.hq-sms-badge--pending_config { background: var(--hq-amber-lt); color: var(--hq-amber); border-color: rgba(245,158,11,0.24); }
+.hq-sms-badge--queued { background: #f1f5f9; color: #475569; }
+
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .hq-kpi-grid  { grid-template-columns: repeat(5, 1fr); }
@@ -732,6 +811,7 @@
   .hq-kpi-grid { grid-template-columns: repeat(3, 1fr); }
   .hq-charts-grid { grid-template-columns: 1fr; }
   .hq-nav-grid { grid-template-columns: 1fr; }
+  .hq-sms-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hq-brand-sub { display: none; }
   .hq-country-pill { display: none; }
   .hq-kpi__val { font-size: 22px; }
@@ -1193,8 +1273,8 @@
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </div>
-      <div class="hq-kpi__val hq-kpi__val--sm">{{ paid_today|floatformat:0 }}</div>
-      <div class="hq-kpi__label">MWK Paid Today</div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ paid_today|mwk }}</div>
+      <div class="hq-kpi__label">Paid Today</div>
     </div>
 
   </div>
@@ -1217,8 +1297,8 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </div>
       <div class="hq-pulse-body">
-        <div class="hq-pulse-val hq-pulse-val--sm">{{ collections_today|floatformat:0 }}</div>
-        <div class="hq-pulse-label">MWK Collected Today</div>
+        <div class="hq-pulse-val hq-pulse-val--sm">{{ collections_today|mwk }}</div>
+        <div class="hq-pulse-label">Collected Today</div>
       </div>
     </div>
 
@@ -1267,7 +1347,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
       </div>
       <div class="hq-pulse-body">
-        <div class="hq-pulse-val hq-pulse-val--sm">{{ merchant_payout_pending|floatformat:0 }}</div>
+        <div class="hq-pulse-val hq-pulse-val--sm">{{ merchant_payout_pending|mwk }}</div>
         <div class="hq-pulse-label">Merchant Payouts Due</div>
       </div>
     </div>
@@ -1282,6 +1362,52 @@
       </div>
     </div>
 
+  </div>
+
+  <p class="hq-sl">SMS Dispatch</p>
+  <div class="hq-sms-grid">
+    <div class="hq-sms-stat"><strong>{{ sms_total_sent }}</strong><span>Total SMS sent</span></div>
+    <div class="hq-sms-stat"><strong>{{ sms_failed_count }}</strong><span>Failed SMS</span></div>
+    <div class="hq-sms-stat"><strong>{{ sms_pending_config_count }}</strong><span>Pending config</span></div>
+    <div class="hq-sms-stat"><strong>{{ sms_otp_sent_count }}</strong><span>OTP attempts</span></div>
+    <div class="hq-sms-stat"><strong>{{ sms_payment_confirmation_count }}</strong><span>Payment confirmations</span></div>
+    <div class="hq-sms-stat"><strong>{{ sms_due_reminder_count }}</strong><span>Due reminders</span></div>
+  </div>
+
+  <div class="hq-sms-table-wrap">
+    <table class="hq-sms-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th>Purpose</th>
+          <th>Status</th>
+          <th>Message Preview</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sms in recent_sms_logs %}
+        <tr>
+          <td>{{ sms.created_at|date:"d M Y H:i" }}</td>
+          <td>
+            {% if sms.payment_contract %}{{ sms.payment_contract.customer_name }}
+            {% elif sms.application %}{{ sms.application.customer_name|default:sms.application.application_number }}
+            {% elif sms.contract %}{{ sms.contract.customer_name|default:sms.contract.contract_number }}
+            {% else %}—{% endif %}
+          </td>
+          <td>{{ sms.phone_number }}</td>
+          <td>{{ sms.get_purpose_display }}</td>
+          <td><span class="hq-sms-badge hq-sms-badge--{{ sms.status }}">{{ sms.get_status_display }}</span></td>
+          <td>{{ sms.message|truncatechars:90 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">No SMS logs yet. Dispatch attempts will appear here.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
 
@@ -1876,8 +2002,10 @@
             {{ rejected_count }}
           ],
           backgroundColor: ['#f59e0b', '#ff5a00', '#16a34a', '#dc2626'],
-          borderRadius: 6,
+          borderRadius: 10,
           borderSkipped: false,
+          barThickness: 42,
+          maxBarThickness: 56,
         }]
       },
       options: {
@@ -1919,7 +2047,7 @@
   }
 
   function mwkLabel(value) {
-    return 'MWK ' + Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return 'MWK ' + Number(value || 0).toLocaleString('en-MW', { maximumFractionDigits: 0 });
   }
 
   var fpEl = document.getElementById('financialPerformanceChart');
@@ -1931,18 +2059,22 @@
         data: fpData.revenue,
         borderColor: '#ff5a00',
         backgroundColor: 'rgba(255,90,0,0.12)',
-        tension: 0.35,
+        tension: 0.4,
         fill: false,
-        borderWidth: 2
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6
       },
       {
         label: 'Payments Collected',
         data: fpData.payments,
         borderColor: '#16a34a',
         backgroundColor: 'rgba(22,163,74,0.12)',
-        tension: 0.35,
+        tension: 0.4,
         fill: false,
-        borderWidth: 2
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6
       }
     ];
     if (fpData.profitAvailable) {
@@ -1951,9 +2083,11 @@
         data: fpData.profit,
         borderColor: '#ff5a00',
         backgroundColor: 'rgba(255,90,0,0.10)',
-        tension: 0.35,
+        tension: 0.4,
         fill: false,
-        borderWidth: 2
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6
       });
     }
     new Chart(fpEl, {
@@ -1994,16 +2128,22 @@
           {
             label: 'Contract Value Created',
             data: cvData.contractValue,
-            backgroundColor: 'rgba(255,90,0,0.76)',
-            borderRadius: 6,
-            borderSkipped: false
+            backgroundColor: 'rgba(255,90,0,0.82)',
+            borderRadius: 10,
+            borderSkipped: false,
+            barPercentage: 0.72,
+            categoryPercentage: 0.72,
+            maxBarThickness: 56
           },
           {
             label: 'Payments Collected',
             data: cvData.payments,
-            backgroundColor: 'rgba(22,163,74,0.76)',
-            borderRadius: 6,
-            borderSkipped: false
+            backgroundColor: 'rgba(22,163,74,0.82)',
+            borderRadius: 10,
+            borderSkipped: false,
+            barPercentage: 0.72,
+            categoryPercentage: 0.72,
+            maxBarThickness: 56
           }
         ]
       },

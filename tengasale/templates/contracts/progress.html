@@ -23,6 +23,11 @@
             <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">PayG Number</div>
             <div style="font-size:18px; font-weight:700; color:#ff5a00; font-family:monospace;">{{ contract.payg_number }}</div>
         </div>
+        {% elif contract.phone_locked or contract.status == 'locked' or contract.status == 'deposit_pending' %}
+        <div style="border-left:1px solid #eee; padding-left:12px;">
+            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">PayG Number</div>
+            <div style="font-size:14px; font-weight:600; color:#d97706;">PAYG pending device lock</div>
+        </div>
         {% endif %}
         {% if contract.imei_number %}
         <div style="border-left:1px solid #eee; padding-left:12px;">

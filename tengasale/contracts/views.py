@@ -307,6 +307,17 @@ def contract_progress(request, contract_id):
             application.save(update_fields=["status"])
             messages.success(request, "Phone marked locked.")
 
+            try:
+                from portal.services import sync_portal_lock_from_contract
+
+                payment_contract = sync_portal_lock_from_contract(contract)
+                if payment_contract and payment_contract.payg_number:
+                    messages.info(request, f"PayG code {payment_contract.payg_number} is ready for customer payments.")
+                elif payment_contract:
+                    messages.info(request, "PayG code will appear once device lock is confirmed.")
+            except Exception:
+                logger.exception("Failed to sync PayG after lock for contract %s", contract.pk)
+
             # Fire device lock if auto-lock is enabled
             if getattr(dj_settings, "DEVICE_LOCK_AUTO_LOCK", False):
                 try:

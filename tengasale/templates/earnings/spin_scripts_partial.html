@@ -1,0 +1,48 @@
+{% if won_reward %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+{% endif %}
+<script>
+(function () {
+  window.formatMWK = window.formatMWK || function (value) {
+    var n = Number(value || 0);
+    if (!Number.isFinite(n)) n = 0;
+    return 'MWK ' + Math.round(n).toLocaleString('en-MW');
+  };
+
+  {% if won_reward %}
+  if (typeof confetti === 'function') {
+    confetti({ particleCount: 140, spread: 78, origin: { y: 0.62 }, colors: ['#ff5a00', '#f59e0b', '#16a34a', '#0f172a'] });
+  }
+  var el = document.querySelector('[data-count-up]');
+  if (el) {
+    var target = parseInt(el.getAttribute('data-count-up') || '0', 10);
+    var steps = 32;
+    var i = 0;
+    var tick = setInterval(function () {
+      i += 1;
+      var val = Math.round(target * (i / steps));
+      el.textContent = formatMWK(val);
+      if (i >= steps) clearInterval(tick);
+    }, 45);
+  }
+  {% endif %}
+
+  var form = document.getElementById('spin-form');
+  var btn = document.getElementById('spin-submit-btn');
+  var wheel = document.getElementById('spin-wheel');
+  var wrap = document.getElementById('spin-wheel-wrap');
+  if (!form || !btn || !wheel) return;
+
+  form.addEventListener('submit', function (e) {
+    if (btn.disabled) {
+      e.preventDefault();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Spinning…';
+    wrap.classList.add('is-spinning');
+    var turns = 5 + Math.random() * 2;
+    wheel.style.transform = 'rotate(' + (turns * 360 + Math.floor(Math.random() * 360)) + 'deg)';
+  });
+})();
+</script>

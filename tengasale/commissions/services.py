@@ -480,6 +480,8 @@ def process_application_approval(application, approved_by):
 
         if get_spin_config().is_enabled:
             spin_granted = award_spin_for_application(application, application.created_by)
+            if approved_by:
+                award_spin_for_application(application, approved_by)
 
     return {
         "sale_amount": sale_amount,

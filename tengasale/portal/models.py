@@ -78,7 +78,7 @@ class PaymentContract(models.Model):
 
     contract_number = models.CharField(max_length=15, unique=True, blank=True)
     payg_number = models.CharField(
-        max_length=8, unique=True, blank=True,
+        max_length=8, unique=True, blank=True, null=True,
         help_text="Customer-facing PayG reference — format EXXXXXXX (8 chars, starts with E)",
         db_index=True,
     )
@@ -250,9 +250,15 @@ class PaymentContract(models.Model):
     def save(self, *args, **kwargs):
         if not self.contract_number:
             self.contract_number = generate_contract_number()
-        if not self.payg_number:
-            self.payg_number = generate_payg_number()
         super().save(*args, **kwargs)
+
+    @property
+    def payg_ready(self):
+        return bool(self.payg_number)
+
+    @property
+    def payg_pending_label(self):
+        return "PAYG pending device lock"
 
     def __str__(self):
         payg = self.payg_number or self.contract_number

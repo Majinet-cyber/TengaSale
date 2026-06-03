@@ -161,7 +161,19 @@
             {% endif %}
           </div>
           {{ form.imei_number.errors }}
-          <p class="field-help">Enter exactly 15 digits. You can find the IMEI by dialling *#06# on the phone.</p>
+          <div class="imei-meta" style="display:flex;justify-content:space-between;margin-top:8px;">
+            <span class="imei-counter" id="imei-counter">0 / 15 digits</span>
+            <span class="imei-status" id="imei-status" data-state="neutral"></span>
+          </div>
+          <p class="field-help">Dial <strong>*#06#</strong> on the phone to view the IMEI.</p>
+          <div class="imei-actions" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            <button type="button" class="btn-verify" id="btn-scan-imei" style="flex:1;">Scan IMEI</button>
+            <button type="button" class="btn-verify" id="btn-paste-imei" style="flex:1;background:#fff;color:#0f172a;border:1.5px solid #e2e8f0;">Paste IMEI</button>
+          </div>
+          <div id="scanner-panel" style="margin-top:12px;display:none;border:1.5px dashed rgba(255,90,0,0.25);border-radius:12px;padding:12px;background:#fffaf5;">
+            <div id="imei-scanner-mount"></div>
+            <p id="scanner-fallback" style="display:none;font-size:0.82rem;color:#b45309;font-weight:600;text-align:center;padding:8px;"></p>
+          </div>
         </div>
       </form>
 
@@ -189,7 +201,8 @@
           <ul id="vfy-reasons-list"></ul>
         </div>
         <details style="margin-top:10px;">
-          <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">View technical result</summary>
+          <summary style="font-size:0.72rem;color:#64748b;cursor:pointer;">Technical details</summary>
+          <pre id="scanner-technical" style="font-size:0.65rem;white-space:pre-wrap;overflow:auto;max-height:120px;margin-top:6px;background:#f8fafc;padding:8px;border-radius:6px;color:#475569;"></pre>
           <pre id="vfy-raw" style="font-size:0.65rem;white-space:pre-wrap;overflow:auto;max-height:120px;margin-top:6px;background:#f8fafc;padding:8px;border-radius:6px;color:#475569;"></pre>
         </details>
       </div>
@@ -200,7 +213,7 @@
       </div>
       {% endif %}
 
-      <button type="submit" form="imei-form" id="btn-submit" class="btn-submit-main">
+      <button type="submit" form="imei-form" id="btn-submit" class="btn-submit-main" disabled>
         Next
       </button>
 
@@ -213,6 +226,27 @@
   </div>
 
 </div>
+
+<script src="{% static 'js/imei-scanner.js' %}?v=1.0.0"></script>
+<script>
+(function () {
+  var input = document.getElementById('{{ form.imei_number.id_for_label }}');
+  if (window.TengaSaleImeiScanner && input) {
+    TengaSaleImeiScanner.init({
+      input: input,
+      submitBtn: document.getElementById('btn-submit'),
+      counterEl: document.getElementById('imei-counter'),
+      statusEl: document.getElementById('imei-status'),
+      pasteBtn: document.getElementById('btn-paste-imei'),
+      scanBtn: document.getElementById('btn-scan-imei'),
+      scannerPanel: document.getElementById('scanner-panel'),
+      scannerMount: document.getElementById('imei-scanner-mount'),
+      scannerFallback: document.getElementById('scanner-fallback'),
+      technicalDetails: document.getElementById('scanner-technical')
+    });
+  }
+})();
+</script>
 
 {% if imei_check_enabled %}
 <script>
@@ -229,7 +263,7 @@
   const blockNotice = document.getElementById('vfy-block-notice');
   const reviewNote = document.getElementById('vfy-review-note');
 
-  // IMEI digit-only filter
+  // IMEI digit-only filter + submit gating (verify button)
   if (input) {
     input.setAttribute('data-imei-input', '');
     input.style.fontFamily = 'monospace';
@@ -237,10 +271,10 @@
     input.addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 15);
       const ready = this.value.length === 15;
-      btnVerify.disabled = !ready;
+      if (btnVerify) btnVerify.disabled = !ready;
       if (!ready) {
         showPending();
-        btnSubmit.disabled = false;
+        if (btnSubmit) btnSubmit.disabled = true;
         blockNotice.style.display = 'none';
         reviewNote.style.display = 'none';
       }

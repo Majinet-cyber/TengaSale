@@ -35,6 +35,7 @@ from commissions.services import get_underwriter_wallet_summary
 from contracts.models import Contract
 from core.models import AuditLog, QueueRule
 from earnings.models import ManagerPayout, MerchantPayout, Wallet, WalletTransaction
+from rewards.models import SpinReward, SpinWallet
 
 
 # ---------------------------------------------------------------------------
@@ -724,6 +725,10 @@ def sales_wallet(request):
 
     active_tab = request.GET.get("tab", "earnings")
 
+    spin_wallet, _ = SpinWallet.objects.get_or_create(user=request.user)
+    spin_rewards = SpinReward.objects.filter(user=request.user).order_by("-spin_date")[:5]
+    spin_bonus_total = SpinReward.objects.filter(user=request.user).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
     return render(request, "sales/wallet.html", {
         "page_heading": "Wallet",
         "wallet": wallet,
@@ -739,6 +744,9 @@ def sales_wallet(request):
         "earnings_chart": earnings_chart,
         "earnings_chart_has_data": earnings_chart_has_data,
         "active_tab": active_tab,
+        "spin_wallet": spin_wallet,
+        "spin_rewards": spin_rewards,
+        "spin_bonus_total": spin_bonus_total,
     })
 
 

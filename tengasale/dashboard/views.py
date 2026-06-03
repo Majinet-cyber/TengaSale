@@ -239,6 +239,35 @@ def hq_dashboard(request):
     from website.models import MerchantLead
     new_leads_count = MerchantLead.objects.filter(status=MerchantLead.STATUS_NEW).count()
     awaiting_hq_count = MerchantLead.objects.filter(status="awaiting_hq").count()
+    try:
+        from communications.models import SMSLog
+        sms_total_sent = SMSLog.objects.filter(status=SMSLog.STATUS_SENT).count()
+        sms_failed_count = SMSLog.objects.filter(status=SMSLog.STATUS_FAILED).count()
+        sms_pending_config_count = SMSLog.objects.filter(status=SMSLog.STATUS_PENDING_CONFIG).count()
+        sms_otp_sent_count = SMSLog.objects.filter(purpose=SMSLog.PURPOSE_OTP).count()
+        sms_payment_confirmation_count = SMSLog.objects.filter(
+            purpose=SMSLog.PURPOSE_PAYMENT_CONFIRMATION
+        ).count()
+        sms_due_reminder_count = SMSLog.objects.filter(
+            purpose__in=[
+                SMSLog.PURPOSE_DUE_REMINDER,
+                SMSLog.PURPOSE_PAYMENT_DUE_TODAY,
+                SMSLog.PURPOSE_ARREARS_REMINDER,
+            ]
+        ).count()
+        recent_sms_logs = SMSLog.objects.select_related(
+            "payment_contract",
+            "contract",
+            "application",
+        ).order_by("-created_at")[:8]
+    except Exception:
+        sms_total_sent = 0
+        sms_failed_count = 0
+        sms_pending_config_count = 0
+        sms_otp_sent_count = 0
+        sms_payment_confirmation_count = 0
+        sms_due_reminder_count = 0
+        recent_sms_logs = []
 
     try:
         from support.models import SupportTicket, BugEvent
@@ -288,6 +317,13 @@ def hq_dashboard(request):
         "financial_has_data": financial_has_data,
         "financial_performance_chart": financial_performance_chart,
         "contract_value_chart": contract_value_chart,
+        "sms_total_sent": sms_total_sent,
+        "sms_failed_count": sms_failed_count,
+        "sms_pending_config_count": sms_pending_config_count,
+        "sms_otp_sent_count": sms_otp_sent_count,
+        "sms_payment_confirmation_count": sms_payment_confirmation_count,
+        "sms_due_reminder_count": sms_due_reminder_count,
+        "recent_sms_logs": recent_sms_logs,
     }
     return render(request, "dashboard/hq.html", context)
 

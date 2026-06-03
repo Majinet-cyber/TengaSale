@@ -648,6 +648,104 @@ def refresh_contract_analytics(contract, db_save: bool = True) -> None:
 
 
 # ---------------------------------------------------------------------------
+# PayG assignment (after device lock only)
+# ---------------------------------------------------------------------------
+
+def is_device_locked_for_payg(payment_contract) -> bool:
+    """True when the linked contract or portal record indicates device lock."""
+    if payment_contract.device_lock_status == payment_contract.LOCK_STATUS_LOCKED:
+        return True
+    if payment_contract.device_enrollment_status == payment_contract.ENROLLMENT_ENROLLED:
+        return True
+
+    application = payment_contract.source_application
+    if application:
+        contract = getattr(application, "contract", None)
+        if contract and contract.phone_locked:
+            return True
+        profile = None
+        try:
+            from device_lock.models import DeviceLockProfile
+
+            profile = DeviceLockProfile.objects.filter(contract=contract).first()
+        except Exception:
+            profile = None
+        if profile and profile.lock_status in ("enrolled", "locked"):
+            return True
+    return False
+
+
+@transaction.atomic
+def assign_payg_after_device_lock(payment_contract, triggered_by=None) -> bool:
+    """
+    Generate and persist PayG number once the device is locked/enrolled.
+    Returns True when a new PayG number was assigned.
+    """
+    from portal.models import PaymentContract, generate_payg_number
+
+    if not isinstance(payment_contract, PaymentContract):
+        return False
+
+    payment_contract = PaymentContract.objects.select_for_update().get(pk=payment_contract.pk)
+    if payment_contract.payg_number:
+        return False
+    if not is_device_locked_for_payg(payment_contract):
+        return False
+
+    payment_contract.payg_number = generate_payg_number()
+    meta = dict(payment_contract.provider_metadata or {})
+    meta["payg_number"] = payment_contract.payg_number
+    meta["payment_url"] = f"/pay/payg/{payment_contract.payg_number}/"
+    meta["payg_assigned_at"] = timezone.now().isoformat()
+    payment_contract.provider_metadata = meta
+    payment_contract.save(update_fields=["payg_number", "provider_metadata"])
+
+    logger.info(
+        "Assigned PayG %s to PaymentContract %s after device lock",
+        payment_contract.payg_number,
+        payment_contract.contract_number,
+    )
+
+    try:
+        from notifications.models import Notification
+
+        application = payment_contract.source_application
+        if application and application.created_by_id:
+            Notification.send(
+                recipient=application.created_by,
+                notification_type=getattr(Notification, "TYPE_CONTRACT_UPDATE", "contract_update"),
+                title="PayG code ready",
+                body=(
+                    f"Payment code {payment_contract.payg_number} is ready for "
+                    f"{payment_contract.customer_name}."
+                ),
+                link=application.get_continue_url(),
+                level=getattr(Notification, "LEVEL_SUCCESS", "success"),
+            )
+    except Exception:
+        logger.debug("PayG notification skipped for contract %s", payment_contract.pk)
+
+    return True
+
+
+def sync_portal_lock_from_contract(contract, *, assign_payg=True):
+    """Mirror merchant lock checklist onto PaymentContract and assign PayG if eligible."""
+    application = contract.application
+    try:
+        payment_contract = application.payment_contract
+    except Exception:
+        return None
+
+    payment_contract.device_lock_status = payment_contract.LOCK_STATUS_LOCKED
+    payment_contract.device_enrollment_status = payment_contract.ENROLLMENT_ENROLLED
+    payment_contract.save(update_fields=["device_lock_status", "device_enrollment_status"])
+
+    if assign_payg:
+        assign_payg_after_device_lock(payment_contract)
+    return payment_contract
+
+
+# ---------------------------------------------------------------------------
 # Contract search
 # ---------------------------------------------------------------------------
 
@@ -805,16 +903,15 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         provider_metadata=provider_meta,
     )
 
-    # Now that payg_number is assigned, update provider_metadata with it
-    provider_meta["payg_number"] = contract.payg_number
-    provider_meta["payment_url"] = f"/pay/payg/{contract.payg_number}/"
-    contract.provider_metadata = provider_meta
-    contract.save(update_fields=["provider_metadata"])
+    # PayG is assigned only after device lock — not at approval
+    if is_device_locked_for_payg(contract):
+        assign_payg_after_device_lock(contract)
+
     logger.info(
-        "Created PaymentContract %s (PayG: %s) from application %s",
+        "Created PaymentContract %s from application %s (PayG: %s)",
         contract.contract_number,
-        contract.payg_number,
         application.application_number,
+        contract.payg_number or "pending lock",
     )
 
     # Create merchant payout (idempotent)

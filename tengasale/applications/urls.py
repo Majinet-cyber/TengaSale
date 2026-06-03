@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     path("new/", views.new_application, name="new_application"),
     path("<int:app_id>/customer/", views.edit_customer_details, name="edit_customer_details"),
+    path("<int:app_id>/customer/send-otp/", views.send_phone_otp, name="send_phone_otp"),
+    path("<int:app_id>/customer/verify-otp/", views.verify_phone_otp, name="verify_phone_otp"),
     path("<int:app_id>/device/", views.choose_device, name="choose_device"),
     path("<int:app_id>/kyc/", views.kyc_capture, name="kyc_capture"),
     path("<int:app_id>/kyc/save-image/", views.kyc_save_image, name="kyc_save_image"),

@@ -1,0 +1,27 @@
+{% extends "sales/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Spin & Win — TengaSale{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
+{% endblock %}
+
+{% block content %}
+<div class="sales-main spin-page">
+  <a href="{{ back_url }}" class="ts-back-btn">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Wallet
+  </a>
+
+  <h1 class="sales-heading">Spin & Win</h1>
+  <p class="sales-subheading">Premium rewards for approved applications — separate from commission.</p>
+
+  {% include "earnings/spin_wheel_partial.html" %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+{% include "earnings/spin_scripts_partial.html" %}
+{% endblock %}

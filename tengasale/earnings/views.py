@@ -6,10 +6,12 @@ from django.db.models import Count, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from accounts.decorators import merchant_required
+from accounts.decorators import merchant_required, underwriter_required
+from accounts.utils import is_merchant, is_underwriter
 from applications.models import FinancingApplication
 from commissions.models import Commission
 from contracts.models import Contract
+from core.formatting import format_mwk
 from rewards.models import SpinReward, SpinWallet
 from rewards.services import NoSpinsAvailable, SpinDisabled, perform_spin
 
@@ -17,6 +19,10 @@ from .models import Wallet, WalletTransaction
 
 
 COMPLETED_STATUSES = ["approved", "completed"]
+
+
+def _spin_access_allowed(user):
+    return is_merchant(user) or is_underwriter(user)
 
 
 @merchant_required
@@ -49,13 +55,16 @@ def earnings_home(request):
 
     for commission in commissions[:20]:
         contract = getattr(commission.application, "contract", None)
+        amount = commission.amount
+        if amount == 0:
+            continue
         transaction_rows.append(
             {
                 "created_at": commission.created_at,
                 "type_label": "Payment Commission",
                 "contract_number": contract.contract_number if contract else "",
                 "contract": contract,
-                "amount": commission.amount,
+                "amount": amount,
                 "status": commission.get_status_display(),
             }
         )
@@ -74,6 +83,8 @@ def earnings_home(request):
         )
 
     for tx in transactions:
+        if tx.amount == 0:
+            continue
         transaction_rows.append(
             {
                 "created_at": tx.created_at,
@@ -94,6 +105,7 @@ def earnings_home(request):
         "transactions": transactions,
         "transaction_rows": transaction_rows[:30],
         "payout_rows": payout_rows,
+        "active_tab": active_tab,
         "commissions": commissions[:20],
         "pending_commission_total": pending_commissions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00"),
         "paid_commission_total": paid_commissions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00"),
@@ -103,7 +115,6 @@ def earnings_home(request):
         or Decimal("0.00"),
         "spin_wallet": spin_wallet,
         "latest_rewards": latest_rewards,
-        "active_tab": active_tab,
     })
 
 
@@ -198,15 +209,15 @@ def merchant_leaderboard(request):
     )
 
 
-@merchant_required
-def spin_rewards(request):
+def _render_spin_page(request):
     spin_wallet, _ = SpinWallet.objects.get_or_create(user=request.user)
     won_reward = None
     if request.method == "POST":
         try:
             won_reward = perform_spin(request.user)
-            messages.success(request, f"You won MWK {won_reward.amount}.")
-            return redirect(f"{reverse('spin_rewards')}?won={won_reward.id}")
+            messages.success(request, f"You won {format_mwk(won_reward.amount)}.")
+            spin_url = "sales_spin" if is_underwriter(request.user) else "spin_rewards"
+            return redirect(f"{reverse(spin_url)}?won={won_reward.id}")
         except NoSpinsAvailable:
             messages.error(request, "No spins available.")
         except SpinDisabled:
@@ -217,12 +228,29 @@ def spin_rewards(request):
         won_reward = SpinReward.objects.filter(id=won_id, user=request.user).first()
     spin_wallet.refresh_from_db()
 
+    template = "sales/spin.html" if is_underwriter(request.user) else "earnings/spin.html"
+    back_url = reverse("sales_wallet") if is_underwriter(request.user) else reverse("earnings_home")
+
     return render(
         request,
-        "earnings/spin.html",
+        template,
         {
             "spin_wallet": spin_wallet,
             "latest_rewards": SpinReward.objects.filter(user=request.user)[:10],
             "won_reward": won_reward,
+            "back_url": back_url,
         },
     )
+
+
+@merchant_required
+def spin_rewards(request):
+    if not _spin_access_allowed(request.user):
+        messages.error(request, "Spin rewards are not available for your role.")
+        return redirect("home")
+    return _render_spin_page(request)
+
+
+@underwriter_required
+def sales_spin(request):
+    return _render_spin_page(request)

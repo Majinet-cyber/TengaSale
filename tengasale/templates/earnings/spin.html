@@ -4,126 +4,21 @@
 {% block page_title %}Spin & Win{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
+<link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
 {% endblock %}
 
 {% block content %}
-
 <a href="{% url 'earnings_home' %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
+  <span class="soft-back-icon">&larr;</span>
+  <span>Back</span>
 </a>
 
 <h1 class="greeting">Spin & Win</h1>
 <p class="text-muted" style="margin-top:-8px;">Earn rewards when customers get approved. Premium spins, real MWK prizes.</p>
 
-{% if won_reward %}
-<section class="card spin-win-reveal ts-spin-pop" aria-live="polite">
-    <p class="spin-win-kicker">Congratulations</p>
-    <h2 class="spin-win-title">You won</h2>
-    <p class="spin-win-amount" data-count-up="{{ won_reward.amount|floatformat:0 }}">{{ won_reward.amount|mwk }}</p>
-    <p class="spin-win-tier">{{ won_reward.get_reward_tier_display }} reward</p>
-</section>
-{% endif %}
+{% include "earnings/spin_wheel_partial.html" %}
+{% endblock %}
 
-<section class="card spin-hero-card">
-    <div class="spin-hero-card__meta">
-        <span class="spin-hero-card__label">Available spins</span>
-        <strong class="spin-hero-card__count">{{ spin_wallet.available_spins }}</strong>
-    </div>
-
-    <div class="spin-wheel-wrap" id="spin-wheel-wrap">
-        <div class="spin-wheel-glow"></div>
-        <div class="spin-wheel" id="spin-wheel" role="img" aria-label="Prize wheel">
-            <div class="spin-wheel__segment spin-wheel__segment--a">MWK</div>
-            <div class="spin-wheel__segment spin-wheel__segment--b">WIN</div>
-            <div class="spin-wheel__segment spin-wheel__segment--c">10K</div>
-            <div class="spin-wheel__segment spin-wheel__segment--d">5K</div>
-            <div class="spin-wheel__segment spin-wheel__segment--e">2K</div>
-            <div class="spin-wheel__segment spin-wheel__segment--f">1K</div>
-            <div class="spin-wheel__hub">TS</div>
-        </div>
-        <div class="spin-wheel-pointer" aria-hidden="true"></div>
-    </div>
-
-    <form method="post" class="spin-form" id="spin-form">
-        {% csrf_token %}
-        <button
-            type="submit"
-            class="btn spin-button spin-button--primary"
-            id="spin-submit-btn"
-            {% if spin_wallet.available_spins == 0 %}disabled{% endif %}
-        >
-            {% if spin_wallet.available_spins == 0 %}No spins available{% else %}Spin Now{% endif %}
-        </button>
-    </form>
-
-    {% if spin_wallet.available_spins == 0 %}
-    <p class="spin-empty-hint">Complete more approved applications to earn spins.</p>
-    {% else %}
-    <p class="spin-hint">Tap Spin Now — your prize appears instantly.</p>
-    {% endif %}
-</section>
-
-<section class="card spin-rewards-card">
-    <div class="spin-rewards-card__header">
-        <h2>Latest rewards</h2>
-    </div>
-
-    {% for reward in latest_rewards %}
-    <div class="spin-reward-row">
-        <div>
-            <strong>{{ reward.spin_date|date:"d M Y, H:i" }}</strong>
-            <p>{{ reward.get_reward_tier_display }} reward</p>
-        </div>
-        <span class="spin-reward-row__amount">{{ reward.amount|mwk }}</span>
-    </div>
-    {% empty %}
-    <div class="spin-rewards-empty">
-        <p>No rewards yet</p>
-        <span>Your wins will show here after you spin.</span>
-    </div>
-    {% endfor %}
-</section>
-
-{% if won_reward %}
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-<script>
-(function () {
-  if (typeof confetti === 'function') {
-    confetti({ particleCount: 120, spread: 72, origin: { y: 0.65 } });
-  }
-  var el = document.querySelector('[data-count-up]');
-  if (!el) return;
-  var target = parseInt(el.getAttribute('data-count-up') || '0', 10);
-  var start = 0;
-  var steps = 28;
-  var i = 0;
-  var tick = setInterval(function () {
-    i += 1;
-    var val = Math.round(start + (target - start) * (i / steps));
-    el.textContent = 'MWK ' + val.toLocaleString('en-MW');
-    if (i >= steps) clearInterval(tick);
-  }, 40);
-})();
-</script>
-{% endif %}
-
-<script>
-(function () {
-  var form = document.getElementById('spin-form');
-  var btn = document.getElementById('spin-submit-btn');
-  var wheel = document.getElementById('spin-wheel');
-  var wrap = document.getElementById('spin-wheel-wrap');
-  if (!form || !btn || !wheel) return;
-  form.addEventListener('submit', function () {
-    if (btn.disabled) return;
-    btn.disabled = true;
-    btn.textContent = 'Spinning…';
-    wrap.classList.add('is-spinning');
-    wheel.style.transform = 'rotate(2160deg)';
-  });
-})();
-</script>
-
+{% block extra_scripts %}
+{% include "earnings/spin_scripts_partial.html" %}
 {% endblock %}

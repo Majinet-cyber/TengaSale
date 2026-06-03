@@ -17,7 +17,7 @@
     {% if portal_contract %}
     <div class="ts-review-card ts-mb-8" style="text-align:left;">
       <div class="ts-review-row"><span>Contract Number</span><strong>{{ portal_contract.contract_number }}</strong></div>
-      <div class="ts-review-row"><span>PayG Number</span><strong>{{ portal_contract.payg_number }}</strong></div>
+      <div class="ts-review-row"><span>PayG Number</span><strong>{% if portal_contract.payg_number %}{{ portal_contract.payg_number }}{% else %}PAYG pending device lock{% endif %}</strong></div>
       <div class="ts-review-row"><span>Customer</span><strong>{{ app.customer_name }}</strong></div>
       <div class="ts-review-row"><span>Device</span><strong>{% if app.deal %}{{ app.deal }}{% else %}Pending setup{% endif %}</strong></div>
       <div class="ts-review-row"><span>IMEI</span><strong>{% if app.imei_number %}{{ app.imei_number }}{% else %}IMEI pending{% endif %}</strong></div>

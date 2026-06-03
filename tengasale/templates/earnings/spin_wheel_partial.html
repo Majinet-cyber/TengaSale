@@ -1,0 +1,88 @@
+{% load ts_filters %}
+
+{% if won_reward %}
+<section class="card spin-win-reveal ts-spin-pop spin-glass-card" aria-live="polite">
+  <p class="spin-win-kicker">Congratulations</p>
+  <h2 class="spin-win-title">You won</h2>
+  <p class="spin-win-amount" data-count-up="{{ won_reward.amount|floatformat:0 }}">{{ won_reward.amount|mwk }}</p>
+  <p class="spin-win-tier">
+    {% if won_reward.is_weekly_jackpot or won_reward.reward_tier == 'jackpot' %}
+      Weekly Jackpot
+    {% else %}
+      {{ won_reward.get_reward_tier_display }} reward
+    {% endif %}
+  </p>
+</section>
+{% endif %}
+
+<section class="card spin-hero-card spin-glass-card">
+  <div class="spin-hero-card__meta">
+    <span class="spin-hero-card__label">Available spins</span>
+    <strong class="spin-hero-card__count">{{ spin_wallet.available_spins }}</strong>
+  </div>
+
+  <div class="spin-wheel-wrap" id="spin-wheel-wrap">
+    <div class="spin-wheel-glow"></div>
+    <div class="spin-wheel spin-wheel--premium" id="spin-wheel" role="img" aria-label="Prize wheel">
+      <div class="spin-wheel__segment" style="--i:0">100</div>
+      <div class="spin-wheel__segment" style="--i:1">500</div>
+      <div class="spin-wheel__segment" style="--i:2">1K</div>
+      <div class="spin-wheel__segment" style="--i:3">2.5K</div>
+      <div class="spin-wheel__segment" style="--i:4">5K</div>
+      <div class="spin-wheel__segment" style="--i:5">10K</div>
+      <div class="spin-wheel__segment" style="--i:6">25K</div>
+      <div class="spin-wheel__segment spin-wheel__segment--jackpot" style="--i:7">JACKPOT</div>
+      <div class="spin-wheel__hub">
+        <span class="spin-wheel__hub-mark">TS</span>
+      </div>
+    </div>
+    <div class="spin-wheel-pointer spin-wheel-pointer--premium" aria-hidden="true"></div>
+  </div>
+
+  <form method="post" class="spin-form" id="spin-form">
+    {% csrf_token %}
+    <button
+      type="submit"
+      class="btn spin-button spin-button--primary"
+      id="spin-submit-btn"
+      {% if spin_wallet.available_spins == 0 %}disabled{% endif %}
+    >
+      {% if spin_wallet.available_spins == 0 %}No spins available{% else %}Spin Now{% endif %}
+    </button>
+  </form>
+
+  {% if spin_wallet.available_spins == 0 %}
+  <p class="spin-empty-hint">Complete more approved applications to earn spins.</p>
+  {% else %}
+  <p class="spin-hint">Tap Spin Now — your prize appears after the wheel stops.</p>
+  {% endif %}
+</section>
+
+<section class="card spin-rewards-card spin-glass-card">
+  <div class="spin-rewards-card__header">
+    <h2>Latest rewards</h2>
+  </div>
+
+  {% for reward in latest_rewards %}
+  <div class="spin-reward-row">
+    <div>
+      <strong>
+        {% if reward.is_weekly_jackpot or reward.reward_tier == 'jackpot' %}
+          Weekly Jackpot
+        {% else %}
+          {{ reward.get_reward_tier_display|title }}
+        {% endif %}
+        · {{ reward.spin_date|date:"d M Y" }}
+      </strong>
+    </div>
+    <span class="spin-reward-row__amount {% if reward.reward_tier == 'jackpot' %}spin-reward-row__amount--jackpot{% endif %}">
+      {{ reward.amount|mwk }}
+    </span>
+  </div>
+  {% empty %}
+  <div class="spin-rewards-empty">
+    <p>No rewards yet</p>
+    <span>Your wins will show here after you spin.</span>
+  </div>
+  {% endfor %}
+</section>

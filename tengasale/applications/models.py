@@ -118,6 +118,19 @@ class FinancingApplication(models.Model):
 
     customer_name = models.CharField(max_length=150, blank=True)
     customer_phone = models.CharField(max_length=9, blank=True, validators=[phone_validator])
+    PHONE_VERIFICATION_STATUS_CHOICES = [
+        ("not_sent", "Not Sent"),
+        ("sent", "Sent"),
+        ("verified", "Verified"),
+        ("failed", "Failed"),
+        ("skipped", "Skipped"),
+    ]
+    phone_verified = models.BooleanField(default=False)
+    phone_verification_status = models.CharField(
+        max_length=30,
+        choices=PHONE_VERIFICATION_STATUS_CHOICES,
+        default="not_sent",
+    )
     national_id = models.CharField(max_length=8, blank=True, validators=[national_id_validator])
     occupation = models.CharField(max_length=150, blank=True)
     income_band = models.CharField(max_length=40, blank=True)

@@ -4,6 +4,7 @@ TengaSale custom template filters for consistent number and currency formatting.
 Usage in templates:
     {% load ts_filters %}
     {{ value|mwk }}          → MWK 1,250,000
+    {{ value|mwk_plain }}    → 1,250,000
     {{ value|mwk_short }}    → MWK 1.25M
     {{ value|tsnum }}        → 1,250,000
     {{ value|pct }}          → 12.5%
@@ -12,6 +13,10 @@ Usage in templates:
 
 from django import template
 from decimal import Decimal, InvalidOperation
+
+from core.formatting import format_mwk as _format_mwk
+from core.formatting import format_mwk_plain as _format_mwk_plain
+from core.formatting import format_mwk_signed as _format_mwk_signed
 
 register = template.Library()
 
@@ -27,12 +32,20 @@ def _to_decimal(value):
 
 
 @register.filter(name="mwk")
-def format_mwk(value):
+def format_mwk(value, arg=None):
     """Format a number as MWK currency with commas. E.g. 1250000 → MWK 1,250,000"""
+    decimals = str(arg or "").lower() in {"1", "true", "yes", "decimals"}
     d = _to_decimal(value)
-    if d == d.to_integral_value():
-        return f"MWK {int(d):,}"
-    return f"MWK {d:,.2f}"
+    if d <= 0 and value in (None, "", 0, "0", "0.00", Decimal("0")):
+        return "Pending setup"
+    return _format_mwk(d, decimals=decimals) or "Pending setup"
+
+
+@register.filter(name="mwk_plain")
+def format_mwk_plain(value, arg=None):
+    """Comma-formatted amount without MWK prefix."""
+    decimals = str(arg or "").lower() in {"1", "true", "yes", "decimals"}
+    return _format_mwk_plain(_to_decimal(value), decimals=decimals)
 
 
 @register.filter(name="mwk_if")
@@ -43,7 +56,7 @@ def format_mwk_if(value, pending_label="Pending setup"):
     d = _to_decimal(value)
     if d <= 0:
         return pending_label
-    return format_mwk(d)
+    return _format_mwk(d) or pending_label
 
 
 @register.filter(name="daily_mwk")
@@ -115,10 +128,7 @@ def format_pct0(value):
 @register.filter(name="mwk_signed")
 def format_mwk_signed(value):
     """Format MWK with + or - prefix for cashflow displays."""
-    d = _to_decimal(value)
-    if d >= 0:
-        return f"+MWK {int(d):,}" if d == d.to_integral_value() else f"+MWK {d:,.2f}"
-    return f"-MWK {abs(int(d)):,}" if d == d.to_integral_value() else f"-MWK {abs(d):,.2f}"
+    return _format_mwk_signed(_to_decimal(value)) or "MWK 0"
 
 
 @register.filter(name="abs_mwk")

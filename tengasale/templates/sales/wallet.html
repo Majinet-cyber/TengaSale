@@ -16,8 +16,7 @@
 <div class="wallet-balance-card">
   <div class="wallet-balance-card__label">Available Commission Balance</div>
   <div class="wallet-balance-card__amount">
-    <span class="wallet-currency">MWK</span>
-    <span class="wallet-amount">{{ summary.available_balance|floatformat:0 }}</span>
+    <strong class="wallet-amount">{{ summary.available_balance|mwk }}</strong>
   </div>
   <div class="wallet-balance-card__stats">
     <div class="wallet-stat">
@@ -38,6 +37,23 @@
     </div>
   </div>
 </div>
+
+
+{% if spin_wallet.available_spins or spin_bonus_total %}
+<section class="card spin-glass-card" style="margin:12px 18px;padding:16px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#d97706;">Spin Rewards</div>
+      <div style="font-size:13px;color:#64748b;">Bonus rewards separate from commission</div>
+    </div>
+    <a href="{% url 'sales_spin' %}" class="btn-primary" style="padding:8px 16px;border-radius:12px;">Spin Now</a>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px;">
+    <div class="wallet-stat"><span class="wallet-stat__label">Available spins</span><strong class="wallet-stat__value">{{ spin_wallet.available_spins }}</strong></div>
+    <div class="wallet-stat"><span class="wallet-stat__label">Total spin bonuses</span><strong class="wallet-stat__value text-green">{{ spin_bonus_total|mwk }}</strong></div>
+  </div>
+</section>
+{% endif %}
 
 
 <div class="earnings-kpi-grid">
@@ -150,7 +166,7 @@
             {% endif %}
             <div class="tx-row__date">{{ row.created_at|date:"d M Y, H:i" }}</div>
           </div>
-          <div class="tx-row__amount text-red">−MWK {{ row.amount|floatformat:0|slice:"1:" }}</div>
+          <div class="tx-row__amount text-red">−{{ row.amount|mwk }}</div>
         </div>
         {% endif %}
       {% endfor %}
@@ -365,7 +381,7 @@
   if (!chartEl || !dataEl || !window.Chart) return;
   var chartData = JSON.parse(dataEl.textContent);
   function mwkLabel(value) {
-    return 'MWK ' + Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return 'MWK ' + Number(value || 0).toLocaleString('en-MW', { maximumFractionDigits: 0 });
   }
   new Chart(chartEl, {
     type: 'bar',
@@ -375,23 +391,29 @@
         {
           label: 'Gross Earnings',
           data: chartData.gross,
-          backgroundColor: 'rgba(22,163,74,.78)',
-          borderRadius: 7,
-          borderSkipped: false
+          backgroundColor: 'rgba(22,163,74,.82)',
+          borderRadius: 12,
+          borderSkipped: false,
+          barPercentage: 0.72,
+          maxBarThickness: 48
         },
         {
           label: 'Deductions',
           data: chartData.deductions,
-          backgroundColor: 'rgba(220,38,38,.72)',
-          borderRadius: 7,
-          borderSkipped: false
+          backgroundColor: 'rgba(220,38,38,.78)',
+          borderRadius: 12,
+          borderSkipped: false,
+          barPercentage: 0.72,
+          maxBarThickness: 48
         },
         {
           label: 'Net Earnings',
           data: chartData.net,
-          backgroundColor: 'rgba(255,90,0,.78)',
-          borderRadius: 7,
-          borderSkipped: false
+          backgroundColor: 'rgba(245,158,11,.82)',
+          borderRadius: 12,
+          borderSkipped: false,
+          barPercentage: 0.72,
+          maxBarThickness: 48
         }
       ]
     },

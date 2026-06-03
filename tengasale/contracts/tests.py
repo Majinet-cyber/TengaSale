@@ -1209,14 +1209,20 @@ class PayGProgressPageTest(TestCase):
         self.client.login(username="payg_prog_merchant", password="test-pass-123")
 
     def test_progress_page_shows_payg_number_when_portal_contract_exists(self):
-        from portal.services import create_contract_from_application
+        from portal.services import create_contract_from_application, sync_portal_lock_from_contract
         from django.urls import reverse
         portal_contract = create_contract_from_application(self.app)
+        self.assertFalse(portal_contract.payg_number)
+        self.contract.phone_locked = True
+        self.contract.status = Contract.STATUS_LOCKED
+        self.contract.save()
+        sync_portal_lock_from_contract(self.contract)
+        portal_contract.refresh_from_db()
         response = self.client.get(reverse("contract_progress", args=[self.contract.id]))
         self.assertEqual(response.status_code, 200)
         payg = portal_contract.payg_number
-        if payg:
-            self.assertContains(response, payg)
+        self.assertTrue(payg)
+        self.assertContains(response, payg)
 
     def test_progress_page_shows_imei(self):
         from django.urls import reverse

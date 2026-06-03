@@ -95,7 +95,25 @@ class ImeiForm(forms.ModelForm):
         fields = ["imei_number"]
 
     def clean_imei_number(self):
-        value = (self.cleaned_data.get("imei_number") or "").strip()
+        from applications.services.imei_validation import (
+            IMEI_DUPLICATE_MESSAGE,
+            get_active_imei_conflict,
+            normalize_imei,
+        )
+
+        value = normalize_imei(self.cleaned_data.get("imei_number"))
         if not value.isdigit() or len(value) != 15:
             raise forms.ValidationError("IMEI must be exactly 15 digits.")
+
+        exclude_id = self.instance.pk if self.instance and self.instance.pk else None
+        exclude_app = None
+        if self.instance and self.instance.application_id:
+            exclude_app = self.instance.application_id
+        conflict = get_active_imei_conflict(
+            value,
+            exclude_contract_id=exclude_id,
+            exclude_application_id=exclude_app,
+        )
+        if conflict:
+            raise forms.ValidationError(IMEI_DUPLICATE_MESSAGE)
         return value

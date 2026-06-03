@@ -63,7 +63,7 @@
                 <span style="font-weight:600;">{{ reward.get_reward_tier_display }}</span>
                 <span style="color:#94a3b8;font-size:11px;margin-left:6px;">{{ reward.spin_date|date:"d M Y" }}</span>
             </div>
-            <span style="font-weight:700;color:#16a34a;">+{{ reward.amount|floatformat:2 }}</span>
+            <span style="font-weight:700;color:#16a34a;">+{{ reward.amount|mwk }}</span>
         </div>
         {% endfor %}
     </div>
@@ -107,15 +107,15 @@
         <div class="metric-grid">
             <div>
                 <span>Total earned</span>
-                <strong class="amount-positive" data-counter data-prefix="MWK ">{{ total_commission_earned|floatformat:2 }}</strong>
+                <strong class="amount-positive" data-counter data-prefix="">{{ total_commission_earned|mwk }}</strong>
             </div>
             <div>
                 <span>Pending commissions</span>
-                <strong data-counter data-prefix="MWK ">{{ pending_commission_total|floatformat:2 }}</strong>
+                <strong data-counter data-prefix="">{{ pending_commission_total|mwk }}</strong>
             </div>
             <div>
                 <span>Paid out</span>
-                <strong class="amount-positive" data-counter data-prefix="MWK ">{{ paid_commission_total|floatformat:2 }}</strong>
+                <strong class="amount-positive" data-counter data-prefix="">{{ paid_commission_total|mwk }}</strong>
             </div>
             <div>
                 <span>Spin balance</span>

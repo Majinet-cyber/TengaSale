@@ -1,4 +1,6 @@
 from django.urls import path
+
+from earnings import views as earnings_views
 from . import views
 
 urlpatterns = [
@@ -8,6 +10,7 @@ urlpatterns = [
     path("applications/", views.sales_applications, name="sales_applications"),
     path("queue-rules/", views.sales_queue_rules, name="sales_queue_rules"),
     path("wallet/", views.sales_wallet, name="sales_wallet"),
+    path("spin/", earnings_views.sales_spin, name="sales_spin"),
     path("payments/", views.sales_payments, name="sales_payments"),
 
     # Review steps

@@ -43,11 +43,11 @@ class SpinRewardTests(TestCase):
             perform_spin(self.user)
 
     def test_jackpot_cannot_be_awarded_more_than_once_per_week(self):
-        SpinConfig.objects.update_or_create(pk=1, defaults={"jackpot_amount": Decimal("50000.00")})
+        SpinConfig.objects.update_or_create(pk=1, defaults={"jackpot_amount": Decimal("100000.00")})
         SpinWallet.objects.create(user=self.user, available_spins=2, total_spins_earned=2)
 
-        first = perform_spin(self.user, chooser=lambda pool: Decimal("50000.00"))
-        second = perform_spin(self.user, chooser=lambda pool: Decimal("50000.00"))
+        first = perform_spin(self.user, chooser=lambda pool: Decimal("100000.00"))
+        second = perform_spin(self.user, chooser=lambda pool: Decimal("100000.00"))
 
         self.assertEqual(first.reward_tier, SpinReward.TIER_JACKPOT)
         self.assertEqual(second.reward_tier, SpinReward.TIER_SMALL)

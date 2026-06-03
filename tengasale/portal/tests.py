@@ -34,6 +34,13 @@ from django.test import TestCase, Client
 from django.utils import timezone
 
 from portal.models import PaymentContract, PaymentTransaction, generate_contract_number, generate_payg_number
+
+
+def _ensure_test_payg(contract):
+    if not contract.payg_number:
+        contract.payg_number = generate_payg_number()
+        contract.save(update_fields=["payg_number"])
+    return contract
 from portal.services import (
     calculate_daily_price,
     calculate_thirty_day_price,
@@ -89,7 +96,33 @@ class ContractNumberGenerationTest(TestCase):
             total_amount=Decimal("10000.00"),
         )
         self.assertRegex(c.contract_number, r"^TS-MW-\d{8}$")
-        self.assertRegex(c.payg_number, r"^E[A-Z2-9]{7}$")
+        self.assertIsNone(c.payg_number)
+
+    def test_payg_assigned_after_lock(self):
+        from portal.services import assign_payg_after_device_lock, sync_portal_lock_from_contract
+        from applications.models import FinancingApplication
+        from contracts.models import Contract
+        from django.contrib.auth import get_user_model
+
+        user = get_user_model().objects.create_user(username="locktest", password="x")
+        app = FinancingApplication.objects.create(created_by=user, customer_name="Test")
+        contract = Contract.objects.create(
+            application=app,
+            merchant=user,
+            customer_name="Test",
+            phone_locked=True,
+            status=Contract.STATUS_LOCKED,
+        )
+        pc = PaymentContract.objects.create(
+            source_application=app,
+            customer_name="Test",
+            customer_phone="+265881234567",
+            total_amount=Decimal("10000.00"),
+        )
+        self.assertFalse(pc.payg_number)
+        sync_portal_lock_from_contract(contract)
+        pc.refresh_from_db()
+        self.assertRegex(pc.payg_number, r"^E[A-Z2-9]{7}$")
 
     def test_no_duplicate_contract_numbers(self):
         c1 = PaymentContract.objects.create(
@@ -103,6 +136,10 @@ class ContractNumberGenerationTest(TestCase):
             total_amount=Decimal("10000.00"),
         )
         self.assertNotEqual(c1.contract_number, c2.contract_number)
+        c1.payg_number = generate_payg_number()
+        c2.payg_number = generate_payg_number()
+        c1.save(update_fields=["payg_number"])
+        c2.save(update_fields=["payg_number"])
         self.assertNotEqual(c1.payg_number, c2.payg_number)
 
 
@@ -218,7 +255,7 @@ class PaymentAllocationTest(TestCase):
             status="active",
         )
         defaults.update(kwargs)
-        return PaymentContract.objects.create(**defaults)
+        return _ensure_test_payg(PaymentContract.objects.create(**defaults))
 
     def test_payment_increases_amount_paid(self):
         c = self._make_contract()
@@ -258,12 +295,12 @@ class PaymentAllocationTest(TestCase):
 
 class PortalSearchTest(TestCase):
     def setUp(self):
-        self.contract = PaymentContract.objects.create(
+        self.contract = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="Mary Banda",
             customer_phone="+265881234567",
             customer_national_id="MW12345678",
             total_amount=Decimal("20000"),
-        )
+        ))
 
     def test_search_by_contract_number(self):
         result = search_payment_contract(self.contract.contract_number)
@@ -329,14 +366,14 @@ class MockPaymentProviderTest(TestCase):
 class PortalPageTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.contract = PaymentContract.objects.create(
+        self.contract = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="Test User",
             customer_phone="+265889990001",
             total_amount=Decimal("30000"),
             amount_paid=Decimal("5000"),
             daily_price=Decimal("83"),
             thirty_day_price=Decimal("2500"),
-        )
+        ))
 
     def test_search_page_renders(self):
         res = self.client.get("/pay/")
@@ -386,7 +423,7 @@ class PaymentEdgeCaseTest(TestCase):
             status="active",
         )
         defaults.update(kwargs)
-        return PaymentContract.objects.create(**defaults)
+        return _ensure_test_payg(PaymentContract.objects.create(**defaults))
 
     def test_negative_payment_rejected(self):
         c = self._make_contract()
@@ -569,12 +606,12 @@ class NoYellowReferencesTest(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.contract = PaymentContract.objects.create(
+        self.contract = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="Test User",
             customer_phone="+265889990099",
             total_amount=Decimal("30000"),
             amount_paid=Decimal("5000"),
-        )
+        ))
 
     def _check_no_yellow(self, content):
         for term in self.YELLOW_TERMS:
@@ -731,11 +768,11 @@ class PayGFormatTest(TestCase):
 
     def test_db_level_unique_constraint(self):
         from django.db import IntegrityError
-        c = PaymentContract.objects.create(
+        c = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="Unique X",
             customer_phone="+265889000001",
             total_amount=Decimal("10000"),
-        )
+        ))
         with self.assertRaises(IntegrityError):
             PaymentContract.objects.create(
                 customer_name="Duplicate X",
@@ -750,7 +787,8 @@ class PayGFormatTest(TestCase):
             customer_phone="+265889000003",
             total_amount=Decimal("20000"),
         )
-        self.assertTrue(c.payg_number)
+        self.assertIsNone(c.payg_number)
+        c = _ensure_test_payg(c)
         self.assertRegex(c.payg_number, r"^E[A-Z2-9]{7}$")
 
 
@@ -761,14 +799,14 @@ class PayGFormatTest(TestCase):
 class PayGRouteTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.contract = PaymentContract.objects.create(
+        self.contract = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="PayG Route User",
             customer_phone="+265889100001",
             total_amount=Decimal("30000"),
             amount_paid=Decimal("5000"),
             daily_price=Decimal("83"),
             thirty_day_price=Decimal("2500"),
-        )
+        ))
 
     def test_payg_url_resolves_correct_contract(self):
         url = f"/pay/payg/{self.contract.payg_number}/"
@@ -822,7 +860,7 @@ class DepositPaymentTest(TestCase):
             status="active",
         )
         defaults.update(kwargs)
-        return PaymentContract.objects.create(**defaults)
+        return _ensure_test_payg(PaymentContract.objects.create(**defaults))
 
     # --- Deposit property tests ---
 
@@ -996,12 +1034,12 @@ class IMEISearchTest(TestCase):
 
     def setUp(self):
         self.imei = "358588885858365"
-        self.contract = PaymentContract.objects.create(
+        self.contract = _ensure_test_payg(PaymentContract.objects.create(
             customer_name="IMEI Search Customer",
             customer_phone="+265889500001",
             total_amount=Decimal("30000"),
             imei_number=self.imei,
-        )
+        ))
 
     def test_search_by_exact_imei(self):
         result = search_payment_contract(self.imei)

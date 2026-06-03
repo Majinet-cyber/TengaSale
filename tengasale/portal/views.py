@@ -797,6 +797,12 @@ def _send_payment_notifications(tx, contract):
     except Exception as exc:
         logger.warning("Failed to send payment receipt SMS: %s", exc)
 
+    try:
+        from communications.services import send_payment_confirmation_sms
+        send_payment_confirmation_sms(tx)
+    except Exception as exc:
+        logger.warning("Failed to log/send audited payment confirmation SMS: %s", exc)
+
 
 # ---------------------------------------------------------------------------
 # Payment return / status pages

@@ -5,7 +5,7 @@ from django.db import models
 
 
 def default_small_rewards():
-    return [100, 500, 1000, 2500, 5000, 10000]
+    return [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
 
 
 class SpinWallet(models.Model):
@@ -40,12 +40,14 @@ class SpinGrant(models.Model):
 class SpinReward(models.Model):
     TIER_SMALL = "small"
     TIER_MEDIUM = "medium"
+    TIER_BIG = "big"
     TIER_JACKPOT = "jackpot"
 
     TIER_CHOICES = [
         (TIER_SMALL, "Small"),
         (TIER_MEDIUM, "Medium"),
-        (TIER_JACKPOT, "Jackpot"),
+        (TIER_BIG, "Big"),
+        (TIER_JACKPOT, "Weekly Jackpot"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="spin_rewards")
@@ -59,6 +61,7 @@ class SpinReward(models.Model):
         blank=True,
         related_name="spin_rewards",
     )
+    is_weekly_jackpot = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -68,10 +71,26 @@ class SpinReward(models.Model):
         return f"{self.user.username} won {self.amount}"
 
 
+class WeeklySpinJackpot(models.Model):
+    """Tracks one guaranteed weekly MWK 100,000 jackpot award."""
+
+    week_start = models.DateField(unique=True)
+    winner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="weekly_spin_jackpots")
+    reward = models.OneToOneField(SpinReward, on_delete=models.PROTECT, related_name="weekly_jackpot_record")
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-week_start"]
+
+    def __str__(self):
+        return f"Weekly jackpot {self.week_start} — {self.winner.username}"
+
+
 class SpinConfig(models.Model):
     is_enabled = models.BooleanField(default=True)
     small_rewards = models.JSONField(default=default_small_rewards)
-    jackpot_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("50000.00"))
+    jackpot_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("100000.00"))
     jackpot_limit_per_week = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
 
