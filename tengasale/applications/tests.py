@@ -1115,6 +1115,21 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertTrue(app.customer_face_image)
         self.assertIn("kyc/faces/", app.customer_face_image.name)
 
+    def test_kyc_save_image_returns_absolute_media_url(self):
+        app = self.create_application()
+        response = self.client.post(
+            reverse("kyc_save_image", args=[app.id]),
+            {"field": "customer_face_image", "image": self.image_upload("face.png")},
+        )
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["url"].startswith("http"))
+        self.assertIn("/media/", payload["url"])
+
+    def test_kyc_template_skips_empty_review_src_error_binding(self):
+        response = self.client.get(reverse("kyc_capture", args=[self.create_application().id]))
+        self.assertContains(response, "if (!src || src === window.location.href) return")
+
     def test_kyc_review_shows_saved_image_urls(self):
         app = self.create_application()
         self.save_existing_images(app)

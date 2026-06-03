@@ -1573,9 +1573,12 @@ def hq_devices(request):
     if search:
         devices_qs = devices_qs.filter(
             Q(contract_number__icontains=search)
+            | Q(payg_number__icontains=search)
             | Q(customer_name__icontains=search)
             | Q(customer_phone__icontains=search)
             | Q(device_model__icontains=search)
+            | Q(imei_number__icontains=search)
+            | Q(source_application__contract__contract_number__icontains=search)
         )
 
     # Summary counts

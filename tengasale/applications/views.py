@@ -282,14 +282,15 @@ def kyc_save_image(request, app_id):
     setattr(app, field_name, uploaded_file)
     app.save(update_fields=[field_name])
     image = getattr(app, field_name)
+    media_url = request.build_absolute_uri(image.url)
     logger.info(
         "Photo uploaded app_id=%s field=%s url=%s path=%s",
         app.id,
         field_name,
-        image.url,
+        media_url,
         image.path,
     )
-    return JsonResponse({"ok": True, "field": field_name, "url": image.url})
+    return JsonResponse({"ok": True, "field": field_name, "url": media_url})
 
 
 @merchant_required

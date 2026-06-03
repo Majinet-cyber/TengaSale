@@ -1339,11 +1339,17 @@ class DepositPaymentPortalTests(TestCase):
 
     def test_contract_number_format_in_portal_search(self):
         """Portal search accepts contract-number format A + 7 chars."""
+        from portal.services import create_contract_from_application, search_payment_contract
+
+        payment = create_contract_from_application(self.app)
+        self.assertTrue(self.contract.contract_number.startswith("A"))
+        found = search_payment_contract(self.contract.contract_number)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.pk, payment.pk)
         response = self.client.get(
             reverse("portal_search_post") + f"?q={self.contract.contract_number}"
         )
-        # Returns 200 or redirect — no 500
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 302)
 
     def test_portal_search_by_imei(self):
         """Portal accepts IMEI search."""

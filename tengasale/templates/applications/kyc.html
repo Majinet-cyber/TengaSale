@@ -402,7 +402,7 @@
             <article class="kyc-review-card">
                 <div class="kyc-review-card-image">
                     {% if app.customer_face_image %}
-                        <img src="{{ app.customer_face_image.url }}" alt="Selfie" id="review-selfie" data-review-img="selfie">
+                        <img src="{{ app.customer_face_image.url }}" alt="Selfie" id="review-selfie" data-review-img="selfie" data-skip-img-fallback="1">
                     {% else %}
                         <img src="" alt="Selfie" id="review-selfie" data-review-img="selfie" hidden>
                         <div class="kyc-review-card-empty" id="review-selfie-empty">No photo yet</div>
@@ -417,7 +417,7 @@
             <article class="kyc-review-card">
                 <div class="kyc-review-card-image">
                     {% if app.id_front_image %}
-                        <img src="{{ app.id_front_image.url }}" alt="ID Front" id="review-id-front" data-review-img="id-front">
+                        <img src="{{ app.id_front_image.url }}" alt="ID Front" id="review-id-front" data-review-img="id-front" data-skip-img-fallback="1">
                     {% else %}
                         <img src="" alt="ID Front" id="review-id-front" data-review-img="id-front" hidden>
                         <div class="kyc-review-card-empty" id="review-id-front-empty">No photo yet</div>
@@ -432,7 +432,7 @@
             <article class="kyc-review-card">
                 <div class="kyc-review-card-image">
                     {% if app.id_back_image %}
-                        <img src="{{ app.id_back_image.url }}" alt="ID Back" id="review-id-back" data-review-img="id-back">
+                        <img src="{{ app.id_back_image.url }}" alt="ID Back" id="review-id-back" data-review-img="id-back" data-skip-img-fallback="1">
                     {% else %}
                         <img src="" alt="ID Back" id="review-id-back" data-review-img="id-back" hidden>
                         <div class="kyc-review-card-empty" id="review-id-back-empty">No photo yet</div>
@@ -520,6 +520,8 @@
 
     function bindReviewImageLoad(img) {
         if (!img || img.dataset.loadBound) return;
+        var src = (img.getAttribute('src') || '').trim();
+        if (!src || src === window.location.href) return;
         img.dataset.loadBound = '1';
         img.addEventListener('load', function () {
             console.log('Image URL:', img.src);
@@ -962,7 +964,8 @@
     })();
 
     ['review-selfie', 'review-id-front', 'review-id-back'].forEach(function (id) {
-        bindReviewImageLoad(document.getElementById(id));
+        var el = document.getElementById(id);
+        if (el && el.getAttribute('src')) bindReviewImageLoad(el);
     });
 })();
 </script>

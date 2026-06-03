@@ -1,8 +1,11 @@
 """
 Portal models — customer payment portal.
 
-PaymentContract is the public-facing contract (TS-MW-XXXXXXXX).
-payg_number is the customer-facing PayG reference (EXXXXXXX — 8 chars, starts with E).
+PaymentContract is the payment portal record (internal contract_number: TS-MW-XXXXXXXX).
+payg_number is the customer PayG payment reference (EXXXXXXX — 8 chars, starts with E).
+
+Customer-facing legal contract numbers (A + 7 chars) live on contracts.Contract.contract_number —
+never reuse the PayG E-prefix generator for those.
 PaymentTransaction records each individual payment attempt.
 """
 

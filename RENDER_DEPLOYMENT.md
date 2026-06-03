@@ -11,7 +11,11 @@
   - DEBUG=False
   - DATABASE_URL=Render internal PostgreSQL database URL
   - PYTHON_VERSION=3.12.13
-  - DJANGO_SETTINGS_MODULE=config.settings
+  - DJANGO_SETTINGS_MODULE=config.settings_production
+  - DJANGO_SECRET_KEY=(same as SECRET_KEY or dedicated secret)
+  - ALLOWED_HOSTS=tengasale.emajinet.africa,*.onrender.com
+  - CSRF_TRUSTED_ORIGINS=https://tengasale.emajinet.africa
+  - MEDIA_ROOT=/var/data/media (mount a Render persistent disk at /var/data)
 - After deployment, add custom domain:
   - tengasale.emajinet.africa
 - Update DNS with Render's CNAME target.

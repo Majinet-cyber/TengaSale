@@ -651,7 +651,8 @@ def search_payment_contract(query: str):
     """
     Look up a PaymentContract by:
       - contract_number (TS-MW-XXXXXXXX)
-      - payg_number (TSGXXXXXX)
+      - payg_number (EXXXXXXX — PayG reference, not legal contract number)
+      - legal contract number (contracts.Contract — A + 7 chars)
       - customer_national_id
       - customer_phone (last 9 digits matched)
 
@@ -662,6 +663,21 @@ def search_payment_contract(query: str):
     q = query.strip()
     if not q:
         return None
+
+    # Customer-facing legal contract number (A + 7 chars) → linked payment contract
+    if len(q) == 8 and q[0].upper() == "A":
+        from contracts.models import Contract
+
+        legal = (
+            Contract.objects.filter(contract_number__iexact=q)
+            .select_related("application")
+            .first()
+        )
+        if legal and legal.application_id:
+            try:
+                return legal.application.payment_contract
+            except PaymentContract.DoesNotExist:
+                pass
 
     # Direct contract number / PayG / national ID lookup
     contract = (

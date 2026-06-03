@@ -13,17 +13,76 @@ import mimetypes
 from pathlib import Path
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.contrib.auth.views import redirect_to_login
+from django.db.models import Q
+from django.http import FileResponse, Http404
+
+from accounts.utils import (
+    get_user_portal_role,
+    is_hq,
+    is_merchant,
+    is_merchant_admin,
+    is_underwriter,
+)
 
 logger = logging.getLogger("tengasale.media")
 
+_KYC_IMAGE_FIELDS = (
+    "customer_face_image",
+    "id_front_image",
+    "id_back_image",
+    "customer_phone_image",
+)
+def _staff_can_view_all_media(user) -> bool:
+    role = get_user_portal_role(user)
+    return bool(
+        user.is_superuser
+        or is_hq(user)
+        or is_underwriter(user)
+        or is_merchant_admin(user)
+        or role == "tech_support"
+    )
 
-@login_required
+
+def _merchant_owns_media_path(user, path: str) -> bool:
+    if not is_merchant(user):
+        return False
+    from applications.models import FinancingApplication
+
+    filters = Q()
+    for field in _KYC_IMAGE_FIELDS + ("signature_image",):
+        filters |= Q(**{field: path})
+    if FinancingApplication.objects.filter(created_by=user).filter(filters).exists():
+        return True
+
+    if path.startswith("contract_signatures/"):
+        from contracts.models import Contract
+
+        return Contract.objects.filter(
+            merchant=user,
+            customer_contract_signature=path,
+        ).exists()
+    return False
+
+
+def user_can_access_media(user, path: str) -> bool:
+    if not user.is_authenticated:
+        return False
+    if _staff_can_view_all_media(user):
+        return True
+    return _merchant_owns_media_path(user, path)
+
+
 def serve_media(request, path: str):
     """Stream a file from MEDIA_ROOT; path must stay under MEDIA_ROOT."""
     if not path or ".." in path.replace("\\", "/"):
         raise Http404("Invalid media path")
+
+    if not user_can_access_media(request.user, path):
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
+        logger.warning("Media access denied: %s (user=%s)", path, request.user.pk)
+        raise Http404("Media file not found")
 
     media_root = Path(settings.MEDIA_ROOT).resolve()
     full_path = (media_root / path).resolve()
@@ -41,4 +100,6 @@ def serve_media(request, path: str):
         content_type = "application/octet-stream"
 
     logger.debug("Serving media %s to user=%s", path, request.user.pk)
-    return FileResponse(full_path.open("rb"), content_type=content_type)
+    response = FileResponse(full_path.open("rb"), content_type=content_type)
+    response["Cache-Control"] = "private, max-age=3600"
+    return response
