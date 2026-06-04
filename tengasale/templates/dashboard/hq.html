@@ -735,6 +735,117 @@
   letter-spacing: -0.01em;
 }
 
+/* ── Action Center ─────────────────────────────────────────────── */
+.hq-action-center {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+
+.hq-action-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--hq-surface);
+  border: 1.5px solid var(--hq-border);
+  border-radius: var(--hq-radius);
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--hq-ink);
+  box-shadow: var(--hq-shadow);
+  transition: box-shadow 0.13s, transform 0.11s, border-color 0.13s;
+}
+
+.hq-action-item:hover {
+  box-shadow: var(--hq-shadow-lg);
+  transform: translateY(-1px);
+}
+
+.hq-action-item--urgent  { border-left: 3px solid #f59e0b; }
+.hq-action-item--danger  { border-left: 3px solid #dc2626; }
+
+.hq-action-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.hq-action-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hq-action-body { flex: 1; min-width: 0; }
+
+.hq-action-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--hq-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hq-action-sub {
+  font-size: 11.5px;
+  color: var(--hq-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hq-action-badge {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hq-action-badge--amber { background: rgba(245,158,11,0.12); color: #d97706; }
+.hq-action-badge--red   { background: rgba(220,38,38,0.10); color: #dc2626; }
+.hq-action-badge--orange { background: rgba(255,90,0,0.10); color: #ff5a00; }
+.hq-action-badge--green { background: rgba(22,163,74,0.10); color: #16a34a; }
+
+.hq-action-arrow {
+  font-size: 16px;
+  color: var(--hq-muted);
+  flex-shrink: 0;
+}
+
+.hq-action-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--hq-surface);
+  border: 1.5px solid var(--hq-border);
+  border-radius: var(--hq-radius);
+  padding: 16px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.hq-action-empty svg {
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: #16a34a;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  flex-shrink: 0;
+}
+
 .hq-sms-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1300,6 +1411,173 @@
 
   </div>
 
+  <!-- ── Portfolio Intelligence Row ──────────────────────────── -->
+  <p class="hq-sl" style="margin-top:10px;">Portfolio Intelligence</p>
+  <div class="hq-kpi-grid" data-testid="hq-portfolio-kpi-grid">
+
+    <div class="hq-kpi kpi-orange" style="border-top:3px solid #ff5a00;">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ total_portfolio_value|mwk }}</div>
+      <div class="hq-kpi__label">Total Portfolio Value</div>
+    </div>
+
+    <div class="hq-kpi kpi-green" style="border-top:3px solid #16a34a;">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
+      </div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ total_payments_collected|mwk }}</div>
+      <div class="hq-kpi__label">Total Collected</div>
+    </div>
+
+    <div class="hq-kpi kpi-amber" style="border-top:3px solid #f59e0b;">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+      </div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ outstanding_balance|mwk }}</div>
+      <div class="hq-kpi__label">Outstanding Balance</div>
+    </div>
+
+    <div class="hq-kpi {% if portfolio_at_risk > 20 %}kpi-red{% elif portfolio_at_risk > 10 %}kpi-amber{% else %}kpi-green{% endif %}" style="border-top:3px solid {% if portfolio_at_risk > 20 %}#dc2626{% elif portfolio_at_risk > 10 %}#f59e0b{% else %}#16a34a{% endif %};">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="hq-kpi__val">{{ portfolio_at_risk }}%</div>
+      <div class="hq-kpi__label">Portfolio At Risk</div>
+    </div>
+
+    <div class="hq-kpi {% if default_rate > 10 %}kpi-red{% elif default_rate > 5 %}kpi-amber{% else %}kpi-green{% endif %}">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <div class="hq-kpi__val">{{ default_rate }}%</div>
+      <div class="hq-kpi__label">Default Rate</div>
+    </div>
+
+    <div class="hq-kpi kpi-green">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      </div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ merchant_earnings_total|mwk }}</div>
+      <div class="hq-kpi__label">Merchant Earnings Paid</div>
+    </div>
+
+    <div class="hq-kpi kpi-blue">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ approval_rate }}%</div>
+      <div class="hq-kpi__label">Approval Rate</div>
+    </div>
+
+    <div class="hq-kpi kpi-orange">
+      <div class="hq-kpi__icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="hq-kpi__val">{{ lock_locked_count|default:"0" }}</div>
+      <div class="hq-kpi__label">Locked Devices</div>
+    </div>
+
+  </div>
+
+  <!-- ── HQ Action Center ─────────────────────────────────────── -->
+  <p class="hq-sl" style="margin-top:10px;">Action Center</p>
+  <div class="hq-action-center" data-testid="hq-action-center">
+
+    {% if waiting_count %}
+    <a href="{% url 'hq_applications' %}?status=pending_review" class="hq-action-item hq-action-item--urgent">
+      <div class="hq-action-icon" style="background:rgba(245,158,11,0.12);color:#d97706;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">{{ waiting_count }} application{{ waiting_count|pluralize }} waiting for review</div>
+        <div class="hq-action-sub">Not yet claimed by an underwriter</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--amber">Pending</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if overdue_contracts_count %}
+    <a href="{% url 'hq_payment_collections' %}" class="hq-action-item hq-action-item--danger">
+      <div class="hq-action-icon" style="background:rgba(220,38,38,0.10);color:#dc2626;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">{{ overdue_contracts_count }} overdue contract{{ overdue_contracts_count|pluralize }}</div>
+        <div class="hq-action-sub">Contracts past due date — review collections</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--red">Overdue</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if merchant_payout_pending %}
+    <a href="{% url 'hq_merchant_payouts' %}" class="hq-action-item">
+      <div class="hq-action-icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">Merchant payouts pending — {{ merchant_payout_pending|mwk }}</div>
+        <div class="hq-action-sub">Cash price settlements awaiting disbursement</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--orange">Pending</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if agreement_unsigned_count %}
+    <a href="{% url 'hq_merchant_agreements' %}" class="hq-action-item">
+      <div class="hq-action-icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">{{ agreement_unsigned_count }} merchant{{ agreement_unsigned_count|pluralize }} missing signed agreement</div>
+        <div class="hq-action-sub">{{ agreement_compliance_pct }}% compliance — {{ agreement_signed_count }} signed</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--amber">Compliance</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if sms_failed_count %}
+    <a href="{% url 'hq_audit_trail' %}" class="hq-action-item">
+      <div class="hq-action-icon" style="background:rgba(220,38,38,0.10);color:#dc2626;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">{{ sms_failed_count }} failed SMS message{{ sms_failed_count|pluralize }}</div>
+        <div class="hq-action-sub">Customers may not have received payment confirmations or reminders</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--red">SMS</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if open_tickets_count %}
+    <a href="{% url 'ticket_list' %}" class="hq-action-item">
+      <div class="hq-action-icon" style="background:rgba(245,158,11,0.10);color:#f59e0b;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
+      </div>
+      <div class="hq-action-body">
+        <div class="hq-action-title">{{ open_tickets_count }} open support ticket{{ open_tickets_count|pluralize }}</div>
+        <div class="hq-action-sub">Customer or merchant support requests needing response</div>
+      </div>
+      <span class="hq-action-badge hq-action-badge--amber">Support</span>
+      <div class="hq-action-arrow">→</div>
+    </a>
+    {% endif %}
+
+    {% if not waiting_count and not overdue_contracts_count and not sms_failed_count and not open_tickets_count %}
+    <div class="hq-action-empty">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20,6 9,17 4,12"/></svg>
+      <span>All clear — no urgent actions right now</span>
+    </div>
+    {% endif %}
+
+  </div>
+
   <p class="hq-sl">Command Pulse</p>
   <div class="hq-pulse-grid">
 
@@ -1761,8 +2039,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
         </div>
         <div class="hq-nav-item__body">
-          <span class="hq-nav-item__title">Financing Simulations</span>
-          <span class="hq-nav-item__desc">Model repayment scenarios</span>
+          <span class="hq-nav-item__title">Future Lab</span>
+          <span class="hq-nav-item__desc">Policy simulator &amp; scenario modelling</span>
         </div>
         <div class="hq-nav-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
       </a>

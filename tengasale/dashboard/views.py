@@ -10,7 +10,7 @@ from accounts.forms import HQUserForm
 from accounts.utils import primary_role, role_redirect_url
 from core.business_hours import business_hours_context
 from applications.models import FinancingApplication
-from commissions.models import Commission, MerchantContractPayout
+from commissions.models import Commission, MerchantContractPayout, CommissionLedger
 from contracts.models import Contract
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
 from rewards.models import SpinWallet
@@ -214,6 +214,39 @@ def hq_dashboard(request):
         status__in=["active", "overdue", "locked"]
     ).count()
 
+    # Portfolio value KPIs
+    total_portfolio_value = (
+        PaymentContract.objects.filter(status__in=["active", "overdue", "locked"])
+        .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+    )
+    total_payments_collected = (
+        PaymentTransaction.objects.filter(status="paid")
+        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    )
+    outstanding_balance = max(Decimal("0"), total_portfolio_value - total_payments_collected)
+    # Default rate: defaulted / total contracts that have been active
+    defaulted_count = PaymentContract.objects.filter(status="defaulted").count()
+    total_ever_active = PaymentContract.objects.filter(
+        status__in=["active", "overdue", "locked", "defaulted", "completed"]
+    ).count()
+    default_rate = round((defaulted_count / total_ever_active * 100) if total_ever_active else 0, 1)
+    portfolio_at_risk = round(
+        (overdue_contracts_count / (active_contracts_count + overdue_contracts_count) * 100)
+        if (active_contracts_count + overdue_contracts_count) else 0, 1
+    )
+    # Merchant & underwriter earnings
+    merchant_earnings_total = (
+        MerchantContractPayout.objects.filter(status="paid")
+        .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
+    )
+    try:
+        uw_earnings_total = (
+            CommissionLedger.objects.filter(status="paid")
+            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        )
+    except Exception:
+        uw_earnings_total = Decimal("0")
+
     chart_days = []
     for offset in range(13, -1, -1):
         day = today - timedelta(days=offset)
@@ -338,6 +371,14 @@ def hq_dashboard(request):
         "financial_has_data": financial_has_data,
         "financial_performance_chart": financial_performance_chart,
         "contract_value_chart": contract_value_chart,
+        # Portfolio intelligence KPIs
+        "total_portfolio_value": total_portfolio_value,
+        "total_payments_collected": total_payments_collected,
+        "outstanding_balance": outstanding_balance,
+        "default_rate": default_rate,
+        "portfolio_at_risk": portfolio_at_risk,
+        "merchant_earnings_total": merchant_earnings_total,
+        "uw_earnings_total": uw_earnings_total,
         "sms_total_sent": sms_total_sent,
         "sms_failed_count": sms_failed_count,
         "sms_pending_config_count": sms_pending_config_count,

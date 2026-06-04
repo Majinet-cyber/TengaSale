@@ -3914,3 +3914,325 @@ label,
   box-shadow: 0 1px 4px rgba(15,23,42,0.05);
   white-space: nowrap;
 }
+
+/* == Risk Insight Card (Underwriter Review) ======================== */
+.ts-risk-insight-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.ts-risk-insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ts-risk-insight-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ts-risk-insight-title svg {
+  width: 15px; height: 15px;
+  fill: none; stroke: #ff5a00; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.ts-risk-insight-band {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.ts-risk-band--low    { background: rgba(22,163,74,0.10); color: #16a34a; }
+.ts-risk-band--good   { background: rgba(74,222,128,0.15); color: #166534; }
+.ts-risk-band--watch  { background: rgba(245,158,11,0.10); color: #d97706; }
+.ts-risk-band--high   { background: rgba(249,115,22,0.10); color: #ea580c; }
+.ts-risk-band--reject { background: rgba(220,38,38,0.10); color: #dc2626; }
+
+.ts-risk-signals {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+@media (max-width: 640px) {
+  .ts-risk-signals { grid-template-columns: repeat(2, 1fr); }
+}
+
+.ts-risk-signal {
+  padding: 12px 14px;
+  border-right: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ts-risk-signal:last-child { border-right: none; }
+
+.ts-risk-signal-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ts-risk-signal-val {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ts-signal--green { color: #16a34a; }
+.ts-signal--amber { color: #d97706; }
+.ts-signal--red   { color: #dc2626; }
+
+.ts-risk-signal-hint {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.ts-risk-insight-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(220,38,38,0.06);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.ts-risk-insight-alert svg {
+  width: 15px; height: 15px;
+  fill: none; stroke: #dc2626; stroke-width: 2;
+  stroke-linecap: round; flex-shrink: 0;
+}
+
+.ts-risk-insight-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(245,158,11,0.06);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.ts-risk-insight-note svg {
+  width: 15px; height: 15px;
+  fill: none; stroke: #d97706; stroke-width: 2;
+  stroke-linecap: round; flex-shrink: 0;
+}
+
+/* == Address Confidence Card ======================================= */
+.ts-address-confidence-hints {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px;
+}
+
+.ts-confidence-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.ts-confidence-item span { color: #64748b; font-weight: 500; }
+.ts-confidence-item strong { font-weight: 700; font-size: 12px; text-align: right; }
+
+.ts-confidence-item--ok {
+  background: rgba(22,163,74,0.07);
+  border: 1px solid rgba(22,163,74,0.20);
+}
+.ts-confidence-item--ok strong { color: #16a34a; }
+
+.ts-confidence-item--missing {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.20);
+}
+.ts-confidence-item--missing strong { color: #d97706; }
+
+/* == Spin Quality Eligibility Card ================================= */
+.spin-quality-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.spin-quality-header {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(255,90,0,0.05), rgba(255,255,255,0));
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.spin-quality-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.spin-quality-title svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: #16a34a; stroke-width: 2.2;
+  stroke-linecap: round; flex-shrink: 0;
+}
+
+.spin-quality-rules {
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spin-quality-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.45;
+}
+
+.spin-quality-rule svg {
+  width: 13px; height: 13px;
+  fill: none; stroke-width: 2.5;
+  stroke-linecap: round; flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.spin-quality-rule--ok svg { stroke: #16a34a; }
+.spin-quality-rule--warn svg { stroke: #d97706; }
+.spin-quality-rule--ok  { color: #14532d; }
+.spin-quality-rule--warn { color: #78350f; }
+
+.spin-quality-tip {
+  padding: 10px 16px;
+  background: rgba(255,90,0,0.04);
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: #7c3a00;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* == Merchant Quality Score Card =================================== */
+.merchant-quality-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 0 0 12px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+
+.merchant-quality-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.merchant-quality-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.merchant-quality-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.merchant-quality-badge--great { background: rgba(22,163,74,0.10); color: #16a34a; }
+.merchant-quality-badge--ok    { background: rgba(255,90,0,0.10);  color: #ff5a00; }
+.merchant-quality-badge--warn  { background: rgba(245,158,11,0.10); color: #d97706; }
+
+.merchant-quality-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.merchant-quality-stat {
+  padding: 12px 14px;
+  text-align: center;
+  border-right: 1px solid #f1f5f9;
+}
+.merchant-quality-stat:last-child { border-right: none; }
+
+.merchant-quality-stat-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.merchant-quality-stat-lbl {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.merchant-quality-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 16px;
+  background: rgba(255,90,0,0.04);
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: #7c3a00;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.merchant-quality-tip svg {
+  width: 13px; height: 13px;
+  fill: none; stroke: #ff5a00; stroke-width: 2;
+  stroke-linecap: round; flex-shrink: 0;
+  margin-top: 2px;
+}

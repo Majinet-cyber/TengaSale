@@ -107,6 +107,42 @@
   </div>
   {% endwith %}
 
+  <!-- Merchant Quality Score Card -->
+  {% with total=active_count|add:completed_count|add:archived_rejected_count %}
+  {% if total > 0 %}
+  <div class="merchant-quality-card ts-fade-in ts-mb-8">
+    <div class="merchant-quality-header">
+      <span class="merchant-quality-title">My Seller Quality</span>
+      {% if completed_count > 0 and archived_rejected_count == 0 %}
+        <span class="merchant-quality-badge merchant-quality-badge--great">Top Seller</span>
+      {% elif archived_rejected_count|add:0 > completed_count %}
+        <span class="merchant-quality-badge merchant-quality-badge--warn">Needs Improvement</span>
+      {% else %}
+        <span class="merchant-quality-badge merchant-quality-badge--ok">Good Standing</span>
+      {% endif %}
+    </div>
+    <div class="merchant-quality-stats">
+      <div class="merchant-quality-stat">
+        <div class="merchant-quality-stat-val">{{ active_count }}</div>
+        <div class="merchant-quality-stat-lbl">Active</div>
+      </div>
+      <div class="merchant-quality-stat">
+        <div class="merchant-quality-stat-val">{{ completed_count }}</div>
+        <div class="merchant-quality-stat-lbl">Completed</div>
+      </div>
+      <div class="merchant-quality-stat">
+        <div class="merchant-quality-stat-val">{{ archived_rejected_count }}</div>
+        <div class="merchant-quality-stat-lbl">Rejected</div>
+      </div>
+    </div>
+    <div class="merchant-quality-tip">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Better customer selection improves your approval rate, earnings, and spin rewards.
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
   <a href="{% url 'new_application' %}" class="primary-contract-btn primary-big-action" aria-label="Start a new contract">
     <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
     <span class="primary-contract-btn__label">+ NEW APPLICATION</span>

@@ -101,6 +101,75 @@
     </div>
   </div>
 
+  <!-- ── Risk Insight Card ─────────────────────────────────────── -->
+  {% with m=income_multiple %}
+  <div class="ts-risk-insight-card" style="border-top:3px solid
+    {% if m >= 10 %}#16a34a{% elif m >= 6 %}#f59e0b{% else %}#dc2626{% endif %};margin-bottom:12px;">
+
+    <div class="ts-risk-insight-header">
+      <div class="ts-risk-insight-title">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Risk Insight
+      </div>
+      <span class="ts-risk-insight-band
+        {% if m >= 10 %}ts-risk-band--low{% elif m >= 8 %}ts-risk-band--good{% elif m >= 6 %}ts-risk-band--watch{% elif m >= 4 %}ts-risk-band--high{% else %}ts-risk-band--reject{% endif %}">
+        {% if m >= 10 %}Low Risk{% elif m >= 8 %}Good{% elif m >= 6 %}Watch{% elif m >= 4 %}High Risk{% else %}Reject Risk{% endif %}
+      </span>
+    </div>
+
+    <div class="ts-risk-signals">
+      <div class="ts-risk-signal">
+        <span class="ts-risk-signal-label">Affordability</span>
+        <span class="ts-risk-signal-val {% if m >= 10 %}ts-signal--green{% elif m >= 6 %}ts-signal--amber{% else %}ts-signal--red{% endif %}">
+          {{ income_multiple|default:"—" }}x
+        </span>
+        <span class="ts-risk-signal-hint">{% if m >= 10 %}Excellent (≥10x){% elif m >= 8 %}Good (≥8x){% elif m >= 6 %}Borderline (≥6x){% elif m >= 4 %}Weak (≥4x){% else %}High Risk (&lt;4x){% endif %}</span>
+      </div>
+      <div class="ts-risk-signal">
+        <span class="ts-risk-signal-label">KYC Images</span>
+        <span class="ts-risk-signal-val {% if app.customer_face_image and app.id_front_image %}ts-signal--green{% else %}ts-signal--amber{% endif %}">
+          {% if app.customer_face_image and app.id_front_image %}Complete{% else %}Incomplete{% endif %}
+        </span>
+        <span class="ts-risk-signal-hint">Selfie + National ID</span>
+      </div>
+      <div class="ts-risk-signal">
+        <span class="ts-risk-signal-label">Contact</span>
+        <span class="ts-risk-signal-val {% if app.customer_phone and app.secondary_phone %}ts-signal--green{% elif app.customer_phone %}ts-signal--amber{% else %}ts-signal--red{% endif %}">
+          {% if app.customer_phone and app.secondary_phone %}Strong{% elif app.customer_phone %}Primary only{% else %}Missing{% endif %}
+        </span>
+        <span class="ts-risk-signal-hint">Primary + secondary phone</span>
+      </div>
+      <div class="ts-risk-signal">
+        <span class="ts-risk-signal-label">Guarantor</span>
+        <span class="ts-risk-signal-val {% if app.next_of_kin_1_name and app.next_of_kin_1_phone %}ts-signal--green{% else %}ts-signal--amber{% endif %}">
+          {% if app.next_of_kin_1_name and app.next_of_kin_1_phone %}Present{% else %}Incomplete{% endif %}
+        </span>
+        <span class="ts-risk-signal-hint">Next of kin / guarantor</span>
+      </div>
+      <div class="ts-risk-signal">
+        <span class="ts-risk-signal-label">Address</span>
+        <span class="ts-risk-signal-val {% if app.precise_location and app.district %}ts-signal--green{% elif app.precise_location %}ts-signal--amber{% else %}ts-signal--red{% endif %}">
+          {% if app.precise_location and app.district %}Verified{% elif app.precise_location %}Partial{% else %}Missing{% endif %}
+        </span>
+        <span class="ts-risk-signal-hint">District + location detail</span>
+      </div>
+    </div>
+
+    {% if m and m < 6 %}
+    <div class="ts-risk-insight-alert">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Income is below recommended threshold. Consider cheaper device or higher deposit.
+    </div>
+    {% elif m and m < 10 %}
+    <div class="ts-risk-insight-note">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Affordability is borderline. Guarantor confirmation and strong address traceability are recommended before approval.
+    </div>
+    {% endif %}
+
+  </div>
+  {% endwith %}
+
   {% if dup_result.has_duplicates %}
   <div class="ts-review-card" style="background:#fef2f2;border:2px solid #dc2626;margin-bottom:12px;">
     <div class="ts-review-card__title" style="color:#dc2626;">

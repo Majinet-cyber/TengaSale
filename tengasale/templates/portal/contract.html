@@ -58,10 +58,17 @@
     </div>
 
     <div class="cpd-money-grid">
-      <div><span class="cpd-label">Paid</span><strong>{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}Pending setup{% endif %}</strong></div>
+      <div><span class="cpd-label">Paid</span><strong class="cpd-val--green">{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}Pending setup{% endif %}</strong></div>
       <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}Pending setup{% endif %}</strong></div>
       <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
     </div>
+
+    {% if last_paid_tx %}
+    <div class="cpd-last-payment-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>Last payment: <strong>{{ last_paid_tx.amount|mwk }}</strong> on {{ last_paid_tx.paid_at|date:"d M Y" }}</span>
+    </div>
+    {% endif %}
     {% if pricing_complete and contract.deposit_required > 0 %}
     <div class="cpd-meta-grid" style="margin-top:10px;">
       <div><span class="cpd-label">Deposit required</span><strong>{{ contract.deposit_required|mwk }}</strong></div>

@@ -1751,3 +1751,24 @@
     margin: 0;
   }
 }
+
+/* == Portal Last Payment Row ======================================= */
+.cpd-last-payment-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 10px;
+}
+
+.cpd-last-payment-row svg {
+  width: 14px; height: 14px;
+  stroke: #16a34a; flex-shrink: 0;
+}
+
+.cpd-last-payment-row strong { color: #16a34a; font-weight: 800; }
+
+.cpd-val--green { color: #16a34a !important; }

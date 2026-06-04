@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}HQ Financing Simulator — TengaSale{% endblock %}
+{% block page_title %}Future Lab — Portfolio Simulator — TengaSale{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -643,6 +643,78 @@ html, body { overflow-x: hidden; }
 .sim-disclaimer ul { margin: 6px 0 0 16px; padding: 0; }
 .sim-disclaimer li { margin-bottom: 3px; }
 
+/* ── Preset Scenario Buttons ─────────────────────────────────── */
+.sim-presets {
+  margin-bottom: 22px;
+}
+
+.sim-presets-label {
+  font-size: 0.67rem;
+  font-weight: 800;
+  color: var(--s-muted);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-bottom: 8px;
+}
+
+.sim-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sim-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--s-border);
+  border-radius: 99px;
+  background: var(--s-card);
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: var(--s-text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .13s;
+  white-space: nowrap;
+}
+
+.sim-preset-btn svg {
+  width: 13px; height: 13px;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.sim-preset-btn:hover,
+.sim-preset-btn--active {
+  background: rgba(255,90,0,0.08);
+  border-color: rgba(255,90,0,0.35);
+  color: var(--s-orange);
+}
+
+.sim-preset-btn--danger:hover,
+.sim-preset-btn--danger.sim-preset-btn--active {
+  background: rgba(220,38,38,0.08);
+  border-color: rgba(220,38,38,0.30);
+  color: var(--s-red);
+}
+
+.sim-preset-btn--purple:hover,
+.sim-preset-btn--purple.sim-preset-btn--active {
+  background: rgba(124,58,237,0.08);
+  border-color: rgba(124,58,237,0.30);
+  color: #7c3aed;
+}
+
+.sim-preset-btn--teal:hover,
+.sim-preset-btn--teal.sim-preset-btn--active {
+  background: rgba(8,145,178,0.08);
+  border-color: rgba(8,145,178,0.30);
+  color: var(--s-teal);
+}
+
 /* ── Empty state (before first run) ─────────────────────────── */
 .sim-empty {
   display: flex;
@@ -680,13 +752,48 @@ html, body { overflow-x: hidden; }
         HQ
       </a>
       <div>
-        <h1 class="sim-page-title">Financing Simulator</h1>
-        <p class="sim-page-sub">Advanced scenario modelling for smartphone financing portfolios. Investor-grade projections for capital planning, risk analysis, and operational decisions.</p>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h1 class="sim-page-title" style="margin:0;">Future Lab</h1>
+          <span style="font-size:0.65rem;font-weight:800;padding:4px 10px;border-radius:99px;background:rgba(124,58,237,0.10);color:#7c3aed;letter-spacing:0.06em;text-transform:uppercase;">Portfolio Simulator</span>
+        </div>
+        <p class="sim-page-sub">Model how policy changes would have affected your portfolio. Simulate deposit strategies, affordability rules, commission models, and risk thresholds — before changing anything live.</p>
       </div>
     </div>
     <div class="sim-badge">
       <span class="sim-badge-dot"></span>
-      Estimates Only — Not Financial Advice
+      Directional estimates · Not financial advice
+    </div>
+  </div>
+
+  <!-- ── Preset Scenario Buttons ─────────────────────────────── -->
+  <div class="sim-presets" id="sim-presets">
+    <div class="sim-presets-label">Quick Scenarios</div>
+    <div class="sim-presets-row">
+      <button type="button" class="sim-preset-btn" data-preset="conservative"
+              data-deposit="30" data-collection="95" data-default="3" data-term="12" data-merchant-comm="1" data-uw-comm="7">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Conservative Growth
+      </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--active" data-preset="balanced"
+              data-deposit="20" data-collection="90" data-default="5" data-term="12" data-merchant-comm="1" data-uw-comm="7">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Balanced Growth
+      </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--danger" data-preset="aggressive"
+              data-deposit="13" data-collection="82" data-default="10" data-term="12" data-merchant-comm="1.5" data-uw-comm="8">
+        <svg viewBox="0 0 24 24"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
+        Aggressive Growth
+      </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--purple" data-preset="profit"
+              data-deposit="25" data-collection="93" data-default="3" data-term="10" data-merchant-comm="0.8" data-uw-comm="6">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Profit Protection
+      </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--teal" data-preset="expansion"
+              data-deposit="20" data-collection="88" data-default="7" data-term="12" data-merchant-comm="2" data-uw-comm="7">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Merchant Expansion
+      </button>
     </div>
   </div>
 
@@ -1226,4 +1333,38 @@ html, body { overflow-x: hidden; }
     </div><!-- /sim-results -->
   </div><!-- /sim-layout -->
 </div><!-- /sim-page -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  var presets = {
+    conservative: { deposit_pct: '30', collection_rate: '95', default_rate: '3', term_months: '12', merchant_commission_rate: '1', uw_commission_rate: '7' },
+    balanced:     { deposit_pct: '20', collection_rate: '90', default_rate: '5', term_months: '12', merchant_commission_rate: '1', uw_commission_rate: '7' },
+    aggressive:   { deposit_pct: '13', collection_rate: '82', default_rate: '10', term_months: '12', merchant_commission_rate: '1.5', uw_commission_rate: '8' },
+    profit:       { deposit_pct: '25', collection_rate: '93', default_rate: '3', term_months: '10', merchant_commission_rate: '0.8', uw_commission_rate: '6' },
+    expansion:    { deposit_pct: '20', collection_rate: '88', default_rate: '7', term_months: '12', merchant_commission_rate: '2', uw_commission_rate: '7' },
+  };
+
+  function applyPreset(name) {
+    var p = presets[name];
+    if (!p) return;
+    Object.keys(p).forEach(function(field) {
+      var el = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+      if (el) el.value = p[field];
+    });
+    document.querySelectorAll('.sim-preset-btn').forEach(function(btn) {
+      btn.classList.remove('sim-preset-btn--active');
+    });
+    var btn = document.querySelector('.sim-preset-btn[data-preset="' + name + '"]');
+    if (btn) btn.classList.add('sim-preset-btn--active');
+  }
+
+  document.querySelectorAll('.sim-preset-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      applyPreset(btn.dataset.preset);
+    });
+  });
+})();
+</script>
 {% endblock %}

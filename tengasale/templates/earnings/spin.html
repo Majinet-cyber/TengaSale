@@ -13,8 +13,39 @@
   <span>Back</span>
 </a>
 
-<h1 class="greeting">Spin & Win</h1>
+<h1 class="greeting">Spin &amp; Win</h1>
 <p class="text-muted" style="margin-top:-8px;">Earn rewards when customers get approved. Premium spins, real MWK prizes.</p>
+
+<!-- Quality Eligibility Card -->
+<div class="spin-quality-card ts-mb-8">
+  <div class="spin-quality-header">
+    <span class="spin-quality-title">
+      <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+      How to earn spins
+    </span>
+  </div>
+  <div class="spin-quality-rules">
+    <div class="spin-quality-rule spin-quality-rule--ok">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      Spins awarded for approved, quality customer applications
+    </div>
+    <div class="spin-quality-rule spin-quality-rule--ok">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      Bonus spins for repaying customers — low default portfolio
+    </div>
+    <div class="spin-quality-rule spin-quality-rule--warn">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+      Spins are not awarded for rejected or cancelled applications
+    </div>
+    <div class="spin-quality-rule spin-quality-rule--warn">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+      Repeated defaults reduce future eligibility
+    </div>
+  </div>
+  <div class="spin-quality-tip">
+    💡 Better customer selection = more spins + better commissions. Choose customers who can realistically repay.
+  </div>
+</div>
 
 {% include "earnings/spin_wheel_partial.html" %}
 {% endblock %}
