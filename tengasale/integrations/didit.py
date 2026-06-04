@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 from typing import Any
 
@@ -26,6 +27,14 @@ except ImportError:
 
 DIDIT_API_BASE = "https://verification.didit.me"
 WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300
+DIDIT_WORKFLOW_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+WORKFLOW_MISMATCH_USER_MESSAGE = (
+    "Didit rejected the workflow_id. Confirm the workflow belongs to the same "
+    "Didit app/API key and is published/active."
+)
 
 DIDIT_STATUS_MAP = {
     "Not Started": "not_started",
@@ -84,13 +93,19 @@ class DiditAPIError(Exception):
         payload: Any = None,
         *,
         user_message: str | None = None,
+        response_text: str | None = None,
+        request_payload_keys: list[str] | None = None,
     ):
         super().__init__(message)
         self.status_code = status_code
         self.payload = payload
+        self.response_text = response_text
+        self.request_payload_keys = request_payload_keys or []
         self.user_message = user_message or didit_user_facing_message(
             status_code=status_code,
             detail=message,
+            payload=payload,
+            response_text=response_text,
         )
 
 
@@ -99,12 +114,31 @@ def didit_production_mode() -> bool:
     return not getattr(settings, "DEBUG", True)
 
 
-def didit_user_facing_message(*, status_code: int | None = None, detail: str = "") -> str:
+def didit_user_facing_message(
+    *,
+    status_code: int | None = None,
+    detail: str = "",
+    payload: Any = None,
+    response_text: str | None = None,
+) -> str:
+    combined = " ".join(
+        part
+        for part in (
+            detail or "",
+            response_text or "",
+            json.dumps(payload) if isinstance(payload, (dict, list)) else str(payload or ""),
+        )
+        if part
+    ).lower()
     detail_lower = (detail or "").lower()
     if status_code == 403:
         return "Didit authentication failed. Check DIDIT_API_KEY."
+    if status_code in (400, 404, 422) and "workflow" in combined:
+        return WORKFLOW_MISMATCH_USER_MESSAGE
     if status_code in (400, 404, 422) and "workflow" in detail_lower:
-        return "Didit workflow is not configured correctly. Check DIDIT_WORKFLOW_ID."
+        return WORKFLOW_MISMATCH_USER_MESSAGE
+    if status_code == 400:
+        return "Didit rejected the session request."
     if "timeout" in detail_lower or "timed out" in detail_lower:
         return "Could not reach Didit. Try again."
     if "request failed" in detail_lower or "connection" in detail_lower:
@@ -203,6 +237,117 @@ def _api_headers() -> dict[str, str]:
     return {"x-api-key": api_key, "Content-Type": "application/json", "Accept": "application/json"}
 
 
+def is_uuid_like_workflow_id(workflow_id: str) -> bool:
+    return bool(DIDIT_WORKFLOW_UUID_RE.match((workflow_id or "").strip()))
+
+
+def _parse_didit_response_body(response) -> tuple[str, Any]:
+    """Return (raw_text, parsed_json_or_fallback_dict). Never logs secrets."""
+    text = (getattr(response, "text", None) or "")[:8000]
+    if not getattr(response, "content", None):
+        return text, {}
+    try:
+        parsed = response.json()
+    except ValueError:
+        parsed = {"raw": text} if text else {}
+    return text, parsed
+
+
+def _safe_didit_detail_for_client(parsed: Any, raw_text: str) -> Any:
+    if isinstance(parsed, dict) and parsed:
+        return parsed
+    if isinstance(parsed, list):
+        return parsed
+    if raw_text:
+        return {"raw": raw_text[:2000]}
+    return {}
+
+
+def validate_didit_session_prerequisites(application) -> None:
+    """Validate Didit session settings before calling the API."""
+    workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
+    if not workflow_id:
+        raise DiditConfigurationError("Didit workflow ID is not configured. Set DIDIT_WORKFLOW_ID.")
+    if not is_uuid_like_workflow_id(workflow_id):
+        raise DiditConfigurationError(
+            "DIDIT_WORKFLOW_ID must be a UUID (e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)."
+        )
+
+    callback = (getattr(settings, "DIDIT_CALLBACK_URL", "") or "").strip()
+    if not callback:
+        raise DiditConfigurationError("Didit callback URL is not configured. Set DIDIT_CALLBACK_URL.")
+    if didit_production_mode() and not callback.lower().startswith("https://"):
+        raise DiditConfigurationError("DIDIT_CALLBACK_URL must use HTTPS in production.")
+
+    if application.pk is None:
+        raise DiditConfigurationError("Application must be saved before starting Didit KYC.")
+
+    vendor_data = str(application.pk)
+    if not isinstance(vendor_data, str) or not vendor_data:
+        raise DiditConfigurationError("vendor_data must be a non-empty string.")
+
+    app_id_meta = str(application.pk)
+    if not isinstance(app_id_meta, str) or not app_id_meta:
+        raise DiditConfigurationError("metadata.application_id must be a non-empty string.")
+
+
+def _split_customer_name(full_name: str) -> tuple[str, str]:
+    parts = (full_name or "").strip().split()
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], " ".join(parts[1:])
+
+
+def build_expected_details(application) -> dict[str, str]:
+    expected: dict[str, str] = {}
+    first_name, last_name = _split_customer_name(getattr(application, "customer_name", "") or "")
+    if first_name:
+        expected["first_name"] = first_name
+    if last_name:
+        expected["last_name"] = last_name
+    dob = getattr(application, "date_of_birth", None)
+    if dob:
+        expected["date_of_birth"] = dob.isoformat()
+    if expected:
+        expected["id_country"] = "MW"
+    return expected
+
+
+def build_didit_session_payload(application) -> dict:
+    """Build the POST /v3/session/ JSON body (no API key)."""
+    workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
+    callback = (getattr(settings, "DIDIT_CALLBACK_URL", "") or "").strip()
+    body: dict[str, Any] = {
+        "workflow_id": workflow_id,
+        "vendor_data": str(application.pk),
+        "callback": callback,
+        "metadata": {
+            "source": "tengasale",
+            "application_id": str(application.pk),
+        },
+    }
+    if getattr(settings, "DIDIT_SEND_EXPECTED_DETAILS", False):
+        expected = build_expected_details(application)
+        if expected:
+            body["expected_details"] = expected
+    return body
+
+
+def sanitize_didit_session_payload_for_log(payload: dict) -> dict:
+    """Payload safe for logs and management commands (no secrets)."""
+    sanitized: dict[str, Any] = {
+        "workflow_id": payload.get("workflow_id"),
+        "vendor_data": payload.get("vendor_data"),
+        "callback": payload.get("callback"),
+        "metadata": payload.get("metadata"),
+    }
+    if "expected_details" in payload:
+        sanitized["expected_details"] = payload.get("expected_details")
+    return sanitized
+
+
 def _request(method: str, path: str, json_body: dict | None = None) -> dict:
     if requests is None:
         raise DiditAPIError("The requests library is not installed.", user_message="Didit is not available.")
@@ -230,18 +375,34 @@ def _request(method: str, path: str, json_body: dict | None = None) -> dict:
             user_message="Could not reach Didit. Try again.",
         ) from exc
 
-    try:
-        data = response.json() if response.content else {}
-    except ValueError:
-        data = {"raw": response.text}
+    raw_text, data = _parse_didit_response_body(response)
 
     if response.status_code >= 400:
-        message = data.get("message") or data.get("detail") or response.text or "Didit API error"
+        message = data.get("message") if isinstance(data, dict) else None
+        if message is None and isinstance(data, dict):
+            message = data.get("detail")
+        if message is None:
+            message = raw_text or "Didit API error"
         if isinstance(message, list):
             message = " ".join(str(item) for item in message)
         message = str(message)
-        logger.error("Didit API %s %s -> %s", method, path, response.status_code)
-        raise DiditAPIError(message, status_code=response.status_code, payload=data)
+        payload_keys = list(json_body.keys()) if isinstance(json_body, dict) else []
+        client_detail = _safe_didit_detail_for_client(data, raw_text)
+        logger.error(
+            "Didit API %s %s -> %s body=%s request_keys=%s",
+            method,
+            path,
+            response.status_code,
+            json.dumps(client_detail, default=str)[:2000],
+            payload_keys,
+        )
+        raise DiditAPIError(
+            message,
+            status_code=response.status_code,
+            payload=client_detail,
+            response_text=raw_text,
+            request_payload_keys=payload_keys,
+        )
 
     if not isinstance(data, dict):
         return {"data": data}
@@ -286,49 +447,13 @@ def extract_webhook_secret_from_response(data: dict) -> str | None:
     return None
 
 
-def _split_customer_name(full_name: str) -> tuple[str, str]:
-    parts = (full_name or "").strip().split()
-    if not parts:
-        return "", ""
-    if len(parts) == 1:
-        return parts[0], ""
-    return parts[0], " ".join(parts[1:])
-
-
-def build_expected_details(application) -> dict[str, str]:
-    expected: dict[str, str] = {"id_country": "MW"}
-    first_name, last_name = _split_customer_name(getattr(application, "customer_name", "") or "")
-    if first_name:
-        expected["first_name"] = first_name
-    if last_name:
-        expected["last_name"] = last_name
-    dob = getattr(application, "date_of_birth", None)
-    if dob:
-        expected["date_of_birth"] = dob.isoformat()
-    return expected
-
-
 def create_didit_session(application) -> dict:
-    workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
-    if not workflow_id:
-        raise DiditConfigurationError("Didit workflow ID is not configured. Set DIDIT_WORKFLOW_ID.")
-
-    callback = (getattr(settings, "DIDIT_CALLBACK_URL", "") or "").strip()
-    if not callback:
-        raise DiditConfigurationError("Didit callback URL is not configured. Set DIDIT_CALLBACK_URL.")
-
-    body = {
-        "workflow_id": workflow_id,
-        "vendor_data": str(application.pk),
-        "callback": callback,
-        "metadata": {
-            "source": "tengasale",
-            "application_id": str(application.pk),
-            "customer_id": str(application.pk),
-            "merchant_id": str(application.created_by_id or ""),
-        },
-        "expected_details": build_expected_details(application),
-    }
+    validate_didit_session_prerequisites(application)
+    body = build_didit_session_payload(application)
+    logger.info(
+        "Didit create session request payload=%s",
+        json.dumps(sanitize_didit_session_payload_for_log(body), default=str),
+    )
     return _request("POST", "/v3/session/", json_body=body)
 
 

@@ -62,6 +62,35 @@
     return match ? decodeURIComponent(match[2]) : "";
   }
 
+  function formatDiditDetail(detail) {
+    if (!detail) return "";
+    if (typeof detail === "string") return detail;
+    if (typeof detail === "object") {
+      const keys = ["message", "detail", "error", "errors"];
+      for (let i = 0; i < keys.length; i++) {
+        const value = detail[keys[i]];
+        if (value) return String(value);
+      }
+      try {
+        return JSON.stringify(detail);
+      } catch (e) {
+        return String(detail);
+      }
+    }
+    return String(detail);
+  }
+
+  function formatDiditError(data) {
+    let msg = data.error || "Could not start verification.";
+    const detailText = formatDiditDetail(data.didit_detail);
+    if (detailText && msg.indexOf(detailText) === -1) {
+      msg = msg + ": " + detailText;
+    } else if (data.didit_status && !detailText) {
+      msg = msg + " (Didit HTTP " + data.didit_status + ")";
+    }
+    return msg;
+  }
+
   function showError(msg) {
     if (!errorEl) return;
     errorEl.textContent = msg || "Could not start verification.";
@@ -83,7 +112,7 @@
       });
       const data = await res.json();
       if (!data.success) {
-        showError(data.error || "Could not start verification.");
+        showError(formatDiditError(data));
         startBtn.disabled = false;
         return;
       }

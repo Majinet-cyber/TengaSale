@@ -114,6 +114,11 @@ REQUIRE_DIDIT_KYC_BEFORE_APPROVAL = os.environ.get("REQUIRE_DIDIT_KYC_BEFORE_APP
     "yes",
 )
 DIDIT_REQUEST_TIMEOUT_SECONDS = int(os.environ.get("DIDIT_REQUEST_TIMEOUT_SECONDS", "15"))
+DIDIT_SEND_EXPECTED_DETAILS = os.environ.get("DIDIT_SEND_EXPECTED_DETAILS", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 from config.didit_validation import validate_didit_production_settings  # noqa: E402
 

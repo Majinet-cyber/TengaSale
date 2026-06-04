@@ -18,12 +18,19 @@ from applications.test_helpers import attach_complete_pricing
 from config.didit_validation import validate_didit_production_settings
 from integrations.didit import (
     DiditAPIError,
+    WORKFLOW_MISMATCH_USER_MESSAGE,
+    build_didit_session_payload,
     canonicalize_didit_payload,
+    create_didit_session,
     didit_user_facing_message,
     extract_didit_summary,
+    is_uuid_like_workflow_id,
     map_didit_status,
+    validate_didit_session_prerequisites,
     verify_didit_webhook_signature_v2,
 )
+
+VALID_DIDIT_WORKFLOW_UUID = "550e8400-e29b-41d4-a716-446655440000"
 
 
 class DiditServiceTests(TestCase):
@@ -116,6 +123,19 @@ class DiditServiceTests(TestCase):
     def test_didit_api_403_user_message(self):
         msg = didit_user_facing_message(status_code=403, detail="Forbidden")
         self.assertIn("DIDIT_API_KEY", msg)
+
+    def test_workflow_mismatch_user_message(self):
+        msg = didit_user_facing_message(
+            status_code=400,
+            detail="invalid workflow",
+            payload={"workflow_id": ["Invalid workflow"]},
+        )
+        self.assertEqual(msg, WORKFLOW_MISMATCH_USER_MESSAGE)
+
+    def test_is_uuid_like_workflow_id(self):
+        self.assertTrue(is_uuid_like_workflow_id(VALID_DIDIT_WORKFLOW_UUID))
+        self.assertFalse(is_uuid_like_workflow_id("wf-1"))
+        self.assertFalse(is_uuid_like_workflow_id(""))
 
     def test_env_example_has_empty_didit_secret_placeholders(self):
         root = Path(__file__).resolve().parents[2]
@@ -406,6 +426,58 @@ class DiditRefreshPermissionTests(TestCase):
         self.assertTrue(response.json()["success"])
 
 
+class DiditSessionPayloadTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="m-payload", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            customer_name="Jane Banda",
+            national_id="RQXFVZC9",
+        )
+
+    @override_settings(
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+        DIDIT_SEND_EXPECTED_DETAILS=False,
+    )
+    def test_minimal_payload_excludes_expected_details_by_default(self):
+        payload = build_didit_session_payload(self.app)
+        self.assertNotIn("expected_details", payload)
+        self.assertEqual(payload["vendor_data"], str(self.app.pk))
+        self.assertIsInstance(payload["vendor_data"], str)
+        self.assertEqual(payload["metadata"]["application_id"], str(self.app.pk))
+
+    @override_settings(
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+        DIDIT_SEND_EXPECTED_DETAILS=True,
+    )
+    def test_expected_details_when_flag_true_and_name_present(self):
+        payload = build_didit_session_payload(self.app)
+        self.assertIn("expected_details", payload)
+        self.assertEqual(payload["expected_details"]["first_name"], "Jane")
+        self.assertEqual(payload["expected_details"]["last_name"], "Banda")
+
+    @override_settings(
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+        DIDIT_SEND_EXPECTED_DETAILS=True,
+    )
+    def test_expected_details_omitted_when_no_valid_fields(self):
+        self.app.customer_name = ""
+        self.app.save(update_fields=["customer_name"])
+        payload = build_didit_session_payload(self.app)
+        self.assertNotIn("expected_details", payload)
+
+    @override_settings(DIDIT_WORKFLOW_ID="not-a-uuid", DIDIT_CALLBACK_URL="https://example.com/cb/")
+    def test_validate_rejects_non_uuid_workflow(self):
+        with self.assertRaises(Exception) as ctx:
+            validate_didit_session_prerequisites(self.app)
+        self.assertIn("UUID", str(ctx.exception))
+
+
 class DiditStartSessionTests(TestCase):
     def setUp(self):
         User = get_user_model()
@@ -428,8 +500,18 @@ class DiditStartSessionTests(TestCase):
         self.assertIn("DIDIT_WORKFLOW_ID", data["error"])
 
     @override_settings(
-        DIDIT_API_KEY="key",
         DIDIT_WORKFLOW_ID="wf-1",
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+    )
+    def test_start_invalid_workflow_uuid_returns_error(self):
+        response = self.client.post(reverse("didit_start_kyc", args=[self.app.id]))
+        data = response.json()
+        self.assertFalse(data["success"])
+        self.assertIn("UUID", data["error"])
+
+    @override_settings(
+        DIDIT_API_KEY="key",
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
         DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
     )
     @patch("applications.didit_views.create_didit_session")
@@ -449,7 +531,7 @@ class DiditStartSessionTests(TestCase):
 
     @override_settings(
         DIDIT_API_KEY="key",
-        DIDIT_WORKFLOW_ID="wf-1",
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
         DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
     )
     @patch("applications.didit_views.create_didit_session")
@@ -459,3 +541,44 @@ class DiditStartSessionTests(TestCase):
         data = response.json()
         self.assertFalse(data["success"])
         self.assertIn("DIDIT_API_KEY", data["error"])
+
+    @override_settings(
+        DIDIT_API_KEY="key",
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+    )
+    @patch("applications.didit_views.create_didit_session")
+    def test_start_session_didit_400_returns_body_safely(self, mock_create):
+        mock_create.side_effect = DiditAPIError(
+            "Invalid workflow",
+            status_code=400,
+            payload={"workflow_id": ["Unknown workflow"]},
+            request_payload_keys=["workflow_id", "vendor_data", "callback", "metadata"],
+        )
+        response = self.client.post(reverse("didit_start_kyc", args=[self.app.id]))
+        data = response.json()
+        self.assertFalse(data["success"])
+        self.assertEqual(data["didit_status"], 400)
+        self.assertEqual(data["didit_detail"], {"workflow_id": ["Unknown workflow"]})
+        self.assertEqual(data["error"], WORKFLOW_MISMATCH_USER_MESSAGE)
+        self.assertNotIn("DIDIT_API_KEY", json.dumps(data))
+        self.assertIn("workflow_id", data["request_payload_keys"])
+
+    @patch("integrations.didit.requests.request")
+    @override_settings(
+        DIDIT_API_KEY="test-key-not-logged",
+        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
+        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
+    )
+    def test_create_session_didit_400_captured_from_http(self, mock_request):
+        mock_response = mock_request.return_value
+        mock_response.status_code = 400
+        mock_response.content = b'{"detail":"bad workflow"}'
+        mock_response.text = '{"detail":"bad workflow"}'
+        mock_response.json.return_value = {"detail": "bad workflow"}
+        with self.assertRaises(DiditAPIError) as ctx:
+            create_didit_session(self.app)
+        exc = ctx.exception
+        self.assertEqual(exc.status_code, 400)
+        self.assertEqual(exc.payload, {"detail": "bad workflow"})
+        self.assertNotIn("test-key", str(exc.payload))

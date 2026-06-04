@@ -53,13 +53,36 @@ def get_application_for_didit(request, app_id):
     return app
 
 
+def _format_didit_detail_snippet(detail) -> str:
+    if not detail:
+        return ""
+    if isinstance(detail, dict):
+        for key in ("message", "detail", "error", "errors"):
+            value = detail.get(key)
+            if value:
+                return str(value)[:500]
+        return str(detail)[:500]
+    return str(detail)[:500]
+
+
 def _didit_api_error_response(exc: DiditAPIError, *, app_id: int | None = None) -> JsonResponse:
+    detail_snippet = _format_didit_detail_snippet(exc.payload)
     logger.error(
-        "Didit API error for application %s (status=%s)",
+        "Didit API error for application %s (status=%s) detail=%s keys=%s",
         app_id or "?",
         exc.status_code,
+        detail_snippet or (exc.response_text or "")[:500],
+        exc.request_payload_keys,
     )
-    return JsonResponse({"success": False, "error": exc.user_message}, status=200)
+    body: dict = {
+        "success": False,
+        "error": exc.user_message,
+        "didit_status": exc.status_code,
+        "didit_detail": exc.payload if exc.payload is not None else {},
+    }
+    if exc.request_payload_keys:
+        body["request_payload_keys"] = exc.request_payload_keys
+    return JsonResponse(body, status=200)
 
 
 @login_required
