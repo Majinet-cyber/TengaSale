@@ -4,88 +4,101 @@
 <head>
     <title>TengaSale — Sign In</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#ff5a00">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
     <style>
         .auth-shell {
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: var(--app-bg, #f5f6f8);
-            padding: 24px 16px 40px;
+            background: #eef2f6;
+            padding: 24px 16px calc(32px + env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box;
         }
         .auth-brand {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             gap: 10px;
         }
         .auth-brand .ts-logo-login {
-            max-width: 220px;
-            max-height: 80px;
+            max-width: 200px;
+            max-height: 72px;
             object-fit: contain;
             display: block;
+            filter: drop-shadow(0 4px 12px rgba(255,90,0,0.18));
         }
         .auth-brand .auth-tagline {
-            font-size: 1rem;
-            color: var(--muted, #7a828c);
-            letter-spacing: 0.04em;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.05em;
             margin: 0;
         }
         .auth-card {
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             background: #fff;
             border-radius: 20px;
-            box-shadow: 0 16px 36px rgba(17,17,17,0.10);
-            padding: 32px 28px 28px;
+            border: 1px solid #e4e7eb;
+            box-shadow: 0 12px 32px rgba(17,17,17,0.10), 0 2px 8px rgba(17,17,17,0.04);
+            padding: 28px 24px 24px;
             display: flex;
             flex-direction: column;
             gap: 18px;
+            box-sizing: border-box;
         }
         .auth-card label {
             font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--black, #111);
-            margin-bottom: 4px;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 7px;
             display: block;
+            letter-spacing: 0.01em;
         }
         .auth-card input[type=text],
         .auth-card input[type=password] {
             width: 100%;
-            padding: 13px 14px;
-            border: 1.5px solid var(--border, #e4e7eb);
-            border-radius: 10px;
+            min-height: 52px;
+            padding: 14px 16px;
+            border: 1.5px solid #e4e7eb;
+            border-radius: 14px;
             font-size: 1rem;
             outline: none;
-            transition: border-color .15s;
-            background: var(--app-bg, #f5f6f8);
+            transition: border-color .15s, box-shadow .15s;
+            background: #fafbfc;
             box-sizing: border-box;
+            color: #101828;
         }
         .auth-card input:focus {
-            border-color: var(--orange, #ff5a00);
+            border-color: #ff5a00;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(255,90,0,0.10);
         }
         .password-field {
             position: relative;
         }
         .password-field input {
-            padding-right: 48px;
+            padding-right: 52px;
         }
         .password-toggle {
             position: absolute;
-            right: 12px;
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
             cursor: pointer;
             padding: 4px;
-            color: var(--muted, #7a828c);
+            color: #94a3b8;
+            transition: color .15s;
         }
+        .password-toggle:hover { color: #374151; }
         .password-toggle svg {
             width: 20px;
             height: 20px;
@@ -93,81 +106,40 @@
             stroke: currentColor;
             stroke-width: 2;
         }
-        .primary-button {
-            width: 100%;
-            padding: 15px;
-            background: var(--orange, #ff5a00);
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            letter-spacing: 0.03em;
-            transition: background .15s;
-        }
-        .primary-button:hover {
-            background: var(--orange-dark, #e64d00);
-        }
-        .auth-link {
-            text-align: center;
-            font-size: 0.88rem;
-            color: var(--orange, #ff5a00);
-            text-decoration: none;
-        }
-        .auth-link:hover { text-decoration: underline; }
-        .home-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 44px;
-            padding: 0 18px;
-            margin-bottom: 18px;
-            border: 1.5px solid rgba(255, 90, 0, 0.28);
-            border-radius: 999px;
-            background: #fff;
-            color: var(--orange, #ff5a00);
-            font-weight: 700;
-            font-size: 0.92rem;
-            text-decoration: none;
-            box-shadow: 0 10px 24px rgba(17,17,17,0.07);
-            transition: border-color .15s, color .15s, transform .15s;
-        }
-        .home-link:hover {
-            border-color: var(--orange, #ff5a00);
-            color: var(--orange-dark, #e64d00);
-            transform: translateY(-1px);
-        }
-        .home-link svg {
-            width: 18px;
-            height: 18px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2.25;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
         .auth-footer {
-            margin-top: 28px;
-            font-size: 0.78rem;
-            color: var(--muted, #7a828c);
+            margin-top: 24px;
+            font-size: 0.77rem;
+            color: #94a3b8;
             text-align: center;
         }
         .errorlist {
             margin: 0;
-            padding: 10px 14px;
-            background: #fdeceb;
-            border-radius: 8px;
-            color: var(--red, #d93025);
+            padding: 12px 16px;
+            background: #fef2f2;
+            border: 1px solid rgba(220,38,38,0.16);
+            border-radius: 12px;
+            color: #dc2626;
             font-size: 0.88rem;
             list-style: none;
         }
+        .auth-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            color: #64748b;
+            text-decoration: none;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .auth-back-link:hover { color: #ff5a00; }
     </style>
 </head>
-<body style="margin:0;background:#dfe5eb;">
+<body style="margin:0;background:#eef2f6;">
 
-<div class="auth-shell">
+<div class="auth-shell mobile-shell">
+    <a href="/" class="auth-back-link">← Back to home</a>
+
     <div class="auth-brand">
         <img
             src="{% static 'images/TENGASALEe.png' %}"
@@ -177,15 +149,7 @@
         <p class="auth-tagline">Endless Possibilities</p>
     </div>
 
-    <a href="/" class="home-link">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M19 12H5"></path>
-            <path d="M12 19l-7-7 7-7"></path>
-        </svg>
-        Back to Home
-    </a>
-
-    <form method="post" class="auth-card">
+    <form method="post" class="auth-card form-card">
         {% csrf_token %}
         {% if next %}
             <input type="hidden" name="next" value="{{ next }}">
@@ -223,12 +187,12 @@
             </div>
         </div>
 
-        <button type="submit" class="primary-button">Sign In</button>
+        <button type="submit" class="ts-button-primary primary-big-action" style="justify-content:center;min-height:56px;font-size:1rem;">Sign In →</button>
 
-        <a href="{% url 'password_reset' %}" class="auth-link">Forgot password?</a>
+        <a href="{% url 'password_reset' %}" style="text-align:center;font-size:0.85rem;color:#ff5a00;text-decoration:none;font-weight:600;">Forgot password?</a>
     </form>
 
-    <p class="auth-footer">&copy; TengaSale &nbsp;·&nbsp; v1.0.0</p>
+    <p class="auth-footer">v1.0.0 &nbsp;·&nbsp; &copy; TengaSale 2025</p>
 </div>
 
 <script>

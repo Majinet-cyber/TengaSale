@@ -4,6 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
+<div class="application-flow-page">
 <a href="{% url 'merchant_dashboard' %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
@@ -26,7 +27,7 @@
 </div>
 {% endif %}
 
-<form method="post" class="card{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
+<form method="post" class="form-card card{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
     {% if app.customer_name %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -137,14 +138,10 @@
     </div>
 
     <div class="form-actions">
-        <a href="{% url 'merchant_dashboard' %}" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn">CONTINUE TO DEALS</button>
+        <a href="{% url 'merchant_dashboard' %}" class="btn btn-outline ts-button-outline">Back</a>
+        <button type="submit" class="btn ts-button-primary">CONTINUE TO DEALS</button>
     </div>
 </form>
-
-{% if app.customer_name %}
-{% include "applications/partials/didit_kyc_card.html" with app=app kyc_status_label=kyc_status_label %}
-{% endif %}
 
 {% if app.customer_phone %}
 <div class="card phone-otp-card">
@@ -217,5 +214,6 @@
     syncPhoneUser();
 })();
 </script>
+</div>
 
 {% endblock %}

@@ -4,6 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
+<div class="application-flow-page">
 <a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
@@ -153,7 +154,7 @@
                 <p class="deal-lock-note">The phone will only lock if the customer falls behind the 12-month payments.</p>
             </article>
 
-            <button class="new-application-button deal-continue-btn" type="submit">CONTINUE TO KYC</button>
+            <button class="new-application-button deal-continue-btn ts-button-primary primary-big-action" type="submit">CONTINUE TO KYC</button>
         </section>
     </form>
 {% else %}
@@ -367,5 +368,6 @@
         });
     })();
 </script>
+</div>
 
 {% endblock %}

@@ -7,7 +7,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -150,18 +150,14 @@ def didit_start_kyc(request, app_id):
 
 @merchant_required
 def didit_verification_step(request, app_id):
-    """Merchant step: Didit identity verification after customer details."""
+    """Legacy URL — Didit KYC is on the main KYC step after deal selection."""
+    from applications.flow_helpers import application_has_complete_deal
     from applications.views import merchant_application
 
     app = merchant_application(request, app_id)
-    return render(
-        request,
-        "applications/didit_verification.html",
-        {
-            "app": app,
-            "kyc_status_label": KYC_STATUS_DISPLAY.get(app.kyc_status, "Not Started"),
-        },
-    )
+    if not application_has_complete_deal(app):
+        return redirect("choose_device", app_id=app.id)
+    return redirect("kyc_capture", app_id=app.id)
 
 
 @require_GET

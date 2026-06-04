@@ -522,8 +522,8 @@ class SalesMobileUITests(TestCase):
         response = self._get_sales_home()
         content = response.content.decode()
         self.assertTrue(
-            "🇲🇼" in content or "Malawi" in content,
-            "Home must contain Malawi flag emoji or text",
+            "🇲🇼" in content or "Malawi" in content or 'viewBox="0 0 20 14"' in content,
+            "Home must contain Malawi flag (SVG or text)",
         )
 
     def test_sales_home_uses_mobile_header(self):

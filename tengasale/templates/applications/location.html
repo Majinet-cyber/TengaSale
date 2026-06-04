@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'choose_device' app.id %}" class="soft-back">
+<a href="{% url 'kyc_capture' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
@@ -90,8 +90,8 @@
     </div>
 
     <div class="form-actions">
-        <a href="{% url 'choose_device' app.id %}" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn">CONTINUE TO WORK / INCOME</button>
+        <a href="{% url 'kyc_capture' app.id %}" class="btn btn-outline ts-button-outline">Back</a>
+        <button type="submit" class="btn ts-button-primary">CONTINUE TO WORK / INCOME</button>
     </div>
 </form>
 

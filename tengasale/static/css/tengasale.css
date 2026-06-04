@@ -3102,10 +3102,24 @@ label,
 }
 
 .merchant-dashboard-shell .merchant-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.merchant-dashboard-shell .merchant-header .merchant-brand {
+  justify-self: start;
+}
+
+.merchant-dashboard-shell .merchant-header .topbar-page-title {
+  justify-self: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.merchant-dashboard-shell .merchant-header .merchant-header-actions {
+  justify-self: end;
 }
 
 .merchant-dashboard-shell .merchant-brand {
@@ -3262,21 +3276,9 @@ label,
 }
 
 .merchant-dashboard-shell .primary-contract-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 64px;
-  padding: 14px 16px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #ff6a1a 0%, #ff5a00 55%, #e84f00 100%);
-  color: #fff;
-  text-decoration: none;
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  box-shadow: 0 14px 32px rgba(255, 90, 0, 0.32);
-  transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
+  border-radius: 16px;
+  background: var(--orange, #ff5a00);
+  box-shadow: 0 8px 20px rgba(255, 90, 0, 0.28);
 }
 
 .merchant-dashboard-shell .primary-contract-btn:hover,
@@ -3562,4 +3564,353 @@ label,
     margin-right: auto;
     border-radius: 0;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shared mobile-first UI (KulaSell-style tokens)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-shell {
+  min-height: 100vh;
+  background: var(--app-bg, #eef2f6);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+}
+
+.topbar.mobile-topbar,
+.mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  border-bottom: 1px solid var(--ts-border, #e4e7eb);
+}
+
+.topbar .topbar-page-title,
+.mobile-header__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ts-text, #111);
+}
+
+.flag-pill,
+.merchant-country-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ts-border, #e4e7eb);
+  flex-shrink: 0;
+}
+
+.flag-pill__code,
+.merchant-country-chip__code {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--ts-muted, #64748b);
+}
+
+.primary-big-action,
+.primary-contract-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--orange, #ff5a00);
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  border: none;
+  box-shadow: 0 8px 20px rgba(255, 90, 0, 0.28);
+  transition: transform 0.12s, filter 0.15s;
+  box-sizing: border-box;
+}
+
+.primary-big-action:hover,
+.primary-contract-btn:hover,
+.primary-big-action:focus-visible,
+.primary-contract-btn:focus-visible {
+  color: #fff;
+  text-decoration: none;
+  filter: brightness(1.04);
+}
+
+.simple-section {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.simple-row,
+.action-row,
+.ts-menu-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.row-arrow,
+.action-row-chevron,
+.ts-row-arrow {
+  font-size: 18px;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.form-card {
+  background: #fff;
+  border: 1px solid var(--ts-border, #e4e7eb);
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.form-card .form-group {
+  margin-bottom: 16px;
+}
+
+.form-card label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ts-text, #111);
+  margin-bottom: 6px;
+}
+
+.form-card input[type="text"],
+.form-card input[type="tel"],
+.form-card input[type="email"],
+.form-card input[type="number"],
+.form-card input[type="date"],
+.form-card input[type="password"],
+.form-card select,
+.form-card textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ts-border, #e4e7eb);
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #fff;
+  color: var(--ts-text, #111);
+  box-sizing: border-box;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions .ts-button-primary,
+.form-actions .ts-button-outline,
+.form-actions .btn:not(.btn-outline) {
+  flex: 1;
+  min-height: 48px;
+}
+
+.ts-button-primary,
+.form-actions .btn:not(.btn-outline) {
+  background: var(--orange, #ff5a00);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.ts-button-outline,
+.form-actions .btn-outline {
+  background: #fff;
+  color: var(--ts-text, #111);
+  border: 1.5px solid var(--ts-border, #d0d5dd);
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.application-flow-page {
+  padding: 0 14px calc(24px + env(safe-area-inset-bottom, 0px));
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.application-flow-page .greeting {
+  font-size: 1.35rem;
+  font-weight: 900;
+  margin: 8px 0 4px;
+  color: var(--ts-text, #111);
+}
+
+.uw-primary-action {
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.uw-home-simple .ts-menu-row {
+  grid-template-columns: 1fr auto auto;
+}
+
+.uw-home-simple .uw-primary-action::after {
+  content: "→";
+  font-size: 20px;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-left: auto;
+}
+
+/* ═══════════════════════════════════════════════════════
+   GLOBAL POLISH — v2 premium fintech UI enhancements
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Bigger primary action button ─────────────────────── */
+.primary-contract-btn,
+.primary-big-action {
+  min-height: 68px;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Underwriter primary action grid on mobile ─────────── */
+@media (max-width: 430px) {
+  .uw-primary-grid {
+    grid-template-columns: 1fr;
+  }
+  .uw-primary-action {
+    min-height: 88px;
+  }
+}
+
+/* ── Merchant greeting subtitle ───────────────────────── */
+.merchant-dashboard-shell .merchant-greeting-sub {
+  font-size: 12px;
+  color: var(--ts-muted);
+  margin-top: 2px;
+}
+
+/* ── Queue status card improvements ───────────────────── */
+.uw-queue-status-card p {
+  font-size: 12px;
+  color: var(--ts-muted);
+  margin: 4px 0 0;
+}
+
+/* ── Action row icon improvements ─────────────────────── */
+.ts-menu-row__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── ts-fade-in animation ─────────────────────────────── */
+@keyframes ts-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ts-fade-in {
+  animation: ts-fade-in-up 0.35s ease both;
+}
+
+/* ── Merchant greeting with subtitle ─────────────────── */
+.merchant-greeting-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ts-muted, #667085);
+  margin: 2px 0 0;
+}
+
+/* ── Bigger section action rows on tablet ─────────────── */
+@media (min-width: 480px) {
+  .merchant-dashboard-shell .action-row {
+    min-height: 62px;
+  }
+  .merchant-dashboard-shell .primary-contract-btn {
+    min-height: 72px;
+    font-size: 18px;
+  }
+}
+
+/* ── Improved mobile topbar for underwriter ───────────── */
+.sales-main.mobile-shell {
+  padding: 12px 14px calc(48px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Smooth button press animation ───────────────────── */
+.primary-contract-btn:active,
+.uw-primary-action:active,
+.ts-button-primary:active {
+  transform: scale(0.98);
+}
+
+/* ── Better KPI cards fade in stagger ────────────────── */
+.overview-card {
+  animation: ts-fade-in-up 0.3s ease both;
+  animation-delay: 0.1s;
+}
+
+.action-card {
+  animation: ts-fade-in-up 0.35s ease both;
+  animation-delay: 0.15s;
+}
+
+/* ── Money value class ────────────────────────────────── */
+.money-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
+
+/* ── Flag pill polish ─────────────────────────────────── */
+.flag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: #fff;
+  border: 1px solid var(--ts-border, #e2e8f0);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ts-muted, #667085);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.05);
+  white-space: nowrap;
 }

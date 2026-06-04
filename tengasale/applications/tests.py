@@ -67,6 +67,13 @@ class ApplicationTestCase(TestCase):
     def create_application(self):
         return FinancingApplication.objects.create(created_by=self.user)
 
+    def complete_customer_details(self, app):
+        app.customer_name = "Jane Banda"
+        app.national_id = "RQXFVZC9"
+        app.customer_phone = "990870616"
+        app.status = "customer_details"
+        app.save(update_fields=["customer_name", "national_id", "customer_phone", "status"])
+
     def complete_kyc_images(self, app):
         app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
         app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
@@ -76,8 +83,24 @@ class ApplicationTestCase(TestCase):
     def complete_location_and_work(self, app):
         app.region = "Central Region"
         app.district = "Lilongwe"
+        app.traditional_authority = "TA Chadza"
         app.precise_location = "Area 18"
+        app.location = "Area 18"
         app.work_description = "Retail business"
+        app.save()
+
+    def prime_for_review_submit(self, app):
+        from datetime import date
+
+        from applications.test_helpers import attach_complete_pricing
+
+        self.complete_customer_details(app)
+        app.national_id = "RQXFVZC9"
+        app.date_of_birth = date(1990, 5, 15)
+        app.gender = "male"
+        attach_complete_pricing(app)
+        self.complete_kyc_images(app)
+        self.complete_location_and_work(app)
         app.save()
 
     def create_deal(self):
@@ -514,13 +537,22 @@ class ApplicationListTests(ApplicationTestCase):
 
 
 class ApplicationContinueUrlTests(ApplicationTestCase):
-    def test_get_continue_url_returns_customer_page_for_started_and_customer_details(self):
+    def test_get_continue_url_returns_customer_page_when_details_incomplete(self):
         app = self.create_application()
 
         for status in ["started", "customer_details"]:
             app.status = status
             app.save(update_fields=["status"])
             self.assertEqual(app.get_continue_url(), reverse("edit_customer_details", args=[app.id]))
+
+    def test_get_continue_url_returns_deals_after_customer_details_complete(self):
+        app = self.create_application()
+        app.status = "customer_details"
+        app.customer_name = "Jane Banda"
+        app.national_id = "RQXFVZC9"
+        app.customer_phone = "990870616"
+        app.save()
+        self.assertEqual(app.get_continue_url(), reverse("choose_device", args=[app.id]))
 
     def test_get_continue_url_returns_device_page_for_device_selection(self):
         app = self.create_application()
@@ -544,7 +576,7 @@ class ApplicationContinueUrlTests(ApplicationTestCase):
         app.status = "approved"
         app.save(update_fields=["status"])
 
-        self.assertEqual(app.get_continue_url(), reverse("contract_terms", args=[app.id]))
+        self.assertEqual(app.get_continue_url(), reverse("capture_imei", args=[app.id]))
 
 
 class ApplicationDetailTests(ApplicationTestCase):
@@ -584,7 +616,7 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(response, reverse("kyc_capture", args=[app.id]))
+        self.assertRedirects(response, reverse("choose_device", args=[app.id]))
         self.assertEqual(app.national_id, "AB123CD4")
         self.assertEqual(app.customer_phone, "990870616")
         self.assertEqual(app.status, "customer_details")
@@ -599,8 +631,8 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "KYC Capture")
-        self.assertEqual(response.resolver_match.url_name, "kyc_capture")
+        self.assertContains(response, "Choose your new phone")
+        self.assertEqual(response.resolver_match.url_name, "choose_device")
 
     def test_invalid_national_id_does_not_proceed(self):
         app = self.create_application()
@@ -644,7 +676,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_with_no_deals_does_not_crash(self):
         app = self.create_application()
-        self.complete_kyc_images(app)
+        self.complete_customer_details(app)
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
 
@@ -653,7 +685,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_contains_seeded_brand_choices(self):
         app = self.create_application()
-        self.complete_kyc_images(app)
+        self.complete_customer_details(app)
         call_command("seed_tengasale")
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -666,7 +698,7 @@ class ApplicationFlowTests(ApplicationTestCase):
     @override_settings(DEBUG=False)
     def test_device_page_with_brand_logos_does_not_500_when_manifest_missing(self):
         app = self.create_application()
-        self.complete_kyc_images(app)
+        self.complete_customer_details(app)
         call_command("seed_tengasale")
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -676,7 +708,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_device_page_contains_guided_flow_text_and_hidden_inputs(self):
         app = self.create_application()
-        self.complete_kyc_images(app)
+        self.complete_customer_details(app)
         self.create_deal()
 
         response = self.client.get(reverse("choose_device", args=[app.id]))
@@ -694,6 +726,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_invalid_deal_id_post_returns_error(self):
         app = self.create_application()
+        self.complete_customer_details(app)
         self.create_deal()
 
         response = self.client.post(
@@ -704,9 +737,9 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Select an available device deal before continuing.")
 
-    def test_valid_deal_selection_saves_calculated_values_and_redirects_to_location(self):
+    def test_valid_deal_selection_saves_calculated_values_and_redirects_to_kyc(self):
         app = self.create_application()
-        self.complete_kyc_images(app)
+        self.complete_customer_details(app)
         deal = self.create_deal()
 
         response = self.client.post(
@@ -715,7 +748,7 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         app.refresh_from_db()
-        self.assertRedirects(response, reverse("location_details", args=[app.id]))
+        self.assertRedirects(response, reverse("kyc_capture", args=[app.id]))
         self.assertEqual(app.deal, deal)
         self.assertEqual(app.selected_cash_price, Decimal("360000.00"))
         self.assertEqual(app.selected_deposit_percent, Decimal("13.00"))
@@ -734,6 +767,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_selected_cash_price_below_min_returns_error(self):
         app = self.create_application()
+        self.complete_customer_details(app)
         deal = self.create_deal()
 
         response = self.client.post(
@@ -746,6 +780,7 @@ class ApplicationFlowTests(ApplicationTestCase):
 
     def test_selected_cash_price_above_max_returns_error(self):
         app = self.create_application()
+        self.complete_customer_details(app)
         deal = self.create_deal()
 
         response = self.client.post(
@@ -757,7 +792,11 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertContains(response, "Cash price must stay within the selected deal price range.")
 
     def test_kyc_location_and_work_pages_load(self):
+        from applications.test_helpers import attach_complete_pricing
+
         app = self.create_application()
+        self.complete_customer_details(app)
+        attach_complete_pricing(app)
         self.complete_kyc_images(app)
 
         for name in ["kyc_capture", "location_details", "work_details"]:
@@ -765,10 +804,8 @@ class ApplicationFlowTests(ApplicationTestCase):
             self.assertEqual(response.status_code, 200)
 
     def test_signature_page_requires_agreed_to_terms_before_submit(self):
-        from applications.test_helpers import attach_complete_pricing
-
         app = self.create_application()
-        attach_complete_pricing(app)
+        self.prime_for_review_submit(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -779,10 +816,8 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertNotEqual(app.status, "pending_review")
 
     def test_final_submit_sets_status_pending_review(self):
-        from applications.test_helpers import attach_complete_pricing
-
         app = self.create_application()
-        attach_complete_pricing(app)
+        self.prime_for_review_submit(app)
         app.signature_image.save("signature.png", ContentFile(PNG_BYTES), save=False)
         app.save(update_fields=["signature_image"])
 
@@ -805,9 +840,7 @@ class SignaturePageTests(ApplicationTestCase):
         self.settings_override.enable()
 
     def prime_for_signature_flow(self, app):
-        from applications.test_helpers import attach_complete_pricing
-
-        attach_complete_pricing(app)
+        self.prime_for_review_submit(app)
 
     def tearDown(self):
         self.settings_override.disable()
@@ -948,6 +981,14 @@ class KYCCaptureTests(ApplicationTestCase):
         self.settings_override = override_settings(MEDIA_ROOT=self.media_root)
         self.settings_override.enable()
 
+    def create_application(self):
+        from applications.test_helpers import attach_complete_pricing
+
+        app = super().create_application()
+        self.complete_customer_details(app)
+        attach_complete_pricing(app)
+        return app
+
     def tearDown(self):
         self.settings_override.disable()
         shutil.rmtree(self.media_root, ignore_errors=True)
@@ -969,6 +1010,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertEqual(app.get_continue_url(), reverse("kyc_capture", args=[app.id]))
 
         self.save_existing_images(app)
+        app.refresh_from_db()
         self.assertEqual(app.get_continue_url(), reverse("location_details", args=[app.id]))
 
     def test_kyc_page_get_shows_live_capture_controls(self):
@@ -1793,14 +1835,15 @@ class ApplicationPageLoadTests(TestCase):
 
     def test_deals_page_loads_for_merchant(self):
         self._login(self.merchant)
-        self.app.customer_face_image.save("face.png", ContentFile(PNG_BYTES), save=False)
-        self.app.id_front_image.save("front.png", ContentFile(PNG_BYTES), save=False)
-        self.app.id_back_image.save("back.png", ContentFile(PNG_BYTES), save=False)
+        self.app.customer_name = "Jane Banda"
+        self.app.national_id = "RQXFVZC9"
+        self.app.customer_phone = "990870616"
+        self.app.status = "customer_details"
         self.app.save()
         url = reverse("choose_device", args=[self.app.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Choose your new smartphone")
+        self.assertContains(response, "Choose your new phone")
 
     def test_hq_dashboard_loads_for_hq_user(self):
         self._login(self.hq)
@@ -1862,12 +1905,12 @@ class ApprovalStatusTests(TestCase):
         pending = FinancingApplication.objects.filter(status="pending_review")
         self.assertNotIn(self.app, pending)
 
-    def test_approved_application_routes_to_contract_terms(self):
+    def test_approved_application_routes_to_imei_capture(self):
         self.app.status = "approved"
         self.app.save(update_fields=["status"])
         self.assertEqual(
             self.app.get_continue_url(),
-            reverse("contract_terms", args=[self.app.id]),
+            reverse("capture_imei", args=[self.app.id]),
         )
 
     def test_approved_detail_page_shows_next_step_banner(self):
@@ -2001,10 +2044,14 @@ class ApplicationStabilityE2ETests(ApplicationTestCase):
     def test_full_merchant_flow_images_signature_and_pdf(self):
         deal = self.create_deal()
         app = self.create_application()
-        app.customer_name = "Jane Banda"
-        app.customer_phone = "990870616"
+        self.complete_customer_details(app)
         app.national_id = "RQXFVZC9"
-        app.save(update_fields=["customer_name", "customer_phone", "national_id"])
+        app.save(update_fields=["national_id"])
+
+        self.client.post(
+            reverse("choose_device", args=[app.id]),
+            {"deal_id": deal.id, "selected_cash_price": "350000"},
+        )
 
         for field in ("customer_face_image", "id_front_image", "id_back_image"):
             response = self.client.post(
@@ -2021,11 +2068,6 @@ class ApplicationStabilityE2ETests(ApplicationTestCase):
         self.assertContains(kyc_response, app.id_front_image.url)
         self.assertContains(kyc_response, app.id_back_image.url)
         self.assertNotContains(kyc_response, 'class="ts-img-fallback"')
-
-        self.client.post(
-            reverse("choose_device", args=[app.id]),
-            {"deal_id": deal.id, "selected_cash_price": "350000"},
-        )
         self.client.post(reverse("location_details", args=[app.id]), self.location_data())
         self.client.post(reverse("work_details", args=[app.id]), self.work_data())
         self.client.post(

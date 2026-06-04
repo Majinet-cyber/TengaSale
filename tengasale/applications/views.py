@@ -31,6 +31,7 @@ from .flow_helpers import (
     kyc_images_complete,
     kyc_missing_image_labels,
     location_step_complete,
+    customer_details_complete,
     merchant_application_continue_url,
     merchant_next_step_after_deal_selection,
     redirect_if_deal_required,
@@ -152,7 +153,7 @@ def edit_customer_details(request, app_id):
                     app.phone_verification_status = "failed"
                     app.save(update_fields=["phone_verification_status"])
             messages.success(request, "Customer details saved.")
-            return redirect("didit_verification", app_id=app.id)
+            return redirect("choose_device", app_id=app.id)
     else:
         form = CustomerDetailsForm(instance=app)
 
@@ -211,6 +212,9 @@ def verify_phone_otp(request, app_id):
 @merchant_required
 def choose_device(request, app_id):
     app = merchant_application(request, app_id)
+    if not customer_details_complete(app):
+        messages.warning(request, "Complete customer details before choosing a deal.")
+        return redirect("edit_customer_details", app_id=app.id)
     deals = DeviceDeal.objects.filter(is_active=True, brand__is_active=True).select_related("brand").order_by(
         "brand__name",
         "model_name",
@@ -328,6 +332,9 @@ def choose_device(request, app_id):
 @merchant_required
 def kyc_capture(request, app_id):
     app = merchant_application(request, app_id)
+    blocked = redirect_if_deal_required(request, app)
+    if blocked:
+        return blocked
 
     if request.method == "POST":
         form = KYCForm(request.POST, request.FILES, instance=app)
@@ -384,6 +391,8 @@ def kyc_capture(request, app_id):
         flags["id_back_image"],
         kyc_complete,
     )
+    from integrations.didit import KYC_STATUS_DISPLAY
+
     return render(
         request,
         "applications/kyc.html",
@@ -392,6 +401,7 @@ def kyc_capture(request, app_id):
             "form": form,
             "kyc_complete": kyc_complete,
             "kyc_missing_labels": kyc_missing_image_labels(app),
+            "kyc_status_label": KYC_STATUS_DISPLAY.get(app.kyc_status, "Not Started"),
         },
     )
 

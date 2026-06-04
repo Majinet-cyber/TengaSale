@@ -13,7 +13,7 @@
         class="ts-header-icon tengasale-logo-mark ts-logo-icon"
       >
     </a>
-    <span class="mobile-header__title">{{ page_heading|default:"TengaSale" }}</span>
+    <span class="mobile-header__title topbar-page-title">{% block page_heading %}{{ page_heading|default:"Home" }}{% endblock %}</span>
   </div>
 
   <div class="mobile-header__actions">

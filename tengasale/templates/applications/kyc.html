@@ -4,6 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
+<div class="application-flow-page">
 <a href="{% url 'choose_device' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
@@ -12,6 +13,7 @@
 {% include "applications/partials/stepper.html" with current_step=3 %}
 <h1 class="greeting">KYC Capture</h1>
 
+{% include "applications/partials/didit_kyc_card.html" with app=app kyc_status_label=kyc_status_label %}
 
 <div class="kyc-step-indicator" id="kyc-step-indicator" aria-label="KYC progress">
     <div class="kyc-step-dot {% if app.customer_face_image %}done{% else %}current{% endif %}" data-step-dot="0">
@@ -1018,5 +1020,6 @@
     });
 })();
 </script>
+</div>
 
 {% endblock %}

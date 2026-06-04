@@ -12,18 +12,16 @@
 {% block page_footer %}{% endblock %}
 
 {% block content %}
-<div class="merchant-dashboard-shell">
+<div class="merchant-dashboard-shell mobile-shell">
 <div class="merchant-shell">
-  <header class="merchant-header">
+  <header class="merchant-header topbar mobile-topbar">
     <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
       <span class="merchant-brand-icon" aria-hidden="true">
         <img src="{% static 'images/Tenga.png' %}" alt="" width="36" height="36" onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
       </span>
-      <span class="merchant-brand-copy">
-        <span class="merchant-brand-name">TengaSale</span>
-        <span class="merchant-brand-tagline">Powering your growth</span>
-      </span>
+      <span class="merchant-brand-name">TengaSale</span>
     </a>
+    <span class="topbar-page-title">Home</span>
     <div class="merchant-header-actions">
       <a
         class="merchant-header-btn"
@@ -56,115 +54,102 @@
 
   <section class="merchant-greeting" aria-label="Greeting">
     <div class="merchant-greeting-copy">
-      <h1 class="merchant-greeting-title">Hi, {{ request.user.first_name|default:request.user.username }} 👋</h1>
-      <p class="merchant-greeting-sub">Good to see you again</p>
+      <h1 class="merchant-greeting-title">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
     </div>
-    <span class="merchant-country-chip" title="Malawi">
-      {% include "portal/_malawi_flag.html" %}
-      <span class="merchant-country-chip__code">MW</span>
-    </span>
+    {% include "includes/flag_pill.html" %}
   </section>
 
-  <a href="{% url 'new_application' %}" class="primary-contract-btn" aria-label="Start a new contract">
-    <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
-    <span class="primary-contract-btn__label">NEW CONTRACT</span>
-    <span class="primary-contract-btn__arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
-  </a>
-
-  <section class="overview-card" aria-labelledby="device-financing-overview-title">
+  <!-- Overview stats card -->
+  {% with stats=device_financing_stats %}
+  <div class="overview-card ts-fade-in">
     <div class="overview-card__head">
-      <h2 id="device-financing-overview-title" class="overview-card__title">Device Financing Overview</h2>
-      <a href="{% url 'financing_dashboard' %}" class="overview-card__link">View all <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      <h2 class="overview-card__title">Portfolio Overview</h2>
+      <a href="{% url 'active_applications' %}" class="overview-card__link">View all →</a>
     </div>
     <div class="overview-card__stats">
       <div class="overview-stat">
-        <span class="overview-stat__icon overview-stat__icon--phone" aria-hidden="true"><i class="bi bi-phone"></i></span>
-        <span class="overview-stat__label">Financed</span>
-        <strong class="overview-stat__value">{{ device_financing_stats.total_financed_devices|default:0 }}</strong>
+        <div class="overview-stat__icon overview-stat__icon--phone"><i class="bi bi-phone"></i></div>
+        <div class="overview-stat__value">{{ stats.total_financed_devices }}</div>
+        <div class="overview-stat__label">Financed</div>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat__icon overview-stat__icon--active" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
-        <span class="overview-stat__label">Active</span>
-        <strong class="overview-stat__value">{{ device_financing_stats.active_contracts|default:0 }}</strong>
+        <div class="overview-stat__icon overview-stat__icon--active"><i class="bi bi-check-circle"></i></div>
+        <div class="overview-stat__value">{{ stats.active_contracts }}</div>
+        <div class="overview-stat__label">Active</div>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat__icon overview-stat__icon--locked" aria-hidden="true"><i class="bi bi-lock"></i></span>
-        <span class="overview-stat__label">Locked</span>
-        <strong class="overview-stat__value">{{ device_financing_stats.locked_devices|default:0 }}</strong>
+        <div class="overview-stat__icon overview-stat__icon--locked"><i class="bi bi-lock"></i></div>
+        <div class="overview-stat__value">{{ stats.locked_devices }}</div>
+        <div class="overview-stat__label">Locked</div>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat__icon overview-stat__icon--overdue" aria-hidden="true"><i class="bi bi-clock"></i></span>
-        <span class="overview-stat__label">Overdue</span>
-        <strong class="overview-stat__value">{{ device_financing_stats.overdue_contracts|default:0 }}</strong>
+        <div class="overview-stat__icon overview-stat__icon--overdue"><i class="bi bi-exclamation-circle"></i></div>
+        <div class="overview-stat__value">{{ stats.overdue_contracts }}</div>
+        <div class="overview-stat__label">Overdue</div>
       </div>
     </div>
-  </section>
+  </div>
+  {% endwith %}
 
-  <h2 class="section-title">Contracts</h2>
-  <nav class="action-card" aria-label="Contracts">
-    <a href="{% url 'active_applications' %}" class="action-row">
+  <a href="{% url 'new_application' %}" class="primary-contract-btn primary-big-action" aria-label="Start a new contract">
+    <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
+    <span class="primary-contract-btn__label">+ NEW APPLICATION</span>
+    <span class="primary-contract-btn__arrow row-arrow" aria-hidden="true">→</span>
+  </a>
+
+  <h2 class="section-title simple-section">Applications</h2>
+  <nav class="action-card" aria-label="Applications">
+    <a href="{% url 'active_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--active" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
-      <span class="action-row-label">My Active</span>
+      <span class="action-row-label">Active</span>
       <span class="action-row-value">{{ active_count }}</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
-    <a href="{% url 'pending_applications' %}" class="action-row">
+    <a href="{% url 'pending_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--pending" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
       <span class="action-row-label">Pending Queue</span>
-      <span class="action-row-value">{{ pending_queue_count }}</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      <span class="action-row-value">{% if pending_queue_count %}{{ pending_queue_count }}{% else %}—{% endif %}</span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
-    <a href="{% url 'completed_applications' %}" class="action-row">
+    <a href="{% url 'completed_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--completed" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
       <span class="action-row-label">Completed</span>
       <span class="action-row-value">{{ completed_count }}</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
-    <a href="{% url 'rejected_applications' %}" class="action-row">
+    <a href="{% url 'rejected_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--archived" aria-hidden="true"><i class="bi bi-archive"></i></span>
       <span class="action-row-label">Archived / Rejected</span>
       <span class="action-row-value">{{ archived_rejected_count }}</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
   </nav>
 
-  <h2 class="section-title">Tools</h2>
+  <h2 class="section-title simple-section">Tools</h2>
   <nav class="action-card" aria-label="Tools">
-    <a href="{% url 'earnings_home' %}" class="action-row">
-      <span class="action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-gift"></i></span>
-      <span class="action-row-label">My Earnings</span>
-      <span class="action-row-value">{{ earnings_total|mwk:"decimals" }}</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-    </a>
-    <a href="{% url 'payments_home' %}" class="action-row">
-      <span class="action-row-icon action-row-icon--payments" aria-hidden="true"><i class="bi bi-coin"></i></span>
-      <span class="action-row-label">Payments</span>
-      <span class="action-row-value">Open</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-    </a>
-    <a href="{% url 'earnings_home' %}?tab=payouts" class="action-row">
-      <span class="action-row-icon action-row-icon--cash" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
-      <span class="action-row-label">Cash Settlements</span>
-      <span class="action-row-value">Open</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-    </a>
-    <a href="{% url 'financing_dashboard' %}" class="action-row">
-      <span class="action-row-icon action-row-icon--device" aria-hidden="true"><i class="bi bi-phone"></i></span>
-      <span class="action-row-label">Device Financing</span>
-      <span class="action-row-value">Financing overview</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-    </a>
-    <a href="{% url 'spin_rewards' %}" class="action-row">
-      <span class="action-row-icon action-row-icon--spin" aria-hidden="true"><i class="bi bi-trophy"></i></span>
-      <span class="action-row-label">Spin &amp; Win</span>
-      <span class="action-row-value">{{ spin_wallet.available_spins|default:0 }} spins available</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-    </a>
-    <a href="{% url 'all_deals' %}" class="action-row">
+    <a href="{% url 'all_deals' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--deals" aria-hidden="true"><i class="bi bi-list-ul"></i></span>
       <span class="action-row-label">All Deals</span>
       <span class="action-row-value">Browse</span>
-      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'earnings_home' %}" class="action-row simple-row">
+      <span class="action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-gift"></i></span>
+      <span class="action-row-label">My Earnings</span>
+      <span class="action-row-value">{{ earnings_total|mwk:"decimals" }}</span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'payments_home' %}" class="action-row simple-row">
+      <span class="action-row-icon action-row-icon--payments" aria-hidden="true"><i class="bi bi-coin"></i></span>
+      <span class="action-row-label">Payments</span>
+      <span class="action-row-value">Open</span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'spin_rewards' %}" class="action-row simple-row">
+      <span class="action-row-icon action-row-icon--spin" aria-hidden="true"><i class="bi bi-stars"></i></span>
+      <span class="action-row-label">Spin &amp; Win</span>
+      {% if spin_wallet.balance %}<span class="action-row-value">{{ spin_wallet.balance }} pts</span>{% else %}<span class="action-row-value">—</span>{% endif %}
+      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
   </nav>
 </div>

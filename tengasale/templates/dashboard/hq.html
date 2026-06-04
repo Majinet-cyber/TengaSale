@@ -231,8 +231,20 @@
 .hq-kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 22px;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .hq-kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .hq-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .hq-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .hq-kpi {
@@ -289,14 +301,14 @@
 }
 
 .hq-kpi__val {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
   color: var(--hq-ink);
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
-.hq-kpi__val--sm { font-size: 15px; letter-spacing: -0.01em; }
+.hq-kpi__val--sm { font-size: 16px; letter-spacing: -0.01em; }
 
 .hq-kpi__label {
   font-size: 11px;
@@ -316,16 +328,20 @@
 /* ── Charts row ────────────────────────────────────────────────── */
 .hq-charts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   margin-bottom: 26px;
+}
+
+@media (max-width: 900px) {
+  .hq-charts-grid { grid-template-columns: 1fr; }
 }
 
 .hq-chart-card {
   background: var(--hq-surface);
   border: 1.5px solid var(--hq-border);
   border-radius: var(--hq-radius);
-  padding: 16px;
+  padding: 20px;
   box-shadow: var(--hq-shadow);
 }
 
@@ -337,9 +353,9 @@
 }
 
 .hq-chart-title {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--hq-ink2);
 }
@@ -362,11 +378,11 @@
 }
 
 .hq-chart-empty {
-  min-height: 156px;
+  min-height: 200px;
   display: grid;
   place-items: center;
   text-align: center;
-  padding: 18px;
+  padding: 24px;
   border: 1.5px dashed var(--hq-border);
   border-radius: 12px;
   background: #fbfdff;
@@ -396,7 +412,7 @@
 }
 
 .hq-pipe-track {
-  height: 7px;
+  height: 10px;
   background: #f1f5f9;
   border-radius: 99px;
   overflow: hidden;
@@ -1536,8 +1552,8 @@
         <span class="hq-chart-title" data-testid="daily-payments-chart">Contract Health</span>
         <span class="hq-chart-pill">Portfolio</span>
       </div>
-      <div class="hq-donut-wrap">
-        <canvas id="contractHealthChart" style="max-height:120px;"></canvas>
+      <div class="hq-donut-wrap" style="height:160px;">
+        <canvas id="contractHealthChart" style="max-height:160px;"></canvas>
         <div class="hq-donut-center">
           <div class="hq-donut-center__val">{{ active_contracts_count }}</div>
           <div class="hq-donut-center__lbl">Active</div>
@@ -1568,7 +1584,7 @@
         <span class="hq-chart-title">Operations Queue</span>
         <span class="hq-chart-pill">Live</span>
       </div>
-      <canvas id="queueChart" style="max-height:165px;"></canvas>
+      <canvas id="queueChart" style="height:220px;max-height:220px;"></canvas>
     </div>
 
     <div class="hq-chart-card">
@@ -1577,7 +1593,7 @@
         <span class="hq-chart-pill">14 days</span>
       </div>
       {% if financial_has_data %}
-        <canvas id="financialPerformanceChart" style="height:170px;max-height:170px;"></canvas>
+        <canvas id="financialPerformanceChart" style="height:240px;max-height:240px;"></canvas>
         {% if not financial_performance_chart.profitAvailable %}
           <p class="hq-chart-note">Profit needs cost data; showing revenue and payments only.</p>
         {% endif %}
@@ -1592,7 +1608,7 @@
         <span class="hq-chart-pill">14 days</span>
       </div>
       {% if financial_has_data %}
-        <canvas id="contractValuePaymentsChart" style="height:170px;max-height:170px;"></canvas>
+        <canvas id="contractValuePaymentsChart" style="height:240px;max-height:240px;"></canvas>
       {% else %}
         <div class="hq-chart-empty">No financial data yet. Revenue and profit charts will appear once deals and payments are recorded.</div>
       {% endif %}

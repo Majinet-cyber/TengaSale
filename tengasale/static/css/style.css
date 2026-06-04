@@ -4180,7 +4180,7 @@ table {
 }
 
 .application-progress-bar {
-    height: 4px;
+    height: 6px;
     background: #e2e8f0;
     border-radius: 99px;
     overflow: hidden;
@@ -4190,7 +4190,7 @@ table {
     height: 100%;
     background: var(--orange);
     border-radius: 99px;
-    transition: width 0.3s ease;
+    transition: width 0.4s ease;
 }
 
 /* Desktop horizontal mini stepper — hidden on mobile */

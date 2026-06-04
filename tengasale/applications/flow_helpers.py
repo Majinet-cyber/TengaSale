@@ -110,9 +110,17 @@ def merchant_application_continue_url(app) -> str:
         return reverse("application_corrections", args=[app.id])
 
     if app.status in {"started", "customer_details"}:
-        if _customer_details_complete(app):
-            return reverse("didit_verification", args=[app.id])
-        return reverse("edit_customer_details", args=[app.id])
+        if not _customer_details_complete(app):
+            return reverse("edit_customer_details", args=[app.id])
+        if not application_has_complete_deal(app):
+            return reverse("choose_device", args=[app.id])
+        if not kyc_images_complete(app):
+            return reverse("kyc_capture", args=[app.id])
+        if not location_step_complete(app):
+            return reverse("location_details", args=[app.id])
+        if not work_step_complete(app):
+            return reverse("work_details", args=[app.id])
+        return reverse("application_review", args=[app.id])
 
     if app.status in {"approved", "approved_pending_device_lock", "imei_required"}:
         return reverse("capture_imei", args=[app.id])
