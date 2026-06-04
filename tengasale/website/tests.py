@@ -291,7 +291,7 @@ class LandingPageUIRegressionTests(TestCase):
     def test_landing_hero_headline_present(self):
         """Hero headline must be present."""
         response = self._get_landing()
-        self.assertContains(response, "Smartphone financing built for")
+        self.assertContains(response, "Finance Phones")
 
     def test_landing_platform_section_present(self):
         """Platform stats section must be present."""
