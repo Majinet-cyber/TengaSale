@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load humanize %}<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -244,23 +244,23 @@
   {% endif %}
   <tr>
     <td class="label">Retail Cash Price</td>
-    <td>MWK {{ retail_cash_price|floatformat:2 }}</td>
+    <td>MWK {{ retail_cash_price|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Deposit Paid</td>
-    <td>MWK {{ deposit_paid|floatformat:2 }}</td>
+    <td>MWK {{ deposit_paid|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Amount Financed</td>
-    <td>MWK {{ amount_financed|floatformat:2 }}</td>
+    <td>MWK {{ amount_financed|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Finance Charges</td>
-    <td>MWK {{ finance_charges|floatformat:2 }}</td>
+    <td>MWK {{ finance_charges|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label"><strong>Total Contract Price</strong></td>
-    <td><strong>MWK {{ total_contract_price|floatformat:2 }}</strong></td>
+    <td><strong>MWK {{ total_contract_price|floatformat:0|intcomma }}</strong></td>
   </tr>
 </table>
 
@@ -275,11 +275,11 @@
   {% endif %}
   <tr>
     <td class="label">Monthly Instalment</td>
-    <td>MWK {{ instalment_amount|floatformat:2 }}</td>
+    <td>MWK {{ instalment_amount|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Daily Instalment</td>
-    <td>MWK {{ daily_instalment|floatformat:2 }}</td>
+    <td>MWK {{ daily_instalment|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Payment Frequency</td>
@@ -287,7 +287,7 @@
   </tr>
   <tr>
     <td class="label">Total Payable</td>
-    <td>MWK {{ total_payable|floatformat:2 }}</td>
+    <td>MWK {{ total_payable|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
     <td class="label">Approved Payment Channels</td>
@@ -432,9 +432,12 @@
 
 <!-- ═══════════════════ NOTICE BOX ═══════════════════ -->
 <div class="notice-box">
-  <strong>Important Notice:</strong> This device remains the property of TengaSale until all instalments are paid in full.
-  Default after 14 days unpaid. Repossession may occur after 30 days unpaid.
-  Device-lock access restrictions may apply. Keep a copy of this document for your records.
+  <strong>Conditional Possession Notice:</strong>
+  The customer is granted possession and use of the device subject to the terms of this instalment sale agreement.
+  <strong>Ownership of the device shall transfer to the customer only after full repayment of all amounts due under this contract.</strong>
+  Until full repayment, TengaSale retains its ownership, security interest, and enforcement rights, including device restriction
+  or locking where permitted by the agreement. Default occurs after 14 days unpaid; repossession rights arise after 30 days unpaid.
+  Keep a copy of this document for your records.
 </div>
 
 <!-- ═══════════════════ FOOTER ═══════════════════ -->

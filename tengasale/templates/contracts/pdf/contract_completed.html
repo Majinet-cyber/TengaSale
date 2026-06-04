@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load humanize %}<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -152,20 +152,20 @@
   <tr><td class="label">Device</td><td>{{ device_name }}</td></tr>
   <tr><td class="label">IMEI Number</td><td>{{ imei_number|default:"Recorded" }}</td></tr>
   {% if serial_number %}<tr><td class="label">Serial Number</td><td>{{ serial_number }}</td></tr>{% endif %}
-  <tr><td class="label">Retail Cash Price</td><td>MWK {{ retail_cash_price|floatformat:2 }}</td></tr>
-  <tr><td class="label">Deposit Paid</td><td>MWK {{ deposit_paid|floatformat:2 }}</td></tr>
-  <tr><td class="label">Amount Financed</td><td>MWK {{ amount_financed|floatformat:2 }}</td></tr>
-  <tr><td class="label">Finance Charges</td><td>MWK {{ finance_charges|floatformat:2 }}</td></tr>
-  <tr><td class="label"><strong>Total Contract Price</strong></td><td><strong>MWK {{ total_contract_price|floatformat:2 }}</strong></td></tr>
+  <tr><td class="label">Retail Cash Price</td><td>MWK {{ retail_cash_price|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label">Deposit Paid</td><td>MWK {{ deposit_paid|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label">Amount Financed</td><td>MWK {{ amount_financed|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label">Finance Charges</td><td>MWK {{ finance_charges|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label"><strong>Total Contract Price</strong></td><td><strong>MWK {{ total_contract_price|floatformat:0|intcomma }}</strong></td></tr>
 </table>
 
 <!-- PAYMENT -->
 <h2>B. Payment Terms</h2>
 <table class="data-table">
   {% if contract_term_months %}<tr><td class="label">Contract Term</td><td>{{ contract_term_months }} months</td></tr>{% endif %}
-  <tr><td class="label">Monthly Instalment</td><td>MWK {{ instalment_amount|floatformat:2 }}</td></tr>
-  <tr><td class="label">Daily Instalment</td><td>MWK {{ daily_instalment|floatformat:2 }}</td></tr>
-  <tr><td class="label">Total Paid</td><td>MWK {{ stamp_total_paid|floatformat:2 }}</td></tr>
+  <tr><td class="label">Monthly Instalment</td><td>MWK {{ instalment_amount|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label">Daily Instalment</td><td>MWK {{ daily_instalment|floatformat:0|intcomma }}</td></tr>
+  <tr><td class="label">Total Paid</td><td>MWK {{ stamp_total_paid|floatformat:0|intcomma }}</td></tr>
   <tr><td class="label">Payment Channels</td><td>{{ payment_channels }}</td></tr>
 </table>
 
@@ -191,8 +191,8 @@
     <tr><td class="label" style="border:none;">Merchant</td><td style="border:none;">{{ stamp_merchant }}</td></tr>
     <tr><td class="label" style="border:none;">Device</td><td style="border:none;">{{ stamp_device }}</td></tr>
     <tr><td class="label" style="border:none;">IMEI</td><td style="border:none;">{{ stamp_imei|default:"Recorded" }}</td></tr>
-    <tr><td class="label" style="border:none;">Total Contract Price</td><td style="border:none;">MWK {{ stamp_total_contract_price|floatformat:2 }}</td></tr>
-    <tr><td class="label" style="border:none;">Total Paid</td><td style="border:none;">MWK {{ stamp_total_paid|floatformat:2 }}</td></tr>
+    <tr><td class="label" style="border:none;">Total Contract Price</td><td style="border:none;">MWK {{ stamp_total_contract_price|floatformat:0|intcomma }}</td></tr>
+    <tr><td class="label" style="border:none;">Total Paid</td><td style="border:none;">MWK {{ stamp_total_paid|floatformat:0|intcomma }}</td></tr>
     <tr><td class="label" style="border:none;">Completion Confirmed At</td><td style="border:none;"><strong>{{ stamp_completed_at }}</strong></td></tr>
     <tr><td class="label" style="border:none;">Final PDF Generated At</td><td style="border:none;">{{ stamp_generated_at }}</td></tr>
     {% if stamp_scheduled_for %}<tr><td class="label" style="border:none;">WhatsApp Delivery Scheduled</td><td style="border:none;">{{ stamp_scheduled_for }}</td></tr>{% endif %}
@@ -231,7 +231,11 @@
 </div>
 
 <div class="notice-box">
-  <strong>Ownership Transfer Confirmed.</strong> The device described in this contract is now fully owned by {{ customer_full_name }}.
+  <strong>Ownership Transfer Confirmed.</strong>
+  All repayment obligations under this contract have been completed as recorded above.
+  Ownership of the device described in this agreement is hereby transferred to <strong>{{ customer_full_name }}</strong>,
+  subject to the terms of the agreement and applicable law, and conditional on there being no unresolved fraud,
+  chargeback, reversal, or legal issue relating to this contract.
   This document serves as your completion certificate. Please retain it for your records.
 </div>
 

@@ -58,12 +58,19 @@
         >
             {% if brand_info %}
                 {% for bn, bi in brand_info.items %}
-                    {% if bn == brand_name and bi.logo_url %}
-                        <img src="{{ bi.logo_url }}" alt="{{ brand_name }}" class="brand-card-v2__logo-img" loading="lazy">
+                    {% if bn == brand_name %}
+                        {% if bi.logo_url %}
+                            <img src="{{ bi.logo_url }}" alt="{{ brand_name }}"
+                                 class="brand-card-v2__logo-img"
+                                 loading="lazy"
+                                 data-skip-img-fallback="1"
+                                 onerror="this.style.display='none';var t=this.parentElement.querySelector('.brand-card-v2__logo-text');if(t)t.style.display='flex';">
+                        {% endif %}
                     {% endif %}
                 {% endfor %}
             {% endif %}
-            <div class="brand-card-v2__logo-text" data-brand-logo-container="{{ brand_name }}">
+            <div class="brand-card-v2__logo-text" data-brand-logo-container="{{ brand_name }}"
+                 style="{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name and bi.logo_url %}display:none;{% endif %}{% endfor %}{% endif %}">
                 {{ brand_name|slice:":1"|upper }}
             </div>
             <div class="brand-card-v2__name">{{ brand_name }}</div>

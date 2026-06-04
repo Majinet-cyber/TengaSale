@@ -124,24 +124,22 @@
         });
     }
 
-    /* ── Broken image handling (never show initials placeholders) ───── */
+    /* ── Broken image handling ───────────────────────────────────────── */
     function showImageLoadError(img) {
         if (img.dataset.fbDone) return;
         img.dataset.fbDone = '1';
         var src = img.src || '';
-        console.error('Image failed to load:', src);
+        console.warn('Image unavailable:', src);
         img.style.display = 'none';
         var parent = img.parentElement;
         if (!parent || parent.querySelector('.ts-img-fallback')) return;
         var fb = document.createElement('div');
-        fb.className = 'ts-img-fallback ts-img-fallback--error';
-        fb.setAttribute('role', 'alert');
-        fb.textContent = 'Photo failed to load';
-        fb.style.cssText = 'width:100%;height:100%;min-height:48px;display:flex;align-items:center;justify-content:center;background:#fef2f2;color:#b42318;font-size:12px;font-weight:600;border-radius:inherit;padding:8px;text-align:center;';
+        fb.className = 'ts-img-fallback ts-img-fallback--missing';
+        fb.setAttribute('role', 'img');
+        fb.setAttribute('aria-label', img.alt || 'Image not available');
+        fb.textContent = img.alt ? img.alt : 'Photo not captured';
+        fb.style.cssText = 'width:100%;height:100%;min-height:48px;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#667085;font-size:12px;font-weight:500;border-radius:inherit;padding:8px;text-align:center;border:1px dashed #e5e7eb;';
         parent.appendChild(fb);
-        if (typeof window.showError === 'function') {
-            window.showError('Photo failed to load');
-        }
     }
 
     function initBrokenImages() {

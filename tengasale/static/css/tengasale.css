@@ -408,17 +408,17 @@ img.ts-logo-wordmark {
   padding: 16px;
   border: 0;
   border-radius: 16px;
-  background: var(--ts-orange);
+  background: #16a34a;
   color: #fff;
   text-decoration: none;
-  box-shadow: 0 12px 26px rgba(255, 90, 0, 0.22);
+  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.22);
   cursor: pointer;
   text-align: left;
 }
 
 .uw-primary-action--dark {
-  background: #111827;
-  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.16);
+  background: #1d4ed8;
+  box-shadow: 0 12px 26px rgba(29, 78, 216, 0.22);
 }
 
 .uw-primary-action span {

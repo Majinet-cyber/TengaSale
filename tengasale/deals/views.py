@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from accounts.decorators import merchant_required
-from .brand_utils import BRAND_STATIC_LOGOS, PREFERRED_BRAND_ORDER, canonical_brand, ordered_brand_names
+from .brand_utils import BRAND_STATIC_LOGOS, PREFERRED_BRAND_ORDER, brand_logo_url, canonical_brand, ordered_brand_names
 from .models import DeviceBrand, DeviceDeal
 
 # Brand accent colours used in the UI
@@ -49,15 +49,17 @@ def all_deals(request):
     brand_names = ordered_brand_names(deal_brand_names)
 
     # Build brand info dict: {canonical_name: {logo_url, deal_count, accent}}
+    # Seed with static SVG fallbacks so brand cards always show a logo.
     brand_info = {}
     for name in brand_names:
+        static_path = BRAND_STATIC_LOGOS.get(name, "")
         brand_info[name] = {
-            "logo_url": "",
+            "logo_url": brand_logo_url(static_path) if static_path else "",
             "deal_count": 0,
             **BRAND_ACCENTS.get(name, {"color": "#ff5a00", "bg": "rgba(255,90,0,0.08)"}),
         }
 
-    # Attach logos from DB brands (match by canonical name)
+    # Override with DB-uploaded logos when available (higher priority).
     brand_objects = DeviceBrand.objects.filter(is_active=True)
     for b in brand_objects:
         canon = canonical_brand(b.name)
