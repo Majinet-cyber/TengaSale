@@ -18,6 +18,8 @@
 
   <p class="ts-section-desc">Compare the customer's KYC images with the entered information.</p>
 
+  {% include "dashboard/partials/didit_kyc_panel.html" %}
+
   <div class="kyc-portrait-stack ts-mb-16">
     {% if app.customer_face_image %}
     {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" %}

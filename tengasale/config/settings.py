@@ -20,6 +20,25 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_local_env_file():
+    """Load tengasale/.env for local development (does not override existing env vars)."""
+    env_path = BASE_DIR / ".env"
+    if not env_path.is_file():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_local_env_file()
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -313,6 +332,24 @@ IMEI_CHECK_ALPHA_ENDPOINT_BASE = os.environ.get("IMEI_CHECK_ALPHA_ENDPOINT_BASE"
 IMEI_CHECK_SERVICE_ID = os.environ.get("IMEI_CHECK_SERVICE_ID", "")
 # Request timeout in seconds
 IMEI_CHECK_TIMEOUT_SECONDS = int(os.environ.get("IMEI_CHECK_TIMEOUT_SECONDS", "20"))
+
+# ── Didit KYC (identity verification) ───────────────────────────────────────────
+DIDIT_API_KEY = os.environ.get("DIDIT_API_KEY", "")
+DIDIT_WORKFLOW_ID = os.environ.get("DIDIT_WORKFLOW_ID", "")
+DIDIT_WEBHOOK_SECRET = os.environ.get("DIDIT_WEBHOOK_SECRET", "")
+DIDIT_WEBHOOK_URL = os.environ.get("DIDIT_WEBHOOK_URL", "")
+DIDIT_CALLBACK_URL = os.environ.get("DIDIT_CALLBACK_URL", "")
+DIDIT_ALLOW_UNSIGNED_WEBHOOKS = os.environ.get("DIDIT_ALLOW_UNSIGNED_WEBHOOKS", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+REQUIRE_DIDIT_KYC_BEFORE_APPROVAL = os.environ.get("REQUIRE_DIDIT_KYC_BEFORE_APPROVAL", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+DIDIT_REQUEST_TIMEOUT_SECONDS = int(os.environ.get("DIDIT_REQUEST_TIMEOUT_SECONDS", "15"))
 
 # ── Merchant Administrator settings ──────────────────────────────────────────
 # If True, Merchant Admins can only *recommend* approval; HQ must give final sign-off.

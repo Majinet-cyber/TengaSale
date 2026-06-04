@@ -434,9 +434,13 @@ def correction_action(request, app_id):
 
 @underwriter_required(sensitive=True)
 def confirm_approve(request, app_id):
+    from applications.kyc_gates import apply_manual_kyc_override, check_didit_approval_gate
+
     app, response = review_guard(request, app_id)
     if response:
         return response
+    kyc_gate = check_didit_approval_gate(app, request.user)
+
     if request.method == "POST":
         from core.commercial import validate_application_pricing
 
@@ -446,7 +450,33 @@ def confirm_approve(request, app_id):
                 request,
                 "Cannot approve yet. Missing: " + ", ".join(pricing_missing) + ".",
             )
-            return render(request, "approvals/confirm_approve.html", {"app": app})
+            return render(request, "approvals/confirm_approve.html", {"app": app, "kyc_gate": kyc_gate})
+
+        override_reason = (request.POST.get("kyc_override_reason") or "").strip()
+        if kyc_gate["blocked"]:
+            if kyc_gate["can_override"]:
+                if not override_reason:
+                    messages.error(
+                        request,
+                        "A written HQ override reason is required to approve without Didit KYC.",
+                    )
+                    return render(request, "approvals/confirm_approve.html", {"app": app, "kyc_gate": kyc_gate})
+                apply_manual_kyc_override(app, override_reason, request.user)
+                app.save(
+                    update_fields=[
+                        "didit_manual_override",
+                        "didit_manual_override_reason",
+                        "didit_manual_override_by",
+                        "didit_manual_override_at",
+                        "kyc_status",
+                        "didit_status",
+                        "didit_verified_at",
+                    ]
+                )
+                kyc_gate = check_didit_approval_gate(app, request.user)
+            if kyc_gate["blocked"]:
+                messages.error(request, kyc_gate["warning"])
+                return render(request, "approvals/confirm_approve.html", {"app": app, "kyc_gate": kyc_gate})
 
         with transaction.atomic():
             app_locked = (
@@ -474,7 +504,7 @@ def confirm_approve(request, app_id):
             process_application_approval(app_locked, approved_by=request.user)
             app = app_locked
         return render(request, "approvals/approve_success.html", {"app": app})
-    return render(request, "approvals/confirm_approve.html", {"app": app})
+    return render(request, "approvals/confirm_approve.html", {"app": app, "kyc_gate": kyc_gate})
 
 
 def legacy_underwriter_dashboard(request):

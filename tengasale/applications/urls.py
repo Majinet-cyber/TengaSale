@@ -1,9 +1,13 @@
 from django.urls import path
-from . import views
+
+from . import didit_views, views
 
 urlpatterns = [
     path("new/", views.new_application, name="new_application"),
     path("<int:app_id>/customer/", views.edit_customer_details, name="edit_customer_details"),
+    path("<int:app_id>/kyc/didit/", didit_views.didit_verification_step, name="didit_verification"),
+    path("<int:app_id>/kyc/didit/start/", didit_views.didit_start_kyc, name="didit_start_kyc"),
+    path("<int:app_id>/kyc/didit/refresh/", didit_views.didit_refresh_decision, name="didit_refresh_decision"),
     path("<int:app_id>/customer/send-otp/", views.send_phone_otp, name="send_phone_otp"),
     path("<int:app_id>/customer/verify-otp/", views.verify_phone_otp, name="verify_phone_otp"),
     path("<int:app_id>/device/", views.choose_device, name="choose_device"),

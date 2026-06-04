@@ -142,6 +142,10 @@
     </div>
 </form>
 
+{% if app.customer_name %}
+{% include "applications/partials/didit_kyc_card.html" with app=app kyc_status_label=kyc_status_label %}
+{% endif %}
+
 {% if app.customer_phone %}
 <div class="card phone-otp-card">
     <div class="phone-otp-card__head">

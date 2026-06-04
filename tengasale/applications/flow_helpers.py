@@ -61,6 +61,18 @@ def kyc_completion_flags(app) -> dict[str, bool]:
     }
 
 
+def customer_details_complete(app) -> bool:
+    return bool(
+        (app.customer_name or "").strip()
+        and (app.national_id or "").strip()
+        and (app.customer_phone or "").strip()
+    )
+
+
+def _customer_details_complete(app) -> bool:
+    return customer_details_complete(app)
+
+
 def application_has_complete_deal(app) -> bool:
     if not app.deal_id:
         return False
@@ -98,6 +110,8 @@ def merchant_application_continue_url(app) -> str:
         return reverse("application_corrections", args=[app.id])
 
     if app.status in {"started", "customer_details"}:
+        if _customer_details_complete(app):
+            return reverse("didit_verification", args=[app.id])
         return reverse("edit_customer_details", args=[app.id])
 
     if app.status in {"approved", "approved_pending_device_lock", "imei_required"}:

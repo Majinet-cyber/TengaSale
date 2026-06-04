@@ -291,6 +291,57 @@ class FinancingApplication(models.Model):
     )
     imei_override_at = models.DateTimeField(blank=True, null=True)
 
+    # ── Didit KYC (identity verification layer) ─────────────────────────────────
+    KYC_PROVIDER_MANUAL = "manual"
+    KYC_PROVIDER_DIDIT = "didit"
+    KYC_PROVIDER_CHOICES = [
+        ("", "Not set"),
+        (KYC_PROVIDER_MANUAL, "Manual"),
+        (KYC_PROVIDER_DIDIT, "Didit"),
+    ]
+
+    KYC_STATUS_CHOICES = [
+        ("not_started", "Not Started"),
+        ("in_progress", "In Progress"),
+        ("awaiting_user", "Awaiting User"),
+        ("pending_review", "Pending Review"),
+        ("approved", "Approved"),
+        ("declined", "Declined"),
+        ("resubmitted", "Resubmitted"),
+        ("abandoned", "Abandoned"),
+        ("expired", "Expired"),
+        ("kyc_expired", "KYC Expired"),
+        ("manual_review", "Manual Review"),
+    ]
+
+    kyc_provider = models.CharField(max_length=20, choices=KYC_PROVIDER_CHOICES, blank=True, default="")
+    kyc_status = models.CharField(max_length=30, choices=KYC_STATUS_CHOICES, blank=True, default="not_started")
+    didit_session_id = models.CharField(max_length=120, blank=True, default="")
+    didit_session_token = models.CharField(max_length=255, blank=True, default="")
+    didit_verification_url = models.URLField(max_length=500, blank=True, default="")
+    didit_status = models.CharField(max_length=60, blank=True, default="")
+    didit_workflow_id = models.CharField(max_length=80, blank=True, default="")
+    didit_vendor_data = models.CharField(max_length=80, blank=True, default="")
+    didit_metadata = models.JSONField(default=dict, blank=True)
+    didit_decision = models.JSONField(default=dict, blank=True)
+    didit_summary = models.JSONField(default=dict, blank=True)
+    didit_last_event_id = models.CharField(max_length=120, blank=True, default="")
+    didit_started_at = models.DateTimeField(null=True, blank=True)
+    didit_completed_at = models.DateTimeField(null=True, blank=True)
+    didit_verified_at = models.DateTimeField(null=True, blank=True)
+    didit_declined_at = models.DateTimeField(null=True, blank=True)
+    didit_resubmit_info = models.JSONField(default=dict, blank=True)
+    didit_manual_override = models.BooleanField(default=False)
+    didit_manual_override_reason = models.TextField(blank=True, default="")
+    didit_manual_override_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="didit_kyc_overrides",
+    )
+    didit_manual_override_at = models.DateTimeField(null=True, blank=True)
+
     customer_face_image = models.ImageField(upload_to="kyc/faces/", blank=True, null=True)
     id_front_image = models.ImageField(upload_to="kyc/id_front/", blank=True, null=True)
     id_back_image = models.ImageField(upload_to="kyc/id_back/", blank=True, null=True)
@@ -823,3 +874,22 @@ class ApplicationFieldReview(models.Model):
 
     def __str__(self):
         return f"{self.application_id} — {self.field_label} [{self.status}]"
+
+
+class DiditWebhookEvent(models.Model):
+    event_id = models.CharField(max_length=120, unique=True)
+    session_id = models.CharField(max_length=120, blank=True, default="")
+    webhook_type = models.CharField(max_length=80, blank=True, default="")
+    status = models.CharField(max_length=80, blank=True, default="")
+    received_at = models.DateTimeField(auto_now_add=True)
+    payload = models.JSONField(default=dict, blank=True)
+    processed = models.BooleanField(default=False)
+    processing_error = models.TextField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-received_at"]
+        verbose_name = "Didit Webhook Event"
+        verbose_name_plural = "Didit Webhook Events"
+
+    def __str__(self):
+        return f"{self.event_id} ({self.webhook_type or 'webhook'})"

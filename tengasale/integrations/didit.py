@@ -1,0 +1,433 @@
+"""
+Didit identity verification integration for TengaSale.
+
+API docs: https://verification.didit.me (v3 sessions and webhooks).
+"""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import logging
+import time
+from typing import Any
+
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+try:
+    import requests
+    from requests.exceptions import HTTPError, RequestException
+except ImportError:
+    requests = None  # type: ignore
+    HTTPError = Exception  # type: ignore
+    RequestException = Exception  # type: ignore
+
+DIDIT_API_BASE = "https://verification.didit.me"
+WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300
+
+DIDIT_STATUS_MAP = {
+    "Not Started": "not_started",
+    "In Progress": "in_progress",
+    "Awaiting User": "awaiting_user",
+    "In Review": "pending_review",
+    "Approved": "approved",
+    "Declined": "declined",
+    "Resubmitted": "resubmitted",
+    "Abandoned": "abandoned",
+    "Expired": "expired",
+    "Kyc Expired": "kyc_expired",
+}
+
+KYC_STATUS_DISPLAY = {
+    "not_started": "Not Started",
+    "in_progress": "In Progress",
+    "awaiting_user": "Awaiting User",
+    "pending_review": "Pending Review",
+    "approved": "Approved",
+    "declined": "Declined",
+    "resubmitted": "Resubmitted",
+    "abandoned": "Abandoned",
+    "expired": "Expired",
+    "kyc_expired": "KYC Expired",
+    "manual_review": "Manual Review",
+}
+
+RESTARTABLE_KYC_STATUSES = frozenset({
+    "declined",
+    "abandoned",
+    "expired",
+    "kyc_expired",
+    "not_started",
+})
+
+ACTIVE_DIDIT_KYC_STATUSES = frozenset({
+    "in_progress",
+    "awaiting_user",
+    "pending_review",
+    "approved",
+    "resubmitted",
+    "manual_review",
+})
+
+
+class DiditConfigurationError(Exception):
+    """Raised when required Didit settings are missing."""
+
+
+class DiditAPIError(Exception):
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        payload: Any = None,
+        *,
+        user_message: str | None = None,
+    ):
+        super().__init__(message)
+        self.status_code = status_code
+        self.payload = payload
+        self.user_message = user_message or didit_user_facing_message(
+            status_code=status_code,
+            detail=message,
+        )
+
+
+def didit_production_mode() -> bool:
+    """True when Django DEBUG is off (production-style webhook rules)."""
+    return not getattr(settings, "DEBUG", True)
+
+
+def didit_user_facing_message(*, status_code: int | None = None, detail: str = "") -> str:
+    detail_lower = (detail or "").lower()
+    if status_code == 403:
+        return "Didit authentication failed. Check DIDIT_API_KEY."
+    if status_code in (400, 404, 422) and "workflow" in detail_lower:
+        return "Didit workflow is not configured correctly. Check DIDIT_WORKFLOW_ID."
+    if "timeout" in detail_lower or "timed out" in detail_lower:
+        return "Could not reach Didit. Try again."
+    if "request failed" in detail_lower or "connection" in detail_lower:
+        return "Could not reach Didit. Try again."
+    if status_code and status_code >= 500:
+        return "Didit verification is temporarily unavailable. Try again."
+    return "Didit verification is temporarily unavailable. Try again."
+
+
+def map_didit_status(status: str | None) -> str:
+    if not status:
+        return "not_started"
+    mapped = DIDIT_STATUS_MAP.get(status)
+    if mapped:
+        return mapped
+    logger.warning("Unknown Didit status %r — mapping to manual_review", status)
+    return "manual_review"
+
+
+def shorten_floats(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: shorten_floats(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [shorten_floats(item) for item in value]
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
+def sort_keys(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: sort_keys(value[key]) for key in sorted(value)}
+    if isinstance(value, list):
+        return [sort_keys(item) for item in value]
+    return value
+
+
+def canonicalize_didit_payload(payload: Any) -> str:
+    normalized = sort_keys(shorten_floats(payload))
+    return json.dumps(normalized, separators=(",", ":"), ensure_ascii=False)
+
+
+def verify_didit_webhook_signature_v2(raw_body: bytes, signature: str | None, timestamp: str | None) -> tuple[bool, str]:
+    """
+    Verify Didit X-Signature-V2. Returns (ok, error_message).
+    """
+    secret = (getattr(settings, "DIDIT_WEBHOOK_SECRET", "") or "").strip()
+    allow_unsigned = getattr(settings, "DIDIT_ALLOW_UNSIGNED_WEBHOOKS", False)
+    production = didit_production_mode()
+
+    if production:
+        if not secret:
+            logger.error("Didit webhook rejected: DIDIT_WEBHOOK_SECRET is required in production.")
+            return False, "DIDIT_WEBHOOK_SECRET is required in production."
+        allow_unsigned = False
+
+    if not secret:
+        if allow_unsigned and not production:
+            logger.warning(
+                "Didit webhook accepted WITHOUT signature verification "
+                "(DIDIT_WEBHOOK_SECRET missing, DIDIT_ALLOW_UNSIGNED_WEBHOOKS=True). "
+                "Use only for local development."
+            )
+            return True, ""
+        return False, "Webhook secret not configured."
+
+    if not signature:
+        return False, "Missing X-Signature-V2 header."
+    if not timestamp:
+        return False, "Missing X-Timestamp header."
+
+    try:
+        ts_value = float(timestamp)
+    except (TypeError, ValueError):
+        return False, "Invalid X-Timestamp header."
+
+    if abs(time.time() - ts_value) > WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS:
+        return False, "Webhook timestamp outside allowed window."
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False, "Invalid JSON body."
+
+    canonical = canonicalize_didit_payload(payload)
+    expected = hmac.new(secret.encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature.strip()):
+        return False, "Invalid webhook signature."
+    return True, ""
+
+
+def _api_headers() -> dict[str, str]:
+    api_key = (getattr(settings, "DIDIT_API_KEY", "") or "").strip()
+    if not api_key:
+        raise DiditConfigurationError("Didit API key is not configured. Set DIDIT_API_KEY.")
+    return {"x-api-key": api_key, "Content-Type": "application/json", "Accept": "application/json"}
+
+
+def _request(method: str, path: str, json_body: dict | None = None) -> dict:
+    if requests is None:
+        raise DiditAPIError("The requests library is not installed.", user_message="Didit is not available.")
+
+    url = f"{DIDIT_API_BASE}{path}"
+    timeout = int(getattr(settings, "DIDIT_REQUEST_TIMEOUT_SECONDS", 15))
+    try:
+        response = requests.request(
+            method,
+            url,
+            headers=_api_headers(),
+            json=json_body,
+            timeout=timeout,
+        )
+    except RequestException as exc:
+        if requests is not None and isinstance(exc, requests.exceptions.Timeout):
+            logger.error("Didit API timeout: %s %s (timeout=%ss)", method, path, timeout)
+            raise DiditAPIError(
+                f"Didit API timeout after {timeout}s",
+                user_message="Could not reach Didit. Try again.",
+            ) from exc
+        logger.error("Didit API request failed: %s %s — %s", method, path, type(exc).__name__)
+        raise DiditAPIError(
+            f"Didit API request failed: {exc}",
+            user_message="Could not reach Didit. Try again.",
+        ) from exc
+
+    try:
+        data = response.json() if response.content else {}
+    except ValueError:
+        data = {"raw": response.text}
+
+    if response.status_code >= 400:
+        message = data.get("message") or data.get("detail") or response.text or "Didit API error"
+        if isinstance(message, list):
+            message = " ".join(str(item) for item in message)
+        message = str(message)
+        logger.error("Didit API %s %s -> %s", method, path, response.status_code)
+        raise DiditAPIError(message, status_code=response.status_code, payload=data)
+
+    if not isinstance(data, dict):
+        return {"data": data}
+    return data
+
+
+def create_webhook_destination(
+    *,
+    url: str,
+    label: str,
+    webhook_version: str = "v3",
+    subscribed_events: list[str] | None = None,
+) -> dict:
+    body = {
+        "label": label,
+        "url": url,
+        "webhook_version": webhook_version,
+        "subscribed_events": subscribed_events or ["status.updated", "data.updated"],
+    }
+    return _request("POST", "/v3/webhook/destinations/", json_body=body)
+
+
+def list_webhook_destinations() -> Any:
+    return _request("GET", "/v3/webhook/destinations/")
+
+
+def extract_webhook_secret_from_response(data: dict) -> str | None:
+    """Return signing secret from Didit destination response if present."""
+    for key in (
+        "secret",
+        "webhook_secret",
+        "signing_secret",
+        "shared_secret",
+        "signing_key",
+    ):
+        value = data.get(key)
+        if value:
+            return str(value).strip()
+    nested = data.get("destination") or data.get("data")
+    if isinstance(nested, dict):
+        return extract_webhook_secret_from_response(nested)
+    return None
+
+
+def _split_customer_name(full_name: str) -> tuple[str, str]:
+    parts = (full_name or "").strip().split()
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], " ".join(parts[1:])
+
+
+def build_expected_details(application) -> dict[str, str]:
+    expected: dict[str, str] = {"id_country": "MW"}
+    first_name, last_name = _split_customer_name(getattr(application, "customer_name", "") or "")
+    if first_name:
+        expected["first_name"] = first_name
+    if last_name:
+        expected["last_name"] = last_name
+    dob = getattr(application, "date_of_birth", None)
+    if dob:
+        expected["date_of_birth"] = dob.isoformat()
+    return expected
+
+
+def create_didit_session(application) -> dict:
+    workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
+    if not workflow_id:
+        raise DiditConfigurationError("Didit workflow ID is not configured. Set DIDIT_WORKFLOW_ID.")
+
+    callback = (getattr(settings, "DIDIT_CALLBACK_URL", "") or "").strip()
+    if not callback:
+        raise DiditConfigurationError("Didit callback URL is not configured. Set DIDIT_CALLBACK_URL.")
+
+    body = {
+        "workflow_id": workflow_id,
+        "vendor_data": str(application.pk),
+        "callback": callback,
+        "metadata": {
+            "source": "tengasale",
+            "application_id": str(application.pk),
+            "customer_id": str(application.pk),
+            "merchant_id": str(application.created_by_id or ""),
+        },
+        "expected_details": build_expected_details(application),
+    }
+    return _request("POST", "/v3/session/", json_body=body)
+
+
+def retrieve_didit_decision(session_id: str) -> dict:
+    session_id = (session_id or "").strip()
+    if not session_id:
+        raise DiditConfigurationError("session_id is required.")
+    return _request("GET", f"/v3/session/{session_id}/decision/")
+
+
+def _first_record(items: Any) -> dict | None:
+    if isinstance(items, list) and items:
+        first = items[0]
+        return first if isinstance(first, dict) else None
+    return None
+
+
+def _safe_get(record: dict | None, *keys: str, default=None):
+    if not record:
+        return default
+    for key in keys:
+        if key in record and record[key] is not None:
+            return record[key]
+    return default
+
+
+def extract_didit_summary(decision: dict | None) -> dict:
+    """Extract a reviewer-friendly summary from Didit v3 plural decision arrays."""
+    decision = decision or {}
+
+    id_doc = _first_record(decision.get("id_verifications"))
+    liveness = _first_record(decision.get("liveness_checks"))
+    face_match = _first_record(decision.get("face_matches"))
+    aml = _first_record(decision.get("aml_screenings"))
+    ip_analysis = _first_record(decision.get("ip_analyses"))
+
+    warnings: list = []
+    for block in (id_doc, face_match, liveness):
+        if isinstance(block, dict):
+            block_warnings = block.get("warnings")
+            if isinstance(block_warnings, list):
+                warnings.extend(block_warnings)
+
+    return {
+        "document": {
+            "first_name": _safe_get(id_doc, "first_name"),
+            "last_name": _safe_get(id_doc, "last_name"),
+            "document_type": _safe_get(id_doc, "document_type", "type"),
+            "document_number": _safe_get(id_doc, "document_number", "number"),
+            "date_of_birth": _safe_get(id_doc, "date_of_birth"),
+            "nationality": _safe_get(id_doc, "nationality"),
+            "issuing_state": _safe_get(id_doc, "issuing_state", "issuing_country"),
+            "expiration_date": _safe_get(id_doc, "expiration_date", "expiry_date"),
+            "address": _safe_get(id_doc, "address", "full_address"),
+            "warnings": warnings or None,
+        },
+        "liveness": {
+            "status": _safe_get(liveness, "status"),
+            "score": _safe_get(liveness, "score"),
+            "method": _safe_get(liveness, "method"),
+            "face_quality": _safe_get(liveness, "face_quality"),
+            "face_luminance": _safe_get(liveness, "face_luminance"),
+        },
+        "face_match": {
+            "status": _safe_get(face_match, "status"),
+            "score": _safe_get(face_match, "score"),
+            "warnings": _safe_get(face_match, "warnings"),
+        },
+        "aml": {
+            "status": _safe_get(aml, "status"),
+            "total_hits": _safe_get(aml, "total_hits", "hits_count"),
+            "hits": _safe_get(aml, "hits", "matches"),
+        },
+        "ip_device": {
+            "status": _safe_get(ip_analysis, "status"),
+            "ip_address": _safe_get(ip_analysis, "ip_address", "ip"),
+            "country": _safe_get(ip_analysis, "country"),
+            "vpn": _safe_get(ip_analysis, "vpn", "is_vpn"),
+            "proxy": _safe_get(ip_analysis, "proxy", "is_proxy"),
+            "tor": _safe_get(ip_analysis, "tor", "is_tor"),
+            "hosting": _safe_get(ip_analysis, "hosting", "is_hosting"),
+            "risk_score": _safe_get(ip_analysis, "risk_score", "risk"),
+        },
+    }
+
+
+def has_active_didit_session(application) -> bool:
+    if not application.didit_session_id:
+        return False
+    status = (application.kyc_status or "").strip()
+    if status in RESTARTABLE_KYC_STATUSES:
+        return False
+    return status in ACTIVE_DIDIT_KYC_STATUSES or bool(application.didit_verification_url)
+
+
+def can_restart_didit_session(application, user) -> bool:
+    from accounts.utils import is_hq
+
+    if user.is_superuser or is_hq(user):
+        return True
+    status = (application.kyc_status or "").strip()
+    return status in RESTARTABLE_KYC_STATUSES

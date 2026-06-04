@@ -1,0 +1,106 @@
+<section class="uw-card didit-review-panel">
+  <div class="didit-review-panel__head">
+    <h2>Didit KYC</h2>
+    <span class="didit-kyc-badge didit-kyc-badge--{{ app.kyc_status|default:'not_started' }}">
+      {% if app.kyc_provider == 'didit' %}Didit — {% endif %}{{ app.get_kyc_status_display|default:"Not Started" }}
+    </span>
+  </div>
+
+  <dl class="didit-review-grid">
+    <div><dt>Provider</dt><dd>{{ app.kyc_provider|default:"manual"|capfirst }}</dd></div>
+    <div><dt>Session ID</dt><dd><code>{{ app.didit_session_id|default:"—" }}</code></dd></div>
+    <div><dt>Application ID</dt><dd>{{ app.id }}</dd></div>
+    <div><dt>Customer</dt><dd>{{ app.customer_name|default:"—" }}</dd></div>
+    <div><dt>Started</dt><dd>{{ app.didit_started_at|date:"M j, Y H:i"|default:"—" }}</dd></div>
+    <div><dt>Completed</dt><dd>{{ app.didit_completed_at|date:"M j, Y H:i"|default:"—" }}</dd></div>
+    <div><dt>Verified</dt><dd>{{ app.didit_verified_at|date:"M j, Y H:i"|default:"—" }}</dd></div>
+    <div><dt>Didit status</dt><dd>{{ app.didit_status|default:"—" }}</dd></div>
+  </dl>
+
+  {% with summary=app.didit_summary %}
+  {% if summary %}
+  <div class="didit-review-results">
+    <h3>Verification results</h3>
+    <ul>
+      <li><strong>Document:</strong>
+        {% if summary.document.first_name %}{{ summary.document.first_name }} {{ summary.document.last_name }}{% else %}—{% endif %}
+        {% if summary.document.document_type %} · {{ summary.document.document_type }}{% endif %}
+        {% if summary.document.document_number %} · {{ summary.document.document_number }}{% endif %}
+      </li>
+      <li><strong>Liveness:</strong> {{ summary.liveness.status|default:"—" }}{% if summary.liveness.score %} ({{ summary.liveness.score }}){% endif %}</li>
+      <li><strong>Face match:</strong> {{ summary.face_match.status|default:"—" }}{% if summary.face_match.score %} ({{ summary.face_match.score }}){% endif %}</li>
+      <li><strong>AML:</strong> {{ summary.aml.status|default:"—" }}{% if summary.aml.total_hits %} — {{ summary.aml.total_hits }} hit(s){% endif %}</li>
+      <li><strong>IP / device:</strong> {{ summary.ip_device.status|default:"—" }}
+        {% if summary.ip_device.country %} · {{ summary.ip_device.country }}{% endif %}
+        {% if summary.ip_device.risk_score %} · risk {{ summary.ip_device.risk_score }}{% endif %}
+      </li>
+    </ul>
+    {% if summary.document.warnings %}
+    <p class="didit-warnings"><strong>Warnings:</strong> {{ summary.document.warnings }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% if app.didit_resubmit_info %}
+  <p class="didit-warnings"><strong>Resubmission:</strong> {{ app.didit_resubmit_info }}</p>
+  {% endif %}
+
+  {% if app.didit_manual_override %}
+  <p class="didit-warnings"><strong>Manual override:</strong> {{ app.didit_manual_override_reason|default:"(no reason recorded)" }}</p>
+  {% endif %}
+
+  <div class="form-actions" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
+    {% if app.didit_verification_url %}
+    <a href="{{ app.didit_verification_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Open verification URL</a>
+    {% endif %}
+    <button type="button" class="btn btn-outline" data-didit-refresh data-url="{% url 'didit_refresh_decision' app.id %}">Refresh decision</button>
+    <button type="button" class="btn btn-outline" data-didit-restart data-url="{% url 'didit_start_kyc' app.id %}">Restart KYC</button>
+  </div>
+
+  {% if app.didit_decision %}
+  <details class="didit-raw-json" style="margin-top:16px;">
+    <summary>Raw Didit decision (staff only)</summary>
+    <pre style="font-size:0.72rem;overflow:auto;max-height:280px;background:#f8fafc;padding:12px;border-radius:8px;">{{ app.didit_decision }}</pre>
+  </details>
+  {% endif %}
+</section>
+
+<style>
+.didit-review-panel__head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.didit-review-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px 16px; margin:14px 0 0; font-size:0.82rem; }
+.didit-review-grid dt { color:var(--muted,#64748b); font-weight:600; margin:0; }
+.didit-review-grid dd { margin:2px 0 0; font-weight:700; }
+.didit-review-results ul { margin:8px 0 0; padding-left:18px; font-size:0.82rem; line-height:1.5; }
+.didit-warnings { font-size:0.8rem; color:#92400e; background:#fffbeb; padding:10px 12px; border-radius:8px; margin-top:12px; }
+</style>
+
+<script>
+(function () {
+  function csrf() {
+    const m = document.cookie.match(/(^| )csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[2]) : "";
+  }
+  async function postAction(url, btn) {
+    btn.disabled = true;
+    try {
+      const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf(), "Accept": "application/json" }, credentials: "same-origin" });
+      const data = await res.json();
+      if (data.success) window.location.reload();
+      else alert(data.error || "Action failed.");
+    } catch (e) {
+      alert("Network error.");
+    }
+    btn.disabled = false;
+  }
+  document.querySelectorAll("[data-didit-refresh]").forEach(function (btn) {
+    btn.addEventListener("click", function () { postAction(btn.dataset.url, btn); });
+  });
+  document.querySelectorAll("[data-didit-restart]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (!confirm("Start a new Didit verification session for this customer?")) return;
+      postAction(btn.dataset.url, btn);
+    });
+  });
+})();
+</script>

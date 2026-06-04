@@ -1,0 +1,24 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
+
+<section class="card complete-card" style="max-width:520px;margin:48px auto;text-align:center;">
+  <div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#168a45" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+  </div>
+  <h1 style="font-size:1.35rem;font-weight:800;margin-bottom:10px;">Verification submitted</h1>
+  <p style="color:#64748b;line-height:1.55;margin-bottom:8px;">
+    You may return to TengaSale while we update your application.
+  </p>
+  {% if status_label %}
+  <p style="font-size:0.85rem;margin-bottom:20px;"><strong>Status:</strong> {{ status_label }}</p>
+  {% endif %}
+  {% if app %}
+  <a href="{% url 'didit_verification' app.id %}" class="btn green-button">Return to application</a>
+  {% else %}
+  <a href="{% url 'merchant_dashboard' %}" class="btn green-button">Return to TengaSale</a>
+  {% endif %}
+</section>
+{% endblock %}

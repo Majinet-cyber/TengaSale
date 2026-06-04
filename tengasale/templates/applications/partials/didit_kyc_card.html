@@ -1,0 +1,111 @@
+{% load static %}
+<section class="card didit-kyc-card" id="didit-kyc-card" data-start-url="{% url 'didit_start_kyc' app.id %}">
+  <div class="didit-kyc-card__header">
+    <div>
+      <h2 class="didit-kyc-card__title">Verify customer identity</h2>
+      <p class="didit-kyc-card__subtitle">
+        Secure ID, selfie/liveness, face match, AML and device/IP checks powered by Didit.
+      </p>
+    </div>
+    <span class="didit-kyc-badge didit-kyc-badge--{{ app.kyc_status|default:'not_started' }}" id="didit-kyc-status-badge">
+      {{ kyc_status_label|default:"Not Started" }}
+    </span>
+  </div>
+
+  <p class="didit-kyc-card__help">
+    This helps TengaSale prevent fraud and protect merchants, customers, and underwriters.
+  </p>
+
+  <div id="didit-kyc-error" class="field-error" hidden role="alert"></div>
+
+  <div class="form-actions" style="margin-top:12px;">
+    <button type="button" class="btn green-button" id="didit-start-kyc-btn">
+      Start KYC Verification
+    </button>
+    {% if app.didit_verification_url %}
+    <a href="{{ app.didit_verification_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" id="didit-open-url-btn">
+      Open verification
+    </a>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.didit-kyc-card { margin-top: 18px; border: 1.5px solid #e8ecf1; }
+.didit-kyc-card__header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.didit-kyc-card__title { margin: 0 0 6px; font-size: 1.05rem; font-weight: 800; }
+.didit-kyc-card__subtitle { margin: 0; font-size: 0.82rem; color: var(--muted, #64748b); line-height: 1.45; }
+.didit-kyc-card__help { font-size: 0.78rem; color: var(--muted, #64748b); margin: 12px 0 0; }
+.didit-kyc-badge {
+  display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800;
+  white-space: nowrap; background: #f1f5f9; color: #475569;
+}
+.didit-kyc-badge--approved { background: #dcfce7; color: #166534; }
+.didit-kyc-badge--declined { background: #fee2e2; color: #991b1b; }
+.didit-kyc-badge--in_progress, .didit-kyc-badge--awaiting_user { background: #dbeafe; color: #1d4ed8; }
+.didit-kyc-badge--pending_review, .didit-kyc-badge--manual_review { background: #fef3c7; color: #92400e; }
+.didit-kyc-badge--resubmitted { background: #ede9fe; color: #5b21b6; }
+.didit-kyc-badge--abandoned, .didit-kyc-badge--expired, .didit-kyc-badge--kyc_expired { background: #f3f4f6; color: #374151; }
+</style>
+
+<script>
+(function () {
+  const card = document.getElementById("didit-kyc-card");
+  if (!card) return;
+  const startBtn = document.getElementById("didit-start-kyc-btn");
+  const errorEl = document.getElementById("didit-kyc-error");
+  const badge = document.getElementById("didit-kyc-status-badge");
+  const startUrl = card.dataset.startUrl;
+
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+    return match ? decodeURIComponent(match[2]) : "";
+  }
+
+  function showError(msg) {
+    if (!errorEl) return;
+    errorEl.textContent = msg || "Could not start verification.";
+    errorEl.hidden = false;
+  }
+
+  if (!startBtn) return;
+  startBtn.addEventListener("click", async function () {
+    startBtn.disabled = true;
+    if (errorEl) errorEl.hidden = true;
+    try {
+      const res = await fetch(startUrl, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Accept": "application/json",
+        },
+        credentials: "same-origin",
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showError(data.error || "Could not start verification.");
+        startBtn.disabled = false;
+        return;
+      }
+      if (data.status && badge) badge.textContent = data.status;
+      if (data.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        let openBtn = document.getElementById("didit-open-url-btn");
+        if (!openBtn) {
+          openBtn = document.createElement("a");
+          openBtn.id = "didit-open-url-btn";
+          openBtn.className = "btn btn-outline";
+          openBtn.target = "_blank";
+          openBtn.rel = "noopener noreferrer";
+          openBtn.textContent = "Open verification";
+          startBtn.parentElement.appendChild(openBtn);
+        }
+        openBtn.href = data.url;
+      }
+    } catch (e) {
+      showError("Network error. Please try again.");
+    }
+    startBtn.disabled = false;
+  });
+})();
+</script>

@@ -97,6 +97,36 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
 MOCK_SMS = os.environ.get("MOCK_SMS", "false").lower() == "true"
 
+# ── Didit KYC ───────────────────────────────────────────────────────────────────
+DIDIT_API_KEY = os.environ.get("DIDIT_API_KEY", "")
+DIDIT_WORKFLOW_ID = os.environ.get("DIDIT_WORKFLOW_ID", "")
+DIDIT_WEBHOOK_SECRET = os.environ.get("DIDIT_WEBHOOK_SECRET", "")
+DIDIT_WEBHOOK_URL = os.environ.get("DIDIT_WEBHOOK_URL", "")
+DIDIT_CALLBACK_URL = os.environ.get("DIDIT_CALLBACK_URL", "")
+DIDIT_ALLOW_UNSIGNED_WEBHOOKS = os.environ.get("DIDIT_ALLOW_UNSIGNED_WEBHOOKS", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+REQUIRE_DIDIT_KYC_BEFORE_APPROVAL = os.environ.get("REQUIRE_DIDIT_KYC_BEFORE_APPROVAL", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+DIDIT_REQUEST_TIMEOUT_SECONDS = int(os.environ.get("DIDIT_REQUEST_TIMEOUT_SECONDS", "15"))
+
+from config.didit_validation import validate_didit_production_settings  # noqa: E402
+
+validate_didit_production_settings(
+    debug=DEBUG,
+    api_key=DIDIT_API_KEY,
+    workflow_id=DIDIT_WORKFLOW_ID,
+    webhook_secret=DIDIT_WEBHOOK_SECRET,
+    webhook_url=DIDIT_WEBHOOK_URL,
+    callback_url=DIDIT_CALLBACK_URL,
+    allow_unsigned_webhooks=DIDIT_ALLOW_UNSIGNED_WEBHOOKS,
+)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Logging (safe — no secrets, no full IDs)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -123,6 +153,9 @@ LOGGING = {
         "commissions": {"handlers": ["console"], "level": "INFO"},
         "portal": {"handlers": ["console"], "level": "INFO"},
         "tengasale.applications": {"handlers": ["console"], "level": "INFO"},
+        "integrations.didit": {"handlers": ["console"], "level": "INFO"},
+        "applications.didit_handlers": {"handlers": ["console"], "level": "INFO"},
+        "applications.didit_views": {"handlers": ["console"], "level": "INFO"},
         "tengasale.contracts": {"handlers": ["console"], "level": "INFO"},
         "tengasale.contracts.pdf": {"handlers": ["console"], "level": "INFO"},
         "tengasale.media": {"handlers": ["console"], "level": "INFO"},

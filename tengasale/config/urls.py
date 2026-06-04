@@ -6,6 +6,7 @@ from django.views.generic import TemplateView
 from earnings.views import payments_home
 from website import views as website_views
 from config.media_views import serve_media
+from applications.didit_views import didit_callback_done, didit_webhook
 
 urlpatterns = [
     path("", website_views.landing, name="public_home"),
@@ -18,6 +19,8 @@ urlpatterns = [
     path("", include("dashboard.urls")),
     path("accounts/", include("accounts.urls")),
     path("applications/", include("applications.urls")),
+    path("kyc/didit/done/", didit_callback_done, name="didit_callback_done"),
+    path("api/webhooks/didit/", didit_webhook, name="didit_webhook"),
     path("deals/", include("deals.urls")),
     path("earnings/", include("earnings.urls")),
     path("payments/", payments_home, name="payments_home"),

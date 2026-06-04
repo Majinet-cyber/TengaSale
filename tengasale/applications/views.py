@@ -152,13 +152,16 @@ def edit_customer_details(request, app_id):
                     app.phone_verification_status = "failed"
                     app.save(update_fields=["phone_verification_status"])
             messages.success(request, "Customer details saved.")
-            return redirect("choose_device", app_id=app.id)
+            return redirect("didit_verification", app_id=app.id)
     else:
         form = CustomerDetailsForm(instance=app)
+
+    from integrations.didit import KYC_STATUS_DISPLAY
 
     return render(request, "applications/customer_details.html", {
         "app": app,
         "form": form,
+        "kyc_status_label": KYC_STATUS_DISPLAY.get(app.kyc_status, "Not Started"),
         **bh,
     })
 

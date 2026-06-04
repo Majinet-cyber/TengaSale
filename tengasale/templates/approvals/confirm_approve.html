@@ -12,9 +12,22 @@
     <p>Are you sure you want to approve?</p>
     <p class="text-muted">{{ app.customer_name|default:"Unnamed Customer" }} · {{ app.application_number }}</p>
 
+    {% if kyc_gate.warning %}
+    <div style="background:{% if kyc_gate.blocked %}#fef2f2{% else %}#fffbeb{% endif %};border:1.5px solid {% if kyc_gate.blocked %}#fecaca{% else %}#fde68a{% endif %};border-radius:12px;padding:14px 16px;margin:16px 0;font-size:0.85rem;line-height:1.5;">
+      {{ kyc_gate.warning }}
+    </div>
+    {% endif %}
+
     <form method="post" class="form-actions">
         {% csrf_token %}
-        <button type="submit" class="btn green-button">Approve</button>
+        {% if kyc_gate.blocked and kyc_gate.can_override %}
+        <div class="form-group" style="width:100%;margin-bottom:12px;">
+          <label for="kyc_override_reason">HQ override reason <span class="required-star">*</span></label>
+          <textarea name="kyc_override_reason" id="kyc_override_reason" rows="3" class="form-control" required placeholder="Explain why KYC approval is being overridden (required)"></textarea>
+          <p class="field-help">Only HQ or superuser can override when Didit KYC is not approved.</p>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn green-button" {% if kyc_gate.blocked and not kyc_gate.can_override %}disabled{% endif %}>Approve</button>
         <a href="{% url 'underwriter_review_application' app.id %}" class="btn btn-outline">Cancel</a>
     </form>
 </section>
