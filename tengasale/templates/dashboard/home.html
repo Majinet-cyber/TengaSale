@@ -12,6 +12,7 @@
 {% block page_footer %}{% endblock %}
 
 {% block content %}
+<div class="merchant-dashboard-shell">
 <div class="merchant-shell">
   <header class="merchant-header">
     <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
@@ -58,7 +59,10 @@
       <h1 class="merchant-greeting-title">Hi, {{ request.user.first_name|default:request.user.username }} 👋</h1>
       <p class="merchant-greeting-sub">Good to see you again</p>
     </div>
-    <span class="merchant-country-chip" title="Malawi">MW</span>
+    <span class="merchant-country-chip" title="Malawi">
+      {% include "portal/_malawi_flag.html" %}
+      <span class="merchant-country-chip__code">MW</span>
+    </span>
   </section>
 
   <a href="{% url 'new_application' %}" class="primary-contract-btn" aria-label="Start a new contract">
@@ -178,4 +182,5 @@
     <span>Profile</span>
   </a>
 </nav>
+</div>
 {% endblock %}

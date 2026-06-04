@@ -3083,9 +3083,14 @@ label,
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MERCHANT PREMIUM DASHBOARD (mobile fintech shell)
+   Scoped under .merchant-dashboard-shell — do not use global .action-row / .card
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.merchant-shell {
+.merchant-dashboard-shell {
+  position: relative;
+}
+
+.merchant-dashboard-shell .merchant-shell {
   --merchant-bg: #eef2f6;
   display: flex;
   flex-direction: column;
@@ -3096,14 +3101,14 @@ label,
   background: var(--merchant-bg);
 }
 
-.merchant-header {
+.merchant-dashboard-shell .merchant-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.merchant-brand {
+.merchant-dashboard-shell .merchant-brand {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3112,7 +3117,7 @@ label,
   color: inherit;
 }
 
-.merchant-brand-icon {
+.merchant-dashboard-shell .merchant-brand-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -3126,51 +3131,51 @@ label,
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
-.merchant-brand-icon img {
+.merchant-dashboard-shell .merchant-brand-icon img {
   width: 32px;
   height: 32px;
   object-fit: contain;
 }
 
-.merchant-brand-icon--fallback::after {
+.merchant-dashboard-shell .merchant-brand-icon--fallback::after {
   content: "T";
   font-size: 18px;
   font-weight: 900;
   color: var(--ts-orange);
 }
 
-.merchant-brand-copy {
+.merchant-dashboard-shell .merchant-brand-copy {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.merchant-brand-name {
+.merchant-dashboard-shell .merchant-brand-name {
   font-size: 15px;
   font-weight: 900;
   color: var(--ts-text);
   line-height: 1.15;
 }
 
-.merchant-brand-tagline {
+.merchant-dashboard-shell .merchant-brand-tagline {
   font-size: 11px;
   font-weight: 600;
   color: var(--ts-muted);
   line-height: 1.2;
 }
 
-.merchant-header-actions {
+.merchant-dashboard-shell .merchant-header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.merchant-logout-form {
+.merchant-dashboard-shell .merchant-logout-form {
   margin: 0;
 }
 
-.merchant-header-btn {
+.merchant-dashboard-shell .merchant-header-btn {
   position: relative;
   width: 40px;
   height: 40px;
@@ -3188,17 +3193,17 @@ label,
   transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 
-.merchant-header-btn:hover,
-.merchant-header-btn:focus-visible {
+.merchant-dashboard-shell .merchant-header-btn:hover,
+.merchant-dashboard-shell .merchant-header-btn:focus-visible {
   background: #f8fafc;
   transform: translateY(-1px);
 }
 
-.merchant-header-btn .bi-whatsapp {
+.merchant-dashboard-shell .merchant-header-btn .bi-whatsapp {
   color: #16a34a;
 }
 
-.merchant-header-badge {
+.merchant-dashboard-shell .merchant-header-badge {
   position: absolute;
   top: -4px;
   right: -4px;
@@ -3214,14 +3219,14 @@ label,
   text-align: center;
 }
 
-.merchant-greeting {
+.merchant-dashboard-shell .merchant-greeting {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.merchant-greeting-title {
+.merchant-dashboard-shell .merchant-greeting-title {
   margin: 0;
   font-size: 22px;
   font-weight: 900;
@@ -3229,30 +3234,34 @@ label,
   line-height: 1.2;
 }
 
-.merchant-greeting-sub {
+.merchant-dashboard-shell .merchant-greeting-sub {
   margin: 4px 0 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--ts-muted);
 }
 
-.merchant-country-chip {
+.merchant-dashboard-shell .merchant-country-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 40px;
+  gap: 6px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 10px 4px 8px;
   border-radius: 999px;
   background: #fff;
   border: 1px solid var(--ts-border);
   color: var(--ts-muted);
-  font-size: 12px;
-  font-weight: 900;
   flex-shrink: 0;
 }
 
-.primary-contract-btn {
+.merchant-dashboard-shell .merchant-country-chip__code {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.merchant-dashboard-shell .primary-contract-btn {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -3270,8 +3279,8 @@ label,
   transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
 }
 
-.primary-contract-btn:hover,
-.primary-contract-btn:focus-visible {
+.merchant-dashboard-shell .primary-contract-btn:hover,
+.merchant-dashboard-shell .primary-contract-btn:focus-visible {
   color: #fff;
   text-decoration: none;
   transform: translateY(-2px);
@@ -3279,11 +3288,11 @@ label,
   filter: brightness(1.03);
 }
 
-.primary-contract-btn:active {
+.merchant-dashboard-shell .primary-contract-btn:active {
   transform: translateY(0);
 }
 
-.primary-contract-btn__icon {
+.merchant-dashboard-shell .primary-contract-btn__icon {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -3296,16 +3305,16 @@ label,
   flex-shrink: 0;
 }
 
-.primary-contract-btn__label {
+.merchant-dashboard-shell .primary-contract-btn__label {
   flex: 1;
 }
 
-.primary-contract-btn__arrow {
+.merchant-dashboard-shell .primary-contract-btn__arrow {
   font-size: 22px;
   opacity: 0.95;
 }
 
-.overview-card {
+.merchant-dashboard-shell .overview-card {
   background: #fff;
   border: 1px solid rgba(226, 232, 240, 0.95);
   border-radius: 22px;
@@ -3313,7 +3322,7 @@ label,
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.overview-card__head {
+.merchant-dashboard-shell .overview-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3321,14 +3330,14 @@ label,
   margin-bottom: 14px;
 }
 
-.overview-card__title {
+.merchant-dashboard-shell .overview-card__title {
   margin: 0;
   font-size: 15px;
   font-weight: 900;
   color: var(--ts-text);
 }
 
-.overview-card__link {
+.merchant-dashboard-shell .overview-card__link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3339,13 +3348,13 @@ label,
   white-space: nowrap;
 }
 
-.overview-card__stats {
+.merchant-dashboard-shell .overview-card__stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
-.overview-stat {
+.merchant-dashboard-shell .overview-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3354,7 +3363,7 @@ label,
   min-width: 0;
 }
 
-.overview-stat__icon {
+.merchant-dashboard-shell .overview-stat__icon {
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -3364,12 +3373,12 @@ label,
   font-size: 16px;
 }
 
-.overview-stat__icon--phone { background: #eff6ff; color: #2563eb; }
-.overview-stat__icon--active { background: #ecfdf3; color: #16a34a; }
-.overview-stat__icon--locked { background: #fef3c7; color: #d97706; }
-.overview-stat__icon--overdue { background: #fef2f2; color: #dc2626; }
+.merchant-dashboard-shell .overview-stat__icon--phone { background: #eff6ff; color: #2563eb; }
+.merchant-dashboard-shell .overview-stat__icon--active { background: #ecfdf3; color: #16a34a; }
+.merchant-dashboard-shell .overview-stat__icon--locked { background: #fef3c7; color: #d97706; }
+.merchant-dashboard-shell .overview-stat__icon--overdue { background: #fef2f2; color: #dc2626; }
 
-.overview-stat__label {
+.merchant-dashboard-shell .overview-stat__label {
   font-size: 10px;
   font-weight: 800;
   color: var(--ts-muted);
@@ -3377,14 +3386,14 @@ label,
   letter-spacing: 0.03em;
 }
 
-.overview-stat__value {
+.merchant-dashboard-shell .overview-stat__value {
   font-size: 18px;
   font-weight: 900;
   color: var(--ts-text);
   line-height: 1;
 }
 
-.section-title {
+.merchant-dashboard-shell .section-title {
   margin: 4px 0 0;
   padding: 0 2px;
   font-size: 11px;
@@ -3394,7 +3403,7 @@ label,
   color: #94a3b8;
 }
 
-.action-card {
+.merchant-dashboard-shell .action-card {
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -3404,7 +3413,7 @@ label,
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.action-row {
+.merchant-dashboard-shell .action-row {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
@@ -3417,16 +3426,16 @@ label,
   transition: background 0.12s;
 }
 
-.action-card .action-row:first-child {
+.merchant-dashboard-shell .action-card .action-row:first-child {
   border-top: none;
 }
 
-.action-row:hover,
-.action-row:focus-visible {
+.merchant-dashboard-shell .action-row:hover,
+.merchant-dashboard-shell .action-row:focus-visible {
   background: #f8fafc;
 }
 
-.action-row-icon {
+.merchant-dashboard-shell .action-row-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -3437,25 +3446,25 @@ label,
   flex-shrink: 0;
 }
 
-.action-row-icon--active { background: #fff7ed; color: #ea580c; }
-.action-row-icon--pending { background: #eff6ff; color: #2563eb; }
-.action-row-icon--completed { background: #ecfdf3; color: #16a34a; }
-.action-row-icon--archived { background: #f1f5f9; color: #64748b; }
-.action-row-icon--earnings { background: #fdf4ff; color: #9333ea; }
-.action-row-icon--payments { background: #fffbeb; color: #d97706; }
-.action-row-icon--cash { background: #ecfdf5; color: #059669; }
-.action-row-icon--device { background: #eff6ff; color: #2563eb; }
-.action-row-icon--spin { background: #fff7ed; color: #ff5a00; }
-.action-row-icon--deals { background: #f8fafc; color: #475569; }
+.merchant-dashboard-shell .action-row-icon--active { background: #fff7ed; color: #ea580c; }
+.merchant-dashboard-shell .action-row-icon--pending { background: #eff6ff; color: #2563eb; }
+.merchant-dashboard-shell .action-row-icon--completed { background: #ecfdf3; color: #16a34a; }
+.merchant-dashboard-shell .action-row-icon--archived { background: #f1f5f9; color: #64748b; }
+.merchant-dashboard-shell .action-row-icon--earnings { background: #fdf4ff; color: #9333ea; }
+.merchant-dashboard-shell .action-row-icon--payments { background: #fffbeb; color: #d97706; }
+.merchant-dashboard-shell .action-row-icon--cash { background: #ecfdf5; color: #059669; }
+.merchant-dashboard-shell .action-row-icon--device { background: #eff6ff; color: #2563eb; }
+.merchant-dashboard-shell .action-row-icon--spin { background: #fff7ed; color: #ff5a00; }
+.merchant-dashboard-shell .action-row-icon--deals { background: #f8fafc; color: #475569; }
 
-.action-row-label {
+.merchant-dashboard-shell .action-row-label {
   font-size: 15px;
   font-weight: 800;
   color: var(--ts-text);
   min-width: 0;
 }
 
-.action-row-value {
+.merchant-dashboard-shell .action-row-value {
   font-size: 13px;
   font-weight: 800;
   color: var(--ts-muted);
@@ -3466,13 +3475,13 @@ label,
   text-overflow: ellipsis;
 }
 
-.action-row-chevron {
+.merchant-dashboard-shell .action-row-chevron {
   color: #cbd5e1;
   font-size: 18px;
   flex-shrink: 0;
 }
 
-.bottom-nav {
+.merchant-dashboard-shell .bottom-nav {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -3490,7 +3499,7 @@ label,
   z-index: 40;
 }
 
-.bottom-nav__item {
+.merchant-dashboard-shell .bottom-nav__item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3503,15 +3512,15 @@ label,
   text-decoration: none;
 }
 
-.bottom-nav__item i {
+.merchant-dashboard-shell .bottom-nav__item i {
   font-size: 20px;
 }
 
-.bottom-nav__item--active {
+.merchant-dashboard-shell .bottom-nav__item--active {
   color: var(--ts-orange);
 }
 
-.bottom-nav__fab {
+.merchant-dashboard-shell .bottom-nav__fab {
   width: 56px;
   height: 56px;
   margin-bottom: 18px;
@@ -3527,27 +3536,27 @@ label,
   transition: transform 0.12s, box-shadow 0.15s;
 }
 
-.bottom-nav__fab:hover,
-.bottom-nav__fab:focus-visible {
+.merchant-dashboard-shell .bottom-nav__fab:hover,
+.merchant-dashboard-shell .bottom-nav__fab:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 16px 32px rgba(255, 90, 0, 0.4);
   color: #fff;
 }
 
 @media (max-width: 380px) {
-  .overview-card__stats {
+  .merchant-dashboard-shell .overview-card__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
-  .action-row-value {
+  .merchant-dashboard-shell .action-row-value {
     font-size: 12px;
     max-width: 36%;
   }
 }
 
 @media (min-width: 560px) {
-  .merchant-shell {
+  .merchant-dashboard-shell .merchant-shell {
     max-width: 520px;
     margin-left: auto;
     margin-right: auto;
