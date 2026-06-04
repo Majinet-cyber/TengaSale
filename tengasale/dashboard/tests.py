@@ -6,6 +6,47 @@ from django.urls import reverse
 from accounts.utils import assign_role
 
 
+def assert_merchant_dashboard_malawi_flag(test_case, response):
+    """
+    Regression lock: merchant dashboard must always show Malawi flag + MW chip.
+    Fails if the chip is removed, reverted to text-only MW, or the SVG partial is dropped.
+    """
+    test_case.assertEqual(response.status_code, 200)
+    test_case.assertContains(
+        response,
+        'class="merchant-country-chip"',
+        count=1,
+        msg_prefix="Exactly one Malawi country chip",
+    )
+    test_case.assertContains(response, "merchant-country-chip__code", msg_prefix="MW code span")
+    test_case.assertContains(response, 'title="Malawi"', msg_prefix="Malawi chip title")
+    test_case.assertContains(
+        response,
+        'viewBox="0 0 20 14"',
+        msg_prefix="Malawi flag SVG (portal/_malawi_flag.html)",
+    )
+    test_case.assertContains(response, "#339E35", msg_prefix="Malawi flag green band")
+    test_case.assertContains(response, "#CE1126", msg_prefix="Malawi flag red band")
+    test_case.assertContains(response, ">MW<", msg_prefix="MW country code")
+
+    content = response.content.decode()
+    greeting_idx = content.index('class="merchant-greeting"')
+    chip_idx = content.index('class="merchant-country-chip"', greeting_idx)
+    greeting_end = content.index("</section>", greeting_idx)
+    chip_region = content[chip_idx:greeting_end]
+    test_case.assertIn(
+        'viewBox="0 0 20 14"',
+        chip_region,
+        "Flag SVG must render inside merchant-country-chip (not a broken img or text-only MW)",
+    )
+    test_case.assertIn(
+        "merchant-country-chip__code",
+        chip_region,
+        "MW label must stay inside the country chip beside the flag",
+    )
+    test_case.assertIn(">MW<", chip_region, "MW text must render inside the greeting country chip")
+
+
 class HomePageTests(TestCase):
     def setUp(self):
         call_command("seed_roles")
@@ -82,13 +123,18 @@ class HomePageTests(TestCase):
         self.assertContains(response, 'aria-label="Log out"')
         self.assertContains(response, "merchant-shell")
         self.assertContains(response, "merchant-dashboard-shell")
-        self.assertContains(response, 'viewBox="0 0 20 14"')
-        self.assertContains(response, "merchant-country-chip__code")
-        self.assertContains(response, ">MW<")
+        assert_merchant_dashboard_malawi_flag(self, response)
         self.assertContains(response, "action-row-chevron")
         self.assertNotContains(response, "Claim Next")
         self.assertNotContains(response, "Active Contracts")
         self.assertNotContains(response, "Completed Contracts")
+
+    def test_merchant_dashboard_malawi_flag_regression_lock(self):
+        """Dedicated guard: Malawi flag chip must never disappear from merchant dashboard."""
+        self.create_user("merchant", "Merchant")
+        self.client.login(username="merchant", password="test-pass-123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        assert_merchant_dashboard_malawi_flag(self, response)
 
     def test_merchant_dashboard_contains_device_financing_section(self):
         """Device financing section must always be visible — locks in layout order."""
@@ -1375,6 +1421,12 @@ class LayoutRegressionTests(TestCase):
         response = self.client.get(reverse("merchant_dashboard"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "dashboard/home.html")
+
+    def test_merchant_dashboard_malawi_flag_must_always_render(self):
+        """Layout regression: Malawi flag + MW chip locked on merchant dashboard."""
+        self.client.login(username="reg_merchant", password="pass123")
+        response = self.client.get(reverse("merchant_dashboard"))
+        assert_merchant_dashboard_malawi_flag(self, response)
 
     def test_merchant_dashboard_has_cash_settlement_section(self):
         """Cash settlement section must always be present in the template markup."""
