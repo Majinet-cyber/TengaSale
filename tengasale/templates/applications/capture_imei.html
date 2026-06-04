@@ -78,12 +78,12 @@
 
 {% block content %}
 <div class="imei-page">
-  <a href="{% url 'choose_device' app.id %}" class="soft-back">
+  <a href="{% url 'application_detail' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
   </a>
 
-  <h1 class="greeting" style="margin-bottom:16px;">Phone IMEI</h1>
+  <h1 class="greeting" style="margin-bottom:16px;">Enter IMEI &amp; Lock Device</h1>
 
   <div class="imei-card">
     <p class="imei-device">{{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}</p>
@@ -93,7 +93,7 @@
   <form method="post" class="imei-card" id="imei-capture-form">
     {% csrf_token %}
 
-    <label class="imei-label" for="imei_number">IMEI Number *</label>
+    <label class="imei-label" for="imei_number">IMEI 1 *</label>
     <input
       type="text"
       name="imei_number"
@@ -109,7 +109,48 @@
       <span class="imei-counter" id="imei-counter">0 / 15 digits</span>
       <span class="imei-status" id="imei-status" data-state="neutral"></span>
     </div>
-    <p class="imei-helper">Dial <strong>*#06#</strong> on the phone to view the IMEI.</p>
+    <p class="imei-helper">Dial <strong>*#06#</strong> on the approved phone to view the IMEI.</p>
+
+    <label class="imei-label" for="imei_number_2" style="margin-top:14px;">IMEI 2 if available</label>
+    <input
+      type="text"
+      name="imei_number_2"
+      id="imei_number_2"
+      class="imei-input"
+      value="{{ app.imei_number_2|default:'' }}"
+      autocomplete="off"
+      inputmode="numeric"
+      maxlength="15"
+      placeholder="Optional"
+    >
+
+    <label class="imei-label" for="device_serial_number" style="margin-top:14px;">Serial number if available</label>
+    <input
+      type="text"
+      name="device_serial_number"
+      id="device_serial_number"
+      class="imei-input"
+      style="letter-spacing:0;font-family:inherit;font-size:1rem;"
+      value="{{ app.device_serial_number|default:'' }}"
+      autocomplete="off"
+      placeholder="Optional"
+    >
+
+    <label class="imei-label" for="locking_provider" style="margin-top:14px;">Locking provider *</label>
+    <select name="locking_provider" id="locking_provider" class="imei-input" style="letter-spacing:0;font-family:inherit;font-size:1rem;" required>
+      <option value="">Select provider</option>
+      <option value="TengaSale PayGo" {% if app.locking_provider == "TengaSale PayGo" %}selected{% endif %}>TengaSale PayGo</option>
+      <option value="M-KOPA" {% if app.locking_provider == "M-KOPA" %}selected{% endif %}>M-KOPA</option>
+      <option value="Knox Guard" {% if app.locking_provider == "Knox Guard" %}selected{% endif %}>Knox Guard</option>
+      <option value="Manual Lock" {% if app.locking_provider == "Manual Lock" %}selected{% endif %}>Manual Lock</option>
+    </select>
+
+    <label class="imei-label" for="locking_confirmation_status" style="margin-top:14px;">Locking confirmation status *</label>
+    <select name="locking_confirmation_status" id="locking_confirmation_status" class="imei-input" style="letter-spacing:0;font-family:inherit;font-size:1rem;" required>
+      <option value="not_confirmed" {% if app.locking_confirmation_status == "not_confirmed" %}selected{% endif %}>Not confirmed</option>
+      <option value="pending" {% if app.locking_confirmation_status == "pending" %}selected{% endif %}>Pending sync</option>
+      <option value="confirmed" {% if app.locking_confirmation_status == "confirmed" %}selected{% endif %}>Confirmed locked</option>
+    </select>
 
     <div class="imei-actions">
       <button type="button" class="btn-scan" id="btn-scan-imei">
@@ -129,10 +170,10 @@
       <pre id="scanner-technical" style="font-size:0.65rem;white-space:pre-wrap;margin-top:6px;color:#64748b;"></pre>
     </details>
 
-    <button type="submit" class="btn-submit-imei" id="btn-submit-imei" disabled>Submit</button>
+    <button type="submit" class="btn-submit-imei" id="btn-submit-imei" disabled>GENERATE FINAL CONTRACT</button>
 
     <div class="form-actions">
-      <a href="{% url 'choose_device' app.id %}" class="btn btn-outline">← Back</a>
+      <a href="{% url 'application_detail' app.id %}" class="btn btn-outline">Back</a>
     </div>
   </form>
 </div>

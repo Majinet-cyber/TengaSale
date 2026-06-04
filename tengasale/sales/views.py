@@ -105,7 +105,7 @@ def sales_home(request):
 
     completed_count = FinancingApplication.objects.filter(
         reviewed_by=request.user,
-        status__in=["approved", "completed", "contract_complete"],
+        status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed", "contract_complete"],
     ).count()
     rejected_count = FinancingApplication.objects.filter(
         reviewed_by=request.user, status="rejected"
@@ -204,11 +204,15 @@ def sales_applications(request):
     if tab == "completed":
         apps = FinancingApplication.objects.filter(
             reviewed_by=request.user,
-            status__in=["approved", "completed", "contract_complete"],
+            status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed", "contract_complete"],
         ).order_by("-reviewed_at")
     elif tab == "rejected":
         apps = FinancingApplication.objects.filter(
             reviewed_by=request.user, status="rejected"
+        ).order_by("-reviewed_at")
+    elif tab == "sent_back":
+        apps = FinancingApplication.objects.filter(
+            reviewed_by=request.user, status__in=["sent_back", "correction_requested"]
         ).order_by("-reviewed_at")
     elif tab == "queue":
         apps = FinancingApplication.objects.filter(
@@ -567,22 +571,13 @@ def sales_confirm_approve(request, app_id):
             ])
             app_locked.corrections.filter(resolved=False).update(resolved=True)
             process_application_approval(app_locked, approved_by=request.user)
-            portal_contract = None
-            try:
-                from portal.services import create_contract_from_application
-                portal_contract = create_contract_from_application(app_locked, approved_by=request.user)
-            except Exception as exc:
-                import logging
-                logging.getLogger(__name__).warning(
-                    "Could not create portal contract for app %s: %s", app_locked.pk, exc
-                )
             app = app_locked
 
         _audit(request.user, AuditLog.ACTION_APPROVE, "FinancingApplication", app.id,
                {"application_number": app.application_number}, request)
         return render(request, "sales/approve_success.html", {
             "app": app,
-            "portal_contract": portal_contract,
+            "portal_contract": None,
             "page_heading": "Approved",
         })
     return render(request, "sales/confirm_approve.html", {

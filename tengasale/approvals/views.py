@@ -32,6 +32,7 @@ def bool_from_post(request, name):
 
 TERMINAL_STATUSES = frozenset({
     "approved", "rejected", "cancelled", "completed",
+    "approved_pending_device_lock", "device_locked", "active_contract",
     "contract_terms", "contract_signature", "imei_entry",
     "contract_creating", "warranty_check", "locking",
     "deposit_pending", "contract_complete",
@@ -108,7 +109,7 @@ def underwriter_dashboard(request):
     )
     completed_reviews = FinancingApplication.objects.filter(
         reviewed_by=request.user,
-        status__in=["approved", "completed", "contract_complete"],
+        status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed", "contract_complete"],
     ).order_by("-reviewed_at")[:10]
     rejected_reviews = FinancingApplication.objects.filter(
         reviewed_by=request.user,

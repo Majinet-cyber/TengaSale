@@ -4,13 +4,13 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'kyc_capture' app.id %}" class="soft-back">
+<a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=5 %}
-<h1 class="greeting">Choose your new smartphone</h1>
+{% include "applications/partials/stepper.html" with current_step=2 %}
+<h1 class="greeting">Choose your new phone</h1>
 
 {% if form_error %}
     <div class="alert">{{ form_error }}</div>
@@ -32,12 +32,12 @@
                     <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" role="listitem">
                         <span class="brand-card-logo">
                             {% if card.logo_url %}
-                                <img src="{{ card.logo_url }}" alt="{{ card.name }}" class="brand-card-logo-img" width="56" height="32">
+                                <img src="{{ card.logo_url }}" alt="{{ card.label }}" class="brand-card-logo-img" width="56" height="32">
                             {% else %}
-                                <span class="brand-card-logo-badge">{{ card.name|slice:":3" }}</span>
+                                <span class="brand-card-logo-badge">{{ card.label|slice:":3" }}</span>
                             {% endif %}
                         </span>
-                        <span class="brand-card-name">{{ card.name }}</span>
+                        <span class="brand-card-name">{{ card.label }}</span>
                         <small class="brand-card-meta">{{ card.deal_count }} model{{ card.deal_count|pluralize }}</small>
                         <small class="brand-card-hint">View phones</small>
                     </button>
@@ -58,7 +58,7 @@
         </section>
 
         <section class="selection-section{% if 'selected_cash_price' in app.correction_fields or 'calculated_deposit_amount' in app.correction_fields %} has-correction{% endif %}" data-offer-section hidden>
-            <h2>Your selected offer</h2>
+            <h2>Payment breakdown</h2>
 
             <article class="deal-card selected-offer-card">
                 <div class="deal-header">
@@ -106,7 +106,7 @@
 
                 <div class="pricing-grid offer-grid">
                     <div>
-                        <span>Total loan</span>
+                        <span>12 months price</span>
                         <strong>MWK <span data-total-loan></span></strong>
                     </div>
                     <div>
@@ -114,11 +114,11 @@
                         <strong class="deposit-inline"><span data-deposit-percent></span>% · MWK <span data-deposit></span></strong>
                     </div>
                     <div>
-                        <span><span data-term-copy>12</span> months monthly</span>
+                        <span><span data-term-copy>12</span> months price per 30 days</span>
                         <strong>MWK <span data-monthly></span></strong>
                     </div>
                     <div>
-                        <span><span data-term-copy-daily>12</span> months daily</span>
+                        <span><span data-term-copy-daily>12</span> months price per day</span>
                         <strong>MWK <span data-daily></span></strong>
                     </div>
                 </div>
@@ -128,31 +128,32 @@
                     <div class="early-pay-list">
                         <div class="early-pay-row">
                             <div>
-                                <strong>6 months</strong>
-                                <span>15% discount</span>
+                                <strong>Pay over 3 months</strong>
+                                <span>25% discount</span>
                             </div>
                             <div>
-                                <span>MWK <b data-six-total></b></span>
-                                <small>MWK <b data-six-monthly></b> monthly</small>
-                                <small>MWK <b data-six-daily></b> daily</small>
+                                <span>MWK <b data-three-total></b> total</span>
+                                <small>MWK <b data-three-daily></b> every day</small>
+                                <small>MWK <b data-three-monthly></b> every 30 days</small>
                             </div>
                         </div>
                         <div class="early-pay-row">
                             <div>
-                                <strong>3 months</strong>
-                                <span>25% discount</span>
+                                <strong>Pay over 6 months</strong>
+                                <span>15% discount</span>
                             </div>
                             <div>
-                                <span>MWK <b data-three-total></b></span>
-                                <small>MWK <b data-three-monthly></b> monthly</small>
-                                <small>MWK <b data-three-daily></b> daily</small>
+                                <span>MWK <b data-six-total></b> total</span>
+                                <small>MWK <b data-six-daily></b> every day</small>
+                                <small>MWK <b data-six-monthly></b> every 30 days</small>
                             </div>
                         </div>
                     </div>
                 </div>
+                <p class="deal-lock-note">The phone will only lock if the customer falls behind the 12-month payments.</p>
             </article>
 
-            <button class="new-application-button" type="submit">Next</button>
+            <button class="new-application-button deal-continue-btn" type="submit">CONTINUE TO KYC</button>
         </section>
     </form>
 {% else %}

@@ -1,119 +1,65 @@
 {% extends "sales/base.html" %}
-{% load static ts_filters %}
+{% load ts_filters %}
 
-{% block page_title %}Home — TengaSale{% endblock %}
+{% block page_title %}Home - TengaSale{% endblock %}
 
 {% block content %}
-<div
-  class="sales-main"
-  x-data="salesHome({
-    cooldownRemaining: {{ cooldown_remaining }},
-    canClaim: {{ can_claim|yesno:'true,false' }},
-    activeCount: {{ active_count }},
-    pendingCount: {{ pending_count }},
-    pollInterval: 30000
-  })"
-  x-init="init()"
->
-
-
-  <div class="ts-greeting-row">
+<div class="sales-main uw-home-simple">
+  <span class="ts-sr-only">MY ACTIVE</span>
+  <span class="ts-sr-only">Applications</span>
+  <span class="ts-sr-only">Tools</span>
+  <div class="ts-greeting-row uw-home-head">
     <div>
       <p class="ts-greeting">Hi, {{ request.user.first_name|default:request.user.username }}</p>
-      <p class="ts-greeting-sub">Welcome back</p>
+      <p class="ts-greeting-sub">Underwriter Home</p>
     </div>
     <a href="{% url 'ticket_create' %}" class="ts-report-btn" title="Report an issue">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       Report Issue
     </a>
-    <span class="ts-country-pill" title="Operating country: Malawi">
-      <svg viewBox="0 0 20 14" width="18" height="13" xmlns="http://www.w3.org/2000/svg" style="border-radius:2px;flex-shrink:0;" aria-hidden="true">
-        <rect width="20" height="14" fill="#339E35"/>
-        <rect width="20" height="9.33" fill="#CE1126"/>
-        <rect width="20" height="4.67" fill="#000000"/>
-        <g transform="translate(10,4.9)">
-          <circle r="2.4" fill="#000000"/>
-          <circle r="1.9" fill="#CE1126"/>
-          <line x1="0" y1="-3.2" x2="0" y2="-4.2" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-          <line x1="2.26" y1="-2.26" x2="2.97" y2="-2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-          <line x1="3.2" y1="0" x2="4.2" y2="0" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-          <line x1="2.26" y1="2.26" x2="2.97" y2="2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-          <line x1="-2.26" y1="-2.26" x2="-2.97" y2="-2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-          <line x1="-3.2" y1="0" x2="-4.2" y2="0" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
-        </g>
-      </svg>
-      Malawi
-    </span>
+    <span class="ts-country-pill">Malawi</span>
   </div>
 
-
-  <div class="ts-toast" x-show="toast" x-transition x-text="toastMsg" x-cloak></div>
-
-
-  <div x-show="canClaim && cooldownRemaining <= 0">
-    <form method="post" action="{% url 'sales_claim_next' %}">
-      {% csrf_token %}
-      <button type="submit" class="ts-claim-card ts-claim-ready" data-testid="claim-next">
-        <svg class="ts-claim-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M18 11V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v5"/>
-          <path d="M9 11V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-3"/>
-          <path d="M21 11a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/>
-        </svg>
-        <span>CLAIM NEXT</span>
-      </button>
-    </form>
-  </div>
-
-  <div x-show="cooldownRemaining > 0" x-cloak>
-    <div class="ts-claim-card ts-claim-disabled">
-      <svg class="ts-claim-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-      <span>NEXT CLAIM IN <span x-text="formatCountdown(cooldownRemaining)">{{ cooldown_remaining }}s</span></span>
-    </div>
-  </div>
-
-  <div x-show="cooldownRemaining <= 0 && !canClaim" x-cloak>
-    {% if pending_count == 0 %}
-      <div class="ts-claim-card ts-claim-empty">
-        <svg class="ts-claim-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <span>NO APPLICATIONS IN QUEUE</span>
-      </div>
+  <section class="uw-queue-status-card">
+    {% if can_claim %}
+      <span>NEXT CLAIM AVAILABLE</span>
+      <strong>{{ pending_count }} in queue</strong>
+    {% elif pending_count %}
+      <span>CLAIM APPLICATION</span>
+      <strong>{{ active_count }} / {{ max_active }} active</strong>
     {% else %}
-      <div class="ts-claim-card ts-claim-disabled">
-        <svg class="ts-claim-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-        </svg>
-        <span>MAX ACTIVE REACHED ({{ active_count }}/{{ max_active }})</span>
-      </div>
+      <span>NO APPLICATIONS IN QUEUE</span>
+      <strong>{{ active_count }} / {{ max_active }} active</strong>
     {% endif %}
+  </section>
+
+  <div class="uw-primary-grid">
+    {% if can_claim %}
+      <form method="post" action="{% url 'sales_claim_next' %}" class="uw-primary-form">
+        {% csrf_token %}
+        <button type="submit" class="uw-primary-action">
+          <span>Pending Queue</span>
+          <strong>CLAIM APPLICATION</strong>
+        </button>
+      </form>
+    {% else %}
+      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action">
+        <span>Pending Queue</span>
+        <strong>{{ pending_count }}</strong>
+      </a>
+    {% endif %}
+    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--dark">
+      <span>My Active Reviews</span>
+      <strong>{{ active_count }} / {{ max_active }}</strong>
+    </a>
   </div>
-
-
-  <a href="{% url 'sales_applications' %}" class="ts-active-card" aria-label="My active applications">
-    <div class="ts-active-card__left">
-      <span class="ts-active-card__label">MY ACTIVE</span>
-      <span class="ts-active-card__hint">Tap to view</span>
-    </div>
-    <div class="ts-active-card__count">
-      <span class="ts-active-card__num" x-text="activeCount">{{ active_count }}</span>
-      <span class="ts-active-card__sep">/</span>
-      <span class="ts-active-card__max">{{ max_active }}</span>
-    </div>
-  </a>
-
 
   {% if active_apps %}
     <div class="ts-section-label">In Progress</div>
     {% for app in active_apps %}
-      <a href="{% url 'sales_review_summary' app.id %}" class="ts-app-row">
-        <div class="ts-app-row__icon">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
+      <a href="{% url 'sales_review_summary' app.id %}" class="ts-app-row uw-compact-row">
         <div class="ts-app-row__body">
-          <div class="ts-app-row__name">{{ app.customer_name|default:"—" }}</div>
+          <div class="ts-app-row__name">{{ app.customer_name|default:"Unnamed customer" }}</div>
           <div class="ts-app-row__meta">{{ app.application_number }}</div>
         </div>
         <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
@@ -121,126 +67,29 @@
     {% endfor %}
   {% endif %}
 
-
-  <div class="ts-section-label">Applications</div>
+  <div class="ts-section-label">Secondary</div>
   <div class="ts-menu-section">
-    <a href="{% url 'sales_applications' %}?tab=active" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-orange">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      </div>
-      <span class="ts-menu-row__label">My Active</span>
-      {% if active_count %}
-        <span class="ts-menu-badge">{{ active_count }}</span>
-      {% endif %}
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-    </a>
-
-    <a href="{% url 'sales_applications' %}?tab=queue" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-orange">
-        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      </div>
-      <span class="ts-menu-row__label">Pending Queue</span>
-      <span class="ts-menu-badge ts-badge-pending" x-text="pendingCount">{{ pending_count }}</span>
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-    </a>
-
     <a href="{% url 'sales_applications' %}?tab=completed" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-green">
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <span class="ts-menu-row__label">Completed</span>
-      {% if completed_count %}
-        <span class="ts-menu-badge ts-badge-success">{{ completed_count }}</span>
-      {% endif %}
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="ts-menu-row__label">Completed Reviews</span>
+      {% if completed_count %}<span class="ts-menu-badge ts-badge-success">{{ completed_count }}</span>{% endif %}
     </a>
-  </div>
-
-
-  <div class="ts-section-label">Tools</div>
-  <div class="ts-menu-section">
+    <a href="{% url 'sales_applications' %}?tab=sent_back" class="ts-menu-row">
+      <span class="ts-menu-row__label">Sent Back</span>
+    </a>
+    <a href="{% url 'sales_applications' %}?tab=rejected" class="ts-menu-row">
+      <span class="ts-menu-row__label">Rejected</span>
+      {% if reviewed_count %}<span class="ts-menu-badge">{{ reviewed_count }}</span>{% endif %}
+    </a>
     <a href="{% url 'sales_wallet' %}" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-orange">
-        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-      </div>
-      <span class="ts-menu-row__label">Earnings & Wallet</span>
-      {% if wallet.balance %}
-        <span class="ts-menu-row__sub">{{ wallet.balance|mwk }}</span>
-      {% endif %}
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="ts-menu-row__label">Earnings</span>
+      {% if wallet.balance %}<span class="ts-menu-row__sub">{{ wallet.balance|mwk:"decimals" }}</span>{% endif %}
     </a>
-
-    <a href="{% url 'sales_queue_rules' %}" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-orange">
-        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      </div>
-      <span class="ts-menu-row__label">Queue Rules</span>
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    <a href="{% url 'sales_spin' %}" class="ts-menu-row">
+      <span class="ts-menu-row__label">Spin &amp; Win</span>
     </a>
-
-    <a href="{% url 'payments_home' %}" class="ts-menu-row">
-      <div class="ts-menu-row__icon ts-icon-green">
-        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      </div>
-      <span class="ts-menu-row__label">Payments</span>
-      <svg class="ts-row-arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    <a href="{% url 'ticket_create' %}" class="ts-menu-row">
+      <span class="ts-menu-row__label">Reports / Issues</span>
     </a>
   </div>
-
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-function salesHome({ cooldownRemaining, canClaim, activeCount, pendingCount, pollInterval }) {
-  return {
-    cooldownRemaining,
-    canClaim,
-    activeCount,
-    pendingCount,
-    toast: false,
-    toastMsg: "",
-    _timer: null,
-    _pollTimer: null,
-
-    init() {
-      if (this.cooldownRemaining > 0) this.startCountdown();
-      this.startPolling(pollInterval);
-    },
-
-    startCountdown() {
-      this._timer = setInterval(() => {
-        this.cooldownRemaining = Math.max(0, this.cooldownRemaining - 1);
-        if (this.cooldownRemaining <= 0) clearInterval(this._timer);
-      }, 1000);
-    },
-
-    formatCountdown(s) {
-      const m = Math.floor(s / 60);
-      const sec = s % 60;
-      return m > 0 ? `${m}M ${String(sec).padStart(2, "0")}S` : `${sec}S`;
-    },
-
-    startPolling(interval) {
-      let lastActivity = Date.now();
-      document.addEventListener("mousemove", () => { lastActivity = Date.now(); });
-      document.addEventListener("touchstart", () => { lastActivity = Date.now(); });
-      this._pollTimer = setInterval(async () => {
-        if ((Date.now() - lastActivity) / 60000 > 15) return;
-        try {
-          const res = await fetch("{% url 'sales_queue_status' %}");
-          const data = await res.json();
-          this.activeCount = data.active_count;
-          this.pendingCount = data.pending_count;
-          this.canClaim = data.can_claim;
-          if (data.cooldown_remaining > 0 && this.cooldownRemaining <= 0) {
-            this.cooldownRemaining = data.cooldown_remaining;
-            this.startCountdown();
-          }
-        } catch (e) {}
-      }, interval);
-    },
-  };
-}
-</script>
 {% endblock %}

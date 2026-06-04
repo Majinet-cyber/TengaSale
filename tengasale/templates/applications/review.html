@@ -4,14 +4,36 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'signature' app.id %}?redo=1" class="soft-back">
+<a href="{% url 'work_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=7 %}
+{% include "applications/partials/stepper.html" with current_step=6 %}
 <h1 class="greeting">Review</h1>
 
+{% if not app.signature_image %}
+<div class="card ts-slide-up" id="review-form">
+    <div class="summary-card">
+        <span>Customer</span>
+        <strong>{{ app.customer_name|default:"Not captured" }}</strong>
+        <span>Deal</span>
+        <strong>{% if app.customer_phone %}+265 {{ app.customer_phone }}{% else %}Not captured{% endif %}</strong>
+        <span>Phone</span>
+        <strong>{{ app.deal|default:"Not selected" }}</strong>
+        <span>Total loan</span>
+        <strong>{{ app.calculated_total_loan|mwk }}</strong>
+        <span>Deposit</span>
+        <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
+        <span>Daily</span>
+        <strong>{{ app.calculated_daily_payment|mwk }}</strong>
+    </div>
+    <div class="form-actions">
+        <a href="{% url 'work_details' app.id %}" class="btn btn-outline">Back</a>
+        <a href="{% url 'signature' app.id %}" class="btn primary-button">CONTINUE TO SIGNATURE</a>
+    </div>
+</div>
+{% else %}
 <form method="post" class="card ts-slide-up" id="review-form">
     {% csrf_token %}
     {{ form.non_field_errors }}
@@ -58,9 +80,10 @@
 
     <div class="form-actions">
         <a href="{% url 'signature' app.id %}?redo=1" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn primary-button" id="review-submit">Submit Application</button>
+        <button type="submit" class="btn primary-button" id="review-submit">SUBMIT TO UNDERWRITER</button>
     </div>
 </form>
+{% endif %}
 
 <script>
 (function () {

@@ -37,6 +37,9 @@ class FinancingApplication(models.Model):
         ("sent_back", "Sent Back"),
         ("resubmitted", "Resubmitted"),
         ("approved", "Approved"),
+        ("approved_pending_device_lock", "Approved - Pending Device Lock"),
+        ("device_locked", "Device Locked"),
+        ("active_contract", "Active Contract"),
         ("rejected", "Rejected"),
         ("contract_terms", "Contract Terms"),
         ("contract_signature", "Contract Signature"),
@@ -66,6 +69,9 @@ class FinancingApplication(models.Model):
         "under_review": "Under Review",
         "needs_edit": "Sent Back",
         "approved": "Approved",
+        "approved_pending_device_lock": "Approved - Enter IMEI",
+        "device_locked": "Device Locked",
+        "active_contract": "Active Contract",
         "completed": "Completed",
         "rejected": "Rejected",
     }
@@ -228,6 +234,22 @@ class FinancingApplication(models.Model):
         help_text="Selected contract term in months: 3, 6, or 12",
     )
     imei_number = models.CharField(max_length=80, blank=True)
+    imei_number_2 = models.CharField(max_length=80, blank=True)
+    device_serial_number = models.CharField(max_length=120, blank=True)
+    locking_provider = models.CharField(max_length=80, blank=True)
+    LOCK_STATUS_NOT_CONFIRMED = "not_confirmed"
+    LOCK_STATUS_CONFIRMED = "confirmed"
+    LOCK_STATUS_PENDING = "pending"
+    LOCK_STATUS_CHOICES = [
+        (LOCK_STATUS_NOT_CONFIRMED, "Not confirmed"),
+        (LOCK_STATUS_CONFIRMED, "Confirmed"),
+        (LOCK_STATUS_PENDING, "Pending sync"),
+    ]
+    locking_confirmation_status = models.CharField(
+        max_length=30,
+        choices=LOCK_STATUS_CHOICES,
+        default=LOCK_STATUS_NOT_CONFIRMED,
+    )
 
     # ── IMEI Verification ─────────────────────────────────────────────────────
     IMEI_STATUS_PENDING = "pending"
@@ -429,7 +451,7 @@ class FinancingApplication(models.Model):
         if self.status == "under_review":
             return "under_review"
 
-        if self.status in ["approved", "rejected"]:
+        if self.status in ["approved", "approved_pending_device_lock", "device_locked", "active_contract", "rejected"]:
             return self.status
 
         return self.status
@@ -439,7 +461,12 @@ class FinancingApplication(models.Model):
         return self.MERCHANT_STATUS_LABELS.get(self.merchant_status_key, self.get_status_display())
 
     def get_continue_url(self):
-        if self.status == "approved":
+        if self.status in {"approved", "approved_pending_device_lock", "imei_required"}:
+            if getattr(self, "contract", None):
+                return reverse("contract_terms", args=[self.id])
+            return reverse("capture_imei", args=[self.id])
+
+        if self.status == "device_locked":
             return reverse("contract_terms", args=[self.id])
 
         if self.status in ["contract_terms", "contract_signature"]:
@@ -473,8 +500,6 @@ class FinancingApplication(models.Model):
             "work",
             "work_details",
             "device_selection",
-            "imei_entry",
-            "imei_required",
             "signature",
         ]:
             from applications.flow_helpers import merchant_application_continue_url

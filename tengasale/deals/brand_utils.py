@@ -15,11 +15,12 @@ BRAND_ALIASES = {
     "infinix": "Infinix",
 }
 
-PREFERRED_BRAND_ORDER = ["Tecno", "Itel", "Redmi/Xiaomi", "Samsung", "Infinix"]
+PREFERRED_BRAND_ORDER = ["Tecno", "Itel", "Infinix", "Samsung", "Redmi/Xiaomi"]
 
 BRAND_STATIC_LOGOS = {
     "Tecno": "img/brands/tecno.svg",
     "Itel": "img/brands/itel.svg",
+    "Infinix": "img/brands/infinix.svg",
     "Redmi/Xiaomi": "img/brands/redmi.svg",
     "Samsung": "img/brands/samsung.svg",
 }

@@ -88,7 +88,7 @@ def work_step_complete(app) -> bool:
 
 def merchant_application_continue_url(app) -> str:
     """Next merchant step for in-progress applications."""
-    if app.status in {"approved", "rejected", "contract_complete", "completed"}:
+    if app.status in {"rejected", "contract_complete", "completed", "active_contract"}:
         return reverse("application_detail", args=[app.id])
 
     if app.status in {"submitted", "pending_review", "resubmitted", "under_review"}:
@@ -100,6 +100,15 @@ def merchant_application_continue_url(app) -> str:
     if app.status in {"started", "customer_details"}:
         return reverse("edit_customer_details", args=[app.id])
 
+    if app.status in {"approved", "approved_pending_device_lock", "imei_required"}:
+        return reverse("capture_imei", args=[app.id])
+
+    if app.status == "device_locked":
+        return reverse("contract_terms", args=[app.id])
+
+    if not application_has_complete_deal(app):
+        return reverse("choose_device", args=[app.id])
+
     if not kyc_images_complete(app):
         return reverse("kyc_capture", args=[app.id])
 
@@ -108,15 +117,6 @@ def merchant_application_continue_url(app) -> str:
 
     if not work_step_complete(app):
         return reverse("work_details", args=[app.id])
-
-    if not application_has_complete_deal(app):
-        return reverse("choose_device", args=[app.id])
-
-    if not (app.imei_number or "").strip():
-        return reverse("capture_imei", args=[app.id])
-
-    if not app.signature_image or not stored_file_exists(app.signature_image):
-        return reverse("signature", args=[app.id])
 
     return reverse("application_review", args=[app.id])
 
@@ -136,13 +136,11 @@ def redirect_if_kyc_required(request, app):
 
 
 def merchant_next_step_after_deal_selection(app) -> str:
-    """Route after deal is saved — location/work precede deal; then IMEI and signature."""
+    """Route after deal is saved: KYC, location, work, signature, review."""
+    if not kyc_images_complete(app):
+        return reverse("kyc_capture", args=[app.id])
     if not location_step_complete(app):
         return reverse("location_details", args=[app.id])
     if not work_step_complete(app):
         return reverse("work_details", args=[app.id])
-    if not (app.imei_number or "").strip():
-        return reverse("capture_imei", args=[app.id])
-    if not app.signature_image or not stored_file_exists(app.signature_image):
-        return reverse("signature", args=[app.id])
     return reverse("application_review", args=[app.id])

@@ -11,6 +11,18 @@
   --ts-danger: #dc2626;
 }
 
+.ts-sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .ts-page {
   max-width: 1040px;
   margin: 0 auto;
@@ -195,6 +207,256 @@
 
   .phone-otp-card__head {
     flex-direction: column;
+  }
+}
+
+.app-topbar,
+.mobile-header {
+  min-height: 58px;
+}
+
+.ts-logo-wordmark,
+img.ts-logo-wordmark {
+  max-height: 40px;
+  max-width: 190px;
+}
+
+.icon-button,
+.mh-icon-btn {
+  width: 38px;
+  height: 38px;
+}
+
+.notification-count,
+.mh-badge {
+  top: -3px;
+  right: -3px;
+}
+
+.merchant-home-simple,
+.uw-home-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.merchant-home-head,
+.uw-home-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ts-country-pill-simple,
+.ts-country-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  color: var(--ts-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.merchant-status-card,
+.uw-queue-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+}
+
+.merchant-status-kicker,
+.uw-queue-status-card span {
+  display: block;
+  color: var(--ts-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.merchant-status-card strong,
+.uw-queue-status-card strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ts-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.merchant-status-card p {
+  margin: 4px 0 0;
+  color: var(--ts-muted);
+  font-size: 13px;
+}
+
+.merchant-status-link {
+  color: var(--ts-orange);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.merchant-mini-finance {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+  display: grid;
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.merchant-mini-finance > div:first-child {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+}
+
+.merchant-mini-finance span {
+  color: var(--ts-text);
+  font-weight: 850;
+}
+
+.merchant-mini-finance small,
+.merchant-mini-metrics span {
+  color: var(--ts-muted);
+  font-size: 12px;
+}
+
+.merchant-mini-metrics {
+  display: grid;
+  gap: 5px;
+}
+
+.merchant-mini-metrics strong {
+  color: var(--ts-text);
+  font-weight: 850;
+}
+
+.new-contract-cta--simple {
+  min-height: 92px;
+  border-radius: 16px;
+  font-size: 21px;
+  letter-spacing: 0;
+  box-shadow: 0 12px 28px rgba(255, 90, 0, 0.24);
+}
+
+.simple-menu-block {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.simple-menu-block h2 {
+  margin: 0;
+  padding: 12px 14px 8px;
+  color: var(--ts-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.simple-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px;
+  border-top: 1px solid #eef2f7;
+  color: var(--ts-text);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.simple-menu-row small,
+.simple-menu-row strong {
+  color: var(--ts-muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.uw-primary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.uw-primary-form {
+  margin: 0;
+}
+
+.uw-primary-action {
+  width: 100%;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ts-orange);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(255, 90, 0, 0.22);
+  cursor: pointer;
+  text-align: left;
+}
+
+.uw-primary-action--dark {
+  background: #111827;
+  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.16);
+}
+
+.uw-primary-action span {
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.uw-primary-action strong {
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.uw-compact-row {
+  min-height: 54px;
+  box-shadow: none;
+}
+
+.deal-lock-note {
+  margin: 12px 0 0;
+  color: var(--ts-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.deal-continue-btn {
+  min-height: 64px;
+  font-size: 16px;
+}
+
+@media (max-width: 430px) {
+  .uw-primary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .new-contract-cta--simple {
+    min-height: 84px;
   }
 }
 

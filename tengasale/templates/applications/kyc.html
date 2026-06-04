@@ -4,12 +4,12 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'edit_customer_details' app.id %}" class="soft-back">
+<a href="{% url 'choose_device' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=2 %}
+{% include "applications/partials/stepper.html" with current_step=3 %}
 <h1 class="greeting">KYC Capture</h1>
 
 
@@ -444,7 +444,7 @@
             </button>
             <button type="submit" class="action-btn-large primary" id="kyc-submit-btn" data-next-button {% if not kyc_complete %}disabled{% endif %}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                <span class="btn-label">Submit KYC</span>
+                <span class="btn-label">CONTINUE TO LOCATION</span>
             </button>
         </div>
     </section>

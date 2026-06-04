@@ -1,323 +1,91 @@
 {% extends "base/base.html" %}
 {% load ts_filters %}
 
+{% block page_title %}Home{% endblock %}
+
 {% block content %}
-
-
-<div class="merchant-greeting-row ts-fade-in">
-  <div>
-    <h1 class="greeting">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
-    <p class="greeting-sub">Merchant Dashboard</p>
+<div class="merchant-home-simple">
+  <span class="ts-sr-only">WhatsApp Support</span>
+  <div class="merchant-home-head">
+    <div>
+      <h1 class="greeting">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p class="greeting-sub">Merchant Dashboard</p>
+    </div>
+    <span class="ts-country-pill-simple">Malawi</span>
   </div>
-</div>
 
+  <section class="merchant-status-card">
+    <div>
+      <span class="merchant-status-kicker">TengaSale earnings</span>
+      <strong>{{ earnings_total|mwk:"decimals" }}</strong>
+      <p>You are now earning more with TengaSale. Device Financing overview is ready.</p>
+    </div>
+    <a href="{% url 'earnings_home' %}" class="merchant-status-link">View all earnings</a>
+  </section>
 
-<div class="trust-card">
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-  <span>You are now selling smarter with TengaSale.</span>
-</div>
+  <section class="merchant-mini-finance" aria-label="Device Financing overview">
+    <div>
+      <span>Device Financing</span>
+      <small>Financing overview</small>
+    </div>
+    <div class="merchant-mini-metrics">
+      <span>Total financed devices <strong>{{ device_financing_stats.total_financed_devices }}</strong></span>
+      <span>Active contracts <strong>{{ device_financing_stats.active_contracts }}</strong></span>
+      <span>Locked devices <strong>{{ device_financing_stats.locked_devices }}</strong></span>
+    </div>
+  </section>
 
+  <a href="{% url 'new_application' %}" class="new-contract-cta new-contract-cta--simple" aria-label="Start a new contract">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    NEW CONTRACT
+  </a>
 
-<a href="{% url 'new_application' %}" class="new-contract-cta" aria-label="Start a new contract">
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  NEW CONTRACT
-</a>
-
-
-<section class="stat-card earnings-home-card ts-slide-up" style="animation-delay:60ms;">
-  <span>TengaSale</span>
-  <h2>You are now earning more with TengaSale.</h2>
-  <strong class="amount-positive" data-counter>{{ earnings_total|mwk }}</strong>
-  <a href="{% url 'earnings_home' %}" class="btn">View all earnings</a>
-</section>
-
-
-<section class="card spin-promo-card">
-  <div>
-    <span class="offer-kicker">Spin &amp; Win</span>
-    <h2>Jackpot rewards are live.</h2>
-    <p class="text-muted">{{ spin_wallet.available_spins }} spins available.</p>
-  </div>
-  {% if spin_wallet.available_spins %}
-    <a href="{% url 'spin_rewards' %}" class="btn btn-outline">SPIN NOW</a>
-  {% else %}
-    <span class="btn disabled-button">0 spins available</span>
-  {% endif %}
-</section>
-
-
-<section class="card support-card">
-  <h2>Business hours &amp; support</h2>
-  {% if is_business_hours %}
-    <p>TengaSale support and application reviews are currently <strong style="color:var(--ts-orange)">open</strong>.</p>
-  {% else %}
-    <p>Outside business hours — reviews and support may be delayed.</p>
-  {% endif %}
-  <p class="text-muted">{{ business_hours_label }}<br>Current CAT time: {{ business_hours_now|date:"D H:i" }}</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-    <a href="{{ tengasale_whatsapp_link }}" class="btn whatsapp-button" style="background:#dcfce7;color:#16a34a;border:1.5px solid rgba(22,163,74,0.30)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:5px;vertical-align:-2px" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Z"/></svg>
-      WhatsApp Support
+  <section class="simple-menu-block" aria-labelledby="my-work-title">
+    <h2 id="my-work-title">Contracts</h2>
+    <a href="{% url 'active_applications' %}" class="simple-menu-row">
+      <span>My Active <small>Active Contracts</small></span>
+      <strong>{{ active_count }}</strong>
     </a>
-    <a href="{% url 'ticket_create' %}" class="btn" style="background:var(--ts-orange-soft);color:var(--ts-orange);border:1.5px solid var(--ts-orange-border)">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Report Issue
+    <a href="{% url 'pending_applications' %}" class="simple-menu-row">
+      <span>Pending Queue</span>
+      <strong>{{ pending_queue_count }}</strong>
     </a>
-  </div>
-</section>
+    <a href="{% url 'completed_applications' %}" class="simple-menu-row">
+      <span>Completed <small>Completed Contracts</small></span>
+      <strong>{{ completed_count }}</strong>
+    </a>
+    <a href="{% url 'rejected_applications' %}" class="simple-menu-row">
+      <span>Archived / Rejected</span>
+      <strong>{{ archived_rejected_count }}</strong>
+    </a>
+  </section>
 
-
-<section class="card" data-testid="merchant-payout-row">
-  <div class="section-title-row">
-    <h2>Cash Settlements</h2>
-    <a href="{% url 'financing_dashboard' %}" class="text-link">View details</a>
-  </div>
-  {% if merchant_payout_summary %}
-  <div class="metric-grid compact-metrics">
-    <div>
-      <span>Pending settlements</span>
-      <strong>{{ merchant_payout_summary.pending_count }}</strong>
-    </div>
-    <div>
-      <span>Pending value</span>
-      <strong class="amount-positive">{{ merchant_payout_summary.pending_total|mwk }}</strong>
-    </div>
-    <div>
-      <span>Paid settlements</span>
-      <strong>{{ merchant_payout_summary.paid_count }}</strong>
-    </div>
-    <div>
-      <span>Paid total</span>
-      <strong class="amount-positive">{{ merchant_payout_summary.paid_total|mwk }}</strong>
-    </div>
-  </div>
-  {% if merchant_payout_summary.recent %}
-  <h3 style="margin:12px 0 6px;font-size:0.9rem;">Recent payouts</h3>
-  {% for p in merchant_payout_summary.recent %}
-  <article class="transaction-row">
-    <div>
-      <strong>{{ p.contract.contract_number|default:"—" }}</strong>
-      <p class="text-muted">Cash price: {{ p.cash_price|mwk }} + 1% commission: {{ p.merchant_commission_amount|mwk }}</p>
-      <p class="text-muted">Method: {{ p.get_payout_method_display }} · {{ p.created_at|date:"d M Y" }}</p>
-    </div>
-    <div class="transaction-side">
-      <span class="amount-positive">{{ p.total_payable|mwk }}</span>
-      <span class="status-pill status-{{ p.status }}">{{ p.get_status_display }}</span>
-    </div>
-  </article>
-  {% endfor %}
-  {% endif %}
-  {% else %}
-  <p class="text-muted">No settlements yet.</p>
-  {% endif %}
-</section>
-
-
-<section class="card" data-section="financing_dashboard">
-  <div class="section-title-row">
-    <h2>Device Financing</h2>
-    <a href="{% url 'financing_dashboard' %}" class="text-link">Open</a>
-  </div>
-  <p class="text-muted" style="font-size:0.78rem;margin:-4px 0 10px;">Financing overview</p>
-  <div class="metric-grid compact-metrics">
-    <div>
-      <span>Total financed devices</span>
-      <strong>{{ device_financing_stats.total_financed_devices }}</strong>
-    </div>
-    <div>
-      <span>Active contracts</span>
-      <strong>{{ device_financing_stats.active_contracts }}</strong>
-    </div>
-    <div>
-      <span>Overdue contracts</span>
-      <strong>{{ device_financing_stats.overdue_contracts }}</strong>
-    </div>
-    <div>
-      <span>Locked devices</span>
-      <strong>{{ device_financing_stats.locked_devices }}</strong>
-    </div>
-    <div>
-      <span>Pending verification</span>
-      <strong>{{ device_financing_stats.payments_pending_verification }}</strong>
-    </div>
-    <div>
-      <span>Verified this month</span>
-      <strong>{{ device_financing_stats.payments_verified_this_month }}</strong>
-    </div>
-    <div>
-      <span>Expected monthly collections</span>
-      <strong>{{ device_financing_stats.expected_monthly_collections|mwk }}</strong>
-    </div>
-    <div>
-      <span>Default risk count</span>
-      <strong>{{ device_financing_stats.default_risk_count }}</strong>
-    </div>
-  </div>
-</section>
-
-
-<section class="card">
-  <h2>Recent contracts</h2>
-  {% for contract in recent_financing_contracts %}
-  <div class="mini-table-row">
-    <div>
-      <strong>{{ contract.customer.full_name }}</strong>
-      <small>{{ contract.device.brand }} {{ contract.device.model }} | {{ contract.get_status_display }}</small>
-    </div>
-    <span>{{ contract.monthly_payment_amount|mwk }}</span>
-  </div>
-  {% empty %}
-  <p class="text-muted">No financed devices yet.</p>
-  {% endfor %}
-</section>
-
-
-<section class="card">
-  <h2>Pending payment verifications</h2>
-  {% for payment in pending_financing_payments %}
-  <a href="{% url 'financing_payment_detail' payment.id %}" class="mini-table-row link-row">
-    <div>
-      <strong>{{ payment.customer.full_name }}</strong>
-      <small>{{ payment.contract.device.masked_imei }} | {{ payment.get_payment_method_display }}</small>
-    </div>
-    <span>{{ payment.amount|mwk }}</span>
-  </a>
-  {% empty %}
-  <p class="text-muted">No pending payment proofs.</p>
-  {% endfor %}
-</section>
-
-
-<section class="card">
-  <h2>Overdue customers</h2>
-  {% for contract in overdue_financing_customers %}
-  <div class="mini-table-row">
-    <div>
-      <strong>{{ contract.customer.full_name }}</strong>
-      <small>{{ contract.customer.phone_number }} | {{ contract.get_status_display }}</small>
-    </div>
-    <span>{{ contract.next_due_date|date:"M d" }}</span>
-  </div>
-  {% empty %}
-  <p class="text-muted">No overdue financing customers.</p>
-  {% endfor %}
-</section>
-
-
-<section class="card">
-  <h2>Device command history</h2>
-  {% for command in device_command_history %}
-  <div class="mini-table-row">
-    <div>
-      <strong>{{ command.get_command_type_display }}</strong>
-      <small>{{ command.device.masked_imei }} | {{ command.provider }}</small>
-    </div>
-    <span>{{ command.get_status_display }}</span>
-  </div>
-  {% empty %}
-  <p class="text-muted">No device commands issued.</p>
-  {% endfor %}
-</section>
-
-
-<section class="menu-list ts-stagger" aria-labelledby="contracts-title">
-  <h2 id="contracts-title">Contracts</h2>
-
-  <a href="{% url 'active_applications' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-active">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </span>
-      <span>
-        <strong>Active Contracts</strong>
-        <small class="menu-sub">In review &amp; in progress</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-
-  <a href="{% url 'completed_applications' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-success">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      </span>
-      <span>
-        <strong>Completed Contracts</strong>
-        <small class="menu-sub">Approved &amp; completed</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-
-  <a href="{% url 'rejected_applications' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-alert">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      </span>
-      <span>
-        <strong>Archived &amp; Rejected</strong>
-        <small class="menu-sub">Declined applications</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-</section>
-
-
-<section class="menu-list ts-stagger" aria-labelledby="tools-title">
-  <h2 id="tools-title">Tools</h2>
-
-  <a href="{% url 'all_deals' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-tools">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-      </span>
-      <span>
-        <strong>All Deals</strong>
-        <small class="menu-sub">Browse available devices</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-
-  <a href="{% url 'earnings_home' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-money">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </span>
-      <span>
-        <strong>My Earnings</strong>
-        <small class="menu-sub">Commission &amp; payouts</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-
-  <a href="{% url 'payments_home' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon icon-payments">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      </span>
-      <span>
-        <strong>Payments</strong>
-        <small class="menu-sub">Settlement history</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-
-  <a href="{% url 'ticket_create' %}" class="menu-row">
-    <span class="left">
-      <span class="menu-icon" style="background:var(--ts-orange-soft);color:var(--ts-orange)">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </span>
-      <span>
-        <strong>Support</strong>
-        <small class="menu-sub">Raise a support ticket</small>
-      </span>
-    </span>
-    <span class="arrow" aria-hidden="true">›</span>
-  </a>
-</section>
-
+  <section class="simple-menu-block" aria-labelledby="tools-title">
+    <h2 id="tools-title">Tools</h2>
+    <a href="{% url 'earnings_home' %}" class="simple-menu-row">
+      <span>My Earnings</span>
+      <small>{{ earnings_total|mwk:"decimals" }}</small>
+    </a>
+    <a href="{% url 'payments_home' %}" class="simple-menu-row">
+      <span>Payments</span>
+      <small>Open</small>
+    </a>
+    <a href="{% url 'financing_dashboard' %}" class="simple-menu-row">
+      <span>Cash Settlements</span>
+      <small>Open</small>
+    </a>
+    <a href="{% url 'financing_dashboard' %}" class="simple-menu-row">
+      <span>Device Financing</span>
+      <small>Financing overview</small>
+    </a>
+    <a href="{% url 'spin_rewards' %}" class="simple-menu-row">
+      <span>Spin &amp; Win</span>
+      <small>{{ spin_wallet.available_spins|default:0 }} spins available</small>
+    </a>
+    <a href="{% url 'all_deals' %}" class="simple-menu-row">
+      <span>All Deals</span>
+      <small>Browse</small>
+    </a>
+  </section>
+</div>
 {% endblock %}

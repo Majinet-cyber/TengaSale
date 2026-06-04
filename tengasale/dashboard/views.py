@@ -42,6 +42,18 @@ def merchant_dashboard_context(user):
             "under_review",
         ],
     ).count()
+    pending_queue_count = FinancingApplication.objects.filter(
+        created_by=user,
+        status__in=["submitted", "pending_review", "resubmitted", "under_review"],
+    ).count()
+    completed_count = FinancingApplication.objects.filter(
+        created_by=user,
+        status__in=["contract_complete", "completed", "active_contract"],
+    ).count()
+    archived_rejected_count = FinancingApplication.objects.filter(
+        created_by=user,
+        status__in=["rejected", "cancelled"],
+    ).count()
     earnings_total = (
         Commission.objects.filter(user=user)
         .exclude(status=Commission.STATUS_CANCELLED)
@@ -81,6 +93,9 @@ def merchant_dashboard_context(user):
 
     return {
         "active_count": active_count,
+        "pending_queue_count": pending_queue_count,
+        "completed_count": completed_count,
+        "archived_rejected_count": archived_rejected_count,
         "earnings_total": earnings_total,
         "spin_wallet": spin_wallet,
         "merchant_payout_summary": merchant_payout_summary,

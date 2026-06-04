@@ -63,10 +63,12 @@ def contract_terms(request, app_id):
     )
     if not can_access_contract_flow(request.user, application):
         raise PermissionDenied
-    if application.status not in ["approved", "contract_terms", "contract_signature"]:
+    contract = getattr(application, "contract", None)
+    if application.status in ["approved", "approved_pending_device_lock", "imei_required"] and not application.imei_number and not contract:
+        return redirect("capture_imei", app_id=application.id)
+    if application.status not in ["approved", "approved_pending_device_lock", "device_locked", "contract_terms", "contract_signature"]:
         return redirect(application.get_continue_url())
 
-    contract = getattr(application, "contract", None)
     display_contract = contract or Contract(
         application=application,
         merchant=application.created_by,
@@ -94,11 +96,14 @@ def contract_terms(request, app_id):
         form = MerchantTermsForm(request.POST)
         if form.is_valid():
             contract, _ = Contract.from_application(application)
+            if application.imei_number and not contract.imei_number:
+                contract.imei_number = application.imei_number
             contract.terms_accepted_by_merchant = True
             contract.terms_confirmed_at = timezone.now()
             contract.terms_confirmed_by = request.user
             contract.status = Contract.STATUS_TERMS_ACCEPTED
             contract.save(update_fields=[
+                "imei_number",
                 "terms_accepted_by_merchant", "terms_confirmed_at", "terms_confirmed_by",
                 "status", "updated_at",
             ])
@@ -176,7 +181,9 @@ def contract_signature(request, contract_id):
             contract = form.save(commit=False)
             contract.customer_contract_signature.save(form.signature_file.name, form.signature_file, save=False)
             contract.customer_terms_accepted = True
-            contract.status = Contract.STATUS_SIGNED
+            if application.imei_number and not contract.imei_number:
+                contract.imei_number = application.imei_number
+            contract.status = Contract.STATUS_IMEI_ENTERED if contract.imei_number else Contract.STATUS_SIGNED
             now = timezone.now()
             contract.terms_accepted_at = now
             ip = (
@@ -185,7 +192,7 @@ def contract_signature(request, contract_id):
             )
             contract.terms_accepted_ip = ip
             contract.save()
-            application.status = "imei_entry"
+            application.status = "contract_creating" if contract.imei_number else "imei_entry"
             application.save(update_fields=["status"])
 
             # Update LegalAcceptance records to digital_signature method + attach signature image
@@ -213,6 +220,8 @@ def contract_signature(request, contract_id):
                 "summary_accepted": True,
             })
 
+            if contract.imei_number:
+                return redirect("contract_progress", contract_id=contract.id)
             return redirect("contract_imei", contract_id=contract.id)
     else:
         form = ContractSignatureForm(instance=contract)

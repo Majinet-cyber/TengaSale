@@ -15,7 +15,7 @@
 {% if is_post_approval %}
 <div class="app-next-step-banner">
   <div class="app-next-step-banner__icon">
-    {% if app.status == "approved" %}
+    {% if app.status == "approved" or app.status == "approved_pending_device_lock" or app.status == "device_locked" %}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
     {% else %}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -23,7 +23,7 @@
   </div>
   <div class="app-next-step-banner__body">
     <div class="app-next-step-banner__title">
-      {% if app.status == "approved" %}Application approved{% else %}Next step required{% endif %}
+      {% if app.status == "approved" or app.status == "approved_pending_device_lock" %}Application approved{% elif app.status == "device_locked" %}Device locked{% else %}Next step required{% endif %}
     </div>
     <div class="app-next-step-banner__sub">{{ next_step_label }}</div>
   </div>
@@ -51,9 +51,12 @@
         {% elif app.merchant_status_key == "needs_edit" %}
             <h2>Sent Back</h2>
             <p>Review these fields and resubmit the application.</p>
-        {% elif app.merchant_status_key == "approved" %}
+        {% elif app.merchant_status_key == "approved" or app.merchant_status_key == "approved_pending_device_lock" %}
             <h2>Application approved</h2>
-            <p>Continue to the contract terms to complete the process.</p>
+            <p>Enter IMEI and confirm device lock before generating the final contract.</p>
+        {% elif app.merchant_status_key == "device_locked" %}
+            <h2>Device locked</h2>
+            <p>Generate the final contract and complete activation.</p>
         {% elif app.merchant_status_key == "rejected" %}
             <h2>Your application was rejected</h2>
             <p>Review the underwriter comment below for more information.</p>

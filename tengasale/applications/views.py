@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required
@@ -29,11 +30,13 @@ from .flow_helpers import (
     kyc_completion_flags,
     kyc_images_complete,
     kyc_missing_image_labels,
+    location_step_complete,
     merchant_application_continue_url,
     merchant_next_step_after_deal_selection,
     redirect_if_deal_required,
     redirect_if_kyc_required,
     stored_file_exists,
+    work_step_complete,
 )
 from .kyc_utils import process_kyc_upload
 from .models import ApplicationCorrectionToken, ApplicationFieldReview, FinancingApplication
@@ -57,6 +60,8 @@ ACTIVE_STATUSES = [
     "resubmitted",
     "under_review",
     "approved",
+    "approved_pending_device_lock",
+    "device_locked",
     "contract_terms",
     "contract_signature",
     "imei_entry",
@@ -147,7 +152,7 @@ def edit_customer_details(request, app_id):
                     app.phone_verification_status = "failed"
                     app.save(update_fields=["phone_verification_status"])
             messages.success(request, "Customer details saved.")
-            return redirect("kyc_capture", app_id=app.id)
+            return redirect("choose_device", app_id=app.id)
     else:
         form = CustomerDetailsForm(instance=app)
 
@@ -203,10 +208,6 @@ def verify_phone_otp(request, app_id):
 @merchant_required
 def choose_device(request, app_id):
     app = merchant_application(request, app_id)
-    if request.method != "POST":
-        blocked = redirect_if_kyc_required(request, app)
-        if blocked:
-            return blocked
     deals = DeviceDeal.objects.filter(is_active=True, brand__is_active=True).select_related("brand").order_by(
         "brand__name",
         "model_name",
@@ -230,8 +231,9 @@ def choose_device(request, app_id):
         }
         for deal in deals
     ]
+    preferred_brand_names = ["Tecno", "Itel", "Infinix", "Samsung", "Redmi/Xiaomi"]
     deal_brand_names = [canonical_brand(deal.brand.name) for deal in deals]
-    brand_names = ordered_brand_names(deal_brand_names)
+    brand_names = ordered_brand_names([*preferred_brand_names, *deal_brand_names])
     if not brand_names:
         brand_names = ["Tecno", "Itel", "Redmi/Xiaomi"]
 
@@ -240,6 +242,7 @@ def choose_device(request, app_id):
         count = sum(1 for d in deals if canonical_brand(d.brand.name) == name)
         brand_cards.append({
             "name": name,
+            "label": "Redmi" if name == "Redmi/Xiaomi" else name,
             "deal_count": count,
             "logo_url": brand_logo_url(BRAND_STATIC_LOGOS.get(name, "")),
         })
@@ -335,7 +338,11 @@ def kyc_capture(request, app_id):
             app.save()
             app.refresh_from_db()
             if kyc_images_complete(app):
-                next_url = merchant_application_continue_url(app)
+                next_url = (
+                    merchant_application_continue_url(app)
+                    if app.deal_id
+                    else reverse("location_details", args=[app.id])
+                )
                 logger.info(
                     "KYC submit app_id=%s missing=[] submit_enabled=True next=%s",
                     app.id,
@@ -473,7 +480,7 @@ def work_details(request, app_id):
             app.status = "work_details"
             app.save()
             messages.success(request, "Work details saved.")
-            return redirect("signature", app_id=app.id)
+            return redirect("application_review", app_id=app.id)
     else:
         form = WorkProofForm(instance=app)
 
@@ -483,9 +490,6 @@ def work_details(request, app_id):
 @merchant_required
 def signature(request, app_id):
     app = merchant_application(request, app_id)
-    blocked = redirect_if_deal_required(request, app)
-    if blocked:
-        return blocked
 
     if request.method == "POST" and request.POST.get("save_signature"):
         form = SignatureCaptureForm(request.POST)
@@ -503,8 +507,6 @@ def signature(request, app_id):
             messages.success(request, "Signature saved.")
             return redirect("application_review", app_id=app.id)
         messages.error(request, "Could not save signature. Please try again.")
-    elif request.method == "GET" and app.signature_image and not request.GET.get("redo"):
-        return redirect("application_review", app_id=app.id)
 
     return render(request, "applications/signature.html", {"app": app})
 
@@ -516,13 +518,36 @@ def application_review(request, app_id):
     if blocked:
         return blocked
 
-    if not app.signature_image:
-        return redirect("signature", app_id=app.id)
-
     if request.method == "POST":
         if not application_has_complete_deal(app):
             messages.error(request, "Select a phone deal before submitting.")
             return redirect("choose_device", app_id=app.id)
+        if not app.signature_image:
+            messages.warning(request, "Capture the customer signature before submitting.")
+            return redirect("signature", app_id=app.id)
+        missing = []
+        required_pairs = [
+            ("customer_name", "Customer name"),
+            ("customer_phone", "Phone number"),
+            ("national_id", "National ID"),
+            ("date_of_birth", "Date of birth"),
+            ("gender", "Gender"),
+            ("district", "District"),
+            ("traditional_authority", "Traditional Authority / Area"),
+            ("work_description", "Work / income answers"),
+        ]
+        for field_name, label in required_pairs:
+            if not getattr(app, field_name, None):
+                missing.append(label)
+        if not kyc_images_complete(app):
+            missing.extend(kyc_missing_image_labels(app))
+        if not location_step_complete(app):
+            missing.append("Location")
+        if not work_step_complete(app):
+            missing.append("Work / income answers")
+        if missing:
+            messages.error(request, "Complete before submission: " + ", ".join(dict.fromkeys(missing)) + ".")
+            return redirect("application_review", app_id=app.id)
         form = SignatureForm(request.POST, instance=app)
         if form.is_valid():
             app = form.save(commit=False)
@@ -541,9 +566,9 @@ def application_review(request, app_id):
 @merchant_required
 def capture_imei(request, app_id):
     app = merchant_application(request, app_id)
-    blocked = redirect_if_deal_required(request, app)
-    if blocked:
-        return blocked
+    if app.status not in {"approved", "approved_pending_device_lock", "imei_required", "device_locked"}:
+        messages.warning(request, "IMEI is only required after underwriter approval.")
+        return redirect(app.get_continue_url())
 
     if request.method == "POST":
         from applications.services.imei_validation import (
@@ -554,16 +579,37 @@ def capture_imei(request, app_id):
         )
 
         imei = normalize_imei(request.POST.get("imei_number"))
+        imei_2 = normalize_imei(request.POST.get("imei_number_2"))
+        serial_number = (request.POST.get("device_serial_number") or "").strip()
+        locking_provider = (request.POST.get("locking_provider") or "").strip()
+        lock_status = (request.POST.get("locking_confirmation_status") or "").strip()
         if not is_valid_imei(imei):
             messages.error(request, "Enter a valid 15-digit IMEI before continuing.")
+        elif imei_2 and not is_valid_imei(imei_2):
+            messages.error(request, "IMEI 2 must be 15 digits if provided.")
         elif get_active_imei_conflict(imei, exclude_application_id=app.id):
             messages.error(request, IMEI_DUPLICATE_MESSAGE)
+        elif not locking_provider:
+            messages.error(request, "Select the locking provider before continuing.")
+        elif lock_status != FinancingApplication.LOCK_STATUS_CONFIRMED:
+            messages.error(request, "Confirm the device lock status before generating the contract.")
         else:
             app.imei_number = imei
-            app.status = "imei_entry"
-            app.save(update_fields=["imei_number", "status"])
-            messages.success(request, "IMEI saved.")
-            return redirect(merchant_application_continue_url(app))
+            app.imei_number_2 = imei_2
+            app.device_serial_number = serial_number
+            app.locking_provider = locking_provider
+            app.locking_confirmation_status = lock_status
+            app.status = "device_locked"
+            app.save(update_fields=[
+                "imei_number",
+                "imei_number_2",
+                "device_serial_number",
+                "locking_provider",
+                "locking_confirmation_status",
+                "status",
+            ])
+            messages.success(request, "Device IMEI and lock confirmation saved.")
+            return redirect("contract_terms", app_id=app.id)
 
     return render(request, "applications/capture_imei.html", {"app": app})
 
@@ -635,12 +681,16 @@ def application_detail(request, app_id):
         "signature",
         "correction_requested",
         "sent_back",
+        "approved_pending_device_lock",
+        "device_locked",
         "imei_required",
     }
 
     # Post-approval statuses also need a continue/next-step action
     post_approval_statuses = {
         "approved",
+        "approved_pending_device_lock",
+        "device_locked",
         "contract_terms",
         "contract_signature",
         "imei_entry",
@@ -652,7 +702,9 @@ def application_detail(request, app_id):
 
     # Label describing the next required action after approval
     _post_approval_labels = {
-        "approved": "Continue to contract terms",
+        "approved": "Enter IMEI & lock device",
+        "approved_pending_device_lock": "Enter IMEI & lock device",
+        "device_locked": "Generate final contract",
         "contract_terms": "Review and accept contract terms",
         "contract_signature": "Sign the contract",
         "imei_entry": "Enter device IMEI",
@@ -744,7 +796,18 @@ def approved_applications(request):
         request,
         "Approved",
         "Approved applications ready for contract completion.",
-        ["approved", "contract_terms", "contract_signature", "imei_entry", "contract_creating", "warranty_check", "locking", "deposit_pending"],
+        [
+            "approved",
+            "approved_pending_device_lock",
+            "device_locked",
+            "contract_terms",
+            "contract_signature",
+            "imei_entry",
+            "contract_creating",
+            "warranty_check",
+            "locking",
+            "deposit_pending",
+        ],
     )
 
 
@@ -754,7 +817,7 @@ def completed_applications(request):
         request,
         "Completed",
         "Completed TengaSale contracts and delivered devices.",
-        ["contract_complete", "completed"],
+        ["contract_complete", "completed", "active_contract"],
     )
 
 
@@ -764,7 +827,7 @@ def rejected_applications(request):
         request,
         "Archived & Rejected",
         "Applications that were rejected or archived.",
-        ["rejected"],
+        ["rejected", "cancelled"],
     )
 
 

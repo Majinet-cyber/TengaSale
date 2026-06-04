@@ -9,7 +9,7 @@
     <span>Back</span>
 </a>
 
-{% include "applications/partials/stepper.html" with current_step=4 %}
+{% include "applications/partials/stepper.html" with current_step=5 %}
 <h1 class="greeting">Work Details</h1>
 
 <form method="post" enctype="multipart/form-data" class="card{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
@@ -90,7 +90,7 @@
 
     <div class="form-actions">
         <a href="{% url 'location_details' app.id %}" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn">Next</button>
+        <button type="submit" class="btn">REVIEW APPLICATION</button>
     </div>
 </form>
 
