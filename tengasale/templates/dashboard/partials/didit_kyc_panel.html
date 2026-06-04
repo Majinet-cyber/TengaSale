@@ -77,6 +77,14 @@
 
 <script>
 (function () {
+  function formatDiditRestartError(data) {
+    if (!data || !data.didit_detail) return "Action failed.";
+    try {
+      return "Didit error: " + JSON.stringify(data.didit_detail);
+    } catch (e) {
+      return "Action failed.";
+    }
+  }
   function csrf() {
     const m = document.cookie.match(/(^| )csrftoken=([^;]+)/);
     return m ? decodeURIComponent(m[2]) : "";
@@ -87,7 +95,7 @@
       const res = await fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf(), "Accept": "application/json" }, credentials: "same-origin" });
       const data = await res.json();
       if (data.success) window.location.reload();
-      else alert(data.error || "Action failed.");
+      else alert(data.error || data.didit_error_text || formatDiditRestartError(data));
     } catch (e) {
       alert("Network error.");
     }

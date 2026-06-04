@@ -66,11 +66,19 @@
     if (!detail) return "";
     if (typeof detail === "string") return detail;
     if (typeof detail === "object") {
-      const keys = ["message", "detail", "error", "errors"];
+      const keys = ["detail", "message", "error", "errors"];
       for (let i = 0; i < keys.length; i++) {
         const value = detail[keys[i]];
-        if (value) return String(value);
+        if (value) return Array.isArray(value) ? value.join(", ") : String(value);
       }
+      const fieldParts = [];
+      Object.keys(detail).forEach(function (key) {
+        if (key === "raw") return;
+        const value = detail[key];
+        if (value == null || value === "") return;
+        fieldParts.push(key + ": " + (Array.isArray(value) ? value.join(", ") : String(value)));
+      });
+      if (fieldParts.length) return fieldParts.join("; ");
       try {
         return JSON.stringify(detail);
       } catch (e) {
@@ -81,14 +89,12 @@
   }
 
   function formatDiditError(data) {
-    let msg = data.error || "Could not start verification.";
+    if (data.didit_error_text) return data.didit_error_text;
+    if (data.error) return data.error;
     const detailText = formatDiditDetail(data.didit_detail);
-    if (detailText && msg.indexOf(detailText) === -1) {
-      msg = msg + ": " + detailText;
-    } else if (data.didit_status && !detailText) {
-      msg = msg + " (Didit HTTP " + data.didit_status + ")";
-    }
-    return msg;
+    if (detailText) return "Didit rejected the session request: " + detailText;
+    if (data.didit_status) return "Didit rejected the session request (HTTP " + data.didit_status + ").";
+    return "Could not start verification.";
   }
 
   function showError(msg) {

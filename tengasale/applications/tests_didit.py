@@ -454,22 +454,28 @@ class DiditSessionPayloadTests(TestCase):
         DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
         DIDIT_SEND_EXPECTED_DETAILS=True,
     )
-    def test_expected_details_when_flag_true_and_name_present(self):
-        payload = build_didit_session_payload(self.app)
-        self.assertIn("expected_details", payload)
-        self.assertEqual(payload["expected_details"]["first_name"], "Jane")
-        self.assertEqual(payload["expected_details"]["last_name"], "Banda")
-
-    @override_settings(
-        DIDIT_WORKFLOW_ID=VALID_DIDIT_WORKFLOW_UUID,
-        DIDIT_CALLBACK_URL="https://example.com/kyc/didit/done/",
-        DIDIT_SEND_EXPECTED_DETAILS=True,
-    )
-    def test_expected_details_omitted_when_no_valid_fields(self):
-        self.app.customer_name = ""
-        self.app.save(update_fields=["customer_name"])
+    def test_expected_details_never_sent_even_when_flag_true(self):
         payload = build_didit_session_payload(self.app)
         self.assertNotIn("expected_details", payload)
+        self.assertNotIn("contact_details", payload)
+        self.assertEqual(set(payload.keys()), {"workflow_id", "vendor_data", "callback", "metadata"})
+
+    def test_summarize_didit_field_errors(self):
+        from integrations.didit import summarize_didit_api_error
+
+        summary = summarize_didit_api_error({"workflow_id": ["Invalid workflow_id."]})
+        self.assertIn("workflow_id", summary)
+        self.assertIn("Invalid workflow_id", summary)
+
+    def test_format_didit_session_error_includes_credits_detail(self):
+        from integrations.didit import format_didit_session_error_message
+
+        msg = format_didit_session_error_message(
+            status_code=400,
+            data={"detail": "You don't have enough credits to perform this request."},
+        )
+        self.assertIn("credits", msg.lower())
+        self.assertIn("Didit rejected", msg)
 
     @override_settings(DIDIT_WORKFLOW_ID="not-a-uuid", DIDIT_CALLBACK_URL="https://example.com/cb/")
     def test_validate_rejects_non_uuid_workflow(self):
@@ -560,9 +566,11 @@ class DiditStartSessionTests(TestCase):
         self.assertFalse(data["success"])
         self.assertEqual(data["didit_status"], 400)
         self.assertEqual(data["didit_detail"], {"workflow_id": ["Unknown workflow"]})
-        self.assertEqual(data["error"], WORKFLOW_MISMATCH_USER_MESSAGE)
+        self.assertIn(WORKFLOW_MISMATCH_USER_MESSAGE, data["error"])
+        self.assertIn("workflow_id", data["error"])
         self.assertNotIn("DIDIT_API_KEY", json.dumps(data))
         self.assertIn("workflow_id", data["request_payload_keys"])
+        self.assertIn("didit_error_text", data)
 
     @patch("integrations.didit.requests.request")
     @override_settings(

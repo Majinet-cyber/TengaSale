@@ -27,8 +27,10 @@ from integrations.didit import (
     can_restart_didit_session,
     create_didit_session,
     didit_production_mode,
+    format_didit_session_error_message,
     has_active_didit_session,
     retrieve_didit_decision,
+    summarize_didit_api_error,
     verify_didit_webhook_signature_v2,
 )
 
@@ -66,19 +68,29 @@ def _format_didit_detail_snippet(detail) -> str:
 
 
 def _didit_api_error_response(exc: DiditAPIError, *, app_id: int | None = None) -> JsonResponse:
-    detail_snippet = _format_didit_detail_snippet(exc.payload)
+    didit_detail = exc.payload if exc.payload is not None else {}
+    error_text = exc.user_message or format_didit_session_error_message(
+        status_code=exc.status_code,
+        data=didit_detail,
+        raw_text=exc.response_text or "",
+    )
+    detail_snippet = summarize_didit_api_error(didit_detail, exc.response_text or "") or _format_didit_detail_snippet(
+        didit_detail
+    )
     logger.error(
-        "Didit API error for application %s (status=%s) detail=%s keys=%s",
+        "Didit API error for application %s (status=%s) error=%s detail=%s keys=%s",
         app_id or "?",
         exc.status_code,
+        error_text[:500],
         detail_snippet or (exc.response_text or "")[:500],
         exc.request_payload_keys,
     )
     body: dict = {
         "success": False,
-        "error": exc.user_message,
+        "error": error_text,
+        "didit_error_text": detail_snippet or error_text,
         "didit_status": exc.status_code,
-        "didit_detail": exc.payload if exc.payload is not None else {},
+        "didit_detail": didit_detail,
     }
     if exc.request_payload_keys:
         body["request_payload_keys"] = exc.request_payload_keys

@@ -17,7 +17,11 @@ def apply_didit_session_response(application, response: dict) -> None:
     application.kyc_provider = "didit"
     application.didit_session_id = response.get("session_id") or application.didit_session_id
     application.didit_session_token = response.get("session_token") or application.didit_session_token
-    application.didit_verification_url = response.get("url") or application.didit_verification_url
+    application.didit_verification_url = (
+        response.get("url")
+        or response.get("verification_url")
+        or application.didit_verification_url
+    )
     application.didit_status = response.get("status") or application.didit_status
     application.didit_workflow_id = response.get("workflow_id") or application.didit_workflow_id
     application.didit_vendor_data = response.get("vendor_data") or str(application.pk)

@@ -50,9 +50,15 @@ class Command(BaseCommand):
         sanitized = sanitize_didit_session_payload_for_log(payload)
         self.stdout.write("Sanitized payload:")
         self.stdout.write(json.dumps(sanitized, indent=2, default=str))
-        self.stdout.write(
-            f"expected_details included: {'expected_details' in payload}"
+        forbidden = (
+            "expected_details",
+            "contact_details",
+            "vendor_business_id",
         )
+        included_forbidden = [key for key in forbidden if key in payload]
+        if included_forbidden:
+            raise CommandError(f"Payload must be minimal; found forbidden keys: {included_forbidden}")
+        self.stdout.write("expected_details included: False (minimal payload enforced)")
 
         try:
             response = create_didit_session(application)

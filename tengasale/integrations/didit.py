@@ -263,6 +263,58 @@ def _safe_didit_detail_for_client(parsed: Any, raw_text: str) -> Any:
     return {}
 
 
+def summarize_didit_api_error(data: Any, raw_text: str = "") -> str:
+    """Human-readable Didit error text for logs and UI (no secrets)."""
+    if isinstance(data, dict):
+        detail = data.get("detail")
+        if detail:
+            return str(detail)
+        message = data.get("message")
+        if message:
+            return str(message) if not isinstance(message, list) else " ".join(str(item) for item in message)
+        error = data.get("error")
+        if error:
+            return str(error)
+        parts: list[str] = []
+        for key, value in data.items():
+            if key in {"raw"}:
+                continue
+            if isinstance(value, list):
+                parts.append(f"{key}: {', '.join(str(item) for item in value)}")
+            elif value is not None:
+                parts.append(f"{key}: {value}")
+        if parts:
+            return "; ".join(parts)
+    if isinstance(data, list):
+        return " ".join(str(item) for item in data)
+    text = (raw_text or "").strip()
+    return text[:2000] if text else ""
+
+
+def format_didit_session_error_message(
+    *,
+    status_code: int | None,
+    data: Any,
+    raw_text: str = "",
+) -> str:
+    """User-facing message including the real Didit API error body when available."""
+    summary = summarize_didit_api_error(data, raw_text)
+    combined = summary.lower()
+    if status_code == 403:
+        return "Didit authentication failed. Check DIDIT_API_KEY."
+    if status_code in (400, 404, 422) and "workflow" in combined:
+        if summary:
+            return f"{WORKFLOW_MISMATCH_USER_MESSAGE} ({summary})"
+        return WORKFLOW_MISMATCH_USER_MESSAGE
+    if status_code == 400:
+        if summary:
+            return f"Didit rejected the session request: {summary}"
+        return "Didit rejected the session request."
+    if summary:
+        return summary
+    return didit_user_facing_message(status_code=status_code, detail=summary, payload=data, response_text=raw_text)
+
+
 def validate_didit_session_prerequisites(application) -> None:
     """Validate Didit session settings before calling the API."""
     workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
@@ -316,10 +368,16 @@ def build_expected_details(application) -> dict[str, str]:
 
 
 def build_didit_session_payload(application) -> dict:
-    """Build the POST /v3/session/ JSON body (no API key)."""
+    """
+    Minimal POST /v3/session/ body only.
+
+    Does not send expected_details, contact_details, phone, DOB, names,
+    id_country, or vendor_business_id. DIDIT_SEND_EXPECTED_DETAILS is reserved
+    for a future opt-in once minimal sessions succeed in production.
+    """
     workflow_id = (getattr(settings, "DIDIT_WORKFLOW_ID", "") or "").strip()
     callback = (getattr(settings, "DIDIT_CALLBACK_URL", "") or "").strip()
-    body: dict[str, Any] = {
+    return {
         "workflow_id": workflow_id,
         "vendor_data": str(application.pk),
         "callback": callback,
@@ -328,11 +386,6 @@ def build_didit_session_payload(application) -> dict:
             "application_id": str(application.pk),
         },
     }
-    if getattr(settings, "DIDIT_SEND_EXPECTED_DETAILS", False):
-        expected = build_expected_details(application)
-        if expected:
-            body["expected_details"] = expected
-    return body
 
 
 def sanitize_didit_session_payload_for_log(payload: dict) -> dict:
@@ -343,8 +396,6 @@ def sanitize_didit_session_payload_for_log(payload: dict) -> dict:
         "callback": payload.get("callback"),
         "metadata": payload.get("metadata"),
     }
-    if "expected_details" in payload:
-        sanitized["expected_details"] = payload.get("expected_details")
     return sanitized
 
 
@@ -388,13 +439,20 @@ def _request(method: str, path: str, json_body: dict | None = None) -> dict:
         message = str(message)
         payload_keys = list(json_body.keys()) if isinstance(json_body, dict) else []
         client_detail = _safe_didit_detail_for_client(data, raw_text)
+        error_summary = summarize_didit_api_error(client_detail, raw_text)
         logger.error(
-            "Didit API %s %s -> %s body=%s request_keys=%s",
+            "Didit API %s %s -> %s body=%s raw=%s request_keys=%s",
             method,
             path,
             response.status_code,
             json.dumps(client_detail, default=str)[:2000],
+            (raw_text or "")[:2000],
             payload_keys,
+        )
+        user_message = format_didit_session_error_message(
+            status_code=response.status_code,
+            data=client_detail,
+            raw_text=raw_text,
         )
         raise DiditAPIError(
             message,
@@ -402,6 +460,7 @@ def _request(method: str, path: str, json_body: dict | None = None) -> dict:
             payload=client_detail,
             response_text=raw_text,
             request_payload_keys=payload_keys,
+            user_message=user_message,
         )
 
     if not isinstance(data, dict):
