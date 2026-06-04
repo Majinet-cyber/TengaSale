@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TengaSale Merchant Participation Agreement</title>
+<style>
+  @page {
+    size: A4;
+    margin: 22mm 18mm 22mm 18mm;
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #888; }
+  }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; line-height: 1.55; }
+  h1 { font-size: 15pt; font-weight: bold; text-align: center; color: #ff5a00; margin-bottom: 4pt; }
+  h2 { font-size: 12pt; font-weight: bold; text-align: center; color: #333; margin-bottom: 16pt; }
+  h3 { font-size: 10.5pt; font-weight: bold; color: #333; margin: 12pt 0 4pt; }
+  p  { margin: 0 0 6pt; }
+  ul { margin: 4pt 0 8pt 18pt; padding: 0; }
+  li { margin-bottom: 3pt; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 10pt 0; }
+  .header-box {
+    border: 2px solid #ff5a00;
+    border-radius: 6pt;
+    padding: 14pt 16pt;
+    margin-bottom: 18pt;
+    text-align: center;
+  }
+  .parties-table { width: 100%; border-collapse: collapse; margin-bottom: 18pt; }
+  .parties-table td { padding: 5pt 8pt; border: 1px solid #e5e7eb; font-size: 9.5pt; }
+  .parties-table .label { font-weight: bold; background: #f8fafc; width: 38%; }
+  .section-num {
+    display: inline-block;
+    background: #ff5a00;
+    color: #fff;
+    width: 18pt;
+    height: 18pt;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18pt;
+    font-size: 9pt;
+    font-weight: bold;
+    margin-right: 5pt;
+  }
+  .sig-block { margin-top: 24pt; border: 1.5px solid #e5e7eb; border-radius: 6pt; padding: 14pt 16pt; }
+  .sig-image { max-height: 80pt; max-width: 220pt; border: 1px solid #e5e7eb; border-radius: 4pt; padding: 4pt; }
+  .sig-row { display: flex; gap: 20pt; margin-top: 12pt; }
+  .sig-col { flex: 1; }
+  .sig-line { border-bottom: 1px solid #333; margin-bottom: 3pt; height: 24pt; }
+  .highlight { background: #fff8f5; border: 1px solid #ffd5c2; border-radius: 4pt; padding: 8pt 10pt; margin-bottom: 10pt; font-style: italic; }
+  .footer { margin-top: 30pt; font-size: 8pt; color: #888; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 8pt; }
+</style>
+</head>
+<body>
+
+<div class="header-box">
+  <h1>TENGASALE MERCHANT PARTICIPATION AGREEMENT</h1>
+  <h2>{{ company_name }}</h2>
+  <p style="font-size:9pt;color:#888;">Reference: {{ agreement.reference_number }} &nbsp;|&nbsp; Version {{ agreement.agreement_version }} &nbsp;|&nbsp; Date: {{ agreement.signed_at|date:"d F Y" }}</p>
+</div>
+
+<p><strong>This Agreement</strong> is entered into between <strong>{{ company_name }}</strong> ("TengaSale") of {{ company_address }}, and the Merchant detailed below.</p>
+
+<table class="parties-table">
+  <tr><td class="label">Merchant / Business Name</td><td>{{ agreement.business_name }}</td></tr>
+  <tr><td class="label">Representative Name</td><td>{{ agreement.signer_name }}</td></tr>
+  <tr><td class="label">Phone Number</td><td>{{ agreement.signer_phone }}</td></tr>
+  <tr><td class="label">Email Address</td><td>{{ agreement.signer_email|default:"—" }}</td></tr>
+  <tr><td class="label">Location</td><td>{{ merchant.location|default:"—" }}</td></tr>
+  <tr><td class="label">Agreement Date</td><td>{{ agreement.signed_at|date:"d F Y H:i" }}</td></tr>
+  <tr><td class="label">Reference Number</td><td>{{ agreement.reference_number }}</td></tr>
+  <tr><td class="label">Agreement Version</td><td>{{ agreement.agreement_version }}</td></tr>
+</table>
+
+<!-- Agreement Sections -->
+
+<h3><span class="section-num">1</span> Appointment and Participation</h3>
+<p>TengaSale appoints the Merchant to submit customer applications for smartphone financing through the TengaSale platform. This appointment is non-exclusive and revocable at TengaSale's discretion. The Merchant is not guaranteed approval of every application submitted. TengaSale retains full discretion over approvals, rejections, pricing, product availability, customer eligibility, device status, commissions, and all operational controls. This Agreement does not create an employment, partnership, joint venture, agency, or franchise relationship.</p>
+
+<h3><span class="section-num">2</span> Good Faith and Honest Conduct</h3>
+<p>The Merchant must at all times act in good faith and with integrity. The Merchant must not submit fake, misleading, manipulated, or incomplete customer information; coach customers to provide false information; dishonestly split customer deposits; knowingly submit customers who are unlikely to repay; misuse customer documents or personal data; or take any action that may damage TengaSale's reputation or business interests.</p>
+
+<h3><span class="section-num">3</span> Good Customer Selection</h3>
+<p>The Merchant agrees to use reasonable judgment when selecting customers. The Merchant should consider: customer identity, willingness to pay, stable income, reliable phone number, traceable address, good reputation, ability to afford repayment, honesty during application, and awareness of payment obligations. The Merchant must not knowingly submit unreachable, fake, or unsuitable customers.</p>
+
+<h3><span class="section-num">4</span> Customer Consent and KYC</h3>
+<p>The Merchant must obtain clear, informed consent before capturing or uploading any personal data, including identity documents, photographs, GPS location, phone numbers, and customer signatures. The Merchant must explain that information will be used for financing assessment, verification, underwriting, repayment tracking, SMS communication, and contract enforcement.</p>
+
+<h3><span class="section-num">5</span> Accuracy of Information</h3>
+<p>The Merchant is responsible for ensuring all submitted information is accurate, complete, and current. The Merchant must correct errors immediately and cooperate when TengaSale or an underwriter requests clarification or additional verification. Repeated inaccurate submissions may result in account suspension.</p>
+
+<h3><span class="section-num">6</span> TengaSale Discretion</h3>
+<p>TengaSale may, at its sole discretion: approve or reject any application; request additional information; suspend the Merchant account during investigations; adjust available deals, pricing, or commission rules; withhold commissions during investigations; reverse commissions connected to fraud or misconduct; terminate Merchant access; and block suspicious contracts.</p>
+
+<h3><span class="section-num">7</span> Commissions and Settlement</h3>
+<p>Merchant commissions are earned only in accordance with TengaSale's active commission schedule. Commission may remain pending until all conditions are met. TengaSale may withhold, reduce, reverse, or claw back commission for fraud, misrepresentation, customer defaults caused by Merchant misconduct, duplicate or cancelled contracts, or breach of this Agreement.</p>
+
+<h3><span class="section-num">8</span> Customer Payments</h3>
+<p>The Merchant must direct customers to use TengaSale's official payment channels only. The Merchant must not collect customer repayments, misappropriate customer payments, or make payment promises outside the official TengaSale contract terms.</p>
+
+<h3><span class="section-num">9</span> Device and Contract Rules</h3>
+<p>The Merchant must not release devices outside the approved TengaSale workflow. IMEI and device details must be handled in accordance with TengaSale's process. Device locking and PAYG controls are managed entirely by TengaSale. The Merchant must not interfere with device locking, payment reminders, or enforcement mechanisms.</p>
+
+<h3><span class="section-num">10</span> Fraud, Abuse, and Investigations</h3>
+<p>Fraud includes but is not limited to: fake customers or fabricated applications; use of forged, borrowed, or altered documents; manipulated KYC data; false addresses, income, or employment information; collusion with customers; unauthorised device release; misdirection of payments; and duplicate applications. TengaSale may investigate and suspend account access while any investigation is ongoing.</p>
+
+<h3><span class="section-num">11</span> Data Protection and Confidentiality</h3>
+<p>The Merchant must protect customer personal data in accordance with applicable law. The Merchant must not share customer documents outside the authorised process. The Merchant must keep confidential all TengaSale business rules, pricing, underwriting criteria, platform access credentials, and customer data. Confidentiality obligations survive termination of this Agreement.</p>
+
+<h3><span class="section-num">12</span> Platform Access</h3>
+<p>The Merchant account is specific to the registered business and its authorised representative. Login credentials must not be shared carelessly. The Merchant is fully responsible for all activity under their account. TengaSale may disable access at any time for security reasons, suspected breach, or investigation.</p>
+
+<h3><span class="section-num">13</span> Training and Cooperation</h3>
+<p>The Merchant agrees to follow TengaSale's instructions, training materials, operational guidelines, and workflow updates. The Merchant agrees to cooperate fully with underwriters, HQ staff, support teams, and investigation teams.</p>
+
+<h3><span class="section-num">14</span> No Guarantee of Income</h3>
+<p>TengaSale does not guarantee any minimum sales volume, number of approvals, or level of commission income. Merchant earnings depend on approved and completed contracts, customer repayment performance, TengaSale's commission rules, and Merchant compliance with this Agreement.</p>
+
+<h3><span class="section-num">15</span> Suspension and Termination</h3>
+<p>TengaSale may suspend or terminate Merchant access for: fraud or attempted fraud; repeated poor-quality applications; high default patterns attributable to Merchant conduct; misuse of customer data; breach of this Agreement; reputational harm; failure to cooperate; any illegal activity; or abuse of the platform or its systems.</p>
+
+<h3><span class="section-num">16</span> Limitation of Authority</h3>
+<p>The Merchant is not an employee, partner, legal agent, or representative of TengaSale, and has no authority to bind TengaSale beyond submitting financing applications through the platform. The Merchant must not make promises or representations on behalf of TengaSale.</p>
+
+<h3><span class="section-num">17</span> Dispute Resolution</h3>
+<p>In the event of any dispute, the parties shall first attempt to resolve the matter in good faith through direct discussion. If no resolution is reached, the matter shall be referred to mediation or such other process as TengaSale may determine. This Agreement shall be governed by {{ governing_law }}.</p>
+
+<h3><span class="section-num">18</span> Acceptance and Signature</h3>
+<div class="highlight">
+  <p>By signing this Agreement, the Merchant confirms that they have read and understood the entire Agreement, agree to act in good faith, will select customers responsibly, understand TengaSale's full operational discretion, understand that commissions may be withheld or reversed for misconduct, and consent to this electronic signature being legally binding.</p>
+</div>
+
+<!-- Acknowledgements -->
+<p style="font-size:9pt;margin-top:8pt;">The Merchant confirmed the following acknowledgements at time of signing:</p>
+<ul style="font-size:9pt;">
+  <li>&#x2611; I have read and understood the full TengaSale Merchant Participation Agreement.</li>
+  <li>&#x2611; I agree to act in good faith, honestly, and with integrity at all times.</li>
+  <li>&#x2611; I agree to submit only genuine customers who I believe can and will repay.</li>
+  <li>&#x2611; I understand that TengaSale has full discretion over approvals, commissions, access, and operational controls.</li>
+  <li>&#x2611; I understand that commissions may be withheld, reversed, or clawed back for fraud, misconduct, or poor customer selection.</li>
+  <li>&#x2611; I consent to this electronic signature being legally binding and to TengaSale maintaining digital records of my agreement.</li>
+</ul>
+
+<!-- Signature Block -->
+<div class="sig-block">
+  <p style="font-weight:bold;margin-bottom:10pt;">SIGNATURES</p>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr>
+      <td style="width:50%;padding-right:20pt;vertical-align:top;">
+        <p style="font-size:9pt;font-weight:bold;margin-bottom:4pt;">MERCHANT</p>
+        {% if agreement.signature_image %}
+        <img src="{{ MEDIA_URL }}{{ agreement.signature_image.name }}" class="sig-image" alt="Merchant Signature">
+        {% else %}
+        <div style="height:60pt;border:1px dashed #ccc;border-radius:4pt;"></div>
+        {% endif %}
+        <p style="font-size:8.5pt;margin-top:6pt;">Name: <strong>{{ agreement.signer_name }}</strong></p>
+        <p style="font-size:8.5pt;">Business: <strong>{{ agreement.business_name }}</strong></p>
+        <p style="font-size:8.5pt;">Date: <strong>{{ agreement.signed_at|date:"d F Y H:i" }}</strong></p>
+        {% if agreement.ip_address %}
+        <p style="font-size:7.5pt;color:#888;">IP: {{ agreement.ip_address }}</p>
+        {% endif %}
+      </td>
+      <td style="width:50%;padding-left:20pt;vertical-align:top;border-left:1px solid #e5e7eb;">
+        <p style="font-size:9pt;font-weight:bold;margin-bottom:4pt;">TENGASALE / {{ company_name }}</p>
+        <div style="height:60pt;border:1px dashed #ccc;border-radius:4pt;"></div>
+        <p style="font-size:8.5pt;margin-top:6pt;">Authorised Representative</p>
+        <p style="font-size:8.5pt;">Date: ____________________</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="footer">
+  TengaSale Merchant Participation Agreement &nbsp;|&nbsp; {{ company_name }} &nbsp;|&nbsp; {{ company_address }}<br>
+  Generated: {{ agreement.signed_at|date:"d F Y H:i" }} &nbsp;|&nbsp; Reference: {{ agreement.reference_number }}
+</div>
+
+</body>
+</html>

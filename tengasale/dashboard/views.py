@@ -91,6 +91,11 @@ def merchant_dashboard_context(user):
         "recent": contract_payouts[:5],
     }
 
+    # Agreement status
+    from merchants.models import Merchant as MerchantModel
+    merchant_obj = MerchantModel.objects.filter(owner=user).first()
+    merchant_agreement = merchant_obj.active_agreement if merchant_obj else None
+
     return {
         "active_count": active_count,
         "pending_queue_count": pending_queue_count,
@@ -99,6 +104,7 @@ def merchant_dashboard_context(user):
         "earnings_total": earnings_total,
         "spin_wallet": spin_wallet,
         "merchant_payout_summary": merchant_payout_summary,
+        "merchant_agreement": merchant_agreement,
         "device_financing_stats": {
             "total_financed_devices": Device.objects.filter(financing_contract__created_by=user).count(),
             "active_contracts": merchant_contracts.filter(status=FinancingContract.STATUS_ACTIVE).count(),
@@ -340,6 +346,31 @@ def hq_dashboard(request):
         "sms_due_reminder_count": sms_due_reminder_count,
         "recent_sms_logs": recent_sms_logs,
     }
+
+    # Merchant Agreement Compliance Stats
+    try:
+        from merchants.models import MerchantAgreement
+        agreement_signed_count = MerchantAgreement.objects.filter(
+            status__in=[MerchantAgreement.STATUS_SIGNED, MerchantAgreement.STATUS_ACTIVE]
+        ).values("merchant").distinct().count()
+        agreement_unsigned_count = max(0, total_merchants - agreement_signed_count)
+        recent_agreements = MerchantAgreement.objects.select_related(
+            "merchant", "merchant__owner"
+        ).filter(
+            status__in=[MerchantAgreement.STATUS_SIGNED, MerchantAgreement.STATUS_ACTIVE]
+        ).order_by("-signed_at")[:8]
+        context["agreement_signed_count"] = agreement_signed_count
+        context["agreement_unsigned_count"] = agreement_unsigned_count
+        context["recent_agreements"] = recent_agreements
+        context["agreement_compliance_pct"] = (
+            round(100 * agreement_signed_count / total_merchants) if total_merchants else 0
+        )
+    except Exception:
+        context["agreement_signed_count"] = 0
+        context["agreement_unsigned_count"] = 0
+        context["recent_agreements"] = []
+        context["agreement_compliance_pct"] = 0
+
     return render(request, "dashboard/hq.html", context)
 
 
@@ -2535,3 +2566,71 @@ def hq_underwriter_preview(request):
             "is_developer_preview": True,
         },
     )
+
+
+# ── HQ Merchant Agreement Management ───────────────────────────────────────
+
+@hq_required
+def hq_merchant_agreements(request):
+    from merchants.models import Merchant, MerchantAgreement
+    User = get_user_model()
+
+    agreements = (
+        MerchantAgreement.objects
+        .select_related("merchant", "merchant__owner")
+        .order_by("-created_at")
+    )
+
+    # Get merchants without any agreement
+    merchants_with_agreement = agreements.values_list("merchant_id", flat=True).distinct()
+    merchants_all = Merchant.objects.select_related("owner").all()
+    merchants_unsigned = merchants_all.exclude(id__in=merchants_with_agreement)
+
+    stats = {
+        "total": agreements.count(),
+        "signed": agreements.filter(status__in=["signed", "active"]).count(),
+        "pending": agreements.filter(status__in=["not_started", "viewed"]).count(),
+        "suspended": agreements.filter(status="suspended").count(),
+        "no_agreement": merchants_unsigned.count(),
+    }
+
+    return render(request, "dashboard/hq_merchant_agreements.html", {
+        "agreements": agreements[:100],
+        "merchants_unsigned": merchants_unsigned[:50],
+        "stats": stats,
+    })
+
+
+@hq_required
+def hq_agreement_require_resign(request, agreement_id):
+    from merchants.models import MerchantAgreement
+    if request.method == "POST":
+        agreement = get_object_or_404(MerchantAgreement, id=agreement_id)
+        agreement.status = MerchantAgreement.STATUS_EXPIRED
+        agreement.save(update_fields=["status", "updated_at"])
+        messages.success(request, f"Agreement {agreement.reference_number} marked as expired. Merchant will need to re-sign.")
+    return redirect("hq_merchant_agreements")
+
+
+@hq_required
+def hq_agreement_pdf(request, agreement_id):
+    from merchants.models import MerchantAgreement
+    from django.http import FileResponse
+    agreement = get_object_or_404(MerchantAgreement, id=agreement_id)
+    if not agreement.pdf_file:
+        try:
+            from merchants.pdf import generate_merchant_agreement_pdf
+            generate_merchant_agreement_pdf(agreement)
+            agreement.refresh_from_db()
+        except Exception as exc:
+            messages.error(request, f"PDF could not be generated: {exc}")
+            return redirect("hq_merchant_agreements")
+    try:
+        response = FileResponse(agreement.pdf_file.open("rb"), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="agreement-{agreement.reference_number}.pdf"'
+        return response
+    except FileNotFoundError:
+        messages.error(request, "PDF file not found.")
+        return redirect("hq_merchant_agreements")
+
+

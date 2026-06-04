@@ -1,0 +1,400 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block page_title %}Merchant Participation Agreement — TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+  --ag-orange: #ff5a00;
+  --ag-orange-lt: rgba(255,90,0,0.08);
+  --ag-ink: #0f1923;
+  --ag-ink2: #344054;
+  --ag-muted: #667085;
+  --ag-border: #e5e7eb;
+  --ag-surface: #fff;
+  --ag-bg: #f8fafc;
+  --ag-radius: 14px;
+  --ag-shadow: 0 1px 4px rgba(15,23,42,0.07), 0 4px 16px rgba(15,23,42,0.04);
+}
+
+.ag-shell {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+.ag-hero {
+  text-align: center;
+  padding: 32px 24px 24px;
+  background: var(--ag-surface);
+  border-radius: var(--ag-radius);
+  box-shadow: var(--ag-shadow);
+  margin-bottom: 24px;
+  border-top: 4px solid var(--ag-orange);
+}
+
+.ag-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ag-orange-lt);
+  color: var(--ag-orange);
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+
+.ag-hero h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ag-ink);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.ag-hero p {
+  color: var(--ag-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.ag-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ag-surface);
+  border: 1px solid var(--ag-border);
+  border-radius: var(--ag-radius);
+  padding: 14px 20px;
+  margin-bottom: 24px;
+}
+
+.ag-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ag-status-dot.signed   { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+.ag-status-dot.viewed   { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+.ag-status-dot.pending  { background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.2); }
+
+.ag-card {
+  background: var(--ag-surface);
+  border-radius: var(--ag-radius);
+  box-shadow: var(--ag-shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.ag-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ag-border);
+  background: var(--ag-bg);
+}
+
+.ag-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--ag-orange-lt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ag-card-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ag-orange);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.ag-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ag-ink);
+  margin: 0;
+}
+
+.ag-card-body {
+  padding: 20px;
+}
+
+.ag-section {
+  margin-bottom: 24px;
+}
+
+.ag-section:last-child {
+  margin-bottom: 0;
+}
+
+.ag-section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--ag-orange);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.ag-section-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ag-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ag-ink);
+  margin: 0;
+}
+
+.ag-section p,
+.ag-section ul {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ag-ink2);
+  margin: 0 0 8px;
+}
+
+.ag-section ul {
+  padding-left: 20px;
+}
+
+.ag-section li {
+  margin-bottom: 4px;
+}
+
+.ag-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .ag-summary-grid { grid-template-columns: 1fr; }
+}
+
+.ag-summary-card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--ag-border);
+}
+
+.ag-summary-card.orange { border-left: 3px solid var(--ag-orange); background: var(--ag-orange-lt); }
+.ag-summary-card.green  { border-left: 3px solid #16a34a; background: rgba(22,163,74,0.06); }
+.ag-summary-card.red    { border-left: 3px solid #dc2626; background: rgba(220,38,38,0.06); }
+.ag-summary-card.blue   { border-left: 3px solid #2563eb; background: rgba(37,99,235,0.06); }
+.ag-summary-card.amber  { border-left: 3px solid #f59e0b; background: rgba(245,158,11,0.06); }
+.ag-summary-card.purple { border-left: 3px solid #7c3aed; background: rgba(124,58,237,0.06); }
+
+.ag-summary-card h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ag-muted);
+  margin: 0 0 4px;
+}
+
+.ag-summary-card p {
+  font-size: 13px;
+  color: var(--ag-ink2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ag-cta {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.ag-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ag-orange);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(255,90,0,0.35);
+  transition: background 0.2s, transform 0.15s;
+}
+
+.ag-btn-primary:hover {
+  background: #e05000;
+  transform: translateY(-1px);
+  color: #fff;
+  text-decoration: none;
+}
+
+.ag-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--ag-orange);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 2px solid var(--ag-orange);
+  transition: all 0.2s;
+}
+
+.ag-btn-outline:hover {
+  background: var(--ag-orange-lt);
+  text-decoration: none;
+}
+
+.ag-divider {
+  border: none;
+  border-top: 1px solid var(--ag-border);
+  margin: 20px 0;
+}
+
+.ag-highlight-box {
+  background: rgba(255,90,0,0.04);
+  border: 1px solid rgba(255,90,0,0.18);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.ag-highlight-box p {
+  font-size: 13.5px;
+  color: var(--ag-ink);
+  margin: 0;
+  font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ag-shell">
+
+  <!-- Hero -->
+  <div class="ag-hero">
+    <div class="ag-hero-badge">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;stroke:none;">
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+      Official Merchant Agreement
+    </div>
+    <h1>TengaSale Merchant Participation Agreement</h1>
+    <p>Version {{ agreement.agreement_version }} &nbsp;·&nbsp; Please read carefully before signing</p>
+  </div>
+
+  <!-- Status bar -->
+  <div class="ag-status-bar">
+    {% if agreement.is_signed %}
+      <div class="ag-status-dot signed"></div>
+      <span style="font-size:14px;font-weight:600;color:#16a34a;">Agreement Signed</span>
+      <span style="margin-left:auto;font-size:13px;color:var(--ag-muted);">{{ agreement.signed_at|date:"d M Y H:i" }}</span>
+    {% elif agreement.status == "viewed" %}
+      <div class="ag-status-dot viewed"></div>
+      <span style="font-size:14px;font-weight:600;color:#f59e0b;">You are reading the agreement</span>
+    {% else %}
+      <div class="ag-status-dot pending"></div>
+      <span style="font-size:14px;color:var(--ag-muted);">Not yet signed</span>
+    {% endif %}
+  </div>
+
+  <!-- Summary cards -->
+  <div class="ag-summary-grid">
+    <div class="ag-summary-card orange">
+      <h4>Good Faith &amp; Honesty</h4>
+      <p>You must act honestly and never submit fake or misleading customer information.</p>
+    </div>
+    <div class="ag-summary-card green">
+      <h4>Good Customer Selection</h4>
+      <p>Select customers with stable income, genuine identity, and realistic ability to repay.</p>
+    </div>
+    <div class="ag-summary-card blue">
+      <h4>TengaSale Discretion</h4>
+      <p>TengaSale retains full discretion on approvals, commissions, and access.</p>
+    </div>
+    <div class="ag-summary-card amber">
+      <h4>Commission Rules</h4>
+      <p>Commissions may be withheld or reversed for fraud, misconduct, or defaults caused by bad submissions.</p>
+    </div>
+    <div class="ag-summary-card purple">
+      <h4>Data Protection</h4>
+      <p>Customer personal data must be handled with care, consent, and confidentiality.</p>
+    </div>
+    <div class="ag-summary-card red">
+      <h4>Fraud Consequences</h4>
+      <p>Fraud will lead to account suspension, commission reversal, and possible legal action.</p>
+    </div>
+  </div>
+
+  <!-- Full Agreement Text -->
+  <div class="ag-card">
+    <div class="ag-card-header">
+      <div class="ag-card-icon">
+        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <h2 class="ag-card-title">TENGASALE MERCHANT PARTICIPATION AGREEMENT</h2>
+    </div>
+    <div class="ag-card-body">
+
+      <p style="font-size:13px;color:var(--ag-muted);margin-bottom:20px;">
+        This Agreement is entered into between <strong>{{ company_name|default:"Emajinet Limited t/a TengaSale" }}</strong> ("TengaSale") and the Merchant identified by signing below.
+      </p>
+
+      {% include "merchants/_agreement_sections.html" %}
+
+    </div>
+  </div>
+
+  <!-- CTA -->
+  {% if not agreement.is_signed %}
+  <div class="ag-cta">
+    <a href="{% url 'merchant_agreement_sign' %}" class="ag-btn-primary">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+      </svg>
+      Proceed to Sign Agreement
+    </a>
+  </div>
+  {% else %}
+  <div class="ag-cta">
+    <a href="{% url 'merchant_agreement_pdf' agreement.id %}" class="ag-btn-primary">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Download Signed Agreement
+    </a>
+    <a href="{% url 'merchant_dashboard' %}" class="ag-btn-outline">Go to Dashboard</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

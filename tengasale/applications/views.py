@@ -94,6 +94,12 @@ def geography_json_data():
 
 @merchant_required
 def new_application(request):
+    # Block unsigned merchants from creating new applications
+    from merchants.models import Merchant
+    merchant = Merchant.objects.filter(owner=request.user).first()
+    if merchant and not merchant.has_signed_agreement:
+        return render(request, "merchants/agreement_required.html", {"merchant": merchant})
+
     app = FinancingApplication.objects.create(
         created_by=request.user,
         status="started",

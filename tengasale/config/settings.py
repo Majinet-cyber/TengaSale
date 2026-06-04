@@ -292,6 +292,13 @@ PAYCHANGU_CALLBACK_URL = os.environ.get("PAYCHANGU_CALLBACK_URL", "")
 
 APP_VERSION = "1.0.0"
 
+# ── TengaSale Legal / Company Details ─────────────────────────────────────────
+TENGASALE_COMPANY_NAME = os.environ.get("TENGASALE_COMPANY_NAME", "Emajinet Limited t/a TengaSale")
+TENGASALE_COMPANY_ADDRESS = os.environ.get("TENGASALE_COMPANY_ADDRESS", "Blantyre, Malawi")
+TENGASALE_COMPANY_EMAIL = os.environ.get("TENGASALE_COMPANY_EMAIL", "info@tengasale.emajinet.africa")
+TENGASALE_COMPANY_PHONE = os.environ.get("TENGASALE_COMPANY_PHONE", "+265 (0) XXX XXX XXX")
+TENGASALE_GOVERNING_LAW = os.environ.get("TENGASALE_GOVERNING_LAW", "the laws of the Republic of Malawi")
+
 # ── Device Lock Integration Layer ─────────────────────────────────────────────
 # Master switch — set True when a real provider is available.
 # With False, all lock actions are no-ops but profiles/events are still created.

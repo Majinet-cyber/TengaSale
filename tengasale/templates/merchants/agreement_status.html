@@ -1,0 +1,94 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block page_title %}Agreement Status — TengaSale{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;margin:0 auto;padding:32px 16px 60px;">
+
+  {% if messages %}
+  <div style="margin-bottom:20px;">
+    {% for msg in messages %}
+    <div style="background:{% if msg.tags == 'error' %}#fef2f2{% else %}#f0fdf4{% endif %};border:1px solid {% if msg.tags == 'error' %}#fecaca{% else %}#bbf7d0{% endif %};border-radius:10px;padding:12px 16px;font-size:13.5px;color:{% if msg.tags == 'error' %}#dc2626{% else %}#16a34a{% endif %};margin-bottom:8px;">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,0.07),0 4px 16px rgba(15,23,42,0.04);border-top:4px solid #ff5a00;padding:32px 24px;text-align:center;margin-bottom:24px;">
+    {% if agreement and agreement.is_signed %}
+      <div style="width:64px;height:64px;background:rgba(22,163,74,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:none;stroke:#16a34a;stroke-width:2;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <h1 style="font-size:20px;font-weight:800;color:#0f1923;margin:0 0 8px;">Agreement Signed</h1>
+      <p style="font-size:14px;color:#667085;margin:0 0 20px;">
+        Signed by <strong>{{ agreement.signer_name }}</strong> on {{ agreement.signed_at|date:"d M Y" }} at {{ agreement.signed_at|time:"H:i" }}<br>
+        Reference: <strong>{{ agreement.reference_number }}</strong> · Version {{ agreement.agreement_version }}
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'merchant_agreement_pdf' agreement.id %}" style="display:inline-flex;align-items:center;gap:8px;background:#ff5a00;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(255,90,0,0.3);">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Signed PDF
+        </a>
+        <a href="{% url 'merchant_dashboard' %}" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #ff5a00;color:#ff5a00;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">
+          Go to Dashboard
+        </a>
+      </div>
+    {% else %}
+      <div style="width:64px;height:64px;background:rgba(245,158,11,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:none;stroke:#f59e0b;stroke-width:2;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h1 style="font-size:20px;font-weight:800;color:#0f1923;margin:0 0 8px;">Agreement Not Yet Signed</h1>
+      <p style="font-size:14px;color:#667085;margin:0 0 20px;">Before creating financed-phone applications, you must sign the TengaSale Merchant Participation Agreement.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'merchant_agreement' %}" style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:2px solid #e5e7eb;color:#344054;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">
+          View Agreement
+        </a>
+        <a href="{% url 'merchant_agreement_sign' %}" style="display:inline-flex;align-items:center;gap:8px;background:#ff5a00;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(255,90,0,0.3);">
+          Sign Now
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if agreement %}
+  <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,0.07),0 4px 16px rgba(15,23,42,0.04);padding:20px 24px;">
+    <h3 style="font-size:13px;font-weight:700;color:#344054;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 14px;">Agreement Details</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Reference</div>
+        <div style="font-size:13px;font-weight:600;color:#0f1923;">{{ agreement.reference_number }}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Version</div>
+        <div style="font-size:13px;font-weight:600;color:#0f1923;">{{ agreement.agreement_version }}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Status</div>
+        <div style="font-size:13px;font-weight:600;color:{% if agreement.is_signed %}#16a34a{% else %}#f59e0b{% endif %};">{{ agreement.get_status_display }}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Merchant</div>
+        <div style="font-size:13px;font-weight:600;color:#0f1923;">{{ merchant.business_name }}</div>
+      </div>
+      {% if agreement.signed_at %}
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Signed</div>
+        <div style="font-size:13px;font-weight:600;color:#0f1923;">{{ agreement.signed_at|date:"d M Y H:i" }}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#667085;margin-bottom:2px;">Signed By</div>
+        <div style="font-size:13px;font-weight:600;color:#0f1923;">{{ agreement.signer_name }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

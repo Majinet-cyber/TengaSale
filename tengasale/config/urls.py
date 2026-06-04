@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/tengasale/", include("financing.api_urls")),
 
     # Merchant Administrator portal
+    path("merchant/", include("merchants.urls")),
     path("tengasale/merchant-admin/", include("merchant_admin.urls")),
 
     # Device Lock Integration Layer

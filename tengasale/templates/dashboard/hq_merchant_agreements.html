@@ -1,0 +1,200 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block page_title %}Merchant Agreements — HQ TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.hq-ma-shell { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
+.hq-ma-hdr { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.hq-ma-hdr h1 { font-size: 22px; font-weight: 800; color: #0f1923; margin: 0; }
+.hq-ma-back { display: inline-flex; align-items: center; gap: 6px; color: #ff5a00; font-size: 13px; font-weight: 600; text-decoration: none; }
+.hq-ma-back:hover { text-decoration: underline; }
+
+.hq-ma-kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 700px) { .hq-ma-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.hq-ma-kpi { background: #fff; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(15,23,42,0.07); }
+.hq-ma-kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #667085; margin-bottom: 4px; letter-spacing: 0.05em; }
+.hq-ma-kpi-val { font-size: 26px; font-weight: 900; color: #0f1923; }
+.hq-ma-kpi-val.green { color: #16a34a; }
+.hq-ma-kpi-val.amber { color: #f59e0b; }
+.hq-ma-kpi-val.red   { color: #dc2626; }
+.hq-ma-kpi-val.blue  { color: #2563eb; }
+
+.hq-ma-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 4px rgba(15,23,42,0.07); margin-bottom: 24px; overflow: hidden; }
+.hq-ma-card-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; }
+.hq-ma-card-title { font-size: 13px; font-weight: 700; color: #0f1923; text-transform: uppercase; letter-spacing: 0.05em; }
+
+table.hq-ma-table { width: 100%; border-collapse: collapse; }
+.hq-ma-table th { font-size: 11px; font-weight: 700; color: #667085; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 16px; text-align: left; border-bottom: 1.5px solid #e5e7eb; background: #f8fafc; }
+.hq-ma-table td { padding: 11px 16px; font-size: 13px; color: #344054; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.hq-ma-table tr:last-child td { border-bottom: none; }
+.hq-ma-table tr:hover td { background: #fafafa; }
+
+.status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.status-pill.signed  { background: rgba(22,163,74,0.1);  color: #16a34a; }
+.status-pill.active  { background: rgba(22,163,74,0.1);  color: #16a34a; }
+.status-pill.viewed  { background: rgba(245,158,11,0.1); color: #d97706; }
+.status-pill.pending { background: rgba(148,163,184,0.1); color: #64748b; }
+.status-pill.suspended  { background: rgba(220,38,38,0.1); color: #dc2626; }
+.status-pill.terminated { background: rgba(220,38,38,0.1); color: #dc2626; }
+.status-pill.expired { background: rgba(245,158,11,0.1); color: #d97706; }
+
+.hq-ma-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+.hq-ma-btn.orange { background: rgba(255,90,0,0.1); color: #ff5a00; }
+.hq-ma-btn.orange:hover { background: rgba(255,90,0,0.2); }
+.hq-ma-btn.red { background: rgba(220,38,38,0.1); color: #dc2626; }
+.hq-ma-btn.red:hover { background: rgba(220,38,38,0.2); }
+.hq-ma-btn.slate { background: #f1f5f9; color: #475569; }
+.hq-ma-btn.slate:hover { background: #e2e8f0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hq-ma-shell">
+
+  <div class="hq-ma-hdr">
+    <a href="{% url 'hq_dashboard' %}" class="hq-ma-back">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.5;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      HQ Dashboard
+    </a>
+    <h1>Merchant Participation Agreements</h1>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div style="background:{% if msg.tags == 'error' %}#fef2f2{% else %}#f0fdf4{% endif %};border:1px solid {% if msg.tags == 'error' %}#fecaca{% else %}#bbf7d0{% endif %};border-radius:10px;padding:12px 16px;font-size:13.5px;color:{% if msg.tags == 'error' %}#dc2626{% else %}#16a34a{% endif %};margin-bottom:16px;">{{ msg }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- KPI row -->
+  <div class="hq-ma-kpi-grid">
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Total Agreements</div>
+      <div class="hq-ma-kpi-val blue">{{ stats.total }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Signed / Active</div>
+      <div class="hq-ma-kpi-val green">{{ stats.signed }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">In Progress</div>
+      <div class="hq-ma-kpi-val amber">{{ stats.pending }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Suspended</div>
+      <div class="hq-ma-kpi-val red">{{ stats.suspended }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">No Agreement</div>
+      <div class="hq-ma-kpi-val red">{{ stats.no_agreement }}</div>
+    </div>
+  </div>
+
+  <!-- Agreements table -->
+  <div class="hq-ma-card">
+    <div class="hq-ma-card-hdr">
+      <span class="hq-ma-card-title">All Agreements</span>
+    </div>
+    {% if agreements %}
+    <div style="overflow-x:auto;">
+      <table class="hq-ma-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Merchant</th>
+            <th>Signed By</th>
+            <th>Status</th>
+            <th>Version</th>
+            <th>Signed</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ag in agreements %}
+          <tr>
+            <td><code style="font-size:12px;color:#ff5a00;">{{ ag.reference_number }}</code></td>
+            <td>
+              <div style="font-weight:600;color:#0f1923;">{{ ag.merchant.business_name }}</div>
+              <div style="font-size:11px;color:#667085;">{{ ag.merchant.owner.get_full_name|default:ag.merchant.owner.username }}</div>
+            </td>
+            <td>{{ ag.signer_name|default:"—" }}</td>
+            <td>
+              <span class="status-pill {{ ag.status }}">{{ ag.get_status_display }}</span>
+            </td>
+            <td style="font-size:12px;color:#667085;">v{{ ag.agreement_version }}</td>
+            <td style="font-size:12px;color:#667085;">
+              {% if ag.signed_at %}{{ ag.signed_at|date:"d M Y" }}{% else %}—{% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                {% if ag.pdf_file or ag.is_signed %}
+                <a href="{% url 'hq_agreement_pdf' ag.id %}" class="hq-ma-btn orange" target="_blank">
+                  PDF
+                </a>
+                {% endif %}
+                {% if ag.is_signed %}
+                <form method="post" action="{% url 'hq_agreement_require_resign' ag.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="hq-ma-btn red"
+                    onclick="return confirm('Mark this agreement as expired? The merchant will need to re-sign.')">
+                    Require Re-sign
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:#667085;">No agreements found.</div>
+    {% endif %}
+  </div>
+
+  <!-- Merchants without any agreement -->
+  {% if merchants_unsigned %}
+  <div class="hq-ma-card">
+    <div class="hq-ma-card-hdr">
+      <span class="hq-ma-card-title" style="color:#dc2626;">Merchants Without Agreement ({{ merchants_unsigned|length }})</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="hq-ma-table">
+        <thead>
+          <tr>
+            <th>Business</th>
+            <th>Owner</th>
+            <th>Phone</th>
+            <th>Location</th>
+            <th>Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in merchants_unsigned %}
+          <tr>
+            <td style="font-weight:600;color:#0f1923;">{{ m.business_name }}</td>
+            <td>{{ m.owner.get_full_name|default:m.owner.username }}</td>
+            <td>{{ m.phone_number|default:"—" }}</td>
+            <td>{{ m.location|default:"—" }}</td>
+            <td>
+              {% if m.is_active %}
+              <span class="status-pill signed">Active</span>
+              {% else %}
+              <span class="status-pill pending">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1181,6 +1181,11 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Users &amp; Roles
     </a>
+    <a href="{% url 'hq_merchant_agreements' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Merchant Agreements
+      {% if agreement_unsigned_count %}<span class="hq-sidebar-badge">{{ agreement_unsigned_count }}</span>{% endif %}
+    </a>
   </div>
 
   <hr class="hq-sidebar-divider">
@@ -1846,6 +1851,17 @@
         <div class="hq-nav-item__body">
           <span class="hq-nav-item__title">Audit Trail</span>
           <span class="hq-nav-item__desc">System action log</span>
+        </div>
+        <div class="hq-nav-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+      </a>
+
+      <a href="{% url 'hq_merchant_agreements' %}" class="hq-nav-item">
+        <div class="hq-nav-item__icon ni-orange">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div class="hq-nav-item__body">
+          <span class="hq-nav-item__title">Merchant Agreements</span>
+          <span class="hq-nav-item__desc">Compliance · {{ agreement_signed_count }} signed · {{ agreement_unsigned_count }} pending</span>
         </div>
         <div class="hq-nav-arrow"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
       </a>

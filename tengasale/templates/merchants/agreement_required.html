@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block page_title %}Agreement Required — TengaSale{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:60px auto 60px;padding:0 16px;text-align:center;">
+
+  <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,0.08),0 8px 24px rgba(15,23,42,0.06);border-top:4px solid #ff5a00;padding:40px 28px 32px;">
+
+    <div style="width:64px;height:64px;background:rgba(255,90,0,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg viewBox="0 0 24 24" style="width:32px;height:32px;fill:none;stroke:#ff5a00;stroke-width:2;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+
+    <h1 style="font-size:20px;font-weight:800;color:#0f1923;margin:0 0 10px;">Agreement Signature Required</h1>
+
+    <p style="font-size:14px;color:#667085;line-height:1.6;margin:0 0 24px;">
+      Before creating financed-phone applications, you must sign the <strong>TengaSale Merchant Participation Agreement</strong>.
+      This is a one-time requirement that protects you, your customers, and TengaSale.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <a href="{% url 'merchant_agreement' %}" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#f8fafc;border:1.5px solid #e5e7eb;color:#344054;padding:13px 20px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        View Agreement
+      </a>
+      <a href="{% url 'merchant_agreement_sign' %}" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#ff5a00;color:#fff;padding:14px 20px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 16px rgba(255,90,0,0.35);">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+        </svg>
+        Sign Now
+      </a>
+    </div>
+
+  </div>
+
+  <p style="margin-top:16px;font-size:12px;color:#94a3b8;">
+    Need help? <a href="#" style="color:#ff5a00;">Contact support</a>
+  </p>
+
+</div>
+{% endblock %}

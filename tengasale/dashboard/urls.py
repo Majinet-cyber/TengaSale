@@ -37,6 +37,9 @@ urlpatterns = [
     path("tengasale/hq/payment-intelligence/", views.hq_payment_intelligence, name="hq_payment_intelligence"),
     path("tengasale/hq/preview/merchant/", views.hq_merchant_preview, name="hq_merchant_preview"),
     path("tengasale/hq/preview/underwriter/", views.hq_underwriter_preview, name="hq_underwriter_preview"),
+    path("tengasale/hq/merchant-agreements/", views.hq_merchant_agreements, name="hq_merchant_agreements"),
+    path("tengasale/hq/merchant-agreements/<int:agreement_id>/require-resign/", views.hq_agreement_require_resign, name="hq_agreement_require_resign"),
+    path("tengasale/hq/merchant-agreements/<int:agreement_id>/pdf/", views.hq_agreement_pdf, name="hq_agreement_pdf"),
 
     # ── Short /hq/ aliases ─────────────────────────────────────────────────────
     path("hq/", RedirectView.as_view(pattern_name="hq_dashboard", permanent=False), name="hq_alias"),
