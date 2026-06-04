@@ -4,6 +4,48 @@
 {% block site_title %}TengaSale — Smartphone Financing for Malawi{% endblock %}
 {% block site_description %}TengaSale provides structured smartphone financing for customers across Malawi — connecting merchants, repayment tracking, and mobile money payment infrastructure in one platform.{% endblock %}
 
+{% block site_head %}
+<script>
+/* Scroll-reveal for new sections */
+document.addEventListener('DOMContentLoaded', function () {
+  var revealEls = document.querySelectorAll('.biz-case-card, .role-card, .sim-scenario-card, .risk-card, .pay-mockup, .pay-flow-step');
+  if ('IntersectionObserver' in window) {
+    revealEls.forEach(function(el, i) {
+      el.classList.add('reveal');
+      var delay = (i % 4) * 0.08;
+      el.style.transitionDelay = delay + 's';
+    });
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    revealEls.forEach(function(el) { io.observe(el); });
+  } else {
+    revealEls.forEach(function(el) { el.classList.add('visible'); });
+  }
+
+  /* Animate risk bar fills on scroll */
+  var riskyBars = document.querySelectorAll('.risk-bar-fill');
+  var barObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        var target = el.style.width;
+        el.style.width = '0%';
+        setTimeout(function() { el.style.width = target; }, 120);
+        barObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.3 });
+  riskyBars.forEach(function(b) { barObserver.observe(b); });
+});
+</script>
+{% endblock %}
+
 {% block site_content %}
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
@@ -210,6 +252,154 @@
         <div class="platform-stat-val">KYC &amp; Lock</div>
         <div class="platform-stat-label">Identity verification, device lock, and contract records</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Business Case ──────────────────────────────────────────── -->
+<section class="site-section site-section--biz" id="business-case">
+  <div class="site-section__inner">
+    <span class="section-eyebrow">The Business Case</span>
+    <h2 class="section-heading">Why TengaSale exists — and why it works</h2>
+    <p class="section-sub">
+      Manual phone financing is fragile. No contracts. No KYC. No payment records. No way to recover. TengaSale adds structure, accountability, and data — turning informal smartphone credit into a disciplined operation.
+    </p>
+    <div class="biz-case-grid">
+
+      <div class="biz-case-card">
+        <div class="biz-case-card__icon biz-case-card__icon--orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="biz-case-card__tag">Merchant Growth</div>
+        <div class="biz-case-card__heading">More merchant sales</div>
+        <p class="biz-case-card__body">Merchants can sell phones to customers who cannot pay cash upfront, while tracking every application, status, and commission — growing volume without guesswork.</p>
+        <div class="biz-case-card__stat"><span class="biz-case-card__stat-val">12 months</span> <span class="biz-case-card__stat-lbl">structured repayment</span></div>
+      </div>
+
+      <div class="biz-case-card">
+        <div class="biz-case-card__icon biz-case-card__icon--green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="biz-case-card__tag biz-case-card__tag--green">Risk Reduction</div>
+        <div class="biz-case-card__heading">Lower default risk</div>
+        <p class="biz-case-card__body">Structured underwriting, KYC, affordability checks, guarantor calls, and SMS reminders help reduce careless approvals and missed payments before they become bad debt.</p>
+        <div class="biz-case-card__stat"><span class="biz-case-card__stat-val">8 signals</span> <span class="biz-case-card__stat-lbl">per underwriting review</span></div>
+      </div>
+
+      <div class="biz-case-card">
+        <div class="biz-case-card__icon biz-case-card__icon--blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </div>
+        <div class="biz-case-card__tag biz-case-card__tag--blue">Payments</div>
+        <div class="biz-case-card__heading">Payment visibility</div>
+        <p class="biz-case-card__body">Every payment is tied to a contract, customer, merchant, and reference number — making balances and repayment history auditable, not anecdotal.</p>
+        <div class="biz-case-card__stat"><span class="biz-case-card__stat-val">Airtel · TNM</span> <span class="biz-case-card__stat-lbl">mobile money networks</span></div>
+      </div>
+
+      <div class="biz-case-card">
+        <div class="biz-case-card__icon biz-case-card__icon--navy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="biz-case-card__tag biz-case-card__tag--navy">HQ Intelligence</div>
+        <div class="biz-case-card__heading">HQ control</div>
+        <p class="biz-case-card__body">HQ can monitor portfolio performance, arrears, merchant quality, underwriter quality, and run historical simulations to adjust policy before problems become losses.</p>
+        <div class="biz-case-card__stat"><span class="biz-case-card__stat-val">Real-time</span> <span class="biz-case-card__stat-lbl">portfolio dashboards</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Role-Based Platform Section ────────────────────────────── -->
+<section class="site-section" id="platform-roles">
+  <div class="site-section__inner">
+    <span class="section-eyebrow">Four Portals. One Platform.</span>
+    <h2 class="section-heading">Built for every role in the financing chain</h2>
+    <p class="section-sub">
+      TengaSale gives each stakeholder their own optimised interface — without exposing data they should not see.
+    </p>
+    <div class="roles-grid">
+
+      <div class="role-card">
+        <div class="role-card__header role-card__header--orange">
+          <div class="role-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <div>
+            <div class="role-card__name">Merchant Portal</div>
+            <div class="role-card__sub">Sales &amp; portfolio management</div>
+          </div>
+        </div>
+        <ul class="role-card__list">
+          <li>New customer applications</li>
+          <li>Active contracts &amp; status</li>
+          <li>Earnings &amp; commissions</li>
+          <li>Payment records</li>
+          <li>Available phone deals</li>
+        </ul>
+        <a href="{% url 'login' %}" class="role-card__cta">Merchant Login →</a>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card__header role-card__header--green">
+          <div class="role-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <div>
+            <div class="role-card__name">Underwriter Portal</div>
+            <div class="role-card__sub">Review &amp; approval decisions</div>
+          </div>
+        </div>
+        <ul class="role-card__list">
+          <li>Claim queue &amp; call buttons</li>
+          <li>KYC &amp; identity review</li>
+          <li>Affordability scoring</li>
+          <li>Risk questionnaire</li>
+          <li>Approve / reject / send back</li>
+        </ul>
+        <a href="{% url 'login' %}" class="role-card__cta">Underwriter Login →</a>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card__header role-card__header--navy">
+          <div class="role-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div>
+            <div class="role-card__name">HQ Command</div>
+            <div class="role-card__sub">Portfolio intelligence &amp; control</div>
+          </div>
+        </div>
+        <ul class="role-card__list">
+          <li>Full portfolio dashboards</li>
+          <li>Merchant &amp; underwriter oversight</li>
+          <li>Payments &amp; arrears monitoring</li>
+          <li>SMS audit trails</li>
+          <li>Historical simulations</li>
+        </ul>
+        <a href="{% url 'login' %}" class="role-card__cta">HQ Login →</a>
+      </div>
+
+      <div class="role-card">
+        <div class="role-card__header role-card__header--teal">
+          <div class="role-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <div>
+            <div class="role-card__name">Customer Portal</div>
+            <div class="role-card__sub">Payments &amp; contract visibility</div>
+          </div>
+        </div>
+        <ul class="role-card__list">
+          <li>Check contract &amp; balance</li>
+          <li>Make mobile money payment</li>
+          <li>View payment history</li>
+          <li>Understand due date</li>
+          <li>Receive SMS confirmation</li>
+        </ul>
+        <a href="{% url 'portal_search' %}" class="role-card__cta">Make a Payment →</a>
+      </div>
+
     </div>
   </div>
 </section>
@@ -426,6 +616,254 @@
           <div class="feature-item__text">
             <div class="feature-item__title">Device and contract status</div>
             <div class="feature-item__body">View device and contract status across your portfolio. The platform is structured to support device management integrations.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Default Prevention ──────────────────────────────────────── -->
+<section class="site-section site-section--risk" id="default-prevention">
+  <div class="site-section__inner">
+    <div class="risk-layout">
+      <div class="risk-copy">
+        <span class="section-eyebrow">Default Prevention</span>
+        <h2 class="section-heading">Designed to reduce defaults before they happen</h2>
+        <p class="section-sub" style="margin-bottom:28px;">
+          TengaSale turns underwriting into structured data. Instead of relying only on instinct, underwriters collect signals that help HQ improve approval rules over time.
+        </p>
+        <div class="risk-signals">
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--orange"></div>
+            <span>Income / payment ratio</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--orange"></div>
+            <span>KYC identity confidence</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--blue"></div>
+            <span>Address verification score</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--blue"></div>
+            <span>Guarantor strength</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--green"></div>
+            <span>Customer reachability</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--green"></div>
+            <span>Deal suitability</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--green"></div>
+            <span>Payment behaviour pattern</span>
+          </div>
+          <div class="risk-signal">
+            <div class="risk-signal__dot risk-signal__dot--orange"></div>
+            <span>SMS reminder responsiveness</span>
+          </div>
+        </div>
+      </div>
+      <div class="risk-visual" aria-hidden="true">
+        <div class="risk-card">
+          <div class="risk-card__hdr">
+            <span class="risk-card__lbl">Underwriting Risk Score</span>
+            <span class="risk-card__badge risk-card__badge--live">Live Review</span>
+          </div>
+          <div class="risk-card__customer">
+            <div class="risk-card__avatar">CN</div>
+            <div>
+              <div class="risk-card__name">C. Nkhoma · Contract #TS-00247</div>
+              <div class="risk-card__device">Samsung A15 · MWK 750,000 · 12 months</div>
+            </div>
+          </div>
+          <div class="risk-bars">
+            <div class="risk-bar-row">
+              <span class="risk-bar-lbl">KYC Confidence</span>
+              <div class="risk-bar-track"><div class="risk-bar-fill risk-bar-fill--green" style="width:88%"></div></div>
+              <span class="risk-bar-pct">88%</span>
+            </div>
+            <div class="risk-bar-row">
+              <span class="risk-bar-lbl">Affordability Ratio</span>
+              <div class="risk-bar-track"><div class="risk-bar-fill risk-bar-fill--orange" style="width:64%"></div></div>
+              <span class="risk-bar-pct">64%</span>
+            </div>
+            <div class="risk-bar-row">
+              <span class="risk-bar-lbl">Address Confidence</span>
+              <div class="risk-bar-track"><div class="risk-bar-fill risk-bar-fill--green" style="width:72%"></div></div>
+              <span class="risk-bar-pct">72%</span>
+            </div>
+            <div class="risk-bar-row">
+              <span class="risk-bar-lbl">Guarantor Strength</span>
+              <div class="risk-bar-track"><div class="risk-bar-fill risk-bar-fill--orange" style="width:55%"></div></div>
+              <span class="risk-bar-pct">55%</span>
+            </div>
+          </div>
+          <div class="risk-bands">
+            <div class="risk-band risk-band--excellent">Excellent</div>
+            <div class="risk-band risk-band--good">Good</div>
+            <div class="risk-band risk-band--watch risk-band--active">Watch</div>
+            <div class="risk-band risk-band--high">High Risk</div>
+            <div class="risk-band risk-band--reject">Reject</div>
+          </div>
+          <div class="risk-card__footer">
+            <span class="risk-recommendation">Recommendation: Approve with guarantor confirmation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Simulations Section ────────────────────────────────────── -->
+<section class="site-section site-section--alt" id="simulations">
+  <div class="site-section__inner">
+    <div class="sim-header">
+      <div>
+        <span class="section-eyebrow">HQ Intelligence</span>
+        <h2 class="section-heading">Simulate tomorrow's policy using yesterday's data</h2>
+        <p class="section-sub" style="margin-bottom:0;">
+          HQ can test how changes in deposit, affordability thresholds, repayment terms, grace periods, commissions, and approval rules would have affected historical performance — before changing anything live.
+        </p>
+      </div>
+      <div class="sim-header__badge" aria-hidden="true">
+        <div class="sim-badge">
+          <div class="sim-badge__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          </div>
+          <span>Investor-grade policy testing</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-scenarios">
+      <div class="sim-scenario-card">
+        <div class="sim-scenario-card__q">What if deposit increased from 25% → 30%?</div>
+        <div class="sim-scenario-card__outputs">
+          <div class="sim-output"><span class="sim-output__label">Approvals</span><span class="sim-output__val sim-output__val--down">−8%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Collections</span><span class="sim-output__val sim-output__val--up">+12%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Arrears</span><span class="sim-output__val sim-output__val--down">−18%</span></div>
+        </div>
+      </div>
+      <div class="sim-scenario-card">
+        <div class="sim-scenario-card__q">What if income threshold changed from 10× → 8× monthly payment?</div>
+        <div class="sim-scenario-card__outputs">
+          <div class="sim-output"><span class="sim-output__label">Approvals</span><span class="sim-output__val sim-output__val--up">+14%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Collections</span><span class="sim-output__val sim-output__val--neutral">±2%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Default Rate</span><span class="sim-output__val sim-output__val--down">+6%</span></div>
+        </div>
+      </div>
+      <div class="sim-scenario-card">
+        <div class="sim-scenario-card__q">What if high-risk customers required guarantor confirmation?</div>
+        <div class="sim-scenario-card__outputs">
+          <div class="sim-output"><span class="sim-output__label">Rejections</span><span class="sim-output__val sim-output__val--neutral">+11%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Portfolio Risk</span><span class="sim-output__val sim-output__val--up">−22%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Profit</span><span class="sim-output__val sim-output__val--up">+9%</span></div>
+        </div>
+      </div>
+      <div class="sim-scenario-card">
+        <div class="sim-scenario-card__q">What if underwriter incentives were tied to repayment quality?</div>
+        <div class="sim-scenario-card__outputs">
+          <div class="sim-output"><span class="sim-output__label">Review Quality</span><span class="sim-output__val sim-output__val--up">+19%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Arrears</span><span class="sim-output__val sim-output__val--up">−15%</span></div>
+          <div class="sim-output"><span class="sim-output__label">Net Profit</span><span class="sim-output__val sim-output__val--up">+11%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Simulations use explainable scenario logic — no black-box AI. If data is too small, the system shows: <em>"Limited data. Simulation confidence is low."</em>
+    </div>
+
+    <div style="text-align:center;margin-top:32px;">
+      <a href="{% url 'login' %}" class="btn-primary">Access HQ Simulations →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Payment Flow Section ───────────────────────────────────── -->
+<section class="site-section" id="payment-flow">
+  <div class="site-section__inner">
+    <div class="pay-flow-layout">
+      <div class="pay-flow-copy">
+        <span class="section-eyebrow">Customer Payments</span>
+        <h2 class="section-heading">Customer payments connected to contract records</h2>
+        <p class="section-sub" style="margin-bottom:24px;">
+          Every payment is recorded against the contract, the customer, the merchant, and a unique reference — making repayment history fully auditable and visible to HQ in real time.
+        </p>
+        <div class="pay-flow-steps">
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">1</div>
+            <span>Customer pays via Airtel Money or TNM Mpamba</span>
+          </div>
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">2</div>
+            <span>Payment reference recorded against contract</span>
+          </div>
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">3</div>
+            <span>Balance and due date update immediately</span>
+          </div>
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">4</div>
+            <span>SMS confirmation sent to customer</span>
+          </div>
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">5</div>
+            <span>Merchant and HQ dashboards refresh</span>
+          </div>
+          <div class="pay-flow-step">
+            <div class="pay-flow-step__num">6</div>
+            <span>Full repayment history remains auditable</span>
+          </div>
+        </div>
+        <div style="margin-top:28px;">
+          <a href="{% url 'portal_search' %}" class="btn-primary">Make a Payment</a>
+        </div>
+      </div>
+
+      <div class="pay-flow-visual" aria-hidden="true">
+        <div class="pay-mockup">
+          <div class="pay-mockup__hdr">
+            <div class="pay-mockup__logo">TS</div>
+            <div class="pay-mockup__title">TengaSale Payment Portal</div>
+          </div>
+          <div class="pay-mockup__contract">
+            <div class="pay-mockup__label">Contract</div>
+            <div class="pay-mockup__contract-num">TS-00247</div>
+            <div class="pay-mockup__device">Samsung Galaxy A15 · City Phones</div>
+          </div>
+          <div class="pay-mockup__balance-row">
+            <div class="pay-mockup__bal-item">
+              <div class="pay-mockup__bal-val">MWK 360,000</div>
+              <div class="pay-mockup__bal-lbl">Balance remaining</div>
+            </div>
+            <div class="pay-mockup__bal-item">
+              <div class="pay-mockup__bal-val pay-mockup__bal-val--green">MWK 540,000</div>
+              <div class="pay-mockup__bal-lbl">Total paid</div>
+            </div>
+          </div>
+          <div class="pay-mockup__bar-wrap">
+            <div class="pay-mockup__bar"><div class="pay-mockup__bar-fill" style="width:60%"></div></div>
+            <div class="pay-mockup__bar-meta"><span>60% complete</span><span>6 months left</span></div>
+          </div>
+          <div class="pay-mockup__due">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+            Next payment due: <strong>30 Jun 2026</strong> · MWK 62,500
+          </div>
+          <div class="pay-mockup__providers">
+            <div class="pay-mockup__provider pay-mockup__provider--airtel">Airtel Money</div>
+            <div class="pay-mockup__provider pay-mockup__provider--tnm">TNM Mpamba</div>
+          </div>
+          <a href="{% url 'portal_search' %}" class="pay-mockup__btn">Pay Now →</a>
+          <div class="pay-mockup__support">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            support@tengasale.africa
           </div>
         </div>
       </div>
