@@ -14,18 +14,20 @@ def format_mwk(value):
 SMS_TEMPLATES = {
     "payment_confirmation": {
         "ny": (
-            "Talandila ndalama MWK{amount_paid}.\n"
-            "Ngongole yotsala ndi MWK{balance_left}.\n"
-            "Masiku otsala ndi {days_left}.\n"
-            "Lipilani pasanakwane pa {next_payment_date}.\n"
-            "TengaSale: Mafoni apangongole mosavuta."
+            "Zikomo, mwalipira MWK{amount_paid}.\n"
+            "Zalipira masiku pafupifupi {days_covered}.\n"
+            "Zalipira mpaka: {paid_through_date}.\n"
+            "Masiku otsala: {days_remaining}.\n"
+            "Ngongole yotsala: MWK{balance_left}.\n"
+            "TengaSale. Thandizo: {support_number}."
         ),
         "en": (
-            "We have received MWK{amount_paid}.\n"
-            "Your remaining balance is MWK{balance_left}.\n"
-            "You have {days_left} days left.\n"
-            "Please pay before {next_payment_date}.\n"
-            "TengaSale: Simple smartphone financing."
+            "Thank you for your MWK{amount_paid} payment.\n"
+            "It covers about {days_covered} day(s).\n"
+            "Paid through: {paid_through_date}.\n"
+            "Days remaining: {days_remaining}.\n"
+            "Balance: MWK{balance_left}.\n"
+            "TengaSale. Support: {support_number}."
         ),
     },
     "otp": {
@@ -40,32 +42,46 @@ SMS_TEMPLATES = {
             "Do not share it with anyone."
         ),
     },
+    "approval": {
+        "ny": (
+            "Pempho lanu la TengaSale lavomerezedwa.\n"
+            "Deposit yanu imapereka masiku 14 ogwiritsa ntchito foni ikakhazikitsidwa.\n"
+            "Pitirizani kulipira nthawi isanakwane kuti foni isatsekedwe.\n"
+            "TengaSale."
+        ),
+        "en": (
+            "Your TengaSale application has been approved.\n"
+            "Your deposit gives 14 days of access after device setup.\n"
+            "Keep paying before your due date to continue using the phone.\n"
+            "TengaSale."
+        ),
+    },
     "due_reminder": {
         "ny": (
             "Chikumbutso cha TengaSale:\n"
-            "Malipiro anu akuyenera kufika pa {due_date}.\n"
+            "Mwalandira foni mpaka {due_date}.\n"
             "Masiku otsala: {days_until_due}.\n"
             "Ngongole yotsala: MWK{balance_left}.\n"
-            "Chonde lipilani nthawi yake kuti musatsekedwe."
+            "Lipirani tsiku, sabata, mwezi kapena ndalama zina kuti mupitirize kugwiritsa ntchito foni."
         ),
         "en": (
             "TengaSale reminder:\n"
-            "Your payment is due on {due_date}.\n"
+            "Your phone access expires on {due_date}.\n"
             "Days remaining: {days_until_due}.\n"
             "Remaining balance: MWK{balance_left}.\n"
-            "Please pay on time to avoid lock action."
+            "Pay for a day, week, month or custom amount to extend access."
         ),
     },
     "payment_due_today": {
         "ny": (
             "TengaSale:\n"
-            "Malipiro anu akuyenera kulipidwa lero.\n"
+            "Mwalandira foni mpaka lero.\n"
             "Ngongole yotsala: MWK{balance_left}.\n"
             "Chonde lipilani lero kuti musatsekedwe."
         ),
         "en": (
             "TengaSale:\n"
-            "Your payment is due today.\n"
+            "Your phone access expires today.\n"
             "Remaining balance: MWK{balance_left}.\n"
             "Please pay today to avoid lock action."
         ),
@@ -73,15 +89,29 @@ SMS_TEMPLATES = {
     "arrears_reminder": {
         "ny": (
             "TengaSale:\n"
-            "Malipiro anu adadutsa pa {due_date}.\n"
+            "Nthawi yanu ya foni idakwana pa {due_date}.\n"
             "Ngongole yotsala: MWK{balance_left}.\n"
-            "Chonde lipilani mwachangu kuti mubwezeretse akaunti yanu bwino."
+            "Chonde lipilani mwachangu kuti mubwezeretse mwalandira foni."
         ),
         "en": (
             "TengaSale:\n"
-            "Your payment was due on {due_date}.\n"
+            "Your phone access expired on {due_date}.\n"
             "Remaining balance: MWK{balance_left}.\n"
-            "Please pay urgently to restore your account to good standing."
+            "Please pay to restore access. Support: {support_number}."
+        ),
+    },
+    "overdue": {
+        "ny": (
+            "TengaSale:\n"
+            "Malipiro anu adakwana. Chonde lipilani kuti mubwezeretse kugwiritsa ntchito foni.\n"
+            "Ngongole yotsala: MWK{balance_left}.\n"
+            "Thandizo: {support_number}."
+        ),
+        "en": (
+            "TengaSale:\n"
+            "Your payment is overdue. Please pay to restore/continue access.\n"
+            "Balance: MWK{balance_left}.\n"
+            "Support: {support_number}."
         ),
     },
 }

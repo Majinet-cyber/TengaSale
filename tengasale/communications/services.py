@@ -168,6 +168,22 @@ def _contract_due_date(contract):
     return getattr(contract, "due_date", None) or timezone.localdate()
 
 
+def _support_number():
+    return getattr(settings, "TENGASALE_SUPPORT_PHONE", "+265 999 999 999")
+
+
+def _days_covered(payment_amount, daily_price):
+    """How many full days does this payment cover?"""
+    try:
+        from decimal import Decimal
+        daily = Decimal(str(daily_price or 0))
+        if daily <= 0:
+            return 0
+        return int(Decimal(str(payment_amount)) / daily)
+    except Exception:
+        return 0
+
+
 def send_payment_confirmation_sms(payment, language=None):
     contract = payment.payment_contract
     if SMSLog.objects.filter(
@@ -178,14 +194,18 @@ def send_payment_confirmation_sms(payment, language=None):
 
     due_date = _contract_due_date(contract)
     today = timezone.localdate()
-    days_left = max((due_date - today).days, 0)
+    days_remaining = max((due_date - today).days, 0)
+    days_covered = _days_covered(payment.amount, contract.daily_price)
+
     message = render_sms_template(
         "payment_confirmation",
         default_sms_language(language),
         amount_paid=format_mwk(payment.amount),
         balance_left=format_mwk(contract.remaining_amount),
-        days_left=days_left,
-        next_payment_date=format_sms_date(due_date),
+        days_covered=days_covered,
+        paid_through_date=format_sms_date(due_date),
+        days_remaining=days_remaining,
+        support_number=_support_number(),
     )
     return send_sms(
         contract.customer_phone,
@@ -198,6 +218,26 @@ def send_payment_confirmation_sms(payment, language=None):
     )
 
 
+def send_approval_sms(contract, language=None):
+    """Send SMS when a contract is approved. Safe — does not crash if SMS is off."""
+    try:
+        message = render_sms_template(
+            "approval",
+            default_sms_language(language),
+        )
+        return send_sms(
+            contract.customer_phone,
+            message,
+            purpose=SMSLog.PURPOSE_PAYMENT_CONFIRMATION,
+            payment_contract=contract,
+            application=contract.source_application,
+            language=language,
+        )
+    except Exception:
+        logger.exception("send_approval_sms failed for contract %s", getattr(contract, "pk", "?"))
+        return None
+
+
 def send_contract_reminder(contract, purpose, language=None):
     due_date = _contract_due_date(contract)
     today = timezone.localdate()
@@ -208,6 +248,7 @@ def send_contract_reminder(contract, purpose, language=None):
         "due_date": format_sms_date(due_date),
         "days_until_due": max((due_date - today).days, 0),
         "balance_left": format_mwk(contract.remaining_amount),
+        "support_number": _support_number(),
     }
     message = render_sms_template(purpose, default_sms_language(language), **context)
     return send_sms(

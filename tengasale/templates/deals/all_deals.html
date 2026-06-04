@@ -126,24 +126,42 @@
                     <span class="product-card__price-value">MWK <span id="dd-cash"></span></span>
                 </div>
                 <div class="product-card__price-item">
-                    <span class="product-card__price-label">Deposit</span>
+                    <span class="product-card__price-label">Deposit (<span id="dd-dep-pct"></span>%)</span>
                     <span class="product-card__price-value">MWK <span id="dd-deposit"></span></span>
+                </div>
+                <div class="product-card__price-item" style="grid-column:1/-1;background:#fff8f3;border-radius:6px;padding:6px 8px;">
+                    <span class="product-card__price-label" style="color:#ff5a00;font-weight:700;">&#128275; Deposit unlocks device for 14 days</span>
                 </div>
                 <div class="product-card__price-item">
                     <span class="product-card__price-label">Total contract</span>
                     <span class="product-card__price-value">MWK <span id="dd-total"></span></span>
                 </div>
                 <div class="product-card__price-item">
-                    <span class="product-card__price-label">Monthly payment</span>
-                    <span class="product-card__price-value">MWK <span id="dd-monthly"></span></span>
-                </div>
-                <div class="product-card__price-item">
-                    <span class="product-card__price-label">Daily payment</span>
-                    <span class="product-card__price-value">MWK <span id="dd-daily"></span></span>
-                </div>
-                <div class="product-card__price-item">
                     <span class="product-card__price-label">Term</span>
                     <span class="product-card__price-value"><span id="dd-term-label">12</span> months</span>
+                </div>
+            </div>
+            <div style="margin:10px 0 6px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.04em;">Repayment Options</div>
+            <div class="product-card__price-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="product-card__price-item">
+                    <span class="product-card__price-label">Per day</span>
+                    <span class="product-card__price-value" style="font-size:13px;">MWK <span id="dd-daily"></span></span>
+                </div>
+                <div class="product-card__price-item">
+                    <span class="product-card__price-label">Per week (7 days)</span>
+                    <span class="product-card__price-value" style="font-size:13px;">MWK <span id="dd-weekly"></span></span>
+                </div>
+                <div class="product-card__price-item">
+                    <span class="product-card__price-label">Per 2 weeks</span>
+                    <span class="product-card__price-value" style="font-size:13px;">MWK <span id="dd-biweekly"></span></span>
+                </div>
+                <div class="product-card__price-item">
+                    <span class="product-card__price-label">Per 30 days</span>
+                    <span class="product-card__price-value" style="font-size:13px;">MWK <span id="dd-monthly"></span></span>
+                </div>
+                <div class="product-card__price-item">
+                    <span class="product-card__price-label">Per 2 months</span>
+                    <span class="product-card__price-value" style="font-size:13px;">MWK <span id="dd-bimonthly"></span></span>
                 </div>
             </div>
 
@@ -323,13 +341,22 @@
         const monthly = contractTotal / selectedTerm;
         const daily   = contractTotal / (selectedTerm * 30);
 
+        var weekly    = daily * 7;
+        var biweekly  = daily * 14;
+        var bimonthly = monthly * 2;
+
         document.getElementById("dd-cash").textContent = money(cash);
         document.getElementById("dd-deposit").textContent = money(deposit);
         document.getElementById("dd-total").textContent = money(contractTotal);
         document.getElementById("dd-monthly").textContent = money(monthly);
         document.getElementById("dd-daily").textContent = money(daily);
+        document.getElementById("dd-weekly").textContent = money(weekly);
+        document.getElementById("dd-biweekly").textContent = money(biweekly);
+        document.getElementById("dd-bimonthly").textContent = money(bimonthly);
         document.getElementById("dd-cash-slider-val").textContent = money(cash);
         document.getElementById("dd-term-label").textContent = selectedTerm;
+        var depPct = document.getElementById("dd-dep-pct");
+        if (depPct) depPct.textContent = Math.round(Number(selectedDeal.deposit_percent));
     }
 
     document.getElementById("dd-cash-slider").addEventListener("input", updatePricing);

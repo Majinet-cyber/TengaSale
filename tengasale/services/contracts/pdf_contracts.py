@@ -303,13 +303,20 @@ def get_contract_context(contract) -> dict[str, Any]:
         "finance_charges": finance_charges,
         "total_contract_price": total_contract_price,
 
-        # Payment
-        "contract_term_months": term_months,
+        # Payment — base amounts
+        "contract_term_months": term_months or (contract.term_months if hasattr(contract, "term_months") else 12),
         "instalment_amount": monthly_payment,
+        "weekly_instalment": round(float(daily_payment) * 7, 2) if daily_payment else 0,
+        "two_week_instalment": round(float(daily_payment) * 14, 2) if daily_payment else 0,
+        "two_month_instalment": round(float(monthly_payment) * 2, 2) if monthly_payment else 0,
         "daily_instalment": daily_payment,
-        "payment_frequency": "Monthly / Daily",
+        "payment_frequency": "Flexible — daily, weekly, fortnightly, monthly, or custom amount",
         "total_payable": total_contract_price,
         "payment_channels": "Airtel Money, TNM Mpamba, Bank Transfer",
+
+        # Deposit access
+        "deposit_access_days": getattr(deal, "unlock_days", None) or 14,
+        "activation_date": contract.active_at.date() if getattr(contract, "active_at", None) else (contract.created_at.date() if contract.created_at else ""),
 
         # Signatures
         "customer_sig_url": customer_sig_url,

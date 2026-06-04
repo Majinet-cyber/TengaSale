@@ -299,6 +299,11 @@ TENGASALE_COMPANY_EMAIL = os.environ.get("TENGASALE_COMPANY_EMAIL", "info@tengas
 TENGASALE_COMPANY_PHONE = os.environ.get("TENGASALE_COMPANY_PHONE", "+265 (0) XXX XXX XXX")
 TENGASALE_GOVERNING_LAW = os.environ.get("TENGASALE_GOVERNING_LAW", "the laws of the Republic of Malawi")
 
+# ── Deposit Access Period ─────────────────────────────────────────────────────
+# Number of days of device access granted by the deposit payment.
+# New contracts use this value. Existing contracts retain their stored deposit_access_days.
+DEFAULT_DEPOSIT_ACCESS_DAYS = int(os.environ.get("DEFAULT_DEPOSIT_ACCESS_DAYS", "14"))
+
 # ── Device Lock Integration Layer ─────────────────────────────────────────────
 # Master switch — set True when a real provider is available.
 # With False, all lock actions are no-ops but profiles/events are still created.

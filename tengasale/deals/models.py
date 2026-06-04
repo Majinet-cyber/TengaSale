@@ -73,7 +73,10 @@ class DeviceDeal(models.Model):
     )
     loan_multiplier = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("2.5"))
     term_months = models.PositiveIntegerField(default=12)
-    unlock_days = models.PositiveIntegerField(default=7)
+    unlock_days = models.PositiveIntegerField(
+        default=14,
+        help_text="Number of days of device access granted by the deposit payment.",
+    )
 
     total_12_month_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
@@ -164,6 +167,18 @@ class DeviceDeal(models.Model):
     @property
     def daily_payment(self):
         return self.calculated_daily_payment(self.default_cash_price or self.cash_price)
+
+    @property
+    def weekly_payment(self):
+        return round(self.daily_payment * 7, 2)
+
+    @property
+    def two_week_payment(self):
+        return round(self.daily_payment * 14, 2)
+
+    @property
+    def two_month_payment(self):
+        return round(self.monthly_payment * 2, 2)
 
     @property
     def early_3_month_price(self):

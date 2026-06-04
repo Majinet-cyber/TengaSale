@@ -700,6 +700,27 @@ class FinancingApplication(models.Model):
         self.calculated_3_month_monthly = deal.calculated_3_month_monthly(selected_cash_price)
         self.calculated_3_month_daily = deal.calculated_3_month_daily(selected_cash_price)
 
+    @property
+    def calculated_weekly_payment(self):
+        """Convenience: 7 × daily repayment."""
+        from decimal import Decimal
+        daily = self.calculated_daily_payment or Decimal("0")
+        return round(daily * 7, 2)
+
+    @property
+    def calculated_two_week_payment(self):
+        """Convenience: 14 × daily repayment."""
+        from decimal import Decimal
+        daily = self.calculated_daily_payment or Decimal("0")
+        return round(daily * 14, 2)
+
+    @property
+    def calculated_two_month_payment(self):
+        """Convenience: 2 × monthly repayment."""
+        from decimal import Decimal
+        monthly = self.calculated_monthly_payment or Decimal("0")
+        return round(monthly * 2, 2)
+
     def __str__(self):
         return f"{self.application_number} - {self.customer_name}"
 

@@ -81,9 +81,11 @@
       <div><span class="cpd-label">Started</span><strong>{{ contract.start_date|date:"d M Y" }}</strong></div>
       {% endif %}
       {% if contract.due_date %}
-      <div><span class="cpd-label">Due</span><strong>{{ contract.due_date|date:"d M Y" }}</strong></div>
+      <div><span class="cpd-label">Paid Through</span><strong>{{ contract.due_date|date:"d M Y" }}</strong></div>
       {% endif %}
       <div><span class="cpd-label">Term</span><strong>{{ contract.term_months }} months</strong></div>
+      <div><span class="cpd-label">Daily Rate</span><strong>{{ contract.daily_price|daily_mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit Access</span><strong>{{ contract.deposit_access_days|default:14 }} days</strong></div>
     </div>
   </section>
 
@@ -149,23 +151,26 @@
   </section>
   {% elif deposit_required and deposit_complete %}
   <section class="cpd-alert-card cpd-alert-card--safe">
-    <strong>Deposit paid</strong>
-    <span>Deposit of {{ deposit_required|mwk }} is complete.</span>
+    <strong>Deposit paid &#10003;</strong>
+    <span>Deposit of {{ deposit_required|mwk }} is complete. This gave you {{ contract.deposit_access_days|default:14 }} days of initial access.</span>
   </section>
   {% endif %}
 
   {% if contract.status != 'completed' and not deposit_pending and pricing_complete %}
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Repayment</div>
+      <div class="cpd-section-card__title">Make a Payment</div>
+      <div class="cpd-section-card__sub">Each payment extends your device access</div>
     </div>
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="repayment">
       <div class="cpd-amount-seg">
-        <button type="button" class="cpd-seg-btn" data-amount-mode="today" data-amount-multiplier="1"><span class="cpd-seg-btn__label">Today</span><span class="cpd-seg-btn__val">{{ contract.daily_price|daily_mwk }}</span></button>
-        <button type="button" class="cpd-seg-btn" data-amount-mode="7d" data-amount-multiplier="7"><span class="cpd-seg-btn__label">7 Days</span><span class="cpd-seg-btn__val" data-seven-day-label></span></button>
-        <button type="button" class="cpd-seg-btn" data-amount-mode="30d" data-amount-value="{{ contract.thirty_day_price|floatformat:0 }}"><span class="cpd-seg-btn__label">30 Days</span><span class="cpd-seg-btn__val">{{ contract.thirty_day_price|monthly_mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="1d" data-amount-multiplier="1"><span class="cpd-seg-btn__label">1 Day</span><span class="cpd-seg-btn__val" data-label-1d></span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="7d" data-amount-multiplier="7"><span class="cpd-seg-btn__label">1 Week</span><span class="cpd-seg-btn__val" data-label-7d></span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="14d" data-amount-multiplier="14"><span class="cpd-seg-btn__label">2 Weeks</span><span class="cpd-seg-btn__val" data-label-14d></span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="30d" data-amount-value="{{ contract.thirty_day_price|floatformat:0 }}"><span class="cpd-seg-btn__label">1 Month</span><span class="cpd-seg-btn__val">{{ contract.thirty_day_price|monthly_mwk }}</span></button>
+        <button type="button" class="cpd-seg-btn" data-amount-mode="60d" data-amount-multiplier="2" data-amount-base="thirty"><span class="cpd-seg-btn__label">2 Months</span><span class="cpd-seg-btn__val" data-label-60d></span></button>
         <button type="button" class="cpd-seg-btn" data-amount-mode="full" data-amount-value="{{ remaining|floatformat:0 }}"><span class="cpd-seg-btn__label">Full</span><span class="cpd-seg-btn__val">{{ remaining|mwk }}</span></button>
       </div>
       <div class="cpd-form-row">
@@ -300,6 +305,7 @@
 
   document.querySelectorAll('[data-payment-form]').forEach(function (form) {
     var daily = Number(form.dataset.daily || 0);
+    var thirty = Number(form.dataset.thirty || 0);
     var amountInput = form.querySelector('[data-payment-amount]');
     var providerInput = form.querySelector('[data-payment-provider]');
     var phoneInput = form.querySelector('[data-payment-phone]');
@@ -307,8 +313,15 @@
     var submitLabel = form.querySelector('[data-payment-submit-label]');
     var hint = form.querySelector('[data-payment-hint]');
 
-    var sevenDay = form.querySelector('[data-seven-day-label]');
-    if (sevenDay) sevenDay.textContent = fmt(daily * 7);
+    // Populate dynamic labels
+    var lbl1d = form.querySelector('[data-label-1d]');
+    var lbl7d = form.querySelector('[data-label-7d]');
+    var lbl14d = form.querySelector('[data-label-14d]');
+    var lbl60d = form.querySelector('[data-label-60d]');
+    if (lbl1d) lbl1d.textContent = fmt(daily);
+    if (lbl7d) lbl7d.textContent = fmt(daily * 7);
+    if (lbl14d) lbl14d.textContent = fmt(daily * 14);
+    if (lbl60d) lbl60d.textContent = fmt(thirty * 2);
 
     function setAmount(amount, clickedButton) {
       if (!amountInput || !amount) return;
@@ -321,7 +334,14 @@
 
     form.querySelectorAll('[data-amount-mode]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var amount = btn.dataset.amountValue ? Number(btn.dataset.amountValue) : daily * Number(btn.dataset.amountMultiplier || 1);
+        var amount;
+        if (btn.dataset.amountValue) {
+          amount = Number(btn.dataset.amountValue);
+        } else if (btn.dataset.amountBase === 'thirty') {
+          amount = thirty * Number(btn.dataset.amountMultiplier || 1);
+        } else {
+          amount = daily * Number(btn.dataset.amountMultiplier || 1);
+        }
         setAmount(amount, btn);
       });
     });
@@ -332,8 +352,13 @@
       if (submitBtn) submitBtn.disabled = !valid;
       if (submitLabel) submitLabel.textContent = amount > 0 ? fmt(amount) : '';
       if (hint) {
-        hint.hidden = !(amount > 0);
-        hint.textContent = amount > 0 ? 'Selected amount: ' + fmt(amount) : '';
+        hint.hidden = !(amount > 0 && daily > 0);
+        if (amount > 0 && daily > 0) {
+          var daysCovered = Math.floor(amount / daily);
+          hint.textContent = daysCovered > 0
+            ? 'This payment covers approximately ' + daysCovered + ' day' + (daysCovered !== 1 ? 's' : '') + ' of access.'
+            : 'Amount is less than 1 day\'s rate (' + fmt(daily) + ').';
+        }
       }
     }
 

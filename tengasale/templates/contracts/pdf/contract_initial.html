@@ -278,6 +278,10 @@
     <td>MWK {{ instalment_amount|floatformat:0|intcomma }}</td>
   </tr>
   <tr>
+    <td class="label">Weekly Equivalent</td>
+    <td>MWK {{ weekly_instalment|default:instalment_amount|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
     <td class="label">Daily Instalment</td>
     <td>MWK {{ daily_instalment|floatformat:0|intcomma }}</td>
   </tr>
@@ -295,76 +299,131 @@
   </tr>
 </table>
 
+<!-- ═══════════════════ C. DEPOSIT AND INITIAL ACCESS ═══════════════════ -->
+<h2>C. Deposit and Initial Device Access</h2>
+<table class="data-table">
+  <tr>
+    <td class="label">Deposit Amount</td>
+    <td><strong>MWK {{ deposit_paid|floatformat:0|intcomma }}</strong></td>
+  </tr>
+  <tr>
+    <td class="label">Initial Access Period</td>
+    <td><strong>{{ deposit_access_days|default:"14" }} days</strong></td>
+  </tr>
+  <tr>
+    <td class="label">Access Start Date</td>
+    <td>{{ activation_date|default:contract_date }}</td>
+  </tr>
+</table>
+<div class="notice-box" style="margin-top:6px;">
+  <strong>Deposit and Initial Access:</strong>
+  The deposit paid under this agreement gives the customer <strong>fourteen (14) days</strong> of device access
+  from the date of device setup/activation, subject to the terms of this agreement.
+</div>
+
+<!-- ═══════════════════ D. FLEXIBLE REPAYMENT ═══════════════════ -->
+<h2>D. Flexible Repayment Options</h2>
+<div class="clause">
+  <p>After the initial 14-day deposit access period, the customer may make payments in any of the following durations.
+  Each successful payment extends device access according to the contract's daily repayment rate and reduces the outstanding balance.</p>
+</div>
+<table class="data-table">
+  <tr>
+    <td class="label">Pay for 1 day</td>
+    <td>MWK {{ daily_instalment|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
+    <td class="label">Pay for 1 week (7 days)</td>
+    <td>MWK {{ weekly_instalment|default:instalment_amount|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
+    <td class="label">Pay for 2 weeks (14 days)</td>
+    <td>MWK {{ two_week_instalment|default:instalment_amount|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
+    <td class="label">Pay for 30 days</td>
+    <td>MWK {{ instalment_amount|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
+    <td class="label">Pay for 60 days</td>
+    <td>MWK {{ two_month_instalment|default:instalment_amount|floatformat:0|intcomma }}</td>
+  </tr>
+  <tr>
+    <td class="label">Custom amount</td>
+    <td>Days covered = amount &divide; daily rate (MWK {{ daily_instalment|floatformat:0|intcomma }}/day)</td>
+  </tr>
+</table>
+
 <!-- ═══════════════════ LEGAL CLAUSES ═══════════════════ -->
 <h2>Legal Terms and Conditions</h2>
 
 <div class="clause">
-  <span class="clause-letter">C. OWNERSHIP.</span>
-  <p>The financed device shall remain the property of TengaSale Digital Finance ("TengaSale") until the Total Contract Price has been paid in full by the customer. No title, interest, or ownership rights shall pass to the customer until full payment is confirmed by TengaSale.</p>
+  <span class="clause-letter">E. OWNERSHIP.</span>
+  <p>The financed device shall remain the property of TengaSale Digital Finance ("TengaSale") until the Total Contract Price has been paid in full by the customer. No title, interest, or ownership rights shall pass to the customer until full payment is confirmed by TengaSale. Until full repayment, TengaSale retains its ownership, security interest, and enforcement rights, including device restriction or locking where permitted under this agreement.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">D. CUSTOMER CONSENT.</span>
+  <span class="clause-letter">F. CUSTOMER CONSENT.</span>
   <p>By accepting this agreement, the customer consents to: (i) purchasing the device on an instalment basis as described above; (ii) TengaSale retaining ownership of the device until fully paid; (iii) TengaSale monitoring repayment status and applying device access restrictions in accordance with this agreement; and (iv) the customer's repayment obligations as set out herein.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">E. DEFAULT.</span>
-  <p>The customer shall be considered in default if any instalment payment remains unpaid for <strong>14 consecutive days</strong> from its due date. Upon default, TengaSale reserves the right to restrict access to the device and/or pursue recovery of the outstanding balance.</p>
+  <span class="clause-letter">G. DEFAULT AND DEVICE RESTRICTION.</span>
+  <p>The deposit paid by the customer grants fourteen (14) days of device access from the date of device activation. After this initial period, the customer must make regular payments to maintain continuous access. Each successful payment extends device access by the number of days corresponding to the amount paid, calculated at the daily repayment rate. The customer shall be considered in default if the paid-through date has passed and no payment has been received. Upon default, TengaSale reserves the right to restrict access to the device remotely and/or pursue recovery of the outstanding balance. Device access is restored upon receipt of a payment sufficient to extend the paid-through date beyond the current date.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">F. REPOSSESSION.</span>
+  <span class="clause-letter">H. REPOSSESSION.</span>
   <p>If the customer remains in default for <strong>30 or more consecutive days</strong>, TengaSale may repossess the financed device. Repossession may be carried out by TengaSale or its authorised agents. The customer shall cooperate with any lawful repossession process.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">G. DISPOSAL OF REPOSSESSED DEVICE.</span>
+  <span class="clause-letter">I. DISPOSAL OF REPOSSESSED DEVICE.</span>
   <p>Following repossession, TengaSale may sell or otherwise dispose of the repossessed device to recover the outstanding balance. Any proceeds in excess of the outstanding amount, after deducting reasonable costs of repossession and disposal, shall be returned to the customer.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">H. ELECTRONIC SIGNATURE.</span>
+  <span class="clause-letter">J. ELECTRONIC SIGNATURE.</span>
   <p>The customer acknowledges that an OTP verification code, biometric confirmation, touchscreen signature, or any form of electronic acceptance (including acceptance via SMS, WhatsApp, or electronic form) constitutes a valid and legally binding signature for the purposes of this agreement. The customer's electronic acceptance of this agreement is equivalent to a handwritten signature.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">I. IMEI AND DEVICE VERIFICATION.</span>
+  <span class="clause-letter">K. IMEI AND DEVICE VERIFICATION.</span>
   <p>The customer acknowledges that the financed smartphone is identified by its IMEI and/or serial number as recorded in this agreement. TengaSale may verify the device identity at any time for fraud prevention, contract administration, and device-lock readiness. Any discrepancy in IMEI may result in contract suspension pending investigation.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">J. DEVICE LOCK AND ACCESS RESTRICTION.</span>
+  <span class="clause-letter">L. DEVICE LOCK AND ACCESS RESTRICTION.</span>
   <p>The customer acknowledges that the device may be enrolled in a device-lock or device-management system operated by TengaSale or a third-party provider. If payments are overdue in accordance with this agreement and applicable law, TengaSale may restrict access to the device remotely until the account is brought up to date or fully settled. Device unlocking will follow upon payment confirmation.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">K. PAYMENT ALLOCATION AND RECONCILIATION.</span>
+  <span class="clause-letter">M. PAYMENT ALLOCATION AND RECONCILIATION.</span>
   <p>All payments made by the customer shall be applied to the outstanding contract balance and recorded in TengaSale's systems. Payment confirmation may depend on mobile money or payment provider reconciliation timelines. The customer is advised to retain payment receipts.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">L. WHATSAPP / SMS / EMAIL COMMUNICATION CONSENT.</span>
+  <span class="clause-letter">N. WHATSAPP / SMS / EMAIL COMMUNICATION CONSENT.</span>
   <p>The customer consents to receiving contract notices, payment reminders, repayment confirmations, contract documents, and completion records via WhatsApp, SMS, phone call, or email, using the contact details provided in this agreement. The customer may opt out of marketing communications but acknowledges that contractual notices are necessary for contract administration.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">M. CONTRACT PDF DELIVERY.</span>
+  <span class="clause-letter">O. CONTRACT PDF DELIVERY.</span>
   <p>Upon contract completion, TengaSale may send the final signed contract PDF and completion record to the customer's registered WhatsApp number or other approved communication channel. The customer consents to receiving such documents electronically.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">N. KYC AND DATA PROCESSING CONSENT.</span>
+  <span class="clause-letter">P. KYC AND DATA PROCESSING CONSENT.</span>
   <p>The customer consents to TengaSale collecting and processing: National ID or passport details; customer photograph and selfie; ID document images; phone number; physical address; payment records; and contract records. This data may be used for identity verification, fraud prevention, contract administration, debt recovery, and compliance with applicable laws. Data will be handled in accordance with TengaSale's Privacy Policy.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">O. AUDIT TRAIL.</span>
+  <span class="clause-letter">Q. AUDIT TRAIL.</span>
   <p>The customer acknowledges that all electronic actions in connection with this agreement, including OTP verification, electronic signatures, underwriter approval, payment events, IMEI verification, and device-lock events, may be recorded as part of the contract audit trail. Such records may be used as evidence in dispute resolution.</p>
 </div>
 
 <div class="clause">
-  <span class="clause-letter">P. COMPLETION AND OWNERSHIP TRANSFER.</span>
+  <span class="clause-letter">R. COMPLETION AND OWNERSHIP TRANSFER.</span>
   <p>Upon full payment of the Total Contract Price and written confirmation by TengaSale, this contract shall be marked completed and full ownership of the device shall transfer to the customer. Ownership transfer is subject to there being no unresolved fraud, chargeback, reversal, or legal issue relating to the contract.</p>
 </div>
 
@@ -435,8 +494,10 @@
   <strong>Conditional Possession Notice:</strong>
   The customer is granted possession and use of the device subject to the terms of this instalment sale agreement.
   <strong>Ownership of the device shall transfer to the customer only after full repayment of all amounts due under this contract.</strong>
+  The deposit gives the customer fourteen (14) days of initial device access from the date of activation. After that, continued
+  access depends on maintaining payments. Each payment extends access based on the daily repayment rate.
   Until full repayment, TengaSale retains its ownership, security interest, and enforcement rights, including device restriction
-  or locking where permitted by the agreement. Default occurs after 14 days unpaid; repossession rights arise after 30 days unpaid.
+  or locking where permitted by the agreement. Repossession rights arise after 30 days without payment.
   Keep a copy of this document for your records.
 </div>
 

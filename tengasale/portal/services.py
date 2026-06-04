@@ -66,17 +66,52 @@ def calculate_lock_date(contract) -> "date | None":
     return contract.due_date + timedelta(days=3)
 
 
+def get_deposit_access_days(contract) -> int:
+    """
+    Return the number of days unlocked by the deposit for this contract.
+    Reads from contract.deposit_access_days if available, otherwise falls back
+    to the DEFAULT_DEPOSIT_ACCESS_DAYS setting (default 14).
+    """
+    from django.conf import settings as django_settings
+    if hasattr(contract, "deposit_access_days") and contract.deposit_access_days:
+        return int(contract.deposit_access_days)
+    return int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 14))
+
+
+def days_covered_by_payment(amount: Decimal, daily_price: Decimal) -> int:
+    """
+    Calculate the number of full days covered by a payment amount.
+    Returns 0 if daily_price is zero or invalid.
+    """
+    if not daily_price or daily_price <= Decimal("0"):
+        return 0
+    return int(amount / daily_price)
+
+
+def amount_required_for_days(days: int, daily_price: Decimal) -> Decimal:
+    """Return the exact amount required to cover a given number of days."""
+    if not daily_price or daily_price <= Decimal("0") or days <= 0:
+        return Decimal("0")
+    return (Decimal(days) * daily_price).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+
+
 def calculate_next_due_date(contract) -> "date":
     """
     Recalculate due date based on amount paid.
-    Each daily_price paid extends active usage by 1 day from start_date.
+
+    Formula:
+        due_date = start_date + deposit_access_days (if deposit complete)
+                   + floor(amount_paid / daily_price)
+
+    The deposit gives the customer their initial access window (14 days by default).
+    Each subsequent repayment extends access proportionally.
     """
-    if not contract.daily_price or contract.daily_price <= 0:
-        # Fallback: extend by term if fully paid, else today
+    if not contract.daily_price or contract.daily_price <= Decimal("0"):
         return timezone.localdate()
 
+    deposit_offset = get_deposit_access_days(contract) if contract.deposit_complete else 0
     days_paid = int(contract.amount_paid / contract.daily_price)
-    return contract.start_date + timedelta(days=days_paid)
+    return contract.start_date + timedelta(days=deposit_offset + days_paid)
 
 
 def calculate_early_settlement_options(contract) -> list[dict]:
@@ -545,9 +580,7 @@ def apply_payment_to_contract(
             arrears_cleared = min(applied, arrears_amount)
 
     # Calculate days extended by this payment
-    days_extended = 0
-    if contract.daily_price and contract.daily_price > 0:
-        days_extended = int(applied / contract.daily_price)
+    days_extended = days_covered_by_payment(applied, contract.daily_price)
 
     # Update contract financials
     contract.amount_paid += applied
@@ -885,6 +918,15 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         "device_model": pricing.get("device_model", ""),
     }
 
+    # Resolve deposit_access_days from the deal or fall back to setting default
+    from django.conf import settings as django_settings
+    _default_access_days = int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 14))
+    try:
+        _deal = getattr(application, "deal", None)
+        _deposit_access_days = int(_deal.unlock_days) if _deal and _deal.unlock_days else _default_access_days
+    except Exception:
+        _deposit_access_days = _default_access_days
+
     contract = PaymentContract.objects.create(
         source_application=application,
         customer_name=application.customer_name or "",
@@ -899,6 +941,7 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         daily_price=pricing["daily_repayment"],
         thirty_day_price=pricing["monthly_repayment"],
         term_months=pricing["term_months"],
+        deposit_access_days=_deposit_access_days,
         status=PaymentContract.STATUS_ACTIVE,
         provider_metadata=provider_meta,
     )
