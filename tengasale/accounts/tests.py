@@ -2,13 +2,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib import admin
 from django.core.management import call_command
+from django.db.models import Sum
 from django.contrib.staticfiles import finders
 from django.conf import settings
 from django.test import TestCase
 from django.urls import resolve, reverse
+from decimal import Decimal
 
 from .admin import UserProfileInline
-from .models import UserProfile
+from .models import Department, FounderEquityRecord, Rank, StaffRole, UserProfile, VoltsActionType, VoltsTransaction
+from .services import MODULE_EQUITY, MODULE_VOLTS, can_approve_volts, monthly_volts_summary, user_can_access_module
 from .utils import (
     assign_role,
     get_tengasale_role,
@@ -220,6 +223,15 @@ class LoginRedirectTests(TestCase):
 
         self.assert_login_redirects("emajinet-style", reverse("hq_dashboard"))
 
+    def test_founder_staff_login_redirects_to_staff_dashboard(self):
+        call_command("seed_staff_system")
+        user = self.make_user("founder-login", "HQ")
+        user.profile.user_type = UserProfile.USER_TYPE_FOUNDER
+        user.profile.is_founder = True
+        user.profile.save(update_fields=["user_type", "is_founder"])
+
+        self.assert_login_redirects("founder-login", reverse("staff_dashboard"))
+
     def test_no_role_page_redirects_superuser_to_hq(self):
         self.User.objects.create_superuser(username="super-no-role-page", password="test-pass-123")
         self.client.login(username="super-no-role-page", password="test-pass-123")
@@ -380,12 +392,110 @@ class UserProfileAdminTests(TestCase):
                 "user": user.pk,
                 "role": "underwriter",
                 "phone_number": "",
+                "department": "",
+                "staff_role": "",
+                "rank": "",
+                "supervisor": "",
+                "user_type": "",
+                "status": "active",
+                "is_founder": "",
+                "date_joined_company": "",
+                "avatar_initials": "",
             },
         )
 
         user.profile.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertEqual(user.profile.role, "underwriter")
+
+
+class FounderStaffVoltsTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        call_command("seed_staff_system")
+        self.ceo = self.User.objects.create_user(username="ceo", password="test-pass-123", is_staff=True)
+        assign_role(self.ceo, "hq")
+        ceo_role = StaffRole.objects.get(name="CEO / Strategy Lead")
+        self.ceo.profile.staff_role = ceo_role
+        self.ceo.profile.department = ceo_role.department
+        self.ceo.profile.rank = Rank.objects.get(code="D1")
+        self.ceo.profile.user_type = UserProfile.USER_TYPE_EXECUTIVE
+        self.ceo.profile.save()
+
+        self.tech = self.User.objects.create_user(username="techlead", password="test-pass-123", is_staff=True)
+        assign_role(self.tech, "hq")
+        tech_role = StaffRole.objects.get(name="Technology & Product Lead")
+        self.tech.profile.staff_role = tech_role
+        self.tech.profile.department = tech_role.department
+        self.tech.profile.rank = Rank.objects.get(code="C2")
+        self.tech.profile.user_type = UserProfile.USER_TYPE_STAFF
+        self.tech.profile.save()
+
+    def test_seed_staff_system_creates_reference_data(self):
+        self.assertEqual(Department.objects.count(), 7)
+        self.assertTrue(Rank.objects.filter(code="C2", multiplier=Decimal("2.50")).exists())
+        self.assertTrue(StaffRole.objects.filter(name="Merchant Administrator").exists())
+        self.assertTrue(VoltsActionType.objects.filter(name="Funding secured", base_volts=5000).exists())
+        self.assertEqual(FounderEquityRecord.objects.aggregate(total=Sum("allocated_shares"))["total"], 70000)
+
+    def test_role_module_permissions_are_backend_enforced(self):
+        self.assertTrue(user_can_access_module(self.ceo, MODULE_EQUITY))
+        self.assertTrue(user_can_access_module(self.ceo, MODULE_VOLTS))
+        self.assertFalse(user_can_access_module(self.tech, MODULE_EQUITY))
+        self.assertFalse(user_can_access_module(self.tech, MODULE_VOLTS))
+
+    def test_volts_calculation_and_monthly_ceiling(self):
+        action = VoltsActionType.objects.get(name="Major feature shipped")
+        tx = VoltsTransaction.objects.create(
+            user=self.tech,
+            action_type=action,
+            base_volts=action.base_volts,
+            quality_score=Decimal("0.90"),
+            discipline_score=Decimal("0.95"),
+            results_score=Decimal("0.85"),
+            status=VoltsTransaction.STATUS_APPROVED,
+        )
+        tx.refresh_from_db()
+
+        self.assertEqual(tx.rank_multiplier, Decimal("2.50"))
+        self.assertEqual(tx.final_volts, Decimal("908.44"))
+        self.assertEqual(tx.estimated_amount_mwk, Decimal("90843.75"))
+
+        summary = monthly_volts_summary(self.tech)
+        self.assertEqual(summary["approved_volts"], Decimal("908.44"))
+        self.assertEqual(summary["capped_pay"], Decimal("90843.75"))
+
+    def test_monthly_ceiling_is_enforced(self):
+        action = VoltsActionType.objects.get(name="Funding secured")
+        VoltsTransaction.objects.create(
+            user=self.tech,
+            action_type=action,
+            base_volts=Decimal("500000"),
+            status=VoltsTransaction.STATUS_APPROVED,
+        )
+
+        summary = monthly_volts_summary(self.tech)
+
+        self.assertEqual(summary["monthly_ceiling"], Decimal("8000000.00"))
+        self.assertEqual(summary["capped_pay"], Decimal("8000000.00"))
+
+    def test_user_cannot_approve_own_volts(self):
+        action = VoltsActionType.objects.get(name="Bug fixed")
+        tx = VoltsTransaction.objects.create(user=self.tech, action_type=action, base_volts=action.base_volts)
+
+        self.assertFalse(can_approve_volts(self.tech, tx))
+        with self.assertRaises(ValueError):
+            tx.approve(self.tech)
+
+    def test_equity_dashboard_restricted_from_tech_lead_and_visible_to_ceo(self):
+        self.client.login(username="techlead", password="test-pass-123")
+        denied = self.client.get(reverse("hq_founder_equity"))
+        self.assertEqual(denied.status_code, 403)
+
+        self.client.login(username="ceo", password="test-pass-123")
+        allowed = self.client.get(reverse("hq_founder_equity"))
+        self.assertEqual(allowed.status_code, 200)
+        self.assertContains(allowed, "Founder Equity")
 
 
 class SeedTengaSaleUsersCommandTests(TestCase):

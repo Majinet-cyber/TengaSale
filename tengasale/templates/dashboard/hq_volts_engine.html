@@ -1,0 +1,105 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Volts Engine - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.ops-page{max-width:1280px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
+.ops-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.ops-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
+.ops-title{margin:4px 0;font-size:29px;line-height:1.1}
+.ops-sub{margin:0;color:#667085;font-size:14px}
+.ops-btn{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 12px;border-radius:10px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-weight:850;text-decoration:none}
+.ops-btn--orange{background:#ff5a00;border-color:#ff5a00;color:#fff}
+.ops-btn--danger{background:#fff1f3;border-color:#fecdd3;color:#be123c}
+.ops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
+.ops-card,.ops-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
+.ops-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.ops-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
+.ops-section{margin-bottom:14px}
+.ops-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
+.ops-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
+.ops-table{width:100%;min-width:920px;border-collapse:collapse}
+.ops-table th,.ops-table td{padding:10px 11px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
+.ops-table th{background:#f8fafc;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.ops-status{display:inline-flex;border-radius:999px;padding:4px 9px;font-weight:850;font-size:12px;background:#fff7d6;color:#92400e}
+.ops-status--approved,.ops-status--paid{background:#dcfce7;color:#166534}
+.ops-status--rejected,.ops-status--reversed{background:#fee2e2;color:#991b1b}
+.ops-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:600px){.ops-page{padding:14px 10px 40px}.ops-title{font-size:24px}.ops-card strong{font-size:19px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+  <header class="ops-head">
+    <div>
+      <div class="ops-kicker">Volts Engine</div>
+      <h1 class="ops-title">Work, quality, discipline and results</h1>
+      <p class="ops-sub">Every meaningful action earns volts. Approvals are controlled and audited.</p>
+    </div>
+    <a href="{% url 'staff_dashboard' %}" class="ops-btn">My Staff Dashboard</a>
+  </header>
+
+  <section class="ops-grid">
+    <div class="ops-card"><span>Total Approved Volts</span><strong>{{ summary.total_volts|tsnum }}</strong></div>
+    <div class="ops-card"><span>Pending Approvals</span><strong>{{ summary.pending_count|tsnum }}</strong></div>
+    <div class="ops-card"><span>Estimated Payroll</span><strong>{{ summary.estimated_payroll|mwk }}</strong></div>
+    <div class="ops-card"><span>Approved Penalties</span><strong>{{ summary.penalties|tsnum }}</strong></div>
+  </section>
+
+  <section class="ops-section">
+    <h2>Pending Approvals</h2>
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead><tr><th>User</th><th>Action</th><th>Department</th><th>Final Volts</th><th>Estimated Pay</th><th>Evidence</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for tx in pending_transactions %}
+          <tr>
+            <td>{{ tx.user.get_full_name|default:tx.user.username }}</td>
+            <td>{{ tx.action_type.name }}</td>
+            <td>{{ tx.department.name|default:"-" }}</td>
+            <td>{{ tx.final_volts|tsnum }}</td>
+            <td>{{ tx.estimated_amount_mwk|mwk }}</td>
+            <td>{{ tx.evidence_text|default:"No evidence captured" }}</td>
+            <td>
+              <div class="ops-actions">
+                <form method="post" action="{% url 'hq_volts_action' tx.id %}">{% csrf_token %}<input type="hidden" name="action" value="approve"><button class="ops-btn ops-btn--orange" type="submit">Approve</button></form>
+                <form method="post" action="{% url 'hq_volts_action' tx.id %}">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="ops-btn ops-btn--danger" type="submit">Reject</button></form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7">No volts are waiting for approval.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ops-section">
+    <h2>Recent Volts</h2>
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead><tr><th>User</th><th>Action</th><th>Department</th><th>Status</th><th>Volts</th><th>Estimated Pay</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td>{{ tx.user.get_full_name|default:tx.user.username }}</td>
+            <td>{{ tx.action_type.name }}</td>
+            <td>{{ tx.department.name|default:"-" }}</td>
+            <td><span class="ops-status ops-status--{{ tx.status }}">{{ tx.get_status_display }}</span></td>
+            <td>{{ tx.final_volts|tsnum }}</td>
+            <td>{{ tx.estimated_amount_mwk|mwk }}</td>
+            <td>{{ tx.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7">No volts transactions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

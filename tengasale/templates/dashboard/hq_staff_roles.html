@@ -1,0 +1,72 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Staff & Roles - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.roles-page{max-width:1280px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
+.roles-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.roles-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
+.roles-title{margin:4px 0;font-size:29px;line-height:1.1}
+.roles-sub{margin:0;color:#667085;font-size:14px}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
+.roles-card,.roles-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
+.roles-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.roles-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
+.roles-section{margin-bottom:14px}
+.roles-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
+.roles-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
+.roles-table{width:100%;min-width:980px;border-collapse:collapse}
+.roles-table th,.roles-table td{padding:10px 11px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
+.roles-table th{background:#f8fafc;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.roles-chip{display:inline-flex;border-radius:999px;padding:4px 9px;background:#fff3eb;color:#ff5a00;font-weight:850;font-size:12px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="roles-page">
+  <header class="roles-head">
+    <div>
+      <div class="roles-kicker">Staff & Roles</div>
+      <h1 class="roles-title">Identity, access, rank and accountability</h1>
+      <p class="roles-sub">Users only see the modules assigned to their role and department.</p>
+    </div>
+  </header>
+
+  <section class="roles-grid">
+    <div class="roles-card"><span>Active Profiles</span><strong>{{ active_count|tsnum }}</strong></div>
+    <div class="roles-card"><span>Founders</span><strong>{{ founder_count|tsnum }}</strong></div>
+    <div class="roles-card"><span>Staff / Executives</span><strong>{{ staff_count|tsnum }}</strong></div>
+    <div class="roles-card"><span>Departments</span><strong>{{ departments|length|tsnum }}</strong></div>
+    <div class="roles-card"><span>Roles</span><strong>{{ roles|length|tsnum }}</strong></div>
+    <div class="roles-card"><span>Ranks</span><strong>{{ ranks|length|tsnum }}</strong></div>
+  </section>
+
+  <section class="roles-section">
+    <h2>Profiles</h2>
+    <div class="roles-table-wrap">
+      <table class="roles-table">
+        <thead><tr><th>User</th><th>Portal Role</th><th>Staff Role</th><th>Department</th><th>Rank</th><th>Status</th><th>Type</th><th>Supervisor</th><th>Founder</th></tr></thead>
+        <tbody>
+          {% for profile in profiles %}
+          <tr>
+            <td><strong>{{ profile.display_name }}</strong><br><small>{{ profile.user.email|default:"-" }}</small></td>
+            <td>{{ profile.get_role_display|default:"-" }}</td>
+            <td>{{ profile.staff_role.name|default:"-" }}</td>
+            <td>{{ profile.department.name|default:"-" }}</td>
+            <td><span class="roles-chip">{{ profile.rank.code|default:"-" }}</span></td>
+            <td>{{ profile.get_status_display }}</td>
+            <td>{{ profile.get_user_type_display|default:"-" }}</td>
+            <td>{% if profile.supervisor %}{{ profile.supervisor.get_full_name|default:profile.supervisor.username }}{% else %}-{% endif %}</td>
+            <td>{% if profile.is_founder %}Yes{% else %}No{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9">No profiles found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

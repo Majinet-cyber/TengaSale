@@ -98,6 +98,12 @@ def primary_role(user):
 
 def role_redirect_url(user):
     role = primary_role(user)
+    try:
+        profile = user.profile
+        if profile.user_type in {"founder", "staff", "executive"}:
+            return reverse("staff_dashboard")
+    except ObjectDoesNotExist:
+        pass
     if role == "hq":
         return reverse("hq_dashboard")
     if role == "underwriter":

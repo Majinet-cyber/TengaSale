@@ -1498,6 +1498,28 @@ body {
 
   <div class="hq-sidebar-section">
     <div class="hq-sidebar-section-label">Admin</div>
+    {% if 'staff_roles' in staff_module_keys %}
+    <a href="{% url 'staff_dashboard' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+      Founder / Staff Dashboard
+    </a>
+    <a href="{% url 'hq_staff_roles' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Staff &amp; Roles
+    </a>
+    {% endif %}
+    {% if 'volts' in staff_module_keys %}
+    <a href="{% url 'hq_volts_engine' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h8l-1 8 10-12h-8z"/></svg>
+      Volts Engine
+    </a>
+    {% endif %}
+    {% if 'equity' in staff_module_keys %}
+    <a href="{% url 'hq_founder_equity' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Founder Equity
+    </a>
+    {% endif %}
     <a href="{% url 'hq_users' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Users &amp; Roles

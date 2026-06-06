@@ -62,6 +62,8 @@ def _portal_context(request, extra=None):
 @merchant_admin_required
 def ma_dashboard(request):
     from support.models import SupportTicket
+    from commissions.models import MerchantContractPayout
+    from merchants.models import Merchant
 
     month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     today = timezone.now().date()
@@ -77,6 +79,20 @@ def ma_dashboard(request):
 
     ctx = _portal_context(request, {
         "new_leads": MerchantLead.objects.filter(status=MerchantLead.STATUS_NEW).count(),
+        "total_merchants": Merchant.objects.count(),
+        "active_merchants": Merchant.objects.filter(is_active=True).count(),
+        "inactive_merchants": Merchant.objects.filter(is_active=False).count(),
+        "pending_verification": MerchantLead.objects.filter(
+            status__in=[
+                MerchantLead.STATUS_KYC_PENDING,
+                MerchantLead.STATUS_DOCUMENTS_PENDING,
+                MerchantLead.STATUS_SITE_VISIT,
+                MerchantLead.STATUS_AWAITING_HQ,
+            ]
+        ).count(),
+        "suspended_merchants": MerchantLead.objects.filter(status=MerchantLead.STATUS_SUSPENDED).count(),
+        "merchant_documents_missing": MerchantLead.objects.filter(status=MerchantLead.STATUS_DOCUMENTS_PENDING).count(),
+        "commission_issues": MerchantContractPayout.objects.filter(status__in=["pending", "failed"]).count(),
         "kyc_pending": MerchantLead.objects.filter(status=MerchantLead.STATUS_KYC_PENDING).count(),
         "docs_pending": MerchantLead.objects.filter(status=MerchantLead.STATUS_DOCUMENTS_PENDING).count(),
         "site_visit": MerchantLead.objects.filter(status=MerchantLead.STATUS_SITE_VISIT).count(),

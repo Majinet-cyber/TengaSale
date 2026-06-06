@@ -1,0 +1,79 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Founder / Staff Dashboard - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.staff-page{max-width:1180px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
+.staff-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.staff-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
+.staff-title{margin:4px 0;font-size:29px;line-height:1.1}
+.staff-sub{margin:0;color:#667085;font-size:14px}
+.staff-actions{display:flex;gap:8px;flex-wrap:wrap}
+.staff-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 13px;border-radius:10px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-weight:850;text-decoration:none}
+.staff-btn--orange{background:#ff5a00;border-color:#ff5a00;color:#fff}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
+.staff-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
+.staff-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.staff-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
+.staff-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+.staff-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
+.staff-modules{display:flex;gap:8px;flex-wrap:wrap}
+.staff-chip{border:1px solid #d0d5dd;border-radius:999px;padding:6px 10px;background:#f8fafc;font-weight:800;font-size:12px}
+@media(max-width:600px){.staff-page{padding:14px 10px 40px}.staff-title{font-size:24px}.staff-card strong{font-size:19px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="staff-page">
+  <header class="staff-head">
+    <div>
+      <div class="staff-kicker">Founder / Staff Management</div>
+      <h1 class="staff-title">{{ profile.display_name|default:request.user.username }}</h1>
+      <p class="staff-sub">Login gives identity. Role gives access. Rank gives earning power. Volts measure work.</p>
+    </div>
+    <div class="staff-actions">
+      <a href="{% url 'hq_dashboard' %}" class="staff-btn">HQ</a>
+      {% if 'volts' in profile.staff_role.module_permissions or request.user.is_superuser %}<a href="{% url 'hq_volts_engine' %}" class="staff-btn">Volts</a>{% endif %}
+      {% if equity %}<a href="{% url 'hq_founder_equity' %}" class="staff-btn staff-btn--orange">Equity</a>{% endif %}
+    </div>
+  </header>
+
+  <section class="staff-grid">
+    <div class="staff-card"><span>My Role</span><strong>{{ profile.staff_role.name|default:profile.get_role_display|default:"Unassigned" }}</strong></div>
+    <div class="staff-card"><span>My Rank</span><strong>{{ profile.rank.code|default:"Unranked" }}</strong></div>
+    <div class="staff-card"><span>My Department</span><strong>{{ profile.department.name|default:"Unassigned" }}</strong></div>
+    <div class="staff-card"><span>Monthly Volts</span><strong>{{ volts.approved_volts|tsnum }}</strong></div>
+    <div class="staff-card"><span>Pending Volts</span><strong>{{ volts.pending_volts|tsnum }}</strong></div>
+    <div class="staff-card"><span>Estimated Pay</span><strong>{{ volts.capped_pay|mwk }}</strong></div>
+    <div class="staff-card"><span>Monthly Ceiling</span><strong>{% if volts.monthly_ceiling %}{{ volts.monthly_ceiling|mwk }}{% else %}Board controlled{% endif %}</strong></div>
+    <div class="staff-card"><span>Department Score</span><strong>{{ department_score }}%</strong></div>
+    <div class="staff-card"><span>Pending Responsibilities</span><strong>{{ pending_responsibilities|tsnum }}</strong></div>
+    <div class="staff-card"><span>Penalties</span><strong>{{ penalties_count|tsnum }}</strong></div>
+    {% if equity %}
+    <div class="staff-card"><span>Founder Shares</span><strong>{{ equity.allocated_shares|tsnum }}</strong></div>
+    <div class="staff-card"><span>Vested Shares</span><strong>{{ equity.vested_shares|tsnum }} / {{ equity.allocated_shares|tsnum }}</strong></div>
+    {% endif %}
+  </section>
+
+  <section class="staff-section">
+    <h2>Allowed Modules</h2>
+    <div class="staff-modules">
+      {% for module in allowed_modules %}
+      <span class="staff-chip">{{ module.label }}</span>
+      {% empty %}
+      <span class="staff-chip">No modules assigned</span>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if equity %}
+  <section class="staff-section">
+    <h2>Founder Equity</h2>
+    <p class="staff-sub">Allocated: {{ equity.allocated_shares|tsnum }} shares. Vested: {{ equity.vested_shares|tsnum }}. Unvested: {{ equity.unvested_shares|tsnum }}. Vesting status: {{ equity.get_vesting_status_display }}.</p>
+    <p class="staff-sub">The app record supports the agreement; signed legal documents govern actual ownership.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

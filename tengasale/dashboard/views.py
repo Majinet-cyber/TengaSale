@@ -1,4 +1,5 @@
 import csv
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -12,6 +13,29 @@ from django.urls import reverse
 from django.utils import timezone
 from accounts.decorators import hq_required, merchant_required
 from accounts.forms import HQUserForm
+from accounts.models import (
+    CompanyShareStructure,
+    Department,
+    FounderEquityRecord,
+    PenaltyTransaction,
+    Rank,
+    StaffRole,
+    UserProfile,
+    VoltsActionType,
+    VoltsTransaction,
+)
+from accounts.services import (
+    MODULE_EQUITY,
+    MODULE_STAFF_ROLES,
+    MODULE_VOLTS,
+    audit_sensitive_action,
+    can_approve_volts,
+    can_edit_equity,
+    founder_staff_dashboard_context,
+    user_allowed_modules,
+    user_can_access_module,
+    visible_hq_modules,
+)
 from accounts.utils import primary_role, role_redirect_url
 from core.business_hours import business_hours_context
 from applications.models import FinancingApplication
@@ -27,6 +51,23 @@ from .portfolio_services import (
 )
 
 MAX_ACTIVE_UNDERWRITER_REVIEWS = 5
+
+
+def staff_module_required(module):
+    def decorator(view_func):
+        def wrapped(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return redirect_to_login(request.get_full_path())
+            if user_can_access_module(request.user, module):
+                return view_func(request, *args, **kwargs)
+            return render(
+                request,
+                "accounts/role_forbidden.html",
+                {"dashboard_url": role_redirect_url(request.user)},
+                status=403,
+            )
+        return wrapped
+    return decorator
 
 
 def home(request):
@@ -443,6 +484,9 @@ def hq_dashboard(request):
         "sms_payment_confirmation_count": sms_payment_confirmation_count,
         "sms_due_reminder_count": sms_due_reminder_count,
         "recent_sms_logs": recent_sms_logs,
+        "staff_modules": visible_hq_modules(request.user),
+        "staff_module_keys": user_allowed_modules(request.user),
+        **founder_staff_dashboard_context(request.user),
     }
 
     # Merchant Agreement Compliance Stats
@@ -470,6 +514,134 @@ def hq_dashboard(request):
         context["agreement_compliance_pct"] = 0
 
     return render(request, "dashboard/hq.html", context)
+
+
+def staff_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+    try:
+        profile = request.user.profile
+    except Exception:
+        profile = None
+    if not (
+        profile
+        and profile.user_type in [
+            UserProfile.USER_TYPE_FOUNDER,
+            UserProfile.USER_TYPE_STAFF,
+            UserProfile.USER_TYPE_EXECUTIVE,
+        ]
+    ) and not user_can_access_module(request.user, MODULE_STAFF_ROLES):
+        return render(
+            request,
+            "accounts/role_forbidden.html",
+            {"dashboard_url": role_redirect_url(request.user)},
+            status=403,
+        )
+    return render(request, "dashboard/staff_dashboard.html", founder_staff_dashboard_context(request.user))
+
+
+@staff_module_required(MODULE_VOLTS)
+def hq_volts_engine(request):
+    transactions = VoltsTransaction.objects.select_related(
+        "user",
+        "action_type",
+        "department",
+        "approved_by",
+    ).order_by("-created_at")
+    pending = transactions.filter(status=VoltsTransaction.STATUS_PENDING)
+    month_summary = {
+        "total_volts": transactions.filter(
+            status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID]
+        ).aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
+        "estimated_payroll": transactions.filter(
+            status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID]
+        ).aggregate(total=Sum("estimated_amount_mwk"))["total"] or Decimal("0"),
+        "pending_count": pending.count(),
+        "penalties": PenaltyTransaction.objects.filter(status=PenaltyTransaction.STATUS_APPROVED).count(),
+    }
+    by_department = (
+        transactions.filter(status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID])
+        .values("department__name")
+        .annotate(total=Sum("final_volts"), count=Count("id"))
+        .order_by("-total")
+    )
+    by_user = (
+        transactions.filter(status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID])
+        .values("user", "user__username", "user__first_name", "user__last_name")
+        .annotate(total=Sum("final_volts"), pay=Sum("estimated_amount_mwk"))
+        .order_by("-total")[:20]
+    )
+    return render(request, "dashboard/hq_volts_engine.html", {
+        "summary": month_summary,
+        "pending_transactions": pending[:50],
+        "transactions": transactions[:100],
+        "action_types": VoltsActionType.objects.select_related("department").filter(active=True),
+        "departments": Department.objects.filter(active=True),
+        "by_department": by_department,
+        "by_user": by_user,
+        "can_approve": True,
+    })
+
+
+@staff_module_required(MODULE_VOLTS)
+def hq_volts_action(request, transaction_id):
+    if request.method != "POST":
+        return redirect("hq_volts_engine")
+    transaction = get_object_or_404(VoltsTransaction, id=transaction_id)
+    action = request.POST.get("action")
+    if not can_approve_volts(request.user, transaction):
+        messages.error(request, "You cannot approve or reject this volts transaction.")
+        return redirect("hq_volts_engine")
+    if action == "approve":
+        try:
+            transaction.approve(request.user)
+            audit_sensitive_action(request.user, "volts_approved", transaction, {"worker": transaction.user_id})
+            messages.success(request, "Volts transaction approved.")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+    elif action == "reject":
+        transaction.status = VoltsTransaction.STATUS_REJECTED
+        transaction.approved_by = request.user
+        transaction.approved_at = timezone.now()
+        transaction.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+        audit_sensitive_action(request.user, "volts_rejected", transaction, {"worker": transaction.user_id})
+        messages.success(request, "Volts transaction rejected.")
+    return redirect("hq_volts_engine")
+
+
+@staff_module_required(MODULE_EQUITY)
+def hq_founder_equity(request):
+    if not can_edit_equity(request.user):
+        return render(
+            request,
+            "accounts/role_forbidden.html",
+            {"dashboard_url": role_redirect_url(request.user)},
+            status=403,
+        )
+    records = FounderEquityRecord.objects.select_related("founder_user", "founder_user__profile").order_by("role_title")
+    structure = CompanyShareStructure.objects.first()
+    return render(request, "dashboard/hq_founder_equity.html", {
+        "records": records,
+        "structure": structure,
+        "founder_total": records.aggregate(total=Sum("allocated_shares"))["total"] or 0,
+        "legal_notice": "The app tracks equity and vesting internally, but signed legal documents govern actual ownership.",
+    })
+
+
+@staff_module_required(MODULE_STAFF_ROLES)
+def hq_staff_roles(request):
+    User = get_user_model()
+    profiles = UserProfile.objects.select_related("user", "department", "staff_role", "rank", "supervisor").order_by("user__username")
+    return render(request, "dashboard/hq_staff_roles.html", {
+        "profiles": profiles,
+        "departments": Department.objects.filter(active=True),
+        "roles": StaffRole.objects.select_related("department").filter(active=True),
+        "ranks": Rank.objects.filter(active=True),
+        "founder_count": profiles.filter(is_founder=True).count(),
+        "staff_count": profiles.filter(user_type__in=[UserProfile.USER_TYPE_STAFF, UserProfile.USER_TYPE_EXECUTIVE, UserProfile.USER_TYPE_FOUNDER]).count(),
+        "active_count": profiles.filter(status=UserProfile.STATUS_ACTIVE).count(),
+        "users": User.objects.select_related("profile").order_by("username")[:200],
+    })
 
 
 @hq_required

@@ -33,6 +33,46 @@
 
   <p class="portal-section-label">Key metrics</p>
   <div class="portal-kpi-grid hq-kpi-row">
+    <div class="portal-kpi-card kpi-green">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ total_merchants }}</div>
+      <div class="portal-kpi-card__label">Total Merchants</div>
+      <div class="portal-kpi-card__hint">Merchant records</div>
+    </div>
+    <div class="portal-kpi-card kpi-blue">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ active_merchants }}</div>
+      <div class="portal-kpi-card__label">Active Merchants</div>
+      <div class="portal-kpi-card__hint">Trading partners</div>
+    </div>
+    <div class="portal-kpi-card kpi-slate">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ inactive_merchants }}</div>
+      <div class="portal-kpi-card__label">Inactive Merchants</div>
+      <div class="portal-kpi-card__hint">Need reactivation</div>
+    </div>
+    <div class="portal-kpi-card kpi-amber">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ pending_verification }}</div>
+      <div class="portal-kpi-card__label">Pending Verification</div>
+      <div class="portal-kpi-card__hint">KYC, documents, or site checks</div>
+    </div>
+    <div class="portal-kpi-card kpi-red">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ suspended_merchants }}</div>
+      <div class="portal-kpi-card__label">Suspended Merchants</div>
+      <div class="portal-kpi-card__hint">Paused or rejected risk</div>
+    </div>
+    <div class="portal-kpi-card kpi-purple">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ merchant_documents_missing }}</div>
+      <div class="portal-kpi-card__label">Documents Missing</div>
+      <div class="portal-kpi-card__hint">Certificates or shop photos</div>
+    </div>
+    <div class="portal-kpi-card kpi-orange">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ commission_issues }}</div>
+      <div class="portal-kpi-card__label">Commission Issues</div>
+      <div class="portal-kpi-card__hint">Pending or failed payouts</div>
+    </div>
+    <a href="{% url 'ma_leads' %}" class="portal-kpi-card kpi-indigo">
+      <div class="portal-kpi-card__val hq-kpi-val">{{ approved_month }}</div>
+      <div class="portal-kpi-card__label">Weekly Merchant Report</div>
+      <div class="portal-kpi-card__hint">View merchant pipeline report</div>
+    </a>
     <a href="{% url 'ma_leads' %}?status=new" class="portal-kpi-card kpi-orange">
       <div class="portal-kpi-card__head">
         <div class="portal-kpi-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
@@ -112,6 +152,13 @@
 
   <p class="portal-section-label">Action center</p>
   <div class="portal-action-grid hq-quick-row">
+    <a href="{% url 'ma_lead_create' %}" class="portal-action-card hq-quick-card">
+      <div class="portal-action-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div>
+      <div class="portal-action-card__body">
+        <p class="portal-action-card__title">Add Merchant</p>
+        <p class="portal-action-card__desc">Create a new merchant lead</p>
+      </div>
+    </a>
     <a href="{% url 'ma_leads' %}?status=new" class="portal-action-card hq-quick-card">
       <div class="portal-action-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
       <div class="portal-action-card__body">
@@ -124,6 +171,13 @@
       <div class="portal-action-card__body">
         <p class="portal-action-card__title">Verify Documents</p>
         <p class="portal-action-card__desc">Check certificates and shop photos</p>
+      </div>
+    </a>
+    <a href="{% url 'ma_leads' %}?status=site_visit_needed" class="portal-action-card hq-quick-card">
+      <div class="portal-action-card__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M5 7h14"/><path d="M7 21h10"/></svg></div>
+      <div class="portal-action-card__body">
+        <p class="portal-action-card__title">Assign Territory</p>
+        <p class="portal-action-card__desc">Use site visit queue for field routing</p>
       </div>
     </a>
     <a href="{% url 'ma_leads' %}?status=site_visit_needed" class="portal-action-card hq-quick-card">

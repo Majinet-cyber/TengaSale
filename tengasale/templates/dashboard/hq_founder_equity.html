@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Founder Equity - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.equity-page{max-width:1200px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
+.equity-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.equity-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
+.equity-title{margin:4px 0;font-size:29px;line-height:1.1}
+.equity-sub{margin:0;color:#667085;font-size:14px}
+.equity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
+.equity-card,.equity-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
+.equity-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.equity-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
+.equity-section{margin-bottom:14px}
+.equity-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
+.equity-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
+.equity-table{width:100%;min-width:880px;border-collapse:collapse}
+.equity-table th,.equity-table td{padding:10px 11px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
+.equity-table th{background:#f8fafc;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.equity-note{background:#fff7d6;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:12px;font-weight:750}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="equity-page">
+  <header class="equity-head">
+    <div>
+      <div class="equity-kicker">Founder Equity</div>
+      <h1 class="equity-title">Ownership tracking and vesting</h1>
+      <p class="equity-sub">Equity belongs to long-term builders. Volts belong to workers.</p>
+    </div>
+  </header>
+
+  <section class="equity-grid">
+    <div class="equity-card"><span>Authorized Shares</span><strong>{{ structure.total_authorized_shares|default:0|tsnum }}</strong></div>
+    <div class="equity-card"><span>Founder Pool</span><strong>{{ structure.founder_pool|default:0|tsnum }}</strong></div>
+    <div class="equity-card"><span>Investor Reserve</span><strong>{{ structure.investor_reserve|default:0|tsnum }}</strong></div>
+    <div class="equity-card"><span>Employee / Advisor Pool</span><strong>{{ structure.employee_advisor_pool|default:0|tsnum }}</strong></div>
+    <div class="equity-card"><span>Founder Allocated</span><strong>{{ founder_total|tsnum }}</strong></div>
+  </section>
+
+  <section class="equity-section">
+    <div class="equity-note">{{ legal_notice }}</div>
+  </section>
+
+  <section class="equity-section">
+    <h2>Founder Records</h2>
+    <div class="equity-table-wrap">
+      <table class="equity-table">
+        <thead><tr><th>Founder</th><th>Role</th><th>Allocated</th><th>Vested</th><th>Unvested</th><th>Start</th><th>Cliff</th><th>Status</th><th>Flags</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td>{{ record.founder_user.get_full_name|default:record.founder_user.username }}</td>
+            <td>{{ record.role_title }}</td>
+            <td>{{ record.allocated_shares|tsnum }}</td>
+            <td>{{ record.vested_shares|tsnum }}</td>
+            <td>{{ record.unvested_shares|tsnum }}</td>
+            <td>{{ record.vesting_start_date|date:"d M Y"|default:"-" }}</td>
+            <td>{{ record.cliff_date|date:"d M Y"|default:"-" }}</td>
+            <td>{{ record.get_vesting_status_display }}</td>
+            <td>{% if record.inactive_flag %}Inactive {% endif %}{% if record.breach_flag %}Breach{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9">No founder equity records yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
