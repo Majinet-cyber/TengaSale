@@ -12,6 +12,7 @@ from core.business_hours import business_hours_context
 from applications.models import FinancingApplication
 from commissions.models import Commission, MerchantContractPayout, CommissionLedger
 from contracts.models import Contract
+from core.view_safety import safe_page
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
 from rewards.models import SpinWallet
 
@@ -138,6 +139,7 @@ def merchant_dashboard_context(user):
 
 
 @merchant_required
+@safe_page("Merchant dashboard")
 def merchant_dashboard(request):
     context = merchant_dashboard_context(request.user)
     return render(request, "dashboard/home.html", context)
@@ -156,6 +158,7 @@ def developer_preview_required(view_func):
 
 
 @hq_required
+@safe_page("HQ dashboard")
 def hq_dashboard(request):
     from portal.models import PaymentContract, PaymentTransaction
     from commissions.models import MerchantContractPayout, CommissionLedger
@@ -250,47 +253,61 @@ def hq_dashboard(request):
     except Exception:
         uw_earnings_total = Decimal("0")
 
-    chart_days = []
-    for offset in range(13, -1, -1):
-        day = today - timedelta(days=offset)
-        label = day.strftime("%d %b")
-        contract_value = (
-            PaymentContract.objects.filter(created_at__date=day)
-            .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-        )
-        payments_collected = (
-            PaymentTransaction.objects.filter(status="paid", paid_at__date=day)
-            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
-        )
-        payout_cost = (
-            MerchantContractPayout.objects.filter(created_at__date=day)
-            .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
-        )
-        chart_days.append({
-            "date": day.isoformat(),
-            "label": label,
-            "revenue": float(contract_value),
-            "payments": float(payments_collected),
-            "profit": float(contract_value - payout_cost),
-            "contract_value": float(contract_value),
-        })
+    try:
+        chart_days = []
+        for offset in range(13, -1, -1):
+            day = today - timedelta(days=offset)
+            label = day.strftime("%d %b")
+            contract_value = (
+                PaymentContract.objects.filter(created_at__date=day)
+                .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+            )
+            payments_collected = (
+                PaymentTransaction.objects.filter(status="paid", paid_at__date=day)
+                .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+            )
+            payout_cost = (
+                MerchantContractPayout.objects.filter(created_at__date=day)
+                .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
+            )
+            chart_days.append({
+                "date": day.isoformat(),
+                "label": label,
+                "revenue": float(contract_value or 0),
+                "payments": float(payments_collected or 0),
+                "profit": float((contract_value or Decimal("0")) - (payout_cost or Decimal("0"))),
+                "contract_value": float(contract_value or 0),
+            })
 
-    has_contract_values = any(day["contract_value"] for day in chart_days)
-    has_payments = any(day["payments"] for day in chart_days)
-    has_payout_costs = MerchantContractPayout.objects.exists()
-    financial_has_data = has_contract_values or has_payments
-    financial_performance_chart = {
-        "labels": [day["label"] for day in chart_days],
-        "revenue": [day["revenue"] for day in chart_days],
-        "payments": [day["payments"] for day in chart_days],
-        "profit": [day["profit"] if has_payout_costs else 0 for day in chart_days],
-        "profitAvailable": has_payout_costs,
-    }
-    contract_value_chart = {
-        "labels": [day["label"] for day in chart_days],
-        "contractValue": [day["contract_value"] for day in chart_days],
-        "payments": [day["payments"] for day in chart_days],
-    }
+        has_contract_values = any(day["contract_value"] for day in chart_days)
+        has_payments = any(day["payments"] for day in chart_days)
+        has_payout_costs = MerchantContractPayout.objects.exists()
+        financial_has_data = has_contract_values or has_payments
+        financial_performance_chart = {
+            "labels": [day["label"] for day in chart_days],
+            "revenue": [day["revenue"] for day in chart_days],
+            "payments": [day["payments"] for day in chart_days],
+            "profit": [day["profit"] if has_payout_costs else 0 for day in chart_days],
+            "profitAvailable": has_payout_costs,
+        }
+        contract_value_chart = {
+            "labels": [day["label"] for day in chart_days],
+            "contractValue": [day["contract_value"] for day in chart_days],
+            "payments": [day["payments"] for day in chart_days],
+        }
+    except Exception:
+        import logging
+
+        logging.getLogger("tengasale.views").exception("HQ finance chart data failed")
+        financial_has_data = False
+        financial_performance_chart = {
+            "labels": [],
+            "revenue": [],
+            "payments": [],
+            "profit": [],
+            "profitAvailable": False,
+        }
+        contract_value_chart = {"labels": [], "contractValue": [], "payments": []}
 
     # New role & portal KPIs
     from website.models import MerchantLead
@@ -2678,4 +2695,3 @@ def hq_agreement_pdf(request, agreement_id):
     except FileNotFoundError:
         messages.error(request, "PDF file not found.")
         return redirect("hq_merchant_agreements")
-

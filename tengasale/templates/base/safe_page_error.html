@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Temporarily unavailable - TengaSale{% endblock %}
+
+{% block content %}
+<div class="ts-empty-state" style="max-width:640px;margin:40px auto;">
+  <div class="ts-empty-state__icon">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 9v4"/>
+      <path d="M12 17h.01"/>
+      <path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+    </svg>
+  </div>
+  <p>{{ section }} is temporarily unavailable.</p>
+  <p style="font-size:13px;color:#64748b;margin:0;">{{ error_message }}</p>
+</div>
+{% endblock %}

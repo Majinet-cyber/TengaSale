@@ -491,6 +491,14 @@ class SalesMobileUITests(TestCase):
         response = self._get_sales_home()
         self.assertContains(response, "MY ACTIVE")
 
+    def test_underwriter_home_uses_green_queue_and_blue_active_cards(self):
+        response = self._get_sales_home()
+        content = response.content.decode()
+
+        self.assertContains(response, "uw-primary-action--queue")
+        self.assertContains(response, "active-reviews-card")
+        self.assertNotIn("uw-primary-action--navy", content)
+
     def test_sales_home_contains_applications_section(self):
         response = self._get_sales_home()
         self.assertContains(response, "Applications")
@@ -498,6 +506,15 @@ class SalesMobileUITests(TestCase):
     def test_sales_home_contains_tools_section(self):
         response = self._get_sales_home()
         self.assertContains(response, "Tools")
+
+    def test_queue_status_endpoint_handles_empty_data(self):
+        self.client.login(username="ui_mgr", password="test123")
+
+        response = self.client.get("/sales/api/queue-status/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["pending_count"], 0)
+        self.assertIn("can_claim", response.json())
 
     def test_sales_home_footer_says_tengasale(self):
         response = self._get_sales_home()

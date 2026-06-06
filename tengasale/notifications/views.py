@@ -5,10 +5,13 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.views.decorators.http import require_POST
 
+from core.view_safety import safe_page
+
 from .models import Notification
 
 
 @login_required
+@safe_page("Notifications")
 def notification_list(request):
     notifications = Notification.for_user(request.user, limit=50)
     unread_count = Notification.unread_count_for(request.user)

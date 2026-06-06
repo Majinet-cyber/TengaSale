@@ -34,6 +34,7 @@ from commissions.models import Commission, CommissionLedger, UnderwriterMonthlyP
 from commissions.services import get_underwriter_wallet_summary
 from contracts.models import Contract
 from core.models import AuditLog, QueueRule
+from core.view_safety import safe_page
 from earnings.models import ManagerPayout, MerchantPayout, Wallet, WalletTransaction
 from rewards.models import SpinReward, SpinWallet
 
@@ -92,6 +93,7 @@ def _audit(user, action, obj_type="", obj_id="", detail=None, request=None):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
+@safe_page("Underwriter dashboard")
 def sales_home(request):
     rule = _queue_rule()
     active_apps = FinancingApplication.objects.filter(
@@ -205,6 +207,7 @@ def sales_claim_next(request):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
+@safe_page("Underwriter applications")
 def sales_applications(request):
     tab = request.GET.get("tab", "active")
     if tab == "completed":

@@ -5,7 +5,8 @@
 - Create a Render Web Service connected to the GitHub repo.
 - Runtime: Python.
 - Build command: bash build.sh
-- Start command: gunicorn --chdir tengasale config.wsgi:application
+- Start command: gunicorn --chdir tengasale config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --access-logfile - --error-logfile -
+- Health Check Path: /healthz/
 - Environment variables:
   - SECRET_KEY=generated-secret-key
   - DEBUG=False
@@ -20,4 +21,5 @@
   - tengasale.emajinet.africa
 - Update DNS with Render's CNAME target.
 - Redeploy.
+- Verify /healthz/ returns {"status":"ok"} after every deploy. Use /readyz/ only for a light database readiness check.
 - If 500 error happens, check Render logs first. Only temporarily set DEBUG=True while debugging, then immediately return it to False.

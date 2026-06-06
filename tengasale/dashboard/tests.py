@@ -3,6 +3,8 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from unittest.mock import patch
+
 from accounts.utils import assign_role
 
 
@@ -71,6 +73,24 @@ class HomePageTests(TestCase):
         self.assertTemplateUsed(response, "website/landing.html")
         self.assertContains(response, "Login")
 
+    def test_healthz_returns_lightweight_ok_json(self):
+        response = self.client.get("/healthz/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_readyz_returns_ready_json(self):
+        response = self.client.get("/readyz/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ready"})
+
+    def test_login_page_loads(self):
+        response = self.client.get("/accounts/login/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/login.html")
+
     def test_home_redirects_unauthenticated_users_to_login(self):
         response = self.client.get("/home/")
 
@@ -126,6 +146,16 @@ class HomePageTests(TestCase):
         self.assertNotContains(response, "Claim Next")
         self.assertNotContains(response, "Active Contracts")
         self.assertNotContains(response, "Completed Contracts")
+
+    def test_merchant_dashboard_loads_with_empty_data_without_pdf_generation(self):
+        self.create_user("empty-merchant", "Merchant")
+        self.client.login(username="empty-merchant", password="test-pass-123")
+
+        with patch("merchants.pdf.generate_merchant_agreement_pdf") as generate_pdf:
+            response = self.client.get(reverse("merchant_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        generate_pdf.assert_not_called()
 
     def test_merchant_dashboard_malawi_flag_regression_lock(self):
         """Dedicated guard: Malawi flag chip must never disappear from merchant dashboard."""
@@ -197,6 +227,15 @@ class HomePageTests(TestCase):
         self.assertEqual(hq_response.status_code, 200)
         self.assertContains(hq_response, "HQ")
         self.assert_role_forbidden(merchant_response)
+
+    def test_hq_dashboard_loads_with_sparse_empty_data(self):
+        self.create_user("empty-hq", "HQ")
+        self.client.login(username="empty-hq", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No financial data yet")
 
     def test_hq_dashboard_does_not_show_preview_links_for_normal_hq_user(self):
         self.create_user("hq", "HQ")

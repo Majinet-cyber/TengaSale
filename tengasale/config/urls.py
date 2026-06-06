@@ -5,10 +5,13 @@ from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from earnings.views import payments_home
 from website import views as website_views
+from config.health import healthz, readyz
 from config.media_views import serve_media
 from applications.didit_views import didit_callback_done, didit_webhook
 
 urlpatterns = [
+    path("healthz/", healthz, name="healthz"),
+    path("readyz/", readyz, name="readyz"),
     path("", website_views.landing, name="public_home"),
     path("admin/", admin.site.urls),
 

@@ -166,5 +166,6 @@ LOGGING = {
         "tengasale.contracts": {"handlers": ["console"], "level": "INFO"},
         "tengasale.contracts.pdf": {"handlers": ["console"], "level": "INFO"},
         "tengasale.media": {"handlers": ["console"], "level": "INFO"},
+        "tengasale.views": {"handlers": ["console"], "level": "INFO"},
     },
 }

@@ -43,7 +43,7 @@
         <strong>{% if pending_count %}{{ pending_count }} in queue{% else %}Queue is empty{% endif %}</strong>
       </a>
     {% endif %}
-    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--navy primary-big-action">
+    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--active-reviews active-reviews-card primary-big-action">
       <span class="ts-sr-only">MY ACTIVE</span>
       <span><i class="bi bi-clipboard-check"></i> My Active Reviews</span>
       <strong>{{ active_count }} / {{ max_active }}</strong>
