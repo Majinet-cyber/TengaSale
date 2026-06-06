@@ -75,7 +75,7 @@
   <div class="cert-row"><div class="cert-label">Total Paid</div><div class="cert-value">MWK {{ stamp_total_paid }}</div></div>
   <div class="cert-row"><div class="cert-label">Completion Confirmed At</div><div class="cert-value"><strong>{{ stamp_completed_at|date:"d M Y, H:i"|default:"Not set" }}</strong></div></div>
   <div class="cert-row"><div class="cert-label">Ownership Transfer Status</div><div class="cert-value">{{ stamp_ownership_transfer }}</div></div>
-  <div class="cert-row"><div class="cert-label">Device Lock Release Status</div><div class="cert-value">{{ stamp_lock_release }}</div></div>
+  <div class="cert-row"><div class="cert-label">Device Lock Status</div><div class="cert-value">{{ stamp_lock_release }}</div></div>
   <div class="cert-row"><div class="cert-label">Master Terms Version Accepted</div><div class="cert-value">TengaSale Master Terms v{{ master_terms_version|default:"1.0" }}</div></div>
   {% if master_terms_acceptance_id %}<div class="cert-row"><div class="cert-label">Master Terms Record ID</div><div class="cert-value">#{{ master_terms_acceptance_id }}</div></div>{% endif %}
   <div class="cert-row"><div class="cert-label">Final PDF Generated At</div><div class="cert-value">{{ stamp_generated_at|date:"d M Y, H:i" }}</div></div>
@@ -100,7 +100,7 @@
 <h2>Parties to the Agreement</h2>
 <table class="data-table">
   <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
-  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} &mdash; Tel: {{ merchant_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} - Tel: {{ merchant_phone }}{% endif %}<br>Authorized Merchant Agent acting on behalf of TengaSale Digital Finance.</td></tr>
   <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
   <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
   <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>

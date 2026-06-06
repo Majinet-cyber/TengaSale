@@ -67,13 +67,21 @@
 <h2>Parties to the Agreement</h2>
 <table class="data-table">
   <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
-  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} &mdash; Tel: {{ merchant_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} - Tel: {{ merchant_phone }}{% endif %}<br>Authorized Merchant Agent acting on behalf of TengaSale Digital Finance.</td></tr>
   <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
   <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
   <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>
   <tr><td class="label">Physical Address</td><td>{{ physical_address }}{% if district %}, {{ district }}{% endif %}{% if region %}, {{ region }}{% endif %}</td></tr>
   <tr><td class="label">Traditional Authority / Area</td><td>{{ ta_area }}</td></tr>
 </table>
+
+<h2>Guarantor Summary</h2>
+<table class="data-table">
+  <tr><td class="label">Guarantor 1 Name &amp; Phone</td><td>{{ guarantor_1_name|default:"Not provided" }}{% if guarantor_1_phone %} - {{ guarantor_1_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Guarantor 2 Name &amp; Phone</td><td>{{ guarantor_2_name|default:"Not provided" }}{% if guarantor_2_phone %} - {{ guarantor_2_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Guarantor 3 Name &amp; Phone</td><td>{{ guarantor_3_name|default:"Not provided" }}{% if guarantor_3_phone %} - {{ guarantor_3_phone }}{% endif %}</td></tr>
+</table>
+<div class="clause"><p>Guarantees executed electronically and stored within TengaSale records.</p></div>
 
 <!-- Device Details -->
 <h2>A. Device Details</h2>
@@ -101,13 +109,15 @@
 
 <!-- Core Legal Clauses -->
 <h2>C. Core Legal Terms</h2>
-<div class="clause"><span class="clause-letter">C1.</span> <strong>Ownership.</strong> The device remains the sole property of TengaSale until all payment obligations are fully satisfied.</div>
-<div class="clause"><span class="clause-letter">C2.</span> <strong>Default.</strong> Failure to pay within 14 consecutive days of the due date constitutes an Event of Default.</div>
-<div class="clause"><span class="clause-letter">C3.</span> <strong>Repossession.</strong> After 30 consecutive days of default, TengaSale may repossess the device.</div>
-<div class="clause"><span class="clause-letter">C4.</span> <strong>Disposal.</strong> TengaSale may dispose of a repossessed device by sale or auction. Any remaining deficit remains recoverable.</div>
+<div class="clause"><span class="clause-letter">C1.</span> <strong>Ownership.</strong> Ownership of the Device remains with TengaSale Digital Finance until all amounts due under this Agreement have been fully paid and TengaSale records ownership transfer. Until then, the Customer has conditional possession and use only.</div>
+<div class="clause"><span class="clause-letter">C2.</span> <strong>Default.</strong> Failure to keep payments current after the paid-through date constitutes an Event of Default.</div>
+<div class="clause"><span class="clause-letter">C3.</span> <strong>Repossession.</strong> If the Customer remains in default for a prolonged period, including 30 days or more after required payment becomes overdue, TengaSale may initiate recovery or repossession of the Device, subject to this Agreement and applicable law.</div>
+<div class="clause"><span class="clause-letter">C4.</span> <strong>Resale.</strong> If the Device is repossessed, TengaSale may inspect, refurbish, and resell the Device. Net resale proceeds may be applied to the Customer's outstanding balance. Any shortfall or surplus shall be handled according to TengaSale policy and applicable law.</div>
 <div class="clause"><span class="clause-letter">C5.</span> <strong>Device restriction.</strong> TengaSale may restrict access to the device where payments are overdue, fraud is suspected, or a material breach occurs.</div>
 <div class="clause"><span class="clause-letter">C6.</span> <strong>Electronic acceptance.</strong> Electronic signatures, OTP, and digital acceptance are legally binding under the laws of Malawi.</div>
 <div class="clause"><span class="clause-letter">C7.</span> <strong>Payment allocation.</strong> Payments are allocated: (1) recovery costs, (2) overdue amounts, (3) fees, (4) current instalments, (5) principal.</div>
+<div class="clause"><span class="clause-letter">C8.</span> <strong>Recovery costs.</strong> Any lawful repossession, tracing, legal or recovery costs incurred by TengaSale may be charged to the Customer to the extent permitted by law.</div>
+<div class="clause"><span class="clause-letter">C9.</span> <strong>Expanded recovery costs.</strong> If the Customer defaults and TengaSale incurs lawful, reasonable, and documented repossession, tracing, legal, recovery, storage, repair, or resale-related costs, such costs may be added to the Customer's outstanding balance to the extent permitted by applicable law and this Agreement.</div>
 
 <!-- Operational Clauses -->
 <h2>D. Operational Clauses</h2>
@@ -117,6 +127,23 @@
 <div class="clause"><span class="clause-letter">D4.</span> <strong>KYC/data processing.</strong> Customer authorises identity verification, fraud screening, and personal data processing for contract administration.</div>
 <div class="clause"><span class="clause-letter">D5.</span> <strong>Audit trail.</strong> All acceptance events, payments, notices, and account activity are electronically recorded and are prima facie evidence.</div>
 <div class="clause"><span class="clause-letter">D6.</span> <strong>Completion and ownership transfer.</strong> Ownership transfers to the Customer only after full payment of all obligations. A completion record is generated and delivered.</div>
+
+<h2>Customer Consent Checklist</h2>
+<ul>
+  <li>Customer consented to electronic contracting.</li>
+  <li>Customer consented to device management technology.</li>
+  <li>Customer accepted Master Terms &amp; Conditions.</li>
+  <li>Customer accepted repossession provisions.</li>
+  <li>Customer accepted guarantor obligations.</li>
+  <li>Customer consented to KYC/identity verification.</li>
+  <li>Customer consented to SMS/WhatsApp/call communications.</li>
+  <li>Customer consented to payment reminders and recovery communications.</li>
+  <li>Customer consented to data processing for credit assessment, contract management, collections, recovery, and audit.</li>
+  <li>Customer acknowledged TengaSale ownership until full repayment.</li>
+  <li>Customer acknowledged device may be locked for non-payment.</li>
+  <li>Customer acknowledged device may be repossessed/resold after prolonged default according to agreement and applicable law.</li>
+  <li>Customer acknowledged lawful recovery costs may be charged where permitted by law.</li>
+</ul>
 
 <!-- Signature Block -->
 <div class="sig-block">

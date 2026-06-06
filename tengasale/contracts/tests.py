@@ -598,6 +598,35 @@ class ContractModelTests(TestCase):
         self.assertIn("stamp_completed_at", stamp)
         self.assertIn("stamp_ownership_transfer", stamp)
 
+    def test_pdf_contract_templates_include_recovery_consent_and_guarantor_terms(self):
+        from django.template.loader import render_to_string
+        from services.contracts.pdf_contracts import get_contract_context
+
+        self.app.next_of_kin_1_name = "First Guarantor"
+        self.app.next_of_kin_1_phone = "881111111"
+        self.app.next_of_kin_2_name = "Second Guarantor"
+        self.app.next_of_kin_2_phone = "882222222"
+        self.app.save(update_fields=[
+            "next_of_kin_1_name", "next_of_kin_1_phone",
+            "next_of_kin_2_name", "next_of_kin_2_phone",
+        ])
+
+        ctx = get_contract_context(self.contract)
+        initial_html = render_to_string("contracts/pdf/contract_initial.html", ctx)
+        completed_html = render_to_string("contracts/pdf/contract_completed.html", ctx)
+
+        self.assertIn("Guarantor Summary", initial_html)
+        self.assertIn("First Guarantor", initial_html)
+        self.assertIn("Guarantees executed electronically", initial_html)
+        self.assertIn("Authorized Merchant Agent acting on behalf of TengaSale Digital Finance", initial_html)
+        self.assertIn("Customer Consent Checklist", initial_html)
+        self.assertIn("Ownership of the Device remains with TengaSale Digital Finance", initial_html)
+        self.assertIn("30 days or more after required payment becomes overdue", initial_html)
+        self.assertIn("Any lawful repossession, tracing, legal or recovery costs", initial_html)
+        self.assertIn("Device Lock Status", completed_html)
+        self.assertNotIn("Device Lock Release Status", completed_html)
+        self.assertNotIn("Yellow", initial_html)
+
     def test_contract_has_bundle_pdf_fields(self):
         self.assertIsNone(self.contract.contract_bundle_pdf.name)
         self.assertIsNone(self.contract.completed_bundle_pdf.name)

@@ -136,7 +136,7 @@
 <h2>Parties to the Agreement</h2>
 <table class="data-table">
   <tr><td class="label">Seller (TengaSale)</td><td>TengaSale Digital Finance, Malawi</td></tr>
-  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}</td></tr>
+  <tr><td class="label">Merchant / Agent</td><td>{{ merchant_name }}{% if merchant_phone %} - Tel: {{ merchant_phone }}{% endif %}<br>Authorized Merchant Agent acting on behalf of TengaSale Digital Finance.</td></tr>
   <tr><td class="label">Customer Full Name</td><td>{{ customer_full_name }}</td></tr>
   <tr><td class="label">National ID / Passport</td><td>{{ national_id_or_passport }}</td></tr>
   <tr><td class="label">Customer Phone</td><td>{{ phone_number }}</td></tr>
@@ -173,11 +173,43 @@
 <h2>Key Terms — For the Record</h2>
 <div class="clause">
   <span class="clause-letter">E. OWNERSHIP.</span>
-  <p>Ownership transfers only after the full contract balance is paid and TengaSale confirmation is recorded in this document.</p>
+  <p>Ownership of the Device remains with TengaSale Digital Finance until all amounts due under this Agreement have been fully paid and TengaSale records ownership transfer. Until then, the Customer has conditional possession and use only.</p>
 </div>
 <div class="clause">
   <span class="clause-letter">F–R.</span>
   <p>All terms and conditions of the original Instalment Sale Agreement remain part of this record and were accepted by the customer at the time of signing. Key terms included: deposit and initial 7-day access period (Clause C); flexible repayment options (Clause D); customer consent (Clause F); default and device restriction (Clause G); repossession rights after 30 days (Clause H); device-lock (Clause L); payment reconciliation (Clause M); WhatsApp/SMS consent (Clause N); PDF delivery consent (Clause O); KYC/data consent (Clause P); audit trail (Clause Q); and ownership transfer only after full repayment (Clause R).</p>
+</div>
+
+<h2>Guarantor Summary</h2>
+<table class="data-table">
+  <tr><td class="label">Guarantor 1 Name &amp; Phone</td><td>{{ guarantor_1_name|default:"Not provided" }}{% if guarantor_1_phone %} - {{ guarantor_1_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Guarantor 2 Name &amp; Phone</td><td>{{ guarantor_2_name|default:"Not provided" }}{% if guarantor_2_phone %} - {{ guarantor_2_phone }}{% endif %}</td></tr>
+  <tr><td class="label">Guarantor 3 Name &amp; Phone</td><td>{{ guarantor_3_name|default:"Not provided" }}{% if guarantor_3_phone %} - {{ guarantor_3_phone }}{% endif %}</td></tr>
+</table>
+<div class="clause"><p>Guarantees executed electronically and stored within TengaSale records.</p></div>
+
+<h2>Customer Consent Checklist</h2>
+<ul>
+  <li>Customer consented to electronic contracting.</li>
+  <li>Customer consented to device management technology.</li>
+  <li>Customer accepted Master Terms &amp; Conditions.</li>
+  <li>Customer accepted repossession provisions.</li>
+  <li>Customer accepted guarantor obligations.</li>
+  <li>Customer consented to KYC/identity verification.</li>
+  <li>Customer consented to SMS/WhatsApp/call communications.</li>
+  <li>Customer consented to payment reminders and recovery communications.</li>
+  <li>Customer consented to data processing for credit assessment, contract management, collections, recovery, and audit.</li>
+  <li>Customer acknowledged TengaSale ownership until full repayment.</li>
+  <li>Customer acknowledged device may be locked for non-payment.</li>
+  <li>Customer acknowledged device may be repossessed/resold after prolonged default according to agreement and applicable law.</li>
+  <li>Customer acknowledged lawful recovery costs may be charged where permitted by law.</li>
+</ul>
+<div class="clause">
+  <p>If the Customer remains in default for a prolonged period, including 30 days or more after required payment becomes overdue, TengaSale may initiate recovery or repossession of the Device, subject to this Agreement and applicable law.</p>
+  <p>If the Device is repossessed, TengaSale may inspect, refurbish, and resell the Device. Net resale proceeds may be applied to the Customer's outstanding balance. Any shortfall or surplus shall be handled according to TengaSale policy and applicable law.</p>
+  <p>Before the Device is repossessed or resold, the Customer may make payment to settle arrears or the outstanding balance and may be allowed to resume access according to TengaSale rules and device management processes.</p>
+  <p>Any lawful repossession, tracing, legal or recovery costs incurred by TengaSale may be charged to the Customer to the extent permitted by law.</p>
+  <p>If the Customer defaults and TengaSale incurs lawful, reasonable, and documented repossession, tracing, legal, recovery, storage, repair, or resale-related costs, such costs may be added to the Customer's outstanding balance to the extent permitted by applicable law and this Agreement.</p>
 </div>
 
 <!-- COMPLETION STAMP -->
@@ -198,7 +230,7 @@
     {% if stamp_scheduled_for %}<tr><td class="label" style="border:none;">WhatsApp Delivery Scheduled</td><td style="border:none;">{{ stamp_scheduled_for }}</td></tr>{% endif %}
     {% if stamp_delivery_record_id %}<tr><td class="label" style="border:none;">TengaSale Delivery Record ID</td><td style="border:none;">{{ stamp_delivery_record_id }}</td></tr>{% endif %}
     <tr><td class="label" style="border:none;">Ownership Transfer Status</td><td style="border:none;"><strong>{{ stamp_ownership_transfer }}</strong></td></tr>
-    <tr><td class="label" style="border:none;">Device Lock Release Status</td><td style="border:none;">{{ stamp_lock_release }}</td></tr>
+    <tr><td class="label" style="border:none;">Device Lock Status</td><td style="border:none;">{{ stamp_lock_release }}</td></tr>
   </table>
 </div>
 

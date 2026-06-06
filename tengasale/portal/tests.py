@@ -492,6 +492,27 @@ class PaymentEdgeCaseTest(TestCase):
         self.assertIn("error", result)
         self.assertEqual(result["applied"], Decimal("0"))
 
+    def test_closed_recovery_statuses_block_access_restoring_payments(self):
+        for status in ("resold", "written_off", "legally_closed"):
+            with self.subTest(status=status):
+                c = self._make_contract(status=status, amount_paid=Decimal("10000"))
+                result = apply_payment_to_contract(c, Decimal("1000"))
+                c.refresh_from_db()
+                self.assertIn("error", result)
+                self.assertEqual(result["applied"], Decimal("0"))
+                self.assertEqual(c.amount_paid, Decimal("10000"))
+
+    def test_payment_reopens_repossession_pending_contract_when_access_is_restored(self):
+        c = self._make_contract(
+            status="repossession_pending",
+            amount_paid=Decimal("10000"),
+            due_date=date.today() - timedelta(days=3),
+        )
+        result = apply_payment_to_contract(c, Decimal("3750"))
+        c.refresh_from_db()
+        self.assertGreater(result["days_extended"], 0)
+        self.assertEqual(c.status, "active")
+
 
 # ---------------------------------------------------------------------------
 # Webhook endpoint tests (Phase 6)

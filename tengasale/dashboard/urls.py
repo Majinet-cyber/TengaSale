@@ -26,6 +26,7 @@ urlpatterns = [
     path("tengasale/hq/operations/", views.hq_operations, name="hq_operations"),
     path("tengasale/hq/safe-operations/", views.hq_safe_operations, name="hq_safe_operations"),
     path("tengasale/hq/devices/", views.hq_devices, name="hq_devices"),
+    path("tengasale/hq/repossession-resale/", views.hq_repossession_resale, name="hq_repossession_resale"),
     path("tengasale/hq/staff-payouts/", views.hq_staff_payouts, name="hq_staff_payouts"),
     path("tengasale/hq/auto-approval/", views.hq_auto_approval, name="hq_auto_approval"),
     path("tengasale/hq/payment-collections/", views.hq_payment_collections, name="hq_payment_collections"),
@@ -51,6 +52,7 @@ urlpatterns = [
     path("hq/operations/", RedirectView.as_view(pattern_name="hq_operations", permanent=False), name="hq_operations_alias"),
     path("hq/safe-operations/", RedirectView.as_view(pattern_name="hq_safe_operations", permanent=False), name="hq_safe_operations_alias"),
     path("hq/devices/", RedirectView.as_view(pattern_name="hq_devices", permanent=False), name="hq_devices_alias"),
+    path("hq/repossession-resale/", RedirectView.as_view(pattern_name="hq_repossession_resale", permanent=False), name="hq_repossession_resale_alias"),
     path("hq/staff-payouts/", RedirectView.as_view(pattern_name="hq_staff_payouts", permanent=False), name="hq_staff_payouts_alias"),
     path("hq/auto-approval/", RedirectView.as_view(pattern_name="hq_auto_approval", permanent=False), name="hq_auto_approval_alias"),
 ]

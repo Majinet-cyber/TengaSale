@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import PaymentContract, PaymentTransaction
+from .models import PaymentContract, PaymentTransaction, RecoveryCost
 from .payment_providers import get_integration_status
 
 
@@ -192,3 +192,18 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
         }
         return labels.get(obj.provider, obj.provider)
     provider_badge.short_description = "Provider"
+
+
+@admin.register(RecoveryCost)
+class RecoveryCostAdmin(admin.ModelAdmin):
+    list_display = (
+        "contract", "cost_type", "amount", "is_chargeable_to_customer",
+        "approved_at", "recorded_by", "incurred_at",
+    )
+    list_filter = ("cost_type", "is_chargeable_to_customer", "approved_at", "incurred_at")
+    search_fields = (
+        "contract__contract_number", "contract__payg_number",
+        "contract__customer_name", "description",
+    )
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-incurred_at", "-created_at")

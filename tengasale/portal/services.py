@@ -522,13 +522,19 @@ def apply_payment_to_contract(
             "error": "Payment amount must be greater than zero.",
         }
 
-    if contract.status == "completed":
+    closed_statuses = {
+        "completed",
+        "resold",
+        "written_off",
+        "legally_closed",
+    }
+    if contract.status in closed_statuses:
         return {
             "applied": Decimal("0"),
             "arrears_cleared": Decimal("0"),
             "days_extended": 0,
             "payment_type": payment_type,
-            "error": "Contract is already completed.",
+            "error": "Contract is closed and cannot accept access-restoring payments.",
         }
 
     # ── Deposit payment ──────────────────────────────────────────────────────
@@ -636,6 +642,8 @@ def apply_payment_to_contract(
         contract.status = "completed"
     elif new_access_expiry <= timezone.now():
         contract.status = "overdue"
+    elif contract.status == "repossession_pending":
+        contract.status = "active"
     else:
         contract.status = "active"
 

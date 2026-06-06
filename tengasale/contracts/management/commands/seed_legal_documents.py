@@ -139,8 +139,8 @@ material damage to the Device. Failure to notify does not suspend the Customer's
 TengaSale does not provide replacement devices in the event of loss, theft, or damage.</p>
 
 <h3>14. EVENTS OF DEFAULT</h3>
-<p>The following are Events of Default: (a) failure to make any payment within 14 consecutive days of
-its due date; (b) providing false, misleading, or fraudulent information; (c) suspected fraud by the
+<p>The following are Events of Default: (a) failure to keep payments current after the paid-through date;
+(b) providing false, misleading, or fraudulent information; (c) suspected fraud by the
 Customer or any connected party; (d) unlawful disposal, transfer, or encumbrance of the Device;
 (e) material breach of any term of the Agreement; or (f) reasonable grounds to believe the Customer
 is unable or unwilling to meet their obligations.</p>
@@ -245,7 +245,7 @@ Terms and Conditions Version 1.0, which the Customer has accepted.</p>
 The Customer must not sell, pledge, or transfer the Device until ownership has legally passed.</p>
 
 <h3>4. DEFAULT AND DEVICE RESTRICTIONS</h3>
-<p>Failure to pay within 14 consecutive days constitutes a default event. After 30 consecutive days
+<p>Failure to keep payments current after the paid-through date constitutes a default event. After 30 consecutive days
 of default, TengaSale may repossess the Device. Device access may be restricted at any time during default.</p>
 
 <h3>5. ELECTRONIC ACCEPTANCE</h3>

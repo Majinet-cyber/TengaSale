@@ -235,7 +235,7 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No financial data yet")
+        self.assertContains(response, "No financial activity yet")
 
     def test_hq_dashboard_does_not_show_preview_links_for_normal_hq_user(self):
         self.create_user("hq", "HQ")
@@ -309,6 +309,23 @@ class HomePageTests(TestCase):
         # Portal links
         self.assertContains(response, 'Merchant Admin')
         self.assertContains(response, 'Tech Support')
+
+    def test_hq_dashboard_uses_responsive_chart_frames_and_recovery_links(self):
+        self.create_user("hq-chart-responsive", "HQ")
+        self.client.login(username="hq-chart-responsive", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Portfolio Health")
+        self.assertContains(response, "hq-chart-frame--donut")
+        self.assertContains(response, "hq-chart-frame hq-chart-frame--pipeline")
+        self.assertContains(response, "hq-chart-frame--financial")
+        self.assertContains(response, "No portfolio activity yet")
+        self.assertContains(response, "Recovery Value")
+        self.assertContains(response, "Repossession &amp; Resale")
+        self.assertContains(response, reverse("hq_repossession_resale"))
+        self.assertContains(response, "Financial Simulations")
 
     def test_merchant_cannot_access_hq_dashboard(self):
         self.create_user("merchant", "Merchant")
@@ -658,6 +675,52 @@ class HQPhase10ETests(TestCase):
         response = self.client.get(reverse("hq_devices"))
         self.assertEqual(response.status_code, 200)
 
+    def test_hq_repossession_resale_loads_and_records_recovery_costs(self):
+        from decimal import Decimal
+        from portal.models import PaymentContract, RecoveryCost
+
+        contract = PaymentContract.objects.create(
+            customer_name="Recovery Customer",
+            customer_phone="+265881111111",
+            total_amount=Decimal("100000.00"),
+            amount_paid=Decimal("25000.00"),
+            status=PaymentContract.STATUS_LOCKED,
+        )
+
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Repossession &amp; Resale")
+
+        response = self.client.post(reverse("hq_repossession_resale"), {
+            "action": "mark_repossession_pending",
+            "contract_id": contract.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        contract.refresh_from_db()
+        self.assertEqual(contract.status, PaymentContract.STATUS_REPOSSESSION_PENDING)
+
+        response = self.client.post(reverse("hq_repossession_resale"), {
+            "action": "add_recovery_cost",
+            "contract_id": contract.pk,
+            "cost_type": RecoveryCost.COST_REPOSSESSION,
+            "amount": "15000",
+            "description": "Repossession transport",
+            "is_chargeable_to_customer": "on",
+        })
+        self.assertRedirects(response, reverse("hq_repossession_resale"))
+        cost = RecoveryCost.objects.get(contract=contract)
+        self.assertEqual(cost.amount, Decimal("15000.00"))
+        self.assertIsNone(cost.approved_at)
+
+        response = self.client.post(reverse("hq_repossession_resale"), {
+            "action": "approve_recovery_cost",
+            "contract_id": contract.pk,
+            "cost_id": cost.pk,
+        })
+        self.assertRedirects(response, reverse("hq_repossession_resale"))
+        cost.refresh_from_db()
+        self.assertIsNotNone(cost.approved_at)
+
     def test_hq_reports_loads(self):
         response = self.client.get(reverse("hq_reports"))
         self.assertEqual(response.status_code, 200)
@@ -815,6 +878,7 @@ class HQPhase10ETests(TestCase):
             "hq_underwriter_queue", "hq_reports",
             "hq_devices", "hq_staff_payouts", "hq_auto_approval",
             "hq_safe_operations", "hq_commission_ledger",
+            "hq_repossession_resale",
         ]
         for name in hq_routes:
             with self.subTest(route=name):
@@ -844,6 +908,7 @@ class RoleAccessControlTests(TestCase):
         "hq_merchant_payouts",
         "hq_reports",
         "hq_devices",
+        "hq_repossession_resale",
         "hq_fraud_checks",
         "hq_audit_trail",
         "hq_payment_collections",

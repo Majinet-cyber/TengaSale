@@ -25,6 +25,14 @@ class Notification(models.Model):
     TYPE_SYSTEM_ERROR = "system_error"
     TYPE_APP_UPDATE = "app_update"
     TYPE_MAINTENANCE = "maintenance"
+    TYPE_CONTRACT_UPDATE = "contract_update"
+    TYPE_DEPOSIT_PAID = "deposit_paid"
+    TYPE_DEVICE_LOCKED = "device_locked"
+    TYPE_PAYMENT_RECEIVED = "payment_received"
+    TYPE_CUSTOMER_OVERDUE = "customer_overdue"
+    TYPE_CUSTOMER_LOCKED = "customer_locked"
+    TYPE_RECOVERY_UPDATE = "recovery_update"
+    TYPE_SUPPORT_UPDATE = "support_update"
 
     TYPE_CHOICES = [
         (TYPE_APP_SUBMITTED, "Application Submitted"),
@@ -48,6 +56,14 @@ class Notification(models.Model):
         (TYPE_SYSTEM_ERROR, "System Error"),
         (TYPE_APP_UPDATE, "App Update"),
         (TYPE_MAINTENANCE, "Maintenance Notice"),
+        (TYPE_CONTRACT_UPDATE, "Contract Update"),
+        (TYPE_DEPOSIT_PAID, "Deposit Paid"),
+        (TYPE_DEVICE_LOCKED, "Device Locked"),
+        (TYPE_PAYMENT_RECEIVED, "Payment Received"),
+        (TYPE_CUSTOMER_OVERDUE, "Customer Overdue"),
+        (TYPE_CUSTOMER_LOCKED, "Customer Locked"),
+        (TYPE_RECOVERY_UPDATE, "Recovery Update"),
+        (TYPE_SUPPORT_UPDATE, "Support Update"),
     ]
 
     LEVEL_INFO = "info"

@@ -26,6 +26,7 @@ def _send_once(sent_to, *, recipient, notification_type, title, body, link, leve
 
 def notify_application_claimed(application, underwriter):
     try:
+        underwriter_name = underwriter.get_full_name() or underwriter.username
         Notification.send(
             recipient=underwriter,
             notification_type=Notification.TYPE_ASSIGNED,
@@ -36,6 +37,20 @@ def notify_application_claimed(application, underwriter):
             object_id=application.pk,
             level=Notification.LEVEL_SUCCESS,
         )
+        if application.created_by_id:
+            Notification.send(
+                recipient=application.created_by,
+                notification_type=Notification.TYPE_ASSIGNED,
+                title="Application claimed by underwriter",
+                body=(
+                    f"{application.customer_name or 'Customer'} - {application.application_number} "
+                    f"is now being reviewed by {underwriter_name}."
+                ),
+                link=application.get_continue_url(),
+                object_type="FinancingApplication",
+                object_id=application.pk,
+                level=Notification.LEVEL_INFO,
+            )
     except Exception:
         pass
 

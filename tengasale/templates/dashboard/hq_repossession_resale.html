@@ -1,0 +1,73 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Repossession & Resale - TengaSale HQ{% endblock %}
+
+{% block content %}
+<div class="ts-page-header">
+  <div>
+    <span class="page-kicker">Recovery Operations</span>
+    <h1 class="ts-page-header__title">Repossession &amp; Resale</h1>
+  </div>
+  <a href="{% url 'hq_dashboard' %}" class="btn btn-outline">Back to HQ</a>
+</div>
+
+{% if msg %}
+  <div class="alert alert-{{ msg_type|default:'info' }}">{{ msg }}</div>
+{% endif %}
+
+<section class="ts-grid ts-grid--kpis">
+  <div class="ts-stat-card">
+    <div class="ts-stat-card__body">
+      <div class="ts-stat-card__val">{{ recovery_cost_total|mwk }}</div>
+      <div class="ts-stat-card__label">Recovery Costs Recorded</div>
+    </div>
+  </div>
+  <div class="ts-stat-card">
+    <div class="ts-stat-card__body">
+      <div class="ts-stat-card__val">{{ approved_recovery_cost_total|mwk }}</div>
+      <div class="ts-stat-card__label">Approved Chargeable Costs</div>
+    </div>
+  </div>
+</section>
+
+{% include "dashboard/partials/recovery_bucket.html" with title="Repossession Eligible" rows=repossession_eligible action="mark_repossession_pending" action_label="Mark Pending" %}
+{% include "dashboard/partials/recovery_bucket.html" with title="Repossession Pending" rows=repossession_pending action="mark_repossessed" action_label="Mark Repossessed" secondary_action="cancel_repossession" secondary_label="Cancel" %}
+{% include "dashboard/partials/recovery_bucket.html" with title="Repossessed Devices" rows=repossessed_devices action="mark_ready_for_resale" action_label="Ready for Resale" %}
+{% include "dashboard/partials/recovery_bucket.html" with title="Ready for Resale" rows=ready_for_resale action="record_resale" action_label="Record Resale" resale=True %}
+{% include "dashboard/partials/recovery_bucket.html" with title="Resold Devices" rows=resold_devices %}
+{% include "dashboard/partials/recovery_bucket.html" with title="Written Off / Shortfall" rows=written_off %}
+
+<section class="menu-list">
+  <h2>Recovery Costs</h2>
+  {% for cost in recovery_costs %}
+    <div class="application-card">
+      <div class="application-card-main">
+        <div class="application-card-header">
+          <h3>{{ cost.contract.contract_number }} - {{ cost.get_cost_type_display }}</h3>
+          <span class="status-pill {% if cost.approved_at %}status-approved{% else %}status-pending_review{% endif %}">
+            {% if cost.approved_at %}Approved{% else %}Pending{% endif %}
+          </span>
+        </div>
+        <div class="application-meta">
+          <span>{{ cost.amount|mwk }}</span>
+          <span>{{ cost.incurred_at|date:"Y/m/d, H:i" }}</span>
+          <span>{% if cost.is_chargeable_to_customer %}Chargeable{% else %}Internal{% endif %}</span>
+        </div>
+        {% if cost.description %}<p>{{ cost.description }}</p>{% endif %}
+      </div>
+      {% if not cost.approved_at %}
+        <form method="post" class="application-card-side">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve_recovery_cost">
+          <input type="hidden" name="contract_id" value="{{ cost.contract_id }}">
+          <input type="hidden" name="cost_id" value="{{ cost.id }}">
+          <button type="submit" class="btn btn-outline btn-sm">Approve</button>
+        </form>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="card">No recovery costs recorded.</div>
+  {% endfor %}
+</section>
+{% endblock %}

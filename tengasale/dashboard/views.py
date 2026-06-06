@@ -254,6 +254,15 @@ def hq_dashboard(request):
         uw_earnings_total = Decimal("0")
 
     try:
+        try:
+            from portal.models import RecoveryCost
+            recovery_value_total = (
+                RecoveryCost.objects.filter(is_chargeable_to_customer=True, approved_at__isnull=False)
+                .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+            )
+        except Exception:
+            recovery_value_total = Decimal("0")
+
         chart_days = []
         for offset in range(13, -1, -1):
             day = today - timedelta(days=offset)
@@ -270,30 +279,43 @@ def hq_dashboard(request):
                 MerchantContractPayout.objects.filter(created_at__date=day)
                 .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
             )
+            try:
+                recovery_value = (
+                    RecoveryCost.objects.filter(incurred_at__date=day, is_chargeable_to_customer=True, approved_at__isnull=False)
+                    .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+                )
+            except Exception:
+                recovery_value = Decimal("0")
+            outstanding_for_day = max(Decimal("0"), (contract_value or Decimal("0")) - (payments_collected or Decimal("0")))
             chart_days.append({
                 "date": day.isoformat(),
                 "label": label,
                 "revenue": float(contract_value or 0),
                 "payments": float(payments_collected or 0),
                 "profit": float((contract_value or Decimal("0")) - (payout_cost or Decimal("0"))),
+                "recovery": float(recovery_value or 0),
                 "contract_value": float(contract_value or 0),
+                "outstanding": float(outstanding_for_day or 0),
             })
 
         has_contract_values = any(day["contract_value"] for day in chart_days)
         has_payments = any(day["payments"] for day in chart_days)
+        has_recovery = any(day["recovery"] for day in chart_days)
         has_payout_costs = MerchantContractPayout.objects.exists()
-        financial_has_data = has_contract_values or has_payments
+        financial_has_data = has_contract_values or has_payments or has_recovery
         financial_performance_chart = {
             "labels": [day["label"] for day in chart_days],
             "revenue": [day["revenue"] for day in chart_days],
             "payments": [day["payments"] for day in chart_days],
             "profit": [day["profit"] if has_payout_costs else 0 for day in chart_days],
+            "recovery": [day["recovery"] for day in chart_days],
             "profitAvailable": has_payout_costs,
         }
         contract_value_chart = {
             "labels": [day["label"] for day in chart_days],
             "contractValue": [day["contract_value"] for day in chart_days],
             "payments": [day["payments"] for day in chart_days],
+            "outstanding": [day["outstanding"] for day in chart_days],
         }
     except Exception:
         import logging
@@ -305,9 +327,11 @@ def hq_dashboard(request):
             "revenue": [],
             "payments": [],
             "profit": [],
+            "recovery": [],
             "profitAvailable": False,
         }
-        contract_value_chart = {"labels": [], "contractValue": [], "payments": []}
+        contract_value_chart = {"labels": [], "contractValue": [], "payments": [], "outstanding": []}
+        recovery_value_total = Decimal("0")
 
     # New role & portal KPIs
     from website.models import MerchantLead
@@ -392,6 +416,7 @@ def hq_dashboard(request):
         "financial_has_data": financial_has_data,
         "financial_performance_chart": financial_performance_chart,
         "contract_value_chart": contract_value_chart,
+        "recovery_value_total": recovery_value_total,
         # Portfolio intelligence KPIs
         "total_portfolio_value": total_portfolio_value,
         "total_payments_collected": total_payments_collected,
@@ -1752,6 +1777,129 @@ def hq_devices(request):
         "total_locked": total_locked,
         "msg": msg,
         "msg_type": msg_type,
+    })
+
+
+@hq_required
+def hq_repossession_resale(request):
+    """HQ recovery operations for repossession, resale, and recovery costs."""
+    from decimal import Decimal, InvalidOperation
+
+    from core.models import AuditLog
+    from portal.models import PaymentContract, RecoveryCost
+
+    msg = None
+    msg_type = "info"
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        contract_id = request.POST.get("contract_id")
+        try:
+            contract = PaymentContract.objects.get(pk=contract_id)
+            previous_status = contract.status
+            audit_detail = {"contract": contract.contract_number, "previous_status": previous_status}
+
+            if action == "mark_repossession_pending":
+                contract.status = PaymentContract.STATUS_REPOSSESSION_PENDING
+                msg = f"Repossession pending for {contract.contract_number}."
+            elif action == "cancel_repossession":
+                contract.status = PaymentContract.STATUS_ACTIVE
+                msg = f"Repossession cancelled for {contract.contract_number}."
+            elif action == "mark_repossessed":
+                contract.status = PaymentContract.STATUS_REPOSSESSED
+                msg = f"Device marked repossessed for {contract.contract_number}."
+            elif action == "mark_ready_for_resale":
+                contract.status = PaymentContract.STATUS_READY_FOR_RESALE
+                msg = f"Device marked ready for resale for {contract.contract_number}."
+            elif action == "record_resale":
+                proceeds = Decimal(request.POST.get("resale_amount") or "0")
+                contract.amount_paid = min(
+                    contract.total_amount,
+                    (contract.amount_paid or Decimal("0")) + max(proceeds, Decimal("0")),
+                )
+                contract.status = PaymentContract.STATUS_RESOLD
+                audit_detail["resale_amount"] = str(proceeds)
+                msg = f"Resale recorded for {contract.contract_number}."
+            elif action == "write_off":
+                contract.status = PaymentContract.STATUS_WRITTEN_OFF
+                msg = f"Contract written off for {contract.contract_number}."
+            elif action == "add_recovery_cost":
+                amount = Decimal(request.POST.get("amount") or "0")
+                if amount <= 0:
+                    raise ValueError("Recovery cost amount must be greater than zero.")
+                cost = RecoveryCost.objects.create(
+                    contract=contract,
+                    cost_type=request.POST.get("cost_type") or RecoveryCost.COST_OTHER,
+                    amount=amount,
+                    description=request.POST.get("description", "").strip(),
+                    recorded_by=request.user,
+                    is_chargeable_to_customer=request.POST.get("is_chargeable_to_customer") == "on",
+                )
+                audit_detail["recovery_cost_id"] = cost.pk
+                audit_detail["amount"] = str(amount)
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="hq_recovery_cost_added",
+                    object_type="RecoveryCost",
+                    object_id=str(cost.pk),
+                    detail=audit_detail,
+                )
+                messages.success(request, f"Recovery cost added for {contract.contract_number}.")
+                return redirect("hq_repossession_resale")
+            elif action == "approve_recovery_cost":
+                cost = RecoveryCost.objects.get(pk=request.POST.get("cost_id"), contract=contract)
+                cost.approved_by = request.user
+                cost.approved_at = timezone.now()
+                cost.save(update_fields=["approved_by", "approved_at", "updated_at"])
+                audit_detail["recovery_cost_id"] = cost.pk
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="hq_recovery_cost_approved",
+                    object_type="RecoveryCost",
+                    object_id=str(cost.pk),
+                    detail=audit_detail,
+                )
+                messages.success(request, f"Recovery cost approved for {contract.contract_number}.")
+                return redirect("hq_repossession_resale")
+            else:
+                raise ValueError("Unknown recovery action.")
+
+            contract.save(update_fields=["status", "amount_paid", "updated_at"])
+            audit_detail["new_status"] = contract.status
+            AuditLog.objects.create(
+                user=request.user,
+                action=f"hq_recovery_{action}",
+                object_type="PaymentContract",
+                object_id=str(contract.pk),
+                detail=audit_detail,
+            )
+            msg_type = "success"
+        except (PaymentContract.DoesNotExist, RecoveryCost.DoesNotExist):
+            msg = "Recovery record not found."
+            msg_type = "error"
+        except (InvalidOperation, ValueError) as exc:
+            msg = str(exc)
+            msg_type = "error"
+
+    contracts = PaymentContract.objects.order_by("-created_at")
+    costs = RecoveryCost.objects.select_related("contract", "recorded_by", "approved_by")[:50]
+
+    return render(request, "dashboard/hq_repossession_resale.html", {
+        "msg": msg,
+        "msg_type": msg_type,
+        "cost_type_choices": RecoveryCost.COST_TYPE_CHOICES,
+        "repossession_eligible": contracts.filter(status__in=[PaymentContract.STATUS_OVERDUE, PaymentContract.STATUS_LOCKED])[:25],
+        "repossession_pending": contracts.filter(status=PaymentContract.STATUS_REPOSSESSION_PENDING)[:25],
+        "repossessed_devices": contracts.filter(status=PaymentContract.STATUS_REPOSSESSED)[:25],
+        "ready_for_resale": contracts.filter(status=PaymentContract.STATUS_READY_FOR_RESALE)[:25],
+        "resold_devices": contracts.filter(status=PaymentContract.STATUS_RESOLD)[:25],
+        "written_off": contracts.filter(status=PaymentContract.STATUS_WRITTEN_OFF)[:25],
+        "recovery_costs": costs,
+        "recovery_cost_total": RecoveryCost.objects.aggregate(t=Sum("amount"))["t"] or Decimal("0"),
+        "approved_recovery_cost_total": (
+            RecoveryCost.objects.filter(approved_at__isnull=False, is_chargeable_to_customer=True)
+            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        ),
     })
 
 

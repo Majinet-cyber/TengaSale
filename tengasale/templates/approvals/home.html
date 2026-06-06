@@ -30,8 +30,22 @@
 {% endif %}
 
 <a href="{% url 'underwriter_active_reviews' %}" class="active-review-card">
-    <span>MY ACTIVE</span>
-    <strong>{{ active_count }} / {{ max_active }}</strong>
+    <span class="review-card-icon" aria-hidden="true">A</span>
+    <span class="review-card-copy">
+        <span>MY ACTIVE REVIEWS</span>
+        <strong>{{ active_count }} / {{ max_active }}</strong>
+    </span>
+    <span class="review-card-arrow" aria-hidden="true">&rsaquo;</span>
+</a>
+
+<a href="{% url 'underwriter_claim_next' %}" class="active-review-card pending-queue-card">
+    <span class="review-card-icon" aria-hidden="true">Q</span>
+    <span class="review-card-copy">
+        <span>PENDING QUEUE</span>
+        <strong>{{ pending_count }}</strong>
+        <small>Anonymous until claimed</small>
+    </span>
+    <span class="review-card-arrow" aria-hidden="true">&rsaquo;</span>
 </a>
 
 <section class="stat-card">
@@ -61,8 +75,11 @@
     <h2>Tools</h2>
     <a href="{% url 'underwriter_queue' %}" class="menu-row">
         <span class="left">
-            <span class="menu-icon icon-active">Q</span>
-            <span>Review Queue</span>
+            <span class="menu-icon icon-success">Q</span>
+            <span class="menu-row-copy">
+                <span>Pending Queue</span>
+                <small>{{ pending_count }} anonymous application{{ pending_count|pluralize }}</small>
+            </span>
         </span>
         <span class="arrow" aria-hidden="true">></span>
     </a>

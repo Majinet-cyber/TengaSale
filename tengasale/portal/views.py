@@ -271,8 +271,14 @@ def portal_payment(request, contract_number):
     """Initiate a payment against a contract."""
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
 
-    if contract.status == PaymentContract.STATUS_COMPLETED:
-        messages.info(request, "This contract is fully paid — no further payments are needed.")
+    closed_statuses = {
+        PaymentContract.STATUS_COMPLETED,
+        PaymentContract.STATUS_RESOLD,
+        PaymentContract.STATUS_WRITTEN_OFF,
+        PaymentContract.STATUS_LEGALLY_CLOSED,
+    }
+    if contract.status in closed_statuses:
+        messages.info(request, "This contract is closed - no further access-restoring payments are available.")
         return redirect("portal_contract", contract_number=contract_number)
 
     # Parse form inputs

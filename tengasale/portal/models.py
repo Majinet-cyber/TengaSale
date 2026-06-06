@@ -13,6 +13,7 @@ import random
 import secrets
 import string
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -67,6 +68,12 @@ class PaymentContract(models.Model):
     STATUS_LOCKED = "locked"
     STATUS_COMPLETED = "completed"
     STATUS_CANCELLED = "cancelled"
+    STATUS_REPOSSESSION_PENDING = "repossession_pending"
+    STATUS_REPOSSESSED = "repossessed"
+    STATUS_READY_FOR_RESALE = "ready_for_resale"
+    STATUS_RESOLD = "resold"
+    STATUS_WRITTEN_OFF = "written_off"
+    STATUS_LEGALLY_CLOSED = "legally_closed"
 
     STATUS_CHOICES = [
         (STATUS_ACTIVE, "Active"),
@@ -74,6 +81,12 @@ class PaymentContract(models.Model):
         (STATUS_LOCKED, "Locked"),
         (STATUS_COMPLETED, "Completed"),
         (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_REPOSSESSION_PENDING, "Repossession Pending"),
+        (STATUS_REPOSSESSED, "Repossessed"),
+        (STATUS_READY_FOR_RESALE, "Ready for Resale"),
+        (STATUS_RESOLD, "Resold"),
+        (STATUS_WRITTEN_OFF, "Written Off / Shortfall"),
+        (STATUS_LEGALLY_CLOSED, "Legally Closed"),
     ]
 
     contract_number = models.CharField(max_length=15, unique=True, blank=True)
@@ -310,6 +323,65 @@ class PaymentContract(models.Model):
         if len(p) >= 6:
             return p[:3] + "***" + p[-3:]
         return p[:2] + "***"
+
+
+class RecoveryCost(models.Model):
+    COST_REPOSSESSION = "repossession"
+    COST_TRACING = "tracing"
+    COST_LEGAL = "legal"
+    COST_STORAGE = "storage"
+    COST_REPAIR = "repair"
+    COST_RESALE = "resale"
+    COST_OTHER = "other"
+
+    COST_TYPE_CHOICES = [
+        (COST_REPOSSESSION, "Repossession"),
+        (COST_TRACING, "Tracing"),
+        (COST_LEGAL, "Legal"),
+        (COST_STORAGE, "Storage"),
+        (COST_REPAIR, "Repair"),
+        (COST_RESALE, "Resale"),
+        (COST_OTHER, "Other"),
+    ]
+
+    contract = models.ForeignKey(
+        PaymentContract,
+        on_delete=models.CASCADE,
+        related_name="recovery_costs",
+    )
+    cost_type = models.CharField(max_length=30, choices=COST_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    description = models.TextField(blank=True)
+    incurred_at = models.DateTimeField(default=timezone.now)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recorded_recovery_costs",
+    )
+    evidence_file = models.FileField(upload_to="recovery_costs/evidence/", blank=True, null=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_recovery_costs",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    is_chargeable_to_customer = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-incurred_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["contract", "approved_at"]),
+            models.Index(fields=["cost_type", "incurred_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_cost_type_display()} - {self.contract} - MWK {self.amount}"
 
 
 class PaymentTransaction(models.Model):

@@ -1,0 +1,62 @@
+{% load ts_filters %}
+<section class="menu-list">
+  <h2>{{ title }}</h2>
+  <div class="application-list">
+    {% for contract in rows %}
+      <div class="application-card">
+        <div class="application-card-main">
+          <div class="application-card-header">
+            <h3>{{ contract.customer_name|default:"Unknown Customer" }}</h3>
+            <span class="status-pill status-{{ contract.status }}">{{ contract.get_status_display }}</span>
+          </div>
+          <div class="application-meta">
+            <span>Contract: {{ contract.contract_number }}</span>
+            <span>PayG: {{ contract.payg_number|default:"Pending" }}</span>
+            <span>Balance: {{ contract.remaining_amount|mwk }}</span>
+          </div>
+          <form method="post" class="uw-actions">
+            {% csrf_token %}
+            <input type="hidden" name="contract_id" value="{{ contract.id }}">
+            {% if action %}
+              <input type="hidden" name="action" value="{{ action }}">
+              {% if resale %}
+                <input name="resale_amount" type="number" min="0" step="0.01" placeholder="Resale proceeds" class="form-control" style="max-width:180px;">
+              {% endif %}
+              <button type="submit" class="btn btn-outline btn-sm">{{ action_label }}</button>
+            {% endif %}
+          </form>
+          <form method="post" class="uw-actions">
+            {% csrf_token %}
+            <input type="hidden" name="contract_id" value="{{ contract.id }}">
+            <input type="hidden" name="action" value="add_recovery_cost">
+            <select name="cost_type" class="form-control" style="max-width:170px;">
+              <option value="repossession">Repossession</option>
+              <option value="tracing">Tracing</option>
+              <option value="legal">Legal</option>
+              <option value="storage">Storage</option>
+              <option value="repair">Repair</option>
+              <option value="resale">Resale</option>
+              <option value="other">Other</option>
+            </select>
+            <input name="amount" type="number" min="0" step="0.01" placeholder="Cost amount" class="form-control" style="max-width:150px;">
+            <input name="description" placeholder="Description" class="form-control" style="max-width:220px;">
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#667085;">
+              <input type="checkbox" name="is_chargeable_to_customer" checked> Chargeable
+            </label>
+            <button type="submit" class="btn btn-ghost btn-sm">Add Cost</button>
+          </form>
+        </div>
+        {% if secondary_action %}
+          <form method="post" class="application-card-side">
+            {% csrf_token %}
+            <input type="hidden" name="contract_id" value="{{ contract.id }}">
+            <input type="hidden" name="action" value="{{ secondary_action }}">
+            <button type="submit" class="btn btn-ghost btn-sm">{{ secondary_label }}</button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card">No records in this section.</div>
+    {% endfor %}
+  </div>
+</section>

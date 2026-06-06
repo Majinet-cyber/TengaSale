@@ -222,6 +222,9 @@ def get_contract_context(contract) -> dict[str, Any]:
 
     # Customer demographics from application
     region = district = ta = address = date_of_birth = gender = ""
+    guarantor_1_name = guarantor_1_phone = ""
+    guarantor_2_name = guarantor_2_phone = ""
+    guarantor_3_name = guarantor_3_phone = ""
     if app:
         region = app.region or ""
         district = app.district or ""
@@ -229,6 +232,12 @@ def get_contract_context(contract) -> dict[str, Any]:
         address = app.precise_location or app.location or ""
         date_of_birth = str(app.date_of_birth) if app.date_of_birth else ""
         gender = app.get_gender_display() if app.gender else ""
+        guarantor_1_name = getattr(app, "next_of_kin_1_name", "") or ""
+        guarantor_1_phone = getattr(app, "next_of_kin_1_phone", "") or ""
+        guarantor_2_name = getattr(app, "next_of_kin_2_name", "") or ""
+        guarantor_2_phone = getattr(app, "next_of_kin_2_phone", "") or ""
+        guarantor_3_name = getattr(app, "next_of_kin_3_name", "") or ""
+        guarantor_3_phone = getattr(app, "next_of_kin_3_phone", "") or ""
 
     # Signatures — embed as data URI so xhtml2pdf can render without HTTP/media URLs
     customer_sig_url = _filefield_data_uri(contract.customer_contract_signature)
@@ -292,6 +301,12 @@ def get_contract_context(contract) -> dict[str, Any]:
         "ta_area": ta,
         "date_of_birth": date_of_birth,
         "gender": gender,
+        "guarantor_1_name": guarantor_1_name,
+        "guarantor_1_phone": guarantor_1_phone,
+        "guarantor_2_name": guarantor_2_name,
+        "guarantor_2_phone": guarantor_2_phone,
+        "guarantor_3_name": guarantor_3_name,
+        "guarantor_3_phone": guarantor_3_phone,
 
         # Merchant
         "merchant_name": merchant_name,
@@ -318,7 +333,7 @@ def get_contract_context(contract) -> dict[str, Any]:
         "two_week_instalment": round(float(daily_payment) * 14, 2) if daily_payment else 0,
         "two_month_instalment": round(float(monthly_payment) * 2, 2) if monthly_payment else 0,
         "daily_instalment": daily_payment,
-        "payment_frequency": "Flexible — daily, weekly, fortnightly, monthly, or custom amount",
+        "payment_frequency": "Flexible - daily, weekly, monthly, or custom amount",
         "total_payable": total_contract_price,
         "payment_channels": "Airtel Money, TNM Mpamba, Bank Transfer",
 
@@ -433,12 +448,14 @@ def _build_stamp_context(contract) -> dict:
         scheduled_for = contract.completed_at + timedelta(hours=hours)
 
     # Lock status
-    lock_release_status = "Not released"
+    lock_release_status = "Removal scheduled within 24 hours"
     try:
         from device_lock.models import DeviceLockProfile
         profile = DeviceLockProfile.objects.filter(contract=contract).first()
         if profile:
-            lock_release_status = profile.get_lock_status_display()
+            status = getattr(profile, "lock_status", "")
+            if status in {"released", "unlocked", "removed"}:
+                lock_release_status = "Released"
     except Exception:
         pass
 
