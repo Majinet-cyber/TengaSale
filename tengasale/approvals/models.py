@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from applications.models import FinancingApplication
 
@@ -142,6 +143,101 @@ class UnderwriterReview(models.Model):
 
     def __str__(self):
         return f"Review for {self.application}"
+
+
+class CustomerCallQuestionnaire(models.Model):
+    RECOMMEND_APPROVE = "approve"
+    RECOMMEND_REVIEW = "review"
+    RECOMMEND_REJECT = "reject"
+
+    RECOMMENDATION_CHOICES = [
+        (RECOMMEND_APPROVE, "Approve"),
+        (RECOMMEND_REVIEW, "Needs Review"),
+        (RECOMMEND_REJECT, "Recommend Reject"),
+    ]
+
+    application = models.OneToOneField(
+        FinancingApplication,
+        on_delete=models.CASCADE,
+        related_name="call_questionnaire",
+    )
+    recording_consent_acknowledged = models.BooleanField(default=False)
+    identity_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    work_context_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    income_confidence_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    price_understanding_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    payment_understanding_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    determined_income = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    closing_notes = models.TextField(blank=True)
+    recommendation = models.CharField(
+        max_length=32,
+        choices=RECOMMENDATION_CHOICES,
+        default=RECOMMEND_REVIEW,
+    )
+    risk_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    completed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="completed_call_questionnaires",
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    SCORE_FIELDS = [
+        "identity_score",
+        "work_context_score",
+        "income_confidence_score",
+        "price_understanding_score",
+        "payment_understanding_score",
+    ]
+    CRITICAL_FIELDS = [
+        "identity_score",
+        "price_understanding_score",
+        "payment_understanding_score",
+    ]
+
+    class Meta:
+        ordering = ["-completed_at", "-updated_at"]
+        verbose_name = "Customer Call Questionnaire"
+        verbose_name_plural = "Customer Call Questionnaires"
+
+    def calculate_outcome(self):
+        scores = [int(getattr(self, field) or 0) for field in self.SCORE_FIELDS]
+        actual_score = sum(scores)
+        self.risk_score = round((actual_score / 15) * 100, 2)
+
+        if any(int(getattr(self, field) or 0) == 1 for field in self.CRITICAL_FIELDS):
+            self.recommendation = self.RECOMMEND_REJECT
+        elif all(int(getattr(self, field) or 0) == 3 for field in self.SCORE_FIELDS) and self.determined_income:
+            self.recommendation = self.RECOMMEND_APPROVE
+        elif all(int(getattr(self, field) or 0) >= 2 for field in self.SCORE_FIELDS):
+            self.recommendation = self.RECOMMEND_REVIEW
+        else:
+            self.recommendation = self.RECOMMEND_REVIEW
+        return self.recommendation
+
+    def complete(self, user):
+        self.completed_by = user
+        self.completed_at = timezone.now()
+        self.calculate_outcome()
+
+    @property
+    def recommendation_label(self):
+        return dict(self.RECOMMENDATION_CHOICES).get(self.recommendation, "Needs Review")
+
+    @property
+    def recommendation_badge_class(self):
+        return {
+            self.RECOMMEND_APPROVE: "call-result--approve",
+            self.RECOMMEND_REVIEW: "call-result--review",
+            self.RECOMMEND_REJECT: "call-result--reject",
+        }.get(self.recommendation, "call-result--review")
+
+    def __str__(self):
+        return f"Customer call questionnaire for {self.application_id}"
 
 
 class ReviewQuestion(models.Model):

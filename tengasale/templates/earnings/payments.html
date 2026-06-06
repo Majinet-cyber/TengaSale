@@ -12,6 +12,7 @@
 
 <h1 class="greeting">Payments</h1>
 
+<div class="payment-info-grid">
 <section class="card">
     <h2>Note</h2>
     <p class="text-muted">Not all historical payments are shown. For payment information not displayed here, please contact support.</p>
@@ -19,18 +20,21 @@
 
 <section class="card">
     <h2>Timelines</h2>
-    <p>Bank payouts are processed within 2 business days.</p>
-    <p class="text-muted">Mobile Money payouts are processed within 12 hours. If accounts reach limits, payments may be delayed or blocked.</p>
+    <p>Bank payments are paid within 2 business days.</p>
+    <p class="text-muted">Mobile Money payments are paid within 12 hours. If accounts reach limits, payments may be blocked.</p>
 </section>
+</div>
 
 <section class="card">
     <h2>Status guide</h2>
     <div class="status-guide">
-        <span><b class="status-pill status-pending_review">Pending</b> Waiting to be paid</span>
-        <span><b class="status-pill status-under_review">TengaSale Processing</b> Payment initiated</span>
-        <span><b class="status-pill">External Processing</b> Payment made</span>
-        <span><b class="status-pill status-completed">Paid</b> Payment confirmed</span>
-        <span><b class="status-pill status-rejected">Failed</b> Payment failed</span>
+        <span><b class="badge-pending">Pending</b> Waiting to be paid</span>
+        <span><b class="badge-tenga-processing">TengaSale Processing</b> Payment initiated</span>
+        <span><b class="badge-external-processing">External Processing</b> Payment made externally and awaiting confirmation</span>
+        <span><b class="badge-paid">Paid</b> Payment confirmed</span>
+        <span><b class="badge-failed">Failed</b> Payment failed</span>
+        <span><b class="badge-reversed">Reversed</b> Payment reversed</span>
+        <span><b class="badge-cancelled">Cancelled</b> Payment cancelled</span>
     </div>
 </section>
 
@@ -52,8 +56,8 @@
 </form>
 
 <section data-payment-panel="device-sales">
-    <div class="table-scroll">
-        <table class="mobile-table">
+    <div class="payment-table-wrap">
+        <table class="payment-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -61,6 +65,7 @@
                     <th>Amount</th>
                     <th>Institution</th>
                     <th>Account</th>
+                    <th>Reference</th>
                     <th>Contract</th>
                 </tr>
             </thead>
@@ -68,21 +73,22 @@
                 {% for row in device_page %}
                     <tr>
                         <td>{{ row.date|date:"d M Y" }}</td>
-                        <td><span class="status-pill">{{ row.status }}</span></td>
+                        <td><span class="{{ row.status|payment_badge }}">{{ row.status_label }}</span></td>
                         <td>{{ row.amount|mwk }}</td>
                         <td>{{ row.institution }}</td>
                         <td>{{ row.account }}</td>
+                        <td>{{ row.reference }}</td>
                         <td>
                             {% if row.contract %}
                                 <strong>{{ row.contract.contract_number }}</strong><br>
                                 <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button">VIEW CONTRACT</a>
                             {% else %}
-                                -
+                                {{ row.contract_number|default:"-" }}
                             {% endif %}
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="6">No device sale payments yet.</td></tr>
+                    <tr><td colspan="7">No device sale payments yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -103,34 +109,39 @@
 </section>
 
 <section data-payment-panel="commissions" hidden>
-    <div class="table-scroll">
-        <table class="mobile-table">
+    <div class="payment-table-wrap">
+        <table class="payment-table">
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Contract</th>
-                    <th>Commission amount</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Amount</th>
+                    <th>Institution</th>
+                    <th>Account</th>
+                    <th>Reference</th>
+                    <th>Contract</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in commission_page %}
                     <tr>
                         <td>{{ row.date|date:"d M Y" }}</td>
-                        <td>{% if row.contract %}{{ row.contract.contract_number }}{% else %}{{ row.application_number }}{% endif %}</td>
+                        <td><span class="{{ row.status|payment_badge }}">{{ row.status_label }}</span></td>
                         <td>{{ row.amount|mwk }}</td>
-                        <td><span class="status-pill">{{ row.status }}</span></td>
+                        <td>{{ row.institution }}</td>
+                        <td>{{ row.account }}</td>
+                        <td>{{ row.reference }}</td>
                         <td>
                             {% if row.contract %}
+                                <strong>{{ row.contract.contract_number }}</strong><br>
                                 <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button">VIEW CONTRACT</a>
                             {% else %}
-                                -
+                                {{ row.contract_number|default:row.application_number }}
                             {% endif %}
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5">No commission payments yet.</td></tr>
+                    <tr><td colspan="7">No commission payments yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

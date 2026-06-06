@@ -1,0 +1,169 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Portfolio Management - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.portfolio-page { max-width:1440px; margin:0 auto; padding:20px 18px 56px; background:#f8fafc; }
+.portfolio-header { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; flex-wrap:wrap; margin-bottom:18px; }
+.portfolio-kicker { font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.09em; color:#ff5a00; }
+.portfolio-title { margin:3px 0; font-size:30px; line-height:1.08; color:#101828; }
+.portfolio-sub { margin:0; color:#667085; font-size:14px; }
+.portfolio-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.portfolio-btn { display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:8px 13px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; color:#344054; font-weight:850; text-decoration:none; }
+.portfolio-btn--orange { background:#ff5a00; color:#fff; border-color:#ff5a00; }
+.portfolio-tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; }
+.portfolio-tab { flex:0 0 auto; padding:8px 12px; border-radius:999px; background:#fff; border:1px solid #e5e7eb; font-weight:850; color:#475467; text-decoration:none; font-size:13px; }
+.portfolio-tab--active { background:#fff3eb; border-color:#ffb088; color:#ff5a00; }
+.portfolio-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:12px; margin-bottom:16px; }
+.portfolio-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:14px; box-shadow:0 2px 10px rgba(15,23,42,.05); min-width:0; }
+.portfolio-kpi span { display:block; color:#667085; font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.05em; }
+.portfolio-kpi strong { display:block; margin-top:6px; font-size:22px; color:#101828; overflow-wrap:anywhere; }
+.portfolio-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:14px; margin-bottom:16px; }
+.portfolio-card { background:#fff; border:1px solid #e5e7eb; border-radius:18px; padding:16px; box-shadow:0 2px 10px rgba(15,23,42,.05); min-width:0; }
+.portfolio-card h2 { margin:0 0 12px; font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:#344054; }
+.portfolio-chart { height:280px; position:relative; }
+.portfolio-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:10px; }
+.portfolio-filters input,.portfolio-filters select { width:100%; border:1px solid #d0d5dd; border-radius:10px; padding:10px 11px; font:inherit; }
+.portfolio-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:16px; background:#fff; }
+.portfolio-table { width:100%; min-width:1120px; border-collapse:collapse; }
+.portfolio-table th,.portfolio-table td { padding:11px 12px; border-bottom:1px solid #eef2f7; text-align:left; vertical-align:top; font-size:13px; overflow-wrap:anywhere; }
+.portfolio-table th { position:sticky; top:0; background:#f8fafc; color:#667085; font-size:11px; text-transform:uppercase; letter-spacing:.06em; z-index:1; }
+.portfolio-empty { padding:28px; text-align:center; color:#667085; }
+@media (max-width:600px){ .portfolio-page{padding:14px 10px 40px}.portfolio-title{font-size:25px}.portfolio-kpi strong{font-size:19px} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="portfolio-page">
+  <header class="portfolio-header">
+    <div>
+      <div class="portfolio-kicker">HQ Portfolio</div>
+      <h1 class="portfolio-title">Portfolio Management</h1>
+      <p class="portfolio-sub">Operational, credit, recovery, investor and audit view of the TengaSale book.</p>
+    </div>
+    <div class="portfolio-actions">
+      <a href="{% url 'hq_dashboard' %}" class="portfolio-btn">Back to HQ</a>
+      <a href="{% url 'hq_portfolio_investor_report' %}" class="portfolio-btn">Investor Report</a>
+      <a href="{% url 'hq_portfolio_export_csv' %}" class="portfolio-btn portfolio-btn--orange">Export CSV</a>
+    </div>
+  </header>
+
+  <nav class="portfolio-tabs" aria-label="Portfolio sections">
+    <a class="portfolio-tab portfolio-tab--active" href="#overview">Overview</a>
+    <a class="portfolio-tab" href="#contracts">Contracts</a>
+    <a class="portfolio-tab" href="#risk">Credit Risk</a>
+    <a class="portfolio-tab" href="{% url 'hq_repossession_resale' %}">Recoveries</a>
+    <a class="portfolio-tab" href="{% url 'hq_portfolio_investor_report' %}">Investor Report</a>
+    <a class="portfolio-tab" href="{% url 'hq_portfolio_export_csv' %}">Exports</a>
+  </nav>
+
+  <section class="portfolio-kpis" id="overview">
+    <div class="portfolio-kpi"><span>Active Contracts</span><strong>{{ kpis.active_contracts|tsnum }}</strong></div>
+    <div class="portfolio-kpi"><span>Portfolio Value</span><strong>{{ kpis.portfolio_value|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Total Deposits</span><strong>{{ kpis.total_deposits|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Outstanding Balance</span><strong>{{ kpis.outstanding_balance|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Total Paid</span><strong>{{ kpis.total_paid|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Average Deposit %</span><strong>{{ kpis.average_deposit|pct }}</strong></div>
+    <div class="portfolio-kpi"><span>Average Ticket Size</span><strong>{{ kpis.average_ticket_size|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Default Rate</span><strong>{{ kpis.default_rate|pct }}</strong></div>
+    <div class="portfolio-kpi"><span>Recovery Rate</span><strong>{{ kpis.recovery_rate|pct }}</strong></div>
+    <div class="portfolio-kpi"><span>PAR 1+</span><strong>{{ kpis.par_1|tsnum }}</strong></div>
+    <div class="portfolio-kpi"><span>PAR 7+</span><strong>{{ kpis.par_7|tsnum }}</strong></div>
+    <div class="portfolio-kpi"><span>PAR 30+</span><strong>{{ kpis.par_30|tsnum }}</strong></div>
+    <div class="portfolio-kpi"><span>Write-off Balance</span><strong>{{ kpis.write_off_balance|mwk_short }}</strong></div>
+    <div class="portfolio-kpi"><span>Recovered From Write-offs</span><strong>{{ kpis.recovered_from_write_offs|mwk_short }}</strong></div>
+  </section>
+
+  <section class="portfolio-grid" id="risk">
+    <div class="portfolio-card">
+      <h2>Portfolio by contract status</h2>
+      <div class="portfolio-chart"><canvas id="portfolioStatusChart"></canvas></div>
+    </div>
+    <div class="portfolio-card">
+      <h2>New contracts and payments by month</h2>
+      <div class="portfolio-chart"><canvas id="portfolioTrendChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="portfolio-card" id="contracts">
+    <h2>Contract Portfolio</h2>
+    <form method="get" class="portfolio-filters">
+      <input name="q" value="{{ query }}" placeholder="Search customer, phone, contract, IMEI, merchant">
+      <select name="status">
+        <option value="">All statuses</option>
+        {% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="risk">
+        <option value="">All risk ratings</option>
+        <option value="Low" {% if risk_filter == "Low" %}selected{% endif %}>Low</option>
+        <option value="Watch" {% if risk_filter == "Watch" %}selected{% endif %}>Watch</option>
+        <option value="Medium" {% if risk_filter == "Medium" %}selected{% endif %}>Medium</option>
+        <option value="High" {% if risk_filter == "High" %}selected{% endif %}>High</option>
+      </select>
+      <select name="par">
+        <option value="">All PAR bands</option>
+        <option value="current" {% if par_filter == "current" %}selected{% endif %}>Current</option>
+        <option value="par_1plus" {% if par_filter == "par_1plus" %}selected{% endif %}>PAR 1+</option>
+        <option value="par_7plus" {% if par_filter == "par_7plus" %}selected{% endif %}>PAR 7+</option>
+        <option value="par_30plus" {% if par_filter == "par_30plus" %}selected{% endif %}>PAR 30+</option>
+      </select>
+      <button class="portfolio-btn portfolio-btn--orange" type="submit">Apply Filters</button>
+    </form>
+    <div class="portfolio-table-wrap" style="margin-top:14px;">
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>Contract</th><th>Customer</th><th>Merchant</th><th>Device</th><th>Loan</th><th>Deposit</th><th>Paid</th><th>Balance</th><th>Status</th><th>Risk</th><th>PAR</th><th>Recovery</th><th>Created</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.contract.contract_number }}</strong><br><small>{{ row.imei|default:"No IMEI" }}</small></td>
+            <td>{{ row.customer }}<br><small>{{ row.phone }}</small></td>
+            <td>{{ row.merchant|default:"-" }}<br><small>{{ row.underwriter|default:"No underwriter" }}</small></td>
+            <td>{{ row.device|default:"-" }}</td>
+            <td>{{ row.loan|mwk }}</td>
+            <td>{{ row.deposit|mwk }}</td>
+            <td>{{ row.paid|mwk }}</td>
+            <td>{{ row.balance|mwk }}</td>
+            <td>{{ row.status }}</td>
+            <td><span class="{{ row.risk|risk_badge }}">{{ row.risk }}</span></td>
+            <td>{{ row.par }}<br><small>{{ row.days_arrears }} days</small></td>
+            <td>{{ row.recovery }}</td>
+            <td>{{ row.created|date:"d M Y" }}</td>
+            <td>
+              <a class="portfolio-btn" href="{% url 'hq_payment_collections' %}?q={{ row.contract.contract_number }}">View</a>
+              <a class="portfolio-btn" href="{% url 'hq_repossession_resale' %}">Recovery Notes</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="14" class="portfolio-empty">No portfolio contracts match this view.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+{{ chart_data|json_script:"portfolio-chart-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("portfolio-chart-data").textContent);
+  function mwk(value) { return "MWK " + Math.round(Number(value || 0)).toLocaleString("en-US"); }
+  new Chart(document.getElementById("portfolioStatusChart"), {
+    type: "doughnut",
+    data: { labels: data.statusLabels, datasets: [{ data: data.statusValues, backgroundColor: ["#16a34a", "#f59e0b", "#dc2626", "#2563eb", "#4f46e5", "#64748b"] }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:"bottom", labels:{ boxWidth:12, usePointStyle:true } } } }
+  });
+  new Chart(document.getElementById("portfolioTrendChart"), {
+    type: "bar",
+    data: { labels: data.monthLabels, datasets: [{ label:"New contracts", data:data.newContracts, backgroundColor:"#ff5a00", borderRadius:10 }, { label:"Payments collected", data:data.payments, backgroundColor:"#16a34a", borderRadius:10, yAxisID:"y1" }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:"bottom" }, tooltip:{ callbacks:{ label:function(ctx){ return ctx.dataset.label + ": " + (ctx.dataset.yAxisID === "y1" ? mwk(ctx.raw) : ctx.raw); } } } }, scales:{ y:{ beginAtZero:true }, y1:{ beginAtZero:true, position:"right", ticks:{ callback:mwk }, grid:{ drawOnChartArea:false } } } }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends "sales/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Customer Call Questionnaire - {{ app.application_number }}{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+.call-page { max-width: 860px; margin: 0 auto; padding: 16px 14px 44px; }
+.call-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(15,23,42,.08);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.call-header { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; flex-wrap:wrap; }
+.call-kicker { font-size:12px; font-weight:900; color:#ff5a00; text-transform:uppercase; letter-spacing:.08em; }
+.call-title { margin:4px 0 0; font-size:28px; line-height:1.1; color:#101828; }
+.call-sub { margin:6px 0 0; color:#667085; font-size:14px; }
+.call-result {
+  min-width:180px;
+  border-radius:16px;
+  padding:12px 14px;
+  font-weight:900;
+  text-align:right;
+}
+.call-result span { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; opacity:.75; }
+.call-result strong { display:block; font-size:18px; }
+.call-result--approve { background:#dcfce7; color:#166534; }
+.call-result--review { background:#fff7d6; color:#92400e; }
+.call-result--reject { background:#fde8ec; color:#991b1b; }
+.call-step { border-top:1px solid #eef2f7; padding-top:18px; margin-top:18px; }
+.call-step:first-of-type { border-top:0; padding-top:0; margin-top:0; }
+.call-step-title { text-align:center; font-size:20px; font-weight:900; color:#101828; margin:0 0 10px; }
+.call-prompt { font-size:18px; line-height:1.45; color:#101828; font-weight:750; margin:0 0 8px; }
+.call-guideline { color:#667085; font-size:14px; line-height:1.5; margin:0 0 14px; }
+.call-details { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px; }
+.fact-pill {
+  background:#ffd600;
+  border-radius:999px;
+  padding:.15rem .6rem;
+  font-weight:700;
+  color:#1f2937;
+  font-size:13px;
+  max-width:100%;
+  overflow-wrap:anywhere;
+}
+.score-option {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:14px;
+  border-radius:16px;
+  border:2px solid transparent;
+  margin:10px 0;
+  cursor:pointer;
+}
+.score-option input { width:24px; height:24px; margin-top:2px; accent-color:#ff5a00; flex-shrink:0; }
+.score-option strong { display:block; font-size:15px; line-height:1.35; color:#101828; }
+.score-option-danger { background:#fde8ec; }
+.score-option-warning { background:#fffbea; }
+.score-option-success { background:#e8f6ec; }
+.score-option:has(input:checked) { border-color:#ff5a00; box-shadow:0 0 0 3px rgba(255,90,0,.10); }
+.call-checkbox-row { display:flex; gap:12px; align-items:flex-start; font-weight:800; color:#101828; }
+.call-checkbox { width:24px; height:24px; accent-color:#ff5a00; flex-shrink:0; }
+.call-input, .call-textarea {
+  width:100%;
+  border:1.5px solid #d0d5dd;
+  border-radius:14px;
+  padding:13px 14px;
+  font:inherit;
+  font-weight:700;
+  background:#fff;
+}
+.call-textarea { font-weight:600; line-height:1.45; resize:vertical; }
+.call-field-label { display:block; font-size:13px; font-weight:900; color:#344054; margin:0 0 8px; }
+.call-errors { color:#b42318; font-size:13px; font-weight:700; margin:8px 0 0; }
+.call-actions { display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:18px; flex-wrap:wrap; }
+.call-submit {
+  border:0;
+  border-radius:14px;
+  background:#ff5a00;
+  color:#fff;
+  padding:13px 20px;
+  font-weight:900;
+  cursor:pointer;
+  min-width:150px;
+}
+.call-submit[disabled] { opacity:.75; cursor:wait; }
+.call-back { text-decoration:none; color:#344054; font-weight:800; }
+@media (max-width: 560px) {
+  .call-page { padding:10px 10px 36px; }
+  .call-card { padding:16px; border-radius:18px; }
+  .call-title { font-size:24px; }
+  .call-prompt { font-size:16px; }
+  .call-result { text-align:left; width:100%; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="call-page">
+  <div class="call-card call-header">
+    <div>
+      <a href="{% url 'sales_review_summary' app.id %}" class="call-back">&larr; Back</a>
+      <div class="call-kicker">Underwriting Verification</div>
+      <h1 class="call-title">Customer Call Questionnaire</h1>
+      <p class="call-sub">{{ app.application_number }} - {{ app.customer_name|default:"Unnamed Customer" }}</p>
+    </div>
+    {% if questionnaire.completed_at %}
+      <div class="call-result {{ questionnaire.recommendation_badge_class }}">
+        <span>Recommendation</span>
+        <strong>{{ questionnaire.recommendation_label }}</strong>
+        <small>{{ questionnaire.risk_score|default:0 }}% score</small>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if questionnaire.completed_at %}
+  <div class="call-card">
+    <div class="call-details">
+      <span class="fact-pill">Completed by: {{ questionnaire.completed_by.get_full_name|default:questionnaire.completed_by.username }}</span>
+      <span class="fact-pill">Completed at: {{ questionnaire.completed_at|date:"d M Y, H:i" }}</span>
+      {% if questionnaire.determined_income %}<span class="fact-pill">Determined income: {{ questionnaire.determined_income|mwk }}</span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" class="call-card" id="call-questionnaire-form">
+    {% csrf_token %}
+
+    <section class="call-step">
+      <h2 class="call-step-title">Customer Facts</h2>
+      <div class="call-details">
+        <span class="fact-pill">Customer: {{ app.customer_name|default:"Not captured" }}</span>
+        <span class="fact-pill">Phone: {{ app.customer_phone|default:"Not captured" }}</span>
+        <span class="fact-pill">Merchant: {{ call_facts.merchant_name }}</span>
+        <span class="fact-pill">Device: {{ call_facts.device_label }}</span>
+        <span class="fact-pill">Deposit: {{ call_facts.deposit|mwk }}</span>
+        <span class="fact-pill">Daily: {{ call_facts.daily_price|mwk }}</span>
+      </div>
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 0: Recording Consent</h2>
+      <p class="call-prompt">Hi, I'm calling from TengaSale. Before we start, please note we will record this call for quality, verification, and dispute-resolution purposes.</p>
+      <p class="call-guideline">Statement, not a question. Customer may object if they do not wish to proceed.</p>
+      <label class="call-checkbox-row">
+        {{ form.recording_consent_acknowledged }}
+        <span>Recording consent acknowledged</span>
+      </label>
+      {% if form.recording_consent_acknowledged.errors %}<div class="call-errors">{{ form.recording_consent_acknowledged.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 1: Identity Confirmation</h2>
+      <p class="call-prompt">Can you confirm your full name and date of birth for me? And are you at the shop right now?</p>
+      <div class="call-details">
+        <span class="fact-pill">Customer Name: {{ app.customer_name|default:"Not captured" }}</span>
+        <span class="fact-pill">DOB: {{ app.date_of_birth|date:"d M Y"|default:"Not captured" }}</span>
+        <span class="fact-pill">ID Number: {{ app.national_id|default:"Not captured" }}</span>
+        <span class="fact-pill">Shop: {{ call_facts.merchant_name }}</span>
+      </div>
+      <label class="score-option score-option-danger"><input type="radio" name="identity_score" value="1" {% if questionnaire.identity_score == 1 %}checked{% endif %}><strong>1 - Details do not match records, or customer cannot confirm identity even after prompting. Recommend Reject.</strong></label>
+      <label class="score-option score-option-warning"><input type="radio" name="identity_score" value="2" {% if questionnaire.identity_score == 2 %}checked{% endif %}><strong>2 - Hesitant or needed one prompt, but confirmed correctly.</strong></label>
+      <label class="score-option score-option-success"><input type="radio" name="identity_score" value="3" {% if questionnaire.identity_score == 3 %}checked{% endif %}><strong>3 - Answered immediately and fluently, no prompting needed.</strong></label>
+      {% if form.identity_score.errors %}<div class="call-errors">{{ form.identity_score.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 2: Work Context</h2>
+      <p class="call-prompt">Tell me a bit about what you do for work.</p>
+      <p class="call-guideline">Follow the customer's lead, then probe with: how long have you done it, is work steady or variable, and what does a typical month look like income-wise?</p>
+      <div class="call-details">
+        <span class="fact-pill">Region: {{ app.region|default:"Not captured" }}</span>
+        <span class="fact-pill">Occupation: {{ app.occupation|default:"Not captured" }}</span>
+        <span class="fact-pill">Work description: {{ app.work_description|default:"Not captured" }}</span>
+      </div>
+      <label class="score-option score-option-danger"><input type="radio" name="work_context_score" value="1" {% if questionnaire.work_context_score == 1 %}checked{% endif %}><strong>1 - Could not explain day-to-day activities, or story changed when probed. I do not believe them. Recommend Reject.</strong></label>
+      <label class="score-option score-option-warning"><input type="radio" name="work_context_score" value="2" {% if questionnaire.work_context_score == 2 %}checked{% endif %}><strong>2 - Somewhat believable, but lacking concrete details. I am not confident this is their real job.</strong></label>
+      <label class="score-option score-option-success"><input type="radio" name="work_context_score" value="3" {% if questionnaire.work_context_score == 3 %}checked{% endif %}><strong>3 - Specific and consistent. I am very confident this is their real job.</strong></label>
+      {% if form.work_context_score.errors %}<div class="call-errors">{{ form.work_context_score.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 3: Income Confirmation</h2>
+      <p class="call-prompt">What is your monthly income? Interrogate until you believe them.</p>
+      <p class="call-guideline">Provide both the number and how confident you are in that number.</p>
+      <label class="call-field-label" for="{{ form.determined_income.id_for_label }}">Determined income</label>
+      {{ form.determined_income }}
+      {% if form.determined_income.errors %}<div class="call-errors">{{ form.determined_income.errors }}</div>{% endif %}
+      <label class="score-option score-option-danger"><input type="radio" name="income_confidence_score" value="1" {% if questionnaire.income_confidence_score == 1 %}checked{% endif %}><strong>1 - Low confidence.</strong></label>
+      <label class="score-option score-option-warning"><input type="radio" name="income_confidence_score" value="2" {% if questionnaire.income_confidence_score == 2 %}checked{% endif %}><strong>2 - Medium confidence.</strong></label>
+      <label class="score-option score-option-success"><input type="radio" name="income_confidence_score" value="3" {% if questionnaire.income_confidence_score == 3 %}checked{% endif %}><strong>3 - High confidence.</strong></label>
+      {% if form.income_confidence_score.errors %}<div class="call-errors">{{ form.income_confidence_score.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 4: Understands Price</h2>
+      <p class="call-prompt">Tell me about the phone you're getting today - what's the model, and what did they tell you about the payments?</p>
+      <p class="call-guideline">Do not immediately supply the answer if they struggle - that is the signal.</p>
+      <div class="call-details">
+        <span class="fact-pill">Phone: {{ call_facts.device_label }}</span>
+        <span class="fact-pill">Deposit: {{ call_facts.deposit|mwk }}</span>
+        <span class="fact-pill">Daily price: {{ call_facts.daily_price|mwk }}</span>
+        <span class="fact-pill">Weekly price: {{ call_facts.weekly_price|mwk }}</span>
+        <span class="fact-pill">Monthly price: {{ call_facts.monthly_price|mwk }}</span>
+        <span class="fact-pill">Total repayment: {{ call_facts.total_repayment|mwk }}</span>
+      </div>
+      <label class="score-option score-option-danger"><input type="radio" name="price_understanding_score" value="1" {% if questionnaire.price_understanding_score == 1 %}checked{% endif %}><strong>1 - Could not name the phone or payment details; appeared unaware of what they were signing up for. Recommend Reject.</strong></label>
+      <label class="score-option score-option-warning"><input type="radio" name="price_understanding_score" value="2" {% if questionnaire.price_understanding_score == 2 %}checked{% endif %}><strong>2 - Knew the device, vague on payment terms, or needed one prompt.</strong></label>
+      <label class="score-option score-option-success"><input type="radio" name="price_understanding_score" value="3" {% if questionnaire.price_understanding_score == 3 %}checked{% endif %}><strong>3 - Volunteered device and payment details accurately and unprompted.</strong></label>
+      {% if form.price_understanding_score.errors %}<div class="call-errors">{{ form.price_understanding_score.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 5: Understands how to pay</h2>
+      <p class="call-prompt">Tell me how you make payments to TengaSale.</p>
+      <p class="call-guideline">Do not immediately supply the answer if they struggle - that is the signal.</p>
+      <div class="call-details">
+        <span class="fact-pill">Payment options: Pay through the TengaSale customer payment page, approved mobile money channel, or merchant-assisted payment where allowed.</span>
+      </div>
+      <label class="score-option score-option-danger"><input type="radio" name="payment_understanding_score" value="1" {% if questionnaire.payment_understanding_score == 1 %}checked{% endif %}><strong>1 - Could not explain payment methods; had not been trained on how to pay at all. Recommend Reject.</strong></label>
+      <label class="score-option score-option-warning"><input type="radio" name="payment_understanding_score" value="2" {% if questionnaire.payment_understanding_score == 2 %}checked{% endif %}><strong>2 - Knew one payment method, had some idea of how to pay, not confident they will remember on their own.</strong></label>
+      <label class="score-option score-option-success"><input type="radio" name="payment_understanding_score" value="3" {% if questionnaire.payment_understanding_score == 3 %}checked{% endif %}><strong>3 - Volunteered payment options easily; confident they will remember how to pay.</strong></label>
+      {% if form.payment_understanding_score.errors %}<div class="call-errors">{{ form.payment_understanding_score.errors }}</div>{% endif %}
+    </section>
+
+    <section class="call-step">
+      <h2 class="call-step-title">Step 6: Closing / Off-ramp</h2>
+      <p class="call-prompt">Is there anything about the payments, the phone, or the loan that you're unsure about or want to talk through before we finish?</p>
+      <p class="call-guideline">No mandatory score. This gives the customer a genuine exit and surfaces undisclosed doubts.</p>
+      <label class="call-field-label" for="{{ form.closing_notes.id_for_label }}">Closing notes</label>
+      {{ form.closing_notes }}
+    </section>
+
+    <div class="call-actions">
+      <a href="{% url 'sales_review_summary' app.id %}" class="call-back">Back</a>
+      <button type="submit" class="call-submit" id="call-submit">Submit</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById("call-questionnaire-form");
+  var button = document.getElementById("call-submit");
+  if (!form || !button) return;
+  form.addEventListener("submit", function () {
+    button.disabled = true;
+    button.textContent = "Saving...";
+  });
+})();
+</script>
+{% endblock %}

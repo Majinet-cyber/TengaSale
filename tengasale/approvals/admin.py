@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import UnderwriterReview
+from .models import CustomerCallQuestionnaire, UnderwriterReview
 
 
 @admin.register(UnderwriterReview)
@@ -46,3 +46,23 @@ class UnderwriterReviewAdmin(admin.ModelAdmin):
             colour=colour, status=app.get_status_display(),
         )
     decision_display.short_description = "Decision"
+
+
+@admin.register(CustomerCallQuestionnaire)
+class CustomerCallQuestionnaireAdmin(admin.ModelAdmin):
+    list_display = (
+        "application",
+        "recommendation",
+        "risk_score",
+        "completed_by",
+        "completed_at",
+    )
+    list_filter = ("recommendation", "recording_consent_acknowledged", "completed_at")
+    search_fields = (
+        "application__application_number",
+        "application__customer_name",
+        "application__national_id",
+        "completed_by__username",
+    )
+    readonly_fields = ("created_at", "updated_at", "completed_at", "completed_by", "recommendation", "risk_score")
+    ordering = ("-completed_at", "-updated_at")

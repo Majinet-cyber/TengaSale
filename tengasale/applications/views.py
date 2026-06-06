@@ -600,6 +600,7 @@ def capture_imei(request, app_id):
             is_valid_imei,
             normalize_imei,
         )
+        from applications.services.device_matching import compare_deal_to_imei_result
 
         imei = normalize_imei(request.POST.get("imei_number"))
         imei_2 = normalize_imei(request.POST.get("imei_number_2"))
@@ -617,6 +618,20 @@ def capture_imei(request, app_id):
         elif lock_status != FinancingApplication.LOCK_STATUS_CONFIRMED:
             messages.error(request, "Confirm the device lock status before generating the contract.")
         else:
+            if app.imei_number == imei and (app.imei_api_brand or app.imei_api_model):
+                device_match = compare_deal_to_imei_result(
+                    app.deal,
+                    api_brand=app.imei_api_brand,
+                    api_model=app.imei_api_model,
+                    imei=imei,
+                )
+                if not device_match["matches"] and not device_match["invalid_imei"]:
+                    messages.error(request, "The IMEI device and deal device do not match.")
+                    return render(request, "applications/capture_imei.html", {
+                        "app": app,
+                        "device_mismatch": device_match,
+                        "current_imei": imei,
+                    })
             app.imei_number = imei
             app.imei_number_2 = imei_2
             app.device_serial_number = serial_number
@@ -971,6 +986,7 @@ def verify_imei_ajax(request, app_id):
         verify_imei_against_selected_device,
         save_verification_result,
     )
+    from applications.services.device_matching import compare_deal_to_imei_result
 
     app = get_object_or_404(FinancingApplication, id=app_id, created_by=request.user)
 
@@ -995,6 +1011,12 @@ def verify_imei_ajax(request, app_id):
         user=request.user,
         force_recheck=force_recheck,
     )
+    device_match = compare_deal_to_imei_result(
+        app.deal,
+        api_brand=result.get("api_brand", ""),
+        api_model=result.get("api_model", ""),
+        imei=imei,
+    )
 
     # Save result to the application
     if result.get("match_status") not in ("api_error",) or result.get("api_brand") or result.get("api_model"):
@@ -1012,6 +1034,7 @@ def verify_imei_ajax(request, app_id):
         "selected_brand": result.get("selected_brand", ""),
         "selected_model": result.get("selected_model", ""),
         "should_block": result.get("should_block", False),
+        "device_match": device_match,
         "order_id": result.get("order_id", ""),
         "api_raw_result": result.get("api_raw_result", ""),
         "success": result.get("success", False),

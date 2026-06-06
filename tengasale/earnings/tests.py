@@ -9,6 +9,7 @@ from applications.models import FinancingApplication
 from commissions.models import Commission
 from contracts.models import Contract
 from rewards.models import SpinWallet
+from portal.models import PaymentContract, PaymentTransaction
 
 from accounts.utils import assign_role
 from .models import Wallet, WalletTransaction
@@ -202,3 +203,42 @@ class PaymentsPageTests(TestCase):
         self.assertContains(response, self.contract.contract_number)
         self.assertNotContains(response, other_contract.contract_number)
         self.assertNotContains(response, "Other Customer")
+
+    def test_payments_page_uses_portal_transactions_and_colored_status_badges(self):
+        payment_contract = PaymentContract.objects.create(
+            source_application=self.app,
+            customer_name="Jane Banda",
+            customer_phone="990870616",
+            customer_national_id="RQXFVZC9",
+            device_model="TECNO Pop 10C",
+            cash_price=Decimal("350000.00"),
+            total_amount=Decimal("875000.00"),
+            deposit_required=Decimal("130000.00"),
+            deposit_paid=Decimal("130000.00"),
+            amount_paid=Decimal("130000.00"),
+        )
+        tx = PaymentTransaction.objects.create(
+            payment_contract=payment_contract,
+            amount=Decimal("130000.00"),
+            phone="990870616",
+            provider=PaymentTransaction.PROVIDER_PAYCHANGU,
+            provider_reference="PCG-123",
+            status=PaymentTransaction.STATUS_TENGA_PROCESSING,
+        )
+        PaymentTransaction.objects.create(
+            payment_contract=payment_contract,
+            amount=Decimal("25000.00"),
+            phone="990870616",
+            provider=PaymentTransaction.PROVIDER_AIRTEL,
+            provider_reference="AIRTEL-321",
+            status=PaymentTransaction.STATUS_PROCESSING,
+        )
+
+        response = self.client.get(reverse("payments_home") + "?q=PCG-123")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "PCG-123")
+        self.assertContains(response, self.contract.contract_number)
+        self.assertContains(response, "TengaSale Processing")
+        self.assertContains(response, "badge-tenga-processing")
+        self.assertNotContains(response, "AIRTEL-321")

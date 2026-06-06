@@ -20,6 +20,7 @@ from deals.models import DeviceBrand, DeviceDeal
 
 from .forms import CustomerDetailsForm, LocationForm, WorkForm
 from .models import FinancingApplication
+from .services.device_matching import compare_deal_to_imei_result, compare_devices, descriptor_from_deal
 
 
 GIF_BYTES = (
@@ -220,6 +221,44 @@ class CustomerValidationTests(TestCase):
         self.assertFalse(work_form.is_valid())
         self.assertIn("next_of_kin_1_phone", location_form.errors)
         self.assertIn("next_of_kin_2_phone", work_form.errors)
+
+
+class DeviceMatchingTests(ApplicationTestCase):
+    def test_descriptor_extracts_ram_and_rom_from_deal_specs(self):
+        deal = self.create_deal()
+
+        descriptor = descriptor_from_deal(deal)
+
+        self.assertEqual(descriptor["brand"], "TECNO")
+        self.assertEqual(descriptor["model"], "Pop 10C")
+        self.assertEqual(descriptor["ram"], 2)
+        self.assertEqual(descriptor["rom"], 64)
+
+    def test_compare_deal_to_imei_blocks_model_mismatch(self):
+        deal = self.create_deal()
+
+        result = compare_deal_to_imei_result(
+            deal,
+            api_brand="Infinix",
+            api_model="Hot 40",
+            api_specs="8GB 128GB",
+            imei="123456789012345",
+        )
+
+        self.assertFalse(result["matches"])
+        self.assertFalse(result["model_match"])
+        self.assertFalse(result["ram_match"])
+        self.assertFalse(result["rom_match"])
+
+    def test_compare_devices_marks_invalid_imei(self):
+        result = compare_devices(
+            deal_device={"brand": "TECNO", "model": "Pop 10C", "ram": 2, "rom": 64},
+            scanned_device={"brand": "TECNO", "model": "Pop 10C", "ram": 2, "rom": 64},
+            imei="123",
+        )
+
+        self.assertFalse(result["matches"])
+        self.assertTrue(result["invalid_imei"])
 
 
 class NextOfKinAndWorkFormTests(ApplicationTestCase):

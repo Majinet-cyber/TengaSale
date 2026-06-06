@@ -38,6 +38,7 @@ urlpatterns = [
     path("review/<int:app_id>/identity/", views.identity_check, name="underwriter_identity_check"),
     path("review/<int:app_id>/momo/", views.momo_check, name="underwriter_momo_check"),
     path("review/<int:app_id>/customer-call/", views.customer_call, name="underwriter_customer_call"),
+    path("review/<int:app_id>/call-questionnaire/", RedirectView.as_view(pattern_name="sales_call_questionnaire", permanent=False), name="underwriter_call_questionnaire"),
     path("review/<int:app_id>/income/", views.income_check, name="underwriter_income_check"),
     path("review/<int:app_id>/location/", views.location_check, name="underwriter_location_check"),
     path("review/<int:app_id>/final/", views.final_review, name="underwriter_final_review"),

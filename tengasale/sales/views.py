@@ -16,10 +16,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from accounts.decorators import underwriter_required
+from accounts.decorators import role_required, underwriter_required
+from accounts.utils import is_hq, is_underwriter
 from applications.models import ApplicationCorrection, ApplicationFieldReview, FinancingApplication
 from applications.models import ApplicationCorrectionToken
-from approvals.models import CallEvidence, UnderwriterReview
+from approvals.forms import CustomerCallQuestionnaireForm
+from approvals.models import CallEvidence, CustomerCallQuestionnaire, UnderwriterReview
 from approvals.views import (
     MAX_ACTIVE,
     bool_from_post,
@@ -86,6 +88,29 @@ def _audit(user, action, obj_type="", obj_id="", detail=None, request=None):
         detail=detail or {},
         ip_address=ip,
     )
+
+
+def _underwriter_or_hq(user):
+    return is_underwriter(user) or is_hq(user) or user.is_staff or user.is_superuser
+
+
+def _questionnaire_app_for_user(request, app_id):
+    if is_hq(request.user) or request.user.is_staff or request.user.is_superuser:
+        return get_object_or_404(
+            FinancingApplication.objects.select_related("deal", "deal__brand", "created_by", "claimed_by"),
+            id=app_id,
+        ), None
+    return review_guard(request, app_id)
+
+
+def _merchant_business_name(app):
+    try:
+        merchant = app.created_by.merchant_set.first()
+        if merchant:
+            return merchant.business_name or merchant.trading_name or merchant.owner.get_full_name() or merchant.owner.username
+    except Exception:
+        pass
+    return app.created_by.get_full_name() or app.created_by.username
 
 
 # ---------------------------------------------------------------------------
@@ -623,6 +648,51 @@ def sales_confirm_approve(request, app_id):
 def sales_queue_rules(request):
     rule = _queue_rule()
     return render(request, "sales/queue_rules.html", {"rule": rule, "page_heading": "Queue Rules"})
+
+
+# ---------------------------------------------------------------------------
+# Customer call questionnaire
+# ---------------------------------------------------------------------------
+
+@role_required(_underwriter_or_hq)
+def sales_call_questionnaire(request, app_id):
+    app, response = _questionnaire_app_for_user(request, app_id)
+    if response:
+        return response
+
+    questionnaire, _created = CustomerCallQuestionnaire.objects.get_or_create(application=app)
+    if request.method == "POST":
+        form = CustomerCallQuestionnaireForm(request.POST, instance=questionnaire)
+        if form.is_valid():
+            questionnaire = form.save(commit=False)
+            questionnaire.complete(request.user)
+            questionnaire.save()
+            messages.success(request, "Customer call questionnaire saved.")
+            return redirect("sales_call_questionnaire", app_id=app.id)
+    else:
+        form = CustomerCallQuestionnaireForm(instance=questionnaire)
+
+    deal = app.deal
+    weekly_price = (app.calculated_daily_payment or Decimal("0")) * Decimal("7")
+    call_facts = {
+        "merchant_name": _merchant_business_name(app),
+        "device_label": str(deal) if deal else "No phone selected",
+        "device_model": f"{deal.brand.name} {deal.model_name}" if deal else "",
+        "device_specs": getattr(deal, "specs", "") if deal else "",
+        "deposit": app.calculated_deposit_amount or Decimal("0"),
+        "daily_price": app.calculated_daily_payment or Decimal("0"),
+        "weekly_price": weekly_price,
+        "monthly_price": app.calculated_monthly_payment or Decimal("0"),
+        "total_repayment": app.calculated_total_loan or Decimal("0"),
+    }
+
+    return render(request, "sales/call_questionnaire.html", {
+        "app": app,
+        "form": form,
+        "questionnaire": questionnaire,
+        "call_facts": call_facts,
+        "page_heading": "Customer Call Questionnaire",
+    })
 
 
 # ---------------------------------------------------------------------------

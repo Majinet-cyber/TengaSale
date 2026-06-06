@@ -6,7 +6,7 @@ from django.utils import timezone
 from accounts.utils import assign_role
 from applications.models import ApplicationCorrection, FinancingApplication
 from applications.test_helpers import attach_complete_pricing
-from approvals.models import UnderwriterReview
+from approvals.models import CustomerCallQuestionnaire, UnderwriterReview
 
 
 class ApprovalQueueTests(TestCase):
@@ -47,6 +47,8 @@ class ApprovalQueueTests(TestCase):
         self.assertEqual(reverse("underwriter_location_check", args=[app.id]), f"/tengasale/underwriter/review/{app.id}/location/")
         self.assertEqual(reverse("underwriter_final_review", args=[app.id]), f"/tengasale/underwriter/review/{app.id}/final/")
         self.assertEqual(reverse("underwriter_confirm_approve", args=[app.id]), f"/tengasale/underwriter/review/{app.id}/confirm-approve/")
+        self.assertEqual(reverse("sales_call_questionnaire", args=[app.id]), f"/sales/applications/{app.id}/call-questionnaire/")
+        self.assertEqual(reverse("underwriter_call_questionnaire", args=[app.id]), f"/tengasale/underwriter/review/{app.id}/call-questionnaire/")
 
     def test_pending_review_with_no_claim_appears_in_queue(self):
         self.create_pending()
@@ -213,6 +215,86 @@ class ApprovalQueueTests(TestCase):
         self.assertContains(response, "Summary")
         self.assertContains(response, "review-edit-btn")
         self.assertNotContains(response, "correction-toggle")
+
+    def test_summary_page_links_to_customer_call_questionnaire(self):
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Customer Call Questionnaire")
+        self.assertContains(response, reverse("sales_call_questionnaire", args=[app.id]))
+
+    def test_customer_call_questionnaire_access_and_save(self):
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("sales_call_questionnaire", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Step 0: Recording Consent")
+        self.assertContains(response, "Customer Facts")
+
+        response = self.client.post(
+            reverse("sales_call_questionnaire", args=[app.id]),
+            {
+                "recording_consent_acknowledged": "on",
+                "identity_score": "3",
+                "work_context_score": "3",
+                "income_confidence_score": "3",
+                "price_understanding_score": "3",
+                "payment_understanding_score": "3",
+                "determined_income": "450000",
+                "closing_notes": "Confident customer with clear repayment plan.",
+            },
+        )
+        self.assertRedirects(response, reverse("sales_call_questionnaire", args=[app.id]))
+        questionnaire = CustomerCallQuestionnaire.objects.get(application=app)
+        self.assertEqual(questionnaire.recommendation, CustomerCallQuestionnaire.RECOMMEND_APPROVE)
+        self.assertEqual(questionnaire.risk_score, 100)
+        self.assertEqual(questionnaire.completed_by, self.manager)
+
+    def test_customer_call_questionnaire_requires_consent_and_rejects_critical_fail(self):
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.post(
+            reverse("sales_call_questionnaire", args=[app.id]),
+            {
+                "identity_score": "1",
+                "work_context_score": "3",
+                "income_confidence_score": "3",
+                "price_understanding_score": "3",
+                "payment_understanding_score": "3",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recording consent must be acknowledged")
+        self.assertFalse(CustomerCallQuestionnaire.objects.filter(application=app, completed_at__isnull=False).exists())
+
+        response = self.client.post(
+            reverse("sales_call_questionnaire", args=[app.id]),
+            {
+                "recording_consent_acknowledged": "on",
+                "identity_score": "1",
+                "work_context_score": "3",
+                "income_confidence_score": "3",
+                "price_understanding_score": "3",
+                "payment_understanding_score": "3",
+            },
+        )
+        self.assertRedirects(response, reverse("sales_call_questionnaire", args=[app.id]))
+        questionnaire = CustomerCallQuestionnaire.objects.get(application=app)
+        self.assertEqual(questionnaire.recommendation, CustomerCallQuestionnaire.RECOMMEND_REJECT)
+
+    def test_customer_call_questionnaire_forbids_merchants(self):
+        app = self.create_pending(status="under_review", claimed_by=self.manager)
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("sales_call_questionnaire", args=[app.id]))
+
+        self.assertEqual(response.status_code, 403)
 
     def test_yes_no_answer_saves_and_renders_selected_green(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager)

@@ -1,0 +1,130 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Investor Portfolio Report - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.investor-report { max-width:1180px; margin:0 auto; padding:22px 18px 58px; color:#101828; background:#f8fafc; }
+.report-header { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:18px; }
+.report-kicker { font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.1em; color:#ff5a00; }
+.report-title { margin:4px 0; font-size:30px; line-height:1.1; }
+.report-meta { margin:0; color:#667085; font-size:14px; }
+.report-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.report-btn { display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:8px 13px; border-radius:10px; border:1px solid #d0d5dd; background:#fff; color:#344054; font-weight:850; text-decoration:none; }
+.report-btn--orange { background:#ff5a00; border-color:#ff5a00; color:#fff; }
+.report-section { background:#fff; border:1px solid #e5e7eb; border-radius:18px; padding:18px; margin-bottom:14px; box-shadow:0 2px 10px rgba(15,23,42,.05); }
+.report-section h2 { margin:0 0 12px; font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:#344054; }
+.report-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:12px; }
+.report-kpi { border:1px solid #eef2f7; border-radius:14px; padding:14px; min-width:0; background:#fcfcfd; }
+.report-kpi span { display:block; color:#667085; font-size:11px; text-transform:uppercase; font-weight:850; letter-spacing:.05em; }
+.report-kpi strong { display:block; margin-top:6px; font-size:22px; overflow-wrap:anywhere; }
+.report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:14px; }
+.report-list { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
+.report-list li { display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid #eef2f7; padding:8px 0; color:#475467; }
+.report-list strong { color:#101828; }
+.report-table-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:14px; }
+.report-table { width:100%; min-width:860px; border-collapse:collapse; }
+.report-table th,.report-table td { padding:10px 11px; border-bottom:1px solid #eef2f7; text-align:left; font-size:13px; vertical-align:top; }
+.report-table th { background:#f8fafc; color:#667085; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+.report-note { margin:0; color:#475467; line-height:1.55; }
+@media print {
+  .site-header,.report-actions { display:none !important; }
+  .investor-report { padding:0; background:#fff; }
+  .report-section { box-shadow:none; break-inside:avoid; }
+}
+@media (max-width:600px){ .investor-report{padding:14px 10px 42px}.report-title{font-size:25px}.report-kpi strong{font-size:19px} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="investor-report">
+  <header class="report-header">
+    <div>
+      <div class="report-kicker">Bank and investor pack</div>
+      <h1 class="report-title">TengaSale Portfolio Report</h1>
+      <p class="report-meta">As of {{ as_of|date:"d M Y" }}{% if export_mode %} · print-ready PDF fallback{% endif %}</p>
+    </div>
+    <div class="report-actions">
+      <a href="{% url 'hq_portfolio' %}" class="report-btn">Portfolio</a>
+      <a href="{% url 'hq_portfolio_export_pdf' %}" class="report-btn">PDF / Print</a>
+      <a href="{% url 'hq_portfolio_export_excel' %}" class="report-btn">Excel</a>
+      <a href="{% url 'hq_portfolio_export_csv' %}" class="report-btn report-btn--orange">CSV</a>
+    </div>
+  </header>
+
+  <section class="report-section">
+    <h2>Executive Snapshot</h2>
+    <div class="report-kpis">
+      <div class="report-kpi"><span>Portfolio Value</span><strong>{{ kpis.portfolio_value|mwk_short }}</strong></div>
+      <div class="report-kpi"><span>Outstanding Balance</span><strong>{{ kpis.outstanding_balance|mwk_short }}</strong></div>
+      <div class="report-kpi"><span>Total Paid</span><strong>{{ kpis.total_paid|mwk_short }}</strong></div>
+      <div class="report-kpi"><span>Total Deposits</span><strong>{{ kpis.total_deposits|mwk_short }}</strong></div>
+      <div class="report-kpi"><span>Active Contracts</span><strong>{{ kpis.active_contracts|tsnum }}</strong></div>
+      <div class="report-kpi"><span>Average Ticket Size</span><strong>{{ kpis.average_ticket_size|mwk_short }}</strong></div>
+      <div class="report-kpi"><span>Default Rate</span><strong>{{ kpis.default_rate|pct }}</strong></div>
+      <div class="report-kpi"><span>Recovery Rate</span><strong>{{ kpis.recovery_rate|pct }}</strong></div>
+    </div>
+  </section>
+
+  <section class="report-grid">
+    <div class="report-section">
+      <h2>Credit Quality</h2>
+      <ul class="report-list">
+        <li><span>Low risk</span><strong>{{ risk_counts.Low|tsnum }}</strong></li>
+        <li><span>Watch list</span><strong>{{ risk_counts.Watch|tsnum }}</strong></li>
+        <li><span>Medium risk</span><strong>{{ risk_counts.Medium|tsnum }}</strong></li>
+        <li><span>High risk</span><strong>{{ risk_counts.High|tsnum }}</strong></li>
+      </ul>
+    </div>
+    <div class="report-section">
+      <h2>Portfolio At Risk</h2>
+      <ul class="report-list">
+        <li><span>Current</span><strong>{{ par_counts.current|tsnum }}</strong></li>
+        <li><span>PAR 1+</span><strong>{{ par_counts.par_1|tsnum }}</strong></li>
+        <li><span>PAR 7+</span><strong>{{ par_counts.par_7|tsnum }}</strong></li>
+        <li><span>PAR 30+</span><strong>{{ par_counts.par_30|tsnum }}</strong></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="report-section">
+    <h2>Investor Notes</h2>
+    <p class="report-note">
+      This report combines contract value, repayment activity, arrears bands, recovery status, and underwriting risk signals.
+      CSV and Excel exports contain contract-level audit fields including guarantor contacts for bank review and recovery workflows.
+    </p>
+  </section>
+
+  <section class="report-section">
+    <h2>Top Portfolio Lines</h2>
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Contract</th><th>Customer</th><th>Merchant</th><th>Device</th><th>Loan</th><th>Paid</th><th>Balance</th><th>Risk</th><th>PAR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.contract.contract_number }}</strong></td>
+            <td>{{ row.customer }}<br><small>{{ row.phone }}</small></td>
+            <td>{{ row.merchant|default:"-" }}</td>
+            <td>{{ row.device|default:"-" }}</td>
+            <td>{{ row.loan|mwk }}</td>
+            <td>{{ row.paid|mwk }}</td>
+            <td>{{ row.balance|mwk }}</td>
+            <td><span class="{{ row.risk|risk_badge }}">{{ row.risk }}</span></td>
+            <td>{{ row.par }}<br><small>{{ row.days_arrears }} days</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9">No portfolio contracts yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% if export_mode %}<script>window.print();</script>{% endif %}
+{% endblock %}

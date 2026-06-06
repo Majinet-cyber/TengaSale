@@ -12,6 +12,7 @@ from applications.models import FinancingApplication
 from commissions.models import Commission
 from contracts.models import Contract
 from core.formatting import format_mwk
+from portal.models import PaymentTransaction
 from rewards.models import SpinReward, SpinWallet
 from rewards.services import NoSpinsAvailable, SpinDisabled, perform_spin
 
@@ -126,31 +127,80 @@ def payments_home(request):
         rows_per_page = 10
 
     contracts = Contract.objects.select_related("application").filter(merchant=request.user).order_by("-created_at")
+    portal_payments = PaymentTransaction.objects.select_related(
+        "payment_contract",
+        "payment_contract__source_application",
+    ).filter(
+        payment_contract__source_application__created_by=request.user,
+    ).order_by("-created_at")
     commissions = Commission.objects.select_related("application", "application__contract").filter(user=request.user).order_by(
         "-created_at"
     )
 
     if query:
-        contracts = contracts.filter(contract_number__icontains=query)
-        commissions = commissions.filter(application__application_number__icontains=query)
+        from django.db.models import Q
+
+        contracts = contracts.filter(
+            Q(contract_number__icontains=query)
+            | Q(customer_name__icontains=query)
+            | Q(customer_phone__icontains=query)
+        )
+        portal_payments = portal_payments.filter(
+            Q(internal_reference__icontains=query)
+            | Q(provider_reference__icontains=query)
+            | Q(provider__icontains=query)
+            | Q(network__icontains=query)
+            | Q(status__icontains=query)
+            | Q(payment_contract__contract_number__icontains=query)
+            | Q(amount__icontains=query)
+        )
+        commissions = commissions.filter(
+            Q(application__application_number__icontains=query)
+            | Q(application__contract__contract_number__icontains=query)
+            | Q(status__icontains=query)
+            | Q(amount__icontains=query)
+        )
 
     device_sales = [
         {
-            "date": contract.created_at,
-            "status": contract.get_status_display(),
-            "amount": contract.deposit_amount,
-            "institution": "TengaSale",
-            "account": contract.customer_phone or "-",
-            "contract": contract,
+            "date": tx.paid_at or tx.created_at,
+            "status": tx.status,
+            "status_label": tx.get_status_display(),
+            "amount": tx.amount,
+            "institution": tx.get_provider_display() if tx.provider else "TengaSale",
+            "account": tx.phone or tx.payment_contract.customer_phone or "-",
+            "reference": tx.provider_reference or tx.internal_reference,
+            "contract_number": tx.payment_contract.contract_number,
+            "contract": getattr(tx.payment_contract.source_application, "contract", None),
         }
-        for contract in contracts
+        for tx in portal_payments
     ]
+    if not device_sales:
+        device_sales = [
+            {
+                "date": contract.created_at,
+                "status": "pending",
+                "status_label": "Pending",
+                "amount": contract.deposit_amount,
+                "institution": "TengaSale",
+                "account": contract.customer_phone or "-",
+                "reference": contract.contract_number,
+                "contract_number": contract.contract_number,
+                "contract": contract,
+            }
+            for contract in contracts
+        ]
     commission_rows = [
         {
-            "date": commission.created_at,
-            "status": commission.get_status_display(),
+            "date": commission.paid_at or commission.created_at,
+            "status": "paid" if commission.status == Commission.STATUS_PAID else "pending",
+            "status_label": commission.get_status_display(),
             "amount": commission.amount,
+            "institution": "TengaSale",
+            "account": request.user.get_full_name() or request.user.username,
+            "reference": commission.application.application_number,
             "contract": getattr(commission.application, "contract", None),
+            "contract_number": getattr(getattr(commission.application, "contract", None), "contract_number", commission.application.application_number),
             "application_number": commission.application.application_number,
         }
         for commission in commissions

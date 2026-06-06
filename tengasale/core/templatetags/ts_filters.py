@@ -140,3 +140,34 @@ def get_item(dictionary, key):
     if not dictionary:
         return None
     return dictionary.get(key)
+
+
+PAYMENT_STATUS_BADGE_CLASSES = {
+    "pending": "badge-pending",
+    "tenga_processing": "badge-tenga-processing",
+    "processing": "badge-tenga-processing",
+    "external_processing": "badge-external-processing",
+    "paid": "badge-paid",
+    "failed": "badge-failed",
+    "reversed": "badge-reversed",
+    "cancelled": "badge-cancelled",
+}
+
+RISK_BADGE_CLASSES = {
+    "low": "badge-risk-low",
+    "watch": "badge-risk-watch",
+    "medium": "badge-risk-medium",
+    "high": "badge-risk-high",
+}
+
+
+@register.filter(name="payment_badge")
+def payment_badge(value):
+    key = str(value or "").strip().lower().replace(" ", "_").replace("-", "_")
+    return PAYMENT_STATUS_BADGE_CLASSES.get(key, "badge-pending")
+
+
+@register.filter(name="risk_badge")
+def risk_badge(value):
+    key = str(value or "").strip().lower().replace(" ", "_").replace("-", "_")
+    return RISK_BADGE_CLASSES.get(key, "badge-risk-low")

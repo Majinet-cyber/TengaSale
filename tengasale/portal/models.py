@@ -402,16 +402,20 @@ class PaymentTransaction(models.Model):
     ]
 
     STATUS_PENDING = "pending"
+    STATUS_TENGA_PROCESSING = "tenga_processing"
     STATUS_PROCESSING = "external_processing"
     STATUS_PAID = "paid"
     STATUS_FAILED = "failed"
+    STATUS_REVERSED = "reversed"
     STATUS_CANCELLED = "cancelled"
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
-        (STATUS_PROCESSING, "Processing"),
+        (STATUS_TENGA_PROCESSING, "TengaSale Processing"),
+        (STATUS_PROCESSING, "External Processing"),
         (STATUS_PAID, "Paid"),
         (STATUS_FAILED, "Failed"),
+        (STATUS_REVERSED, "Reversed"),
         (STATUS_CANCELLED, "Cancelled"),
     ]
 

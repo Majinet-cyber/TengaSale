@@ -1,9 +1,14 @@
+import csv
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Sum, Q, F
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from accounts.decorators import hq_required, merchant_required
 from accounts.forms import HQUserForm
@@ -15,6 +20,11 @@ from contracts.models import Contract
 from core.view_safety import safe_page
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
 from rewards.models import SpinWallet
+from .portfolio_services import (
+    calculate_portfolio_kpis,
+    portfolio_chart_data,
+    portfolio_rows,
+)
 
 MAX_ACTIVE_UNDERWRITER_REVIEWS = 5
 
@@ -1901,6 +1911,134 @@ def hq_repossession_resale(request):
             .aggregate(t=Sum("amount"))["t"] or Decimal("0")
         ),
     })
+
+
+@hq_required
+def hq_portfolio(request):
+    from portal.models import PaymentContract
+
+    contracts = PaymentContract.objects.select_related("source_application", "source_application__created_by")
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    risk_filter = request.GET.get("risk", "").strip()
+    par_filter = request.GET.get("par", "").strip()
+
+    if status:
+        contracts = contracts.filter(status=status)
+    if query:
+        contracts = contracts.filter(
+            Q(contract_number__icontains=query)
+            | Q(customer_name__icontains=query)
+            | Q(customer_phone__icontains=query)
+            | Q(imei_number__icontains=query)
+            | Q(source_application__created_by__username__icontains=query)
+            | Q(source_application__created_by__first_name__icontains=query)
+            | Q(source_application__created_by__last_name__icontains=query)
+        )
+
+    rows = portfolio_rows(contracts)
+    if risk_filter:
+        rows = [row for row in rows if row["risk"].lower() == risk_filter.lower()]
+    if par_filter:
+        rows = [row for row in rows if row["par"].lower().replace(" ", "_").replace("+", "plus") == par_filter]
+
+    page = Paginator(rows, 25).get_page(request.GET.get("page"))
+    return render(request, "dashboard/hq_portfolio.html", {
+        "kpis": calculate_portfolio_kpis(contracts),
+        "chart_data": portfolio_chart_data(contracts),
+        "rows": page,
+        "query": query,
+        "status": status,
+        "risk_filter": risk_filter,
+        "par_filter": par_filter,
+        "status_choices": PaymentContract.STATUS_CHOICES,
+    })
+
+
+@hq_required
+def hq_portfolio_investor_report(request):
+    from portal.models import PaymentContract
+
+    contracts = PaymentContract.objects.select_related("source_application", "source_application__created_by")
+    rows = portfolio_rows(contracts)
+    risk_counts = {
+        "Low": sum(1 for row in rows if row["risk"] == "Low"),
+        "Watch": sum(1 for row in rows if row["risk"] == "Watch"),
+        "Medium": sum(1 for row in rows if row["risk"] == "Medium"),
+        "High": sum(1 for row in rows if row["risk"] == "High"),
+    }
+    par_counts = {
+        "current": sum(1 for row in rows if row["par"] == "Current"),
+        "par_1": sum(1 for row in rows if row["par"] == "PAR 1+"),
+        "par_7": sum(1 for row in rows if row["par"] == "PAR 7+"),
+        "par_30": sum(1 for row in rows if row["par"] == "PAR 30+"),
+    }
+    return render(request, "dashboard/hq_portfolio_investor_report.html", {
+        "as_of": timezone.localdate(),
+        "kpis": calculate_portfolio_kpis(contracts),
+        "chart_data": portfolio_chart_data(contracts),
+        "rows": rows[:20],
+        "risk_counts": risk_counts,
+        "par_counts": par_counts,
+        "export_mode": request.GET.get("export") == "pdf",
+    })
+
+
+@hq_required
+def hq_portfolio_export_csv(request):
+    rows = portfolio_rows()
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="tengasale-portfolio.csv"'
+    writer = csv.writer(response)
+    writer.writerow([
+        "Contract Number", "Customer Name", "Customer Phone", "Merchant Name",
+        "Underwriter", "Device Model", "IMEI", "Loan Amount", "Deposit",
+        "Total Paid", "Remaining Balance", "Status", "Risk Rating", "PAR",
+        "Recovery Status", "Created At", "Guarantor 1 Name", "Guarantor 1 Phone",
+        "Guarantor 2 Name", "Guarantor 2 Phone", "Guarantor 3 Name", "Guarantor 3 Phone",
+    ])
+    for row in rows:
+        contract = row["contract"]
+        writer.writerow([
+            contract.contract_number, row["customer"], row["phone"], row["merchant"],
+            row["underwriter"], row["device"], row["imei"], row["loan"], row["deposit"],
+            row["paid"], row["balance"], row["status"], row["risk"], row["par"],
+            row["recovery"], row["created"], row["guarantor_1_name"], row["guarantor_1_phone"],
+            row["guarantor_2_name"], row["guarantor_2_phone"], row["guarantor_3_name"],
+            row["guarantor_3_phone"],
+        ])
+    return response
+
+
+@hq_required
+def hq_portfolio_export_excel(request):
+    rows = portfolio_rows()
+    response = HttpResponse(content_type="application/vnd.ms-excel")
+    response["Content-Disposition"] = 'attachment; filename="tengasale-portfolio.xls"'
+    writer = csv.writer(response, delimiter="\t")
+    writer.writerow([
+        "Contract Number", "Customer Name", "Customer Phone", "Merchant Name",
+        "Underwriter", "Device Model", "IMEI", "Loan Amount", "Deposit",
+        "Total Paid", "Remaining Balance", "Status", "Risk Rating", "PAR",
+        "Recovery Status", "Created At", "Guarantor 1 Name", "Guarantor 1 Phone",
+        "Guarantor 2 Name", "Guarantor 2 Phone", "Guarantor 3 Name", "Guarantor 3 Phone",
+    ])
+    for row in rows:
+        contract = row["contract"]
+        writer.writerow([
+            contract.contract_number, row["customer"], row["phone"], row["merchant"],
+            row["underwriter"], row["device"], row["imei"], row["loan"], row["deposit"],
+            row["paid"], row["balance"], row["status"], row["risk"], row["par"],
+            row["recovery"], row["created"], row["guarantor_1_name"], row["guarantor_1_phone"],
+            row["guarantor_2_name"], row["guarantor_2_phone"], row["guarantor_3_name"],
+            row["guarantor_3_phone"],
+        ])
+    return response
+
+
+@hq_required
+def hq_portfolio_export_pdf(request):
+    return redirect(f"{reverse('hq_portfolio_investor_report')}?export=pdf")
 
 
 @hq_required

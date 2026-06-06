@@ -3,9 +3,15 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import patch
+from datetime import timedelta
+from decimal import Decimal
 
 from accounts.utils import assign_role
+from applications.models import FinancingApplication
+from portal.models import PaymentContract
+from .portfolio_services import calculate_contract_risk, calculate_par_band, calculate_portfolio_kpis
 
 
 def assert_merchant_dashboard_malawi_flag(test_case, response):
@@ -47,6 +53,83 @@ def assert_merchant_dashboard_malawi_flag(test_case, response):
         "MW label must stay inside the country chip beside the flag",
     )
     test_case.assertIn(">MW<", chip_region, "MW text must render inside the greeting country chip")
+
+
+class HQPortfolioManagementTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.hq = User.objects.create_user(username="hq", password="test-pass-123")
+        self.merchant = User.objects.create_user(username="merchant", password="test-pass-123")
+        self.underwriter = User.objects.create_user(username="underwriter", password="test-pass-123")
+        assign_role(self.hq, "hq")
+        assign_role(self.merchant, "merchant")
+        assign_role(self.underwriter, "underwriter")
+        self.app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            claimed_by=self.underwriter,
+            status="approved",
+            customer_name="Jane Banda",
+            customer_phone="990870616",
+            national_id="RQXFVZC9",
+        )
+        self.contract = PaymentContract.objects.create(
+            source_application=self.app,
+            customer_name="Jane Banda",
+            customer_phone="990870616",
+            customer_national_id="RQXFVZC9",
+            device_model="TECNO Pop 10C",
+            imei_number="123456789012345",
+            cash_price=Decimal("350000.00"),
+            total_amount=Decimal("875000.00"),
+            deposit_required=Decimal("130000.00"),
+            deposit_paid=Decimal("130000.00"),
+            amount_paid=Decimal("250000.00"),
+            due_date=timezone.localdate() - timedelta(days=8),
+            analytics_days_late=8,
+        )
+
+    def test_hq_portfolio_pages_and_exports_load_for_hq(self):
+        self.client.login(username="hq", password="test-pass-123")
+
+        portfolio = self.client.get(reverse("hq_portfolio"))
+        report = self.client.get(reverse("hq_portfolio_investor_report"))
+        csv_response = self.client.get(reverse("hq_portfolio_export_csv"))
+        excel_response = self.client.get(reverse("hq_portfolio_export_excel"))
+        pdf_response = self.client.get(reverse("hq_portfolio_export_pdf"))
+
+        self.assertEqual(portfolio.status_code, 200)
+        self.assertContains(portfolio, "Portfolio Management")
+        self.assertContains(portfolio, self.contract.contract_number)
+        self.assertContains(portfolio, "PAR 7+")
+        self.assertContains(portfolio, "badge-risk-medium")
+        self.assertEqual(report.status_code, 200)
+        self.assertContains(report, "TengaSale Portfolio Report")
+        self.assertContains(report, "Executive Snapshot")
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertContains(csv_response, "Contract Number")
+        self.assertContains(csv_response, self.contract.contract_number)
+        self.assertEqual(excel_response.status_code, 200)
+        self.assertIn("application/vnd.ms-excel", excel_response["Content-Type"])
+        self.assertEqual(pdf_response.status_code, 302)
+        self.assertIn(reverse("hq_portfolio_investor_report"), pdf_response["Location"])
+
+    def test_hq_portfolio_forbids_merchants(self):
+        self.client.login(username="merchant", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_portfolio"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_portfolio_services_calculate_par_risk_and_kpis(self):
+        self.assertEqual(calculate_par_band(self.contract), "PAR 7+")
+        self.assertEqual(calculate_contract_risk(self.contract), "Medium")
+
+        kpis = calculate_portfolio_kpis(PaymentContract.objects.filter(pk=self.contract.pk))
+
+        self.assertEqual(kpis["active_contracts"], 1)
+        self.assertEqual(kpis["portfolio_value"], Decimal("875000.00"))
+        self.assertEqual(kpis["total_deposits"], Decimal("130000.00"))
+        self.assertEqual(kpis["outstanding_balance"], Decimal("625000.00"))
 
 
 class HomePageTests(TestCase):

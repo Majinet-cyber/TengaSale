@@ -43,6 +43,7 @@
     --border:        #e5e7eb;
     --muted:         #667085;
     --shadow:        0 16px 36px rgba(17, 17, 17, 0.08);
+    --app-header-height: 72px;
 }
 
 * {
@@ -339,6 +340,82 @@ img.ts-logo-hero {
     background: var(--orange);
     color: #ffffff;
     box-shadow: 0 14px 26px rgba(255, 90, 0, 0.22);
+}
+
+.badge-pending,
+.badge-tenga-processing,
+.badge-external-processing,
+.badge-paid,
+.badge-failed,
+.badge-reversed,
+.badge-cancelled,
+.badge-risk-low,
+.badge-risk-watch,
+.badge-risk-medium,
+.badge-risk-high {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 24px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.badge-pending { background: #111827; color: #ffffff; }
+.badge-tenga-processing { background: #ffd600; color: #111827; }
+.badge-external-processing { background: #2563eb; color: #ffffff; }
+.badge-paid { background: #16a34a; color: #ffffff; }
+.badge-failed { background: #dc2626; color: #ffffff; }
+.badge-reversed { background: #4f46e5; color: #ffffff; }
+.badge-cancelled { background: #6b7280; color: #ffffff; }
+.badge-risk-low { background: #dcfce7; color: #166534; }
+.badge-risk-watch { background: #fff7d6; color: #92400e; }
+.badge-risk-medium { background: #ffedd5; color: #9a3412; }
+.badge-risk-high { background: #fee2e2; color: #991b1b; }
+
+.payment-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 12px;
+}
+
+.payment-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+}
+
+.payment-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+}
+
+.payment-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.payment-table th,
+.payment-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eef2f7;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
 }
 
 .claim-button-disabled {

@@ -73,6 +73,21 @@
 }
 .btn-submit-imei:disabled { background: #94a3b8; cursor: not-allowed; }
 .form-actions { display: flex; gap: 10px; margin-top: 12px; }
+.imei-mismatch {
+  background:#fff;
+  border:2px solid #dc2626;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 8px 22px rgba(220,38,38,.10);
+}
+.imei-mismatch h2 { margin:0 0 8px; color:#991b1b; font-size:1.25rem; line-height:1.2; }
+.imei-mismatch p { margin:0 0 12px; color:#475569; }
+.imei-compare { width:100%; border-collapse:collapse; font-size:.88rem; }
+.imei-compare th, .imei-compare td { padding:10px; border-bottom:1px solid #fee2e2; text-align:left; }
+.imei-compare th { color:#64748b; font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; }
+.imei-compare .is-bad { color:#b42318; font-weight:900; background:#fef2f2; }
+.imei-compare .is-good { color:#166534; font-weight:900; background:#f0fdf4; }
 </style>
 {% endblock %}
 
@@ -89,6 +104,36 @@
     <p class="imei-device">{{ app.deal.brand.name }} {{ app.deal.model_name }} {{ app.deal.specs }}</p>
     <p class="imei-customer">Customer: {{ app.customer_name }}</p>
   </div>
+
+  {% if device_mismatch %}
+  <div class="imei-mismatch">
+    <h2>The IMEI device and deal device do not match.</h2>
+    <p>Please enter a correct IMEI for {{ app.deal.brand.name }} {{ app.deal.model_name }} to complete this sale.</p>
+    <table class="imei-compare">
+      <thead>
+        <tr><th></th><th>Your deal</th><th>Your device</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Model</th>
+          <td>{{ device_mismatch.deal_device.brand }} {{ device_mismatch.deal_device.model }}</td>
+          <td class="{% if device_mismatch.model_match %}is-good{% else %}is-bad{% endif %}">{{ device_mismatch.scanned_device.brand }} {{ device_mismatch.scanned_device.model }}</td>
+        </tr>
+        <tr>
+          <th>RAM</th>
+          <td>{{ device_mismatch.deal_device.ram|default:"-" }}</td>
+          <td class="{% if device_mismatch.ram_match %}is-good{% else %}is-bad{% endif %}">{{ device_mismatch.scanned_device.ram|default:"-" }}</td>
+        </tr>
+        <tr>
+          <th>ROM</th>
+          <td>{{ device_mismatch.deal_device.rom|default:"-" }}</td>
+          <td class="{% if device_mismatch.rom_match %}is-good{% else %}is-bad{% endif %}">{{ device_mismatch.scanned_device.rom|default:"-" }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px;font-weight:800;color:#991b1b;">Please input a new IMEI below. Your current IMEI is {{ current_imei }}.</p>
+  </div>
+  {% endif %}
 
   <form method="post" class="imei-card" id="imei-capture-form">
     {% csrf_token %}

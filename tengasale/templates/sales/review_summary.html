@@ -18,6 +18,13 @@
 
   <div class="ts-app-num">{{ app.application_number }} &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</div>
 
+  <div class="ts-review-card" style="border-top:3px solid #ffd600;background:#fffdf0;">
+    <div class="ts-review-card__title">Customer Verification Call</div>
+    <div class="ts-review-row" style="align-items:center;">
+      <span>Structured call questionnaire for identity, work, income, pricing and payment understanding.</span>
+      <a href="{% url 'sales_call_questionnaire' app.id %}" class="ts-btn-orange" style="text-decoration:none;white-space:nowrap;">Customer Call Questionnaire</a>
+    </div>
+  </div>
 
   <div class="ts-review-card" style="border-top:3px solid #ff5a00;margin-top:8px;">
     <div class="ts-review-card__title">Customer</div>
