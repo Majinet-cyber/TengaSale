@@ -103,11 +103,12 @@ DIDIT_WORKFLOW_ID = os.environ.get("DIDIT_WORKFLOW_ID", "")
 DIDIT_WEBHOOK_SECRET = os.environ.get("DIDIT_WEBHOOK_SECRET", "")
 DIDIT_WEBHOOK_URL = os.environ.get("DIDIT_WEBHOOK_URL", "")
 DIDIT_CALLBACK_URL = os.environ.get("DIDIT_CALLBACK_URL", "")
-DIDIT_ALLOW_UNSIGNED_WEBHOOKS = os.environ.get("DIDIT_ALLOW_UNSIGNED_WEBHOOKS", "False").lower() in (
+_DIDIT_ALLOW_UNSIGNED_WEBHOOKS_ENV = os.environ.get("DIDIT_ALLOW_UNSIGNED_WEBHOOKS", "False").lower() in (
     "true",
     "1",
     "yes",
 )
+DIDIT_ALLOW_UNSIGNED_WEBHOOKS = DEBUG and _DIDIT_ALLOW_UNSIGNED_WEBHOOKS_ENV
 REQUIRE_DIDIT_KYC_BEFORE_APPROVAL = os.environ.get("REQUIRE_DIDIT_KYC_BEFORE_APPROVAL", "False").lower() in (
     "true",
     "1",
@@ -130,6 +131,7 @@ validate_didit_production_settings(
     webhook_url=DIDIT_WEBHOOK_URL,
     callback_url=DIDIT_CALLBACK_URL,
     allow_unsigned_webhooks=DIDIT_ALLOW_UNSIGNED_WEBHOOKS,
+    strict_mode=REQUIRE_DIDIT_KYC_BEFORE_APPROVAL,
 )
 
 # ──────────────────────────────────────────────────────────────────────────────

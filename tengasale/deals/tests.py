@@ -60,6 +60,28 @@ class AllDealsPageTests(TestCase):
         self.assertContains(response, "deposit_percent")
         self.assertContains(response, "default_cash_price")
 
+    def test_infinix_is_not_visible_in_guided_brand_cards(self):
+        infinix = DeviceBrand.objects.create(name="Infinix")
+        DeviceDeal.objects.create(
+            brand=infinix,
+            model_name="Hot 40",
+            specs="8+128",
+            min_cash_price=Decimal("300000.00"),
+            max_cash_price=Decimal("360000.00"),
+            default_cash_price=Decimal("330000.00"),
+            cash_price=Decimal("330000.00"),
+            deposit_percent=Decimal("13.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("825000.00"),
+        )
+
+        response = self.client.get(reverse("all_deals"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'data-brand="Infinix"')
+        self.assertNotContains(response, "Photo failed to load")
+
 
 class DealAdminImportTests(TestCase):
     def test_importing_deals_admin_does_not_create_model_conflicts(self):

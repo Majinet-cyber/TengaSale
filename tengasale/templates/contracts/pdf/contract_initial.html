@@ -308,23 +308,35 @@
   </tr>
   <tr>
     <td class="label">Initial Access Period</td>
-    <td><strong>{{ deposit_access_days|default:"14" }} days</strong></td>
+    <td><strong>{{ deposit_access_days|default:"7" }} days</strong></td>
   </tr>
   <tr>
     <td class="label">Access Start Date</td>
     <td>{{ activation_date|default:contract_date }}</td>
   </tr>
+  {% if deposit_paid_at %}
+  <tr>
+    <td class="label">Deposit Paid Timestamp</td>
+    <td>{{ deposit_paid_at|date:"d M Y, H:i" }}</td>
+  </tr>
+  {% endif %}
+  {% if deposit_unlock_expires_at %}
+  <tr>
+    <td class="label">Device Unlock Expires</td>
+    <td>{{ deposit_unlock_expires_at|date:"d M Y, H:i" }}</td>
+  </tr>
+  {% endif %}
 </table>
 <div class="notice-box" style="margin-top:6px;">
   <strong>Deposit and Initial Access:</strong>
-  The deposit paid under this agreement gives the customer <strong>fourteen (14) days</strong> of device access
-  from the date of device setup/activation, subject to the terms of this agreement.
+  The deposit unlocks the device for <strong>7 days</strong> from the exact date and time the deposit payment is confirmed,
+  subject to the terms of this agreement.
 </div>
 
 <!-- ═══════════════════ D. FLEXIBLE REPAYMENT ═══════════════════ -->
 <h2>D. Flexible Repayment Options</h2>
 <div class="clause">
-  <p>After the initial 14-day deposit access period, the customer may make payments in any of the following durations.
+  <p>After the initial 7-day deposit access period, the customer may make payments in any of the following durations.
   Each successful payment extends device access according to the contract's daily repayment rate and reduces the outstanding balance.</p>
 </div>
 <table class="data-table">
@@ -369,7 +381,7 @@
 
 <div class="clause">
   <span class="clause-letter">G. DEFAULT AND DEVICE RESTRICTION.</span>
-  <p>The deposit paid by the customer grants fourteen (14) days of device access from the date of device activation. After this initial period, the customer must make regular payments to maintain continuous access. Each successful payment extends device access by the number of days corresponding to the amount paid, calculated at the daily repayment rate. The customer shall be considered in default if the paid-through date has passed and no payment has been received. Upon default, TengaSale reserves the right to restrict access to the device remotely and/or pursue recovery of the outstanding balance. Device access is restored upon receipt of a payment sufficient to extend the paid-through date beyond the current date.</p>
+  <p>The deposit unlocks the device for 7 days from the exact date and time the deposit payment is confirmed. After this 7-day period, the customer must continue making payments to maintain device access. Each successful payment extends device access by the number of days corresponding to the amount paid, calculated at the daily repayment rate. The customer shall be considered in default if the paid-through date has passed and no payment has been received. Upon default, TengaSale reserves the right to restrict access to the device remotely and/or pursue recovery of the outstanding balance. Device access is restored upon receipt of a payment sufficient to extend the paid-through date beyond the current date.</p>
 </div>
 
 <div class="clause">
@@ -424,7 +436,7 @@
 
 <div class="clause">
   <span class="clause-letter">R. COMPLETION AND OWNERSHIP TRANSFER.</span>
-  <p>Upon full payment of the Total Contract Price and written confirmation by TengaSale, this contract shall be marked completed and full ownership of the device shall transfer to the customer. Ownership transfer is subject to there being no unresolved fraud, chargeback, reversal, or legal issue relating to the contract.</p>
+  <p>Upon full payment of the Total Contract Price and written confirmation by TengaSale, this contract shall be marked completed. Ownership transfers only after the full contract balance is paid and subject to there being no unresolved fraud, chargeback, reversal, or legal issue relating to the contract.</p>
 </div>
 
 <!-- ═══════════════════ VERIFICATION RECORD ═══════════════════ -->
@@ -492,9 +504,10 @@
 <!-- ═══════════════════ NOTICE BOX ═══════════════════ -->
 <div class="notice-box">
   <strong>Conditional Possession Notice:</strong>
+  Ownership is retained by TengaSale until full repayment.
   The customer is granted possession and use of the device subject to the terms of this instalment sale agreement.
   <strong>Ownership of the device shall transfer to the customer only after full repayment of all amounts due under this contract.</strong>
-  The deposit gives the customer fourteen (14) days of initial device access from the date of activation. After that, continued
+  The deposit unlocks the device for 7 days from the exact date and time the deposit payment is confirmed. After that, continued
   access depends on maintaining payments. Each payment extends access based on the daily repayment rate.
   Until full repayment, TengaSale retains its ownership, security interest, and enforcement rights, including device restriction
   or locking where permitted by the agreement. Repossession rights arise after 30 days without payment.

@@ -159,7 +159,7 @@ class SMSDispatchTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse("kyc_capture", args=[app.id]))
+        self.assertRedirects(response, reverse("choose_device", args=[app.id]))
         app.refresh_from_db()
         self.assertFalse(app.phone_verified)
         self.assertIn(app.phone_verification_status, [PhoneOTP.STATUS_SENT, PhoneOTP.STATUS_FAILED])

@@ -17,75 +17,79 @@
     {% include "includes/flag_pill.html" %}
   </div>
 
-  <!-- Queue status summary -->
-  <div class="uw-queue-status-card ts-fade-in">
+  <div class="uw-queue-status-card ts-fade-in {% if not pending_count %}uw-queue-status-card--empty{% endif %}">
     <div>
       <span>Applications in Queue</span>
       <strong>{% if pending_count %}{{ pending_count }} waiting{% else %}Queue is empty{% endif %}</strong>
       <p>Active reviews: {{ active_count }} / {{ max_active }}</p>
     </div>
-    <a href="{% url 'sales_applications' %}?tab=queue" class="merchant-status-link" aria-label="View queue">→</a>
+    <a href="{% url 'sales_applications' %}?tab=queue" class="merchant-status-link" aria-label="View queue">&rarr;</a>
   </div>
 
   <div class="uw-primary-grid">
     {% if can_claim %}
       <form method="post" action="{% url 'sales_claim_next' %}" class="uw-primary-form">
         {% csrf_token %}
-        <button type="submit" class="uw-primary-action primary-big-action">
+        <button type="submit" class="uw-primary-action uw-primary-action--queue primary-big-action">
+          <span class="ts-sr-only">CLAIM NEXT</span>
           <span><i class="bi bi-hourglass-split"></i> Pending Queue</span>
-          <strong>CLAIM · {{ pending_count }} waiting</strong>
+          <strong>Claim next &middot; {{ pending_count }} waiting</strong>
         </button>
       </form>
     {% else %}
-      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action primary-big-action">
+      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action uw-primary-action--queue-empty primary-big-action">
+        {% if not pending_count %}<span class="ts-sr-only">NO APPLICATIONS IN QUEUE</span>{% endif %}
         <span><i class="bi bi-hourglass-split"></i> Pending Queue</span>
-        <strong>{{ pending_count }} in queue</strong>
+        <strong>{% if pending_count %}{{ pending_count }} in queue{% else %}Queue is empty{% endif %}</strong>
       </a>
     {% endif %}
-    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--dark primary-big-action">
+    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--navy primary-big-action">
+      <span class="ts-sr-only">MY ACTIVE</span>
       <span><i class="bi bi-clipboard-check"></i> My Active Reviews</span>
       <strong>{{ active_count }} / {{ max_active }}</strong>
     </a>
   </div>
 
+  <div class="ts-section-label simple-section">Applications</div>
   {% if active_apps %}
     <div class="ts-section-label">In Progress</div>
     {% for app in active_apps %}
       <a href="{% url 'sales_review_summary' app.id %}" class="ts-app-row uw-compact-row simple-row">
+        <span class="ts-app-row__icon" aria-hidden="true"><i class="bi bi-file-earmark-check"></i></span>
         <div class="ts-app-row__body">
           <div class="ts-app-row__name">{{ app.customer_name|default:"Unnamed customer" }}</div>
           <div class="ts-app-row__meta">{{ app.application_number }}</div>
         </div>
-        <span class="row-arrow" aria-hidden="true">→</span>
+        <span class="row-arrow" aria-hidden="true">&rsaquo;</span>
       </a>
     {% endfor %}
   {% endif %}
 
-  <div class="ts-section-label simple-section">More</div>
+  <div class="ts-section-label simple-section">More<span class="ts-sr-only"> Tools</span></div>
   <div class="ts-menu-section action-card">
     <a href="{% url 'sales_applications' %}?tab=completed" class="ts-menu-row simple-row action-row">
       <span class="ts-menu-row__icon action-row-icon action-row-icon--completed" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
       <span class="ts-menu-row__label action-row-label">Completed Reviews</span>
-      {% if completed_count %}<span class="ts-menu-badge ts-badge-success action-row-value">{{ completed_count }}</span>{% else %}<span class="action-row-value">—</span>{% endif %}
-      <span class="row-arrow action-row-chevron" aria-hidden="true">→</span>
+      {% if completed_count %}<span class="ts-menu-badge ts-badge-success action-row-value">{{ completed_count }}</span>{% else %}<span class="action-row-value">&mdash;</span>{% endif %}
+      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
     </a>
     <a href="{% url 'sales_wallet' %}" class="ts-menu-row simple-row action-row">
       <span class="ts-menu-row__icon action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
       <span class="ts-menu-row__label action-row-label">Earnings</span>
-      {% if wallet.balance %}<span class="ts-menu-row__sub action-row-value">{{ wallet.balance|mwk:"decimals" }}</span>{% else %}<span class="action-row-value">—</span>{% endif %}
-      <span class="row-arrow action-row-chevron" aria-hidden="true">→</span>
+      {% if wallet.balance %}<span class="ts-menu-row__sub action-row-value">{{ wallet.balance|mwk }}</span>{% else %}<span class="action-row-value">&mdash;</span>{% endif %}
+      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
     </a>
     <a href="{% url 'sales_applications' %}?tab=queue" class="ts-menu-row simple-row action-row">
-      <span class="ts-menu-row__icon action-row-icon action-row-icon--deals" aria-hidden="true"><i class="bi bi-gear"></i></span>
+      <span class="ts-menu-row__icon action-row-icon action-row-icon--rules" aria-hidden="true"><i class="bi bi-gear"></i></span>
       <span class="ts-menu-row__label action-row-label">Queue Rules</span>
-      <span class="action-row-value">—</span>
-      <span class="row-arrow action-row-chevron" aria-hidden="true">→</span>
+      <span class="action-row-value">Rules</span>
+      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
     </a>
     <a href="{% url 'sales_spin' %}" class="ts-menu-row simple-row action-row">
       <span class="ts-menu-row__icon action-row-icon action-row-icon--spin" aria-hidden="true"><i class="bi bi-stars"></i></span>
       <span class="ts-menu-row__label action-row-label">Spin &amp; Win</span>
-      <span class="action-row-value">—</span>
-      <span class="row-arrow action-row-chevron" aria-hidden="true">→</span>
+      <span class="action-row-value">Play</span>
+      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
     </a>
   </div>
 </div>

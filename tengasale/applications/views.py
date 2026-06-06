@@ -244,7 +244,7 @@ def choose_device(request, app_id):
         }
         for deal in deals
     ]
-    preferred_brand_names = ["Tecno", "Itel", "Infinix", "Samsung", "Redmi/Xiaomi"]
+    preferred_brand_names = ["Tecno", "Itel", "Samsung", "Redmi/Xiaomi"]
     deal_brand_names = [canonical_brand(deal.brand.name) for deal in deals]
     brand_names = ordered_brand_names([*preferred_brand_names, *deal_brand_names])
     if not brand_names:
@@ -511,11 +511,15 @@ def signature(request, app_id):
     app = merchant_application(request, app_id)
 
     if request.method == "POST" and request.POST.get("save_signature"):
+        if request.POST.get("agreed_to_terms") != "on":
+            messages.error(request, "Customer confirms and agrees to the TengaSale contract terms.")
+            return redirect("signature", app_id=app.id)
         form = SignatureCaptureForm(request.POST)
         if form.is_valid():
             app.signature_image.save(form.signature_file.name, form.signature_file, save=False)
+            app.agreed_to_terms = True
             app.status = "signature"
-            app.save(update_fields=["signature_image", "status"])
+            app.save(update_fields=["signature_image", "agreed_to_terms", "status"])
             sig = app.signature_image
             logger.info(
                 "Signature saved app_id=%s url=%s name=%s",

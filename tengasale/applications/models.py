@@ -463,6 +463,40 @@ class FinancingApplication(models.Model):
         )
         if was_sent_back:
             ApplicationCorrection.objects.filter(application=self, resolved=False).update(resolved=True)
+        try:
+            from notifications.models import Notification
+
+            if self.created_by_id:
+                Notification.send(
+                    recipient=self.created_by,
+                    notification_type=Notification.TYPE_APP_SUBMITTED,
+                    title="Application sent to underwriting",
+                    body=f"{self.customer_name or 'Customer'} - {self.application_number} is waiting for review.",
+                    link=self.get_continue_url(),
+                    object_type="FinancingApplication",
+                    object_id=self.pk,
+                    level=Notification.LEVEL_INFO,
+                )
+            from django.contrib.auth import get_user_model
+
+            User = get_user_model()
+            queue_recipients = User.objects.filter(
+                profile__role__in=["underwriter", "hq"],
+                is_active=True,
+            )
+            for user in queue_recipients:
+                Notification.send(
+                    recipient=user,
+                    notification_type=Notification.TYPE_NEW_APPLICATION,
+                    title="New application available in queue",
+                    body="A new application is waiting for underwriting. Claim next to view details.",
+                    link="/sales/applications/?tab=queue",
+                    object_type="FinancingApplication",
+                    object_id=self.pk,
+                    level=Notification.LEVEL_INFO,
+                )
+        except Exception:
+            pass
 
     @property
     def is_waiting_for_review(self):

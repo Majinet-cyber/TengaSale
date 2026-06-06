@@ -127,9 +127,9 @@ class PaymentContract(models.Model):
     thirty_day_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # Deposit access period — number of days unlocked by paying the deposit.
-    # Defaults to 14. Use DEFAULT_DEPOSIT_ACCESS_DAYS setting for new contracts.
+    # Defaults to 7. Use DEFAULT_DEPOSIT_ACCESS_DAYS setting for new contracts.
     deposit_access_days = models.PositiveIntegerField(
-        default=14,
+        default=7,
         help_text="Days of device access unlocked by the deposit payment.",
     )
 
@@ -137,6 +137,10 @@ class PaymentContract(models.Model):
     start_date = models.DateField(default=timezone.localdate)
     due_date = models.DateField(null=True, blank=True)
     lock_date = models.DateField(null=True, blank=True)
+    deposit_paid_at = models.DateTimeField(null=True, blank=True)
+    deposit_unlock_expires_at = models.DateTimeField(null=True, blank=True)
+    last_payment_at = models.DateTimeField(null=True, blank=True)
+    access_expires_at = models.DateTimeField(null=True, blank=True)
     term_months = models.PositiveIntegerField(default=12)
 
     # Status

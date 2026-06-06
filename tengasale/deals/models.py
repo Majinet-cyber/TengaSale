@@ -74,7 +74,7 @@ class DeviceDeal(models.Model):
     loan_multiplier = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("2.5"))
     term_months = models.PositiveIntegerField(default=12)
     unlock_days = models.PositiveIntegerField(
-        default=14,
+        default=7,
         help_text="Number of days of device access granted by the deposit payment.",
     )
 

@@ -345,6 +345,10 @@
   box-shadow: var(--hq-shadow);
 }
 
+.hq-chart-card--wide {
+  grid-column: 1 / -1;
+}
+
 .hq-chart-hdr {
   display: flex;
   align-items: center;
@@ -367,6 +371,55 @@
   border-radius: 99px;
   background: #f1f5f9;
   color: var(--hq-muted);
+}
+
+.hq-chart-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.hq-chart-filter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hq-chart-filter--active {
+  background: rgba(255, 90, 0, 0.10);
+  border-color: rgba(255, 90, 0, 0.24);
+  color: #ff5a00;
+}
+
+.hq-chart-canvas-tall {
+  height: 340px;
+  max-height: 340px;
+}
+
+@media (max-width: 600px) {
+  .hq-chart-card {
+    padding: 16px;
+  }
+
+  .hq-chart-hdr {
+    align-items: flex-start;
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .hq-chart-canvas-tall {
+    height: 360px;
+    max-height: 360px;
+  }
 }
 
 .hq-chart-note,
@@ -1225,6 +1278,22 @@
       Applications
       {% if waiting_count %}<span class="hq-sidebar-badge">{{ waiting_count }}</span>{% endif %}
     </a>
+    <a href="{% url 'hq_applications' %}?status=active_contract" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/></svg>
+      Contracts
+    </a>
+    <a href="{% url 'hq_payment_collections' %}?status=active" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
+      Active Contracts
+    </a>
+    <a href="{% url 'hq_payment_collections' %}?status=completed" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      Completed Contracts
+    </a>
+    <a href="{% url 'hq_applications' %}?status=rejected" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/></svg>
+      Archived / Rejected
+    </a>
     <a href="{% url 'hq_underwriter_queue' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Underwriters
@@ -1239,7 +1308,7 @@
     </a>
     <a href="{% url 'device_lock:hq_lock_centre' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Device Lock
+      Devices / Locking
     </a>
   </div>
 
@@ -1249,7 +1318,7 @@
     <div class="hq-sidebar-section-label">Finance</div>
     <a href="{% url 'hq_commissions' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      Commissions
+      Finance / Earnings
     </a>
     <a href="{% url 'hq_merchant_payouts' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -1258,7 +1327,7 @@
     </a>
     <a href="{% url 'hq_payment_collections' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
-      Collections
+      Payments
     </a>
     <a href="{% url 'hq_reconciliation' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -1272,7 +1341,19 @@
     <div class="hq-sidebar-section-label">Analytics</div>
     <a href="{% url 'hq_reports' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Reports
+      Reports / Exports
+    </a>
+    <a href="{% url 'notifications_list' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      Notifications
+    </a>
+    <a href="{% url 'hq_audit_trail' %}?type=sms" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      SMS / Messaging
+    </a>
+    <a href="{% url 'hq_fraud_checks' %}?type=kyc" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5z"/><path d="M9 12l2 2 4-5"/></svg>
+      KYC / Identity
     </a>
     <a href="{% url 'hq_audit_trail' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1291,6 +1372,14 @@
     <a href="{% url 'hq_users' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Users &amp; Roles
+    </a>
+    <a href="{% url 'support_dashboard' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Support / Issues
+    </a>
+    <a href="{% url 'hq_users' %}?section=settings" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4"/></svg>
+      Settings
     </a>
     <a href="{% url 'hq_merchant_agreements' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -1420,7 +1509,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </div>
       <div class="hq-kpi__val hq-kpi__val--sm">{{ total_portfolio_value|mwk }}</div>
-      <div class="hq-kpi__label">Total Portfolio Value</div>
+      <div class="hq-kpi__label">Total Contract Value</div>
     </div>
 
     <div class="hq-kpi kpi-green" style="border-top:3px solid #16a34a;">
@@ -1428,39 +1517,39 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
       </div>
       <div class="hq-kpi__val hq-kpi__val--sm">{{ total_payments_collected|mwk }}</div>
-      <div class="hq-kpi__label">Total Collected</div>
+      <div class="hq-kpi__label">Payments Collected</div>
     </div>
 
     <div class="hq-kpi kpi-amber" style="border-top:3px solid #f59e0b;">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
       </div>
-      <div class="hq-kpi__val hq-kpi__val--sm">{{ outstanding_balance|mwk }}</div>
-      <div class="hq-kpi__label">Outstanding Balance</div>
+      <div class="hq-kpi__val hq-kpi__val--sm">{{ gross_profit_total|mwk }}</div>
+      <div class="hq-kpi__label">Expected Profit / Gross Profit</div>
     </div>
 
     <div class="hq-kpi {% if portfolio_at_risk > 20 %}kpi-red{% elif portfolio_at_risk > 10 %}kpi-amber{% else %}kpi-green{% endif %}" style="border-top:3px solid {% if portfolio_at_risk > 20 %}#dc2626{% elif portfolio_at_risk > 10 %}#f59e0b{% else %}#16a34a{% endif %};">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ portfolio_at_risk }}%</div>
-      <div class="hq-kpi__label">Portfolio At Risk</div>
+      <div class="hq-kpi__val">{{ active_contracts_count }}</div>
+      <div class="hq-kpi__label">Active Contracts</div>
     </div>
 
     <div class="hq-kpi {% if default_rate > 10 %}kpi-red{% elif default_rate > 5 %}kpi-amber{% else %}kpi-green{% endif %}">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ default_rate }}%</div>
-      <div class="hq-kpi__label">Default Rate</div>
+      <div class="hq-kpi__val">{{ lock_locked_count|default:locked_contracts_count }}</div>
+      <div class="hq-kpi__label">Locked Devices</div>
     </div>
 
     <div class="hq-kpi kpi-green">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
       </div>
-      <div class="hq-kpi__val hq-kpi__val--sm">{{ merchant_earnings_total|mwk }}</div>
-      <div class="hq-kpi__label">Merchant Earnings Paid</div>
+      <div class="hq-kpi__val">{{ overdue_contracts_count }}</div>
+      <div class="hq-kpi__label">Overdue Contracts</div>
     </div>
 
     <div class="hq-kpi kpi-blue">
@@ -1804,7 +1893,7 @@
           </div>
           <div class="hq-pipe-item">
             <span class="hq-pipe-label">Under Review</span>
-            <div class="hq-pipe-track"><div class="hq-pipe-fill" style="background:#ff5a00;width:{% widthratio under_review_count tot 100 %}%"></div></div>
+            <div class="hq-pipe-track"><div class="hq-pipe-fill" style="background:#1d4ed8;width:{% widthratio under_review_count tot 100 %}%"></div></div>
             <span class="hq-pipe-num">{{ under_review_count }}</span>
           </div>
           <div class="hq-pipe-item">
@@ -1854,7 +1943,12 @@
           <span class="hq-legend-val">{{ overdue_contracts_count }}</span>
         </div>
         <div class="hq-legend-row">
-          <div class="hq-legend-dot" style="background:#16a34a;"></div>
+          <div class="hq-legend-dot" style="background:#f59e0b;"></div>
+          Locked
+          <span class="hq-legend-val">{{ locked_contracts_count }}</span>
+        </div>
+        <div class="hq-legend-row">
+          <div class="hq-legend-dot" style="background:#0f172a;"></div>
           Completed
           <span class="hq-legend-val">{{ completed_contracts_count }}</span>
         </div>
@@ -1864,19 +1958,24 @@
 
     <div class="hq-chart-card">
       <div class="hq-chart-hdr">
-        <span class="hq-chart-title">Operations Queue</span>
+        <span class="hq-chart-title">Application Pipeline</span>
         <span class="hq-chart-pill">Live</span>
       </div>
-      <canvas id="queueChart" style="height:220px;max-height:220px;"></canvas>
+      <canvas id="queueChart" class="hq-chart-canvas-tall"></canvas>
     </div>
 
-    <div class="hq-chart-card">
+    <div class="hq-chart-card hq-chart-card--wide">
       <div class="hq-chart-hdr">
         <span class="hq-chart-title">Financial Performance</span>
-        <span class="hq-chart-pill">14 days</span>
+        <span class="hq-chart-filters" aria-label="Financial performance range">
+          <span class="hq-chart-filter">7 days</span>
+          <span class="hq-chart-filter hq-chart-filter--active">14 days</span>
+          <span class="hq-chart-filter">30 days</span>
+          <span class="hq-chart-filter">This Month</span>
+        </span>
       </div>
       {% if financial_has_data %}
-        <canvas id="financialPerformanceChart" style="height:240px;max-height:240px;"></canvas>
+        <canvas id="financialPerformanceChart" class="hq-chart-canvas-tall"></canvas>
         {% if not financial_performance_chart.profitAvailable %}
           <p class="hq-chart-note">Profit needs cost data; showing revenue and payments only.</p>
         {% endif %}
@@ -1891,7 +1990,7 @@
         <span class="hq-chart-pill">14 days</span>
       </div>
       {% if financial_has_data %}
-        <canvas id="contractValuePaymentsChart" style="height:240px;max-height:240px;"></canvas>
+        <canvas id="contractValuePaymentsChart" class="hq-chart-canvas-tall"></canvas>
       {% else %}
         <div class="hq-chart-empty">No financial data yet. Revenue and profit charts will appear once deals and payments are recorded.</div>
       {% endif %}
@@ -1899,6 +1998,7 @@
 
   </div>
 
+  {% comment %}Legacy duplicate bottom navigation removed from rendered HQ dashboard; sidebar now owns these links.
   <p class="hq-sl hq-duplicate-nav" hidden>Operations</p>
   <div class="hq-nav-grid hq-duplicate-nav" data-testid="hq-nav-grid" hidden aria-hidden="true">
 
@@ -2185,6 +2285,8 @@
   </div>
 
 
+  {% endcomment %}
+
   <div class="hq-footer">
     <span class="hq-footer-brand">TengaSale</span>
     <span>v1.0.0 &middot; HQ Dashboard &middot; Malawi</span>
@@ -2266,16 +2368,17 @@
   var chEl = document.getElementById('contractHealthChart');
   if (chEl) {
     var cActive    = {{ active_contracts_count }};
+    var cLocked    = {{ locked_contracts_count }};
     var cOverdue   = {{ overdue_contracts_count }};
     var cCompleted = {{ completed_contracts_count }};
-    var cTotal     = cActive + cOverdue + cCompleted;
+    var cTotal     = cActive + cLocked + cOverdue + cCompleted;
     new Chart(chEl, {
       type: 'doughnut',
       data: {
-        labels: ['Active', 'Overdue', 'Completed'],
+        labels: ['Active', 'Locked', 'Overdue', 'Completed'],
         datasets: [{
-          data: cTotal > 0 ? [cActive, cOverdue, cCompleted] : [1, 0, 0],
-          backgroundColor: ['#16a34a', '#dc2626', '#167a50'],
+          data: cTotal > 0 ? [cActive, cLocked, cOverdue, cCompleted] : [1, 0, 0, 0],
+          backgroundColor: ['#16a34a', '#f59e0b', '#dc2626', '#0f172a'],
           borderWidth: 0,
           hoverOffset: 4,
         }]
@@ -2311,11 +2414,11 @@
             {{ approved_count }},
             {{ rejected_count }}
           ],
-          backgroundColor: ['#f59e0b', '#ff5a00', '#16a34a', '#dc2626'],
-          borderRadius: 10,
+          backgroundColor: ['#f59e0b', '#1d4ed8', '#16a34a', '#dc2626'],
+          borderRadius: 14,
           borderSkipped: false,
-          barThickness: 42,
-          maxBarThickness: 56,
+          barThickness: 54,
+          maxBarThickness: 68,
         }]
       },
       options: {
@@ -2332,12 +2435,12 @@
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { stepSize: 1, font: { size: 10 }, color: '#94a3b8' },
+            ticks: { stepSize: 1, font: { size: 11, weight: '700' }, color: '#64748b' },
             grid: { color: '#f1f5f9' },
             border: { display: false }
           },
           x: {
-            ticks: { font: { size: 10 }, color: '#64748b' },
+            ticks: { font: { size: 11, weight: '700' }, color: '#475569' },
             grid: { display: false },
             border: { display: false }
           }
@@ -2360,65 +2463,78 @@
     return 'MWK ' + Number(value || 0).toLocaleString('en-MW', { maximumFractionDigits: 0 });
   }
 
+  function mwkCompact(value) {
+    var n = Number(value || 0);
+    if (Math.abs(n) >= 1000000) return 'MWK ' + (n / 1000000).toLocaleString('en-MW', { maximumFractionDigits: 1 }) + 'M';
+    if (Math.abs(n) >= 1000) return 'MWK ' + Math.round(n / 1000).toLocaleString('en-MW') + 'k';
+    return 'MWK ' + n.toLocaleString('en-MW', { maximumFractionDigits: 0 });
+  }
+
   var fpEl = document.getElementById('financialPerformanceChart');
   var fpData = readChartData('financial-performance-data');
   if (fpEl && fpData) {
     var fpDatasets = [
       {
-        label: 'Revenue',
+        label: 'Contract Value Created',
         data: fpData.revenue,
-        borderColor: '#ff5a00',
-        backgroundColor: 'rgba(255,90,0,0.12)',
-        tension: 0.4,
-        fill: false,
-        borderWidth: 3,
-        pointRadius: 4,
-        pointHoverRadius: 6
+        backgroundColor: 'rgba(255,90,0,0.86)',
+        borderRadius: 14,
+        borderSkipped: false,
+        barPercentage: 0.82,
+        categoryPercentage: 0.68,
+        maxBarThickness: 58
       },
       {
         label: 'Payments Collected',
         data: fpData.payments,
-        borderColor: '#16a34a',
-        backgroundColor: 'rgba(22,163,74,0.12)',
-        tension: 0.4,
-        fill: false,
-        borderWidth: 3,
-        pointRadius: 4,
-        pointHoverRadius: 6
+        backgroundColor: 'rgba(22,163,74,0.86)',
+        borderRadius: 14,
+        borderSkipped: false,
+        barPercentage: 0.82,
+        categoryPercentage: 0.68,
+        maxBarThickness: 58
       }
     ];
     if (fpData.profitAvailable) {
       fpDatasets.push({
         label: 'Profit',
         data: fpData.profit,
-        borderColor: '#ff5a00',
-        backgroundColor: 'rgba(255,90,0,0.10)',
-        tension: 0.4,
-        fill: false,
-        borderWidth: 3,
-        pointRadius: 4,
-        pointHoverRadius: 6
+        backgroundColor: 'rgba(15,23,42,0.88)',
+        borderRadius: 14,
+        borderSkipped: false,
+        barPercentage: 0.82,
+        categoryPercentage: 0.68,
+        maxBarThickness: 58
       });
     }
     new Chart(fpEl, {
-      type: 'line',
+      type: 'bar',
       data: { labels: fpData.labels, datasets: fpDatasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 14,
+              boxHeight: 14,
+              padding: 16,
+              font: { size: 12, weight: '700' },
+              color: '#334155'
+            }
+          },
           tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + mwkLabel(ctx.raw); } } }
         },
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (value) { return mwkLabel(value); } },
-            grid: { color: '#f1f5f9' },
+            ticks: { font: { size: 11, weight: '700' }, color: '#64748b', callback: function (value) { return mwkCompact(value); } },
+            grid: { color: '#edf2f7' },
             border: { display: false }
           },
           x: {
-            ticks: { font: { size: 10 }, color: '#64748b', maxRotation: 0 },
+            ticks: { font: { size: 11, weight: '700' }, color: '#475569', maxRotation: 0 },
             grid: { display: false },
             border: { display: false }
           }
@@ -2439,21 +2555,21 @@
             label: 'Contract Value Created',
             data: cvData.contractValue,
             backgroundColor: 'rgba(255,90,0,0.82)',
-            borderRadius: 10,
+            borderRadius: 14,
             borderSkipped: false,
-            barPercentage: 0.72,
+            barPercentage: 0.82,
             categoryPercentage: 0.72,
-            maxBarThickness: 56
+            maxBarThickness: 64
           },
           {
             label: 'Payments Collected',
             data: cvData.payments,
             backgroundColor: 'rgba(22,163,74,0.82)',
-            borderRadius: 10,
+            borderRadius: 14,
             borderSkipped: false,
-            barPercentage: 0.72,
+            barPercentage: 0.82,
             categoryPercentage: 0.72,
-            maxBarThickness: 56
+            maxBarThickness: 64
           }
         ]
       },
@@ -2461,18 +2577,18 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          legend: { position: 'bottom', labels: { boxWidth: 14, boxHeight: 14, padding: 14, font: { size: 12, weight: '700' }, color: '#334155' } },
           tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + mwkLabel(ctx.raw); } } }
         },
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { font: { size: 10 }, color: '#94a3b8', callback: function (value) { return mwkLabel(value); } },
+            ticks: { font: { size: 11, weight: '700' }, color: '#64748b', callback: function (value) { return mwkCompact(value); } },
             grid: { color: '#f1f5f9' },
             border: { display: false }
           },
           x: {
-            ticks: { font: { size: 10 }, color: '#64748b', maxRotation: 0 },
+            ticks: { font: { size: 11, weight: '700' }, color: '#475569', maxRotation: 0 },
             grid: { display: false },
             border: { display: false }
           }

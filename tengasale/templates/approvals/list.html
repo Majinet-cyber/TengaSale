@@ -11,6 +11,26 @@
 
 <h1 class="greeting">{{ title }}</h1>
 
+{% if claim_mode %}
+    <section class="queue-privacy-card">
+        <div class="queue-privacy-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-5"/></svg>
+        </div>
+        <div class="queue-privacy-card__body">
+            <p class="queue-privacy-card__kicker">Pending Queue</p>
+            <h2>{% if pending_count %}{{ pending_count }} applications waiting{% else %}Queue is empty{% endif %}</h2>
+            <p>Next application will be assigned automatically. Details are visible only after claim.</p>
+            <p class="queue-privacy-card__limit">Active reviews: {{ active_count }} / {{ max_active }}</p>
+        </div>
+        {% if can_claim %}
+            <a href="{% url 'underwriter_claim_next' %}" class="queue-privacy-card__button">Claim Next Application</a>
+        {% else %}
+            <span class="queue-privacy-card__button queue-privacy-card__button--disabled">
+                {% if pending_count %}Claim unavailable{% else %}Queue is empty{% endif %}
+            </span>
+        {% endif %}
+    </section>
+{% else %}
 <div class="application-list">
     {% for app in apps %}
         <a href="{% if claim_mode %}{% url 'underwriter_claim_next' %}{% else %}{% url 'underwriter_review_application' app.id %}{% endif %}" class="application-card">
@@ -31,5 +51,6 @@
         <div class="card">No applications found.</div>
     {% endfor %}
 </div>
+{% endif %}
 
 {% endblock %}

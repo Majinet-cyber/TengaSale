@@ -57,8 +57,34 @@ class ApprovalQueueTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "manager")      # greeting shows username
-        self.assertContains(response, "MY ACTIVE")    # always present on new home
+        self.assertContains(response, "My Active Reviews")    # always present on new home
         self.assertContains(response, "Applications") # new menu section
+
+    def test_sales_pending_queue_hides_unclaimed_application_details(self):
+        app = self.create_pending(customer_name="Holland Marie", national_id="SECRET123")
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("sales_applications") + "?tab=queue")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1 applications waiting")
+        self.assertContains(response, "Claim Next Application")
+        self.assertNotContains(response, "Holland Marie")
+        self.assertNotContains(response, "SECRET123")
+        self.assertNotContains(response, app.application_number)
+
+    def test_legacy_pending_queue_hides_unclaimed_application_details(self):
+        app = self.create_pending(customer_name="Holland Marie", national_id="SECRET123")
+        self.client.login(username="manager", password="test-pass-123")
+
+        response = self.client.get(reverse("underwriter_queue"), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1 applications waiting")
+        self.assertContains(response, "Claim Next Application")
+        self.assertNotContains(response, "Holland Marie")
+        self.assertNotContains(response, "SECRET123")
+        self.assertNotContains(response, app.application_number)
 
     def test_manager_can_claim_next_and_second_manager_cannot_claim_same_app(self):
         app = self.create_pending()

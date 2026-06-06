@@ -29,7 +29,7 @@ urlpatterns = [
     path("claim-next/", RedirectView.as_view(pattern_name="sales_claim_next", permanent=False), name="claim_next"),
 
     # Queue
-    path("queue/", RedirectView.as_view(pattern_name="sales_applications", permanent=False), name="underwriter_queue"),
+    path("queue/", RedirectView.as_view(url="/sales/applications/?tab=queue", permanent=False), name="underwriter_queue"),
 
     # Review steps — still serve real views (needed for POST actions from legacy URLs)
     path("review/<int:app_id>/", views.review_application, name="underwriter_review_application"),

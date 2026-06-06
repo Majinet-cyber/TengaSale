@@ -65,10 +65,7 @@ def format_daily_mwk(value):
     d = _to_decimal(value)
     if d <= 0:
         return "Pending setup"
-    amount = int(d) if d == d.to_integral_value() else d
-    if isinstance(amount, int):
-        return f"MWK {amount:,} / day"
-    return f"MWK {amount:,.2f} / day"
+    return f"{_format_mwk(d)} / day"
 
 
 @register.filter(name="monthly_mwk")
@@ -77,10 +74,7 @@ def format_monthly_mwk(value):
     d = _to_decimal(value)
     if d <= 0:
         return "Pending setup"
-    amount = int(d) if d == d.to_integral_value() else d
-    if isinstance(amount, int):
-        return f"MWK {amount:,} / 30 days"
-    return f"MWK {amount:,.2f} / 30 days"
+    return f"{_format_mwk(d)} / 30 days"
 
 
 @register.filter(name="mwk_short")

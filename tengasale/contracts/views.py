@@ -110,20 +110,6 @@ def contract_terms(request, app_id):
             application.status = "contract_signature"
             application.save(update_fields=["status"])
 
-            # Send notification to merchant
-            try:
-                from notifications.models import Notification
-                Notification.send(
-                    recipient=request.user,
-                    notification_type=Notification.TYPE_TERMS_PENDING,
-                    title="Contract Terms Confirmed",
-                    body=f"You confirmed terms for {application.customer_name} — {contract.contract_number}",
-                    link=application.get_continue_url(),
-                    level=Notification.LEVEL_SUCCESS,
-                )
-            except Exception:
-                pass
-
             # Create LegalAcceptance records for both documents (merchant confirms on behalf)
             now = timezone.now()
             ip = (

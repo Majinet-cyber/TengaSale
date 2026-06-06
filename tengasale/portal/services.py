@@ -70,12 +70,12 @@ def get_deposit_access_days(contract) -> int:
     """
     Return the number of days unlocked by the deposit for this contract.
     Reads from contract.deposit_access_days if available, otherwise falls back
-    to the DEFAULT_DEPOSIT_ACCESS_DAYS setting (default 14).
+    to the DEFAULT_DEPOSIT_ACCESS_DAYS setting (default 7).
     """
     from django.conf import settings as django_settings
     if hasattr(contract, "deposit_access_days") and contract.deposit_access_days:
         return int(contract.deposit_access_days)
-    return int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 14))
+    return int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 7))
 
 
 def days_covered_by_payment(amount: Decimal, daily_price: Decimal) -> int:
@@ -103,7 +103,7 @@ def calculate_next_due_date(contract) -> "date":
         due_date = start_date + deposit_access_days (if deposit complete)
                    + floor(amount_paid / daily_price)
 
-    The deposit gives the customer their initial access window (14 days by default).
+    The deposit gives the customer their initial access window (7 days by default).
     Each subsequent repayment extends access proportionally.
     """
     if not contract.daily_price or contract.daily_price <= Decimal("0"):
@@ -487,6 +487,7 @@ def apply_payment_to_contract(
     amount: Decimal,
     db_save: bool = True,
     payment_type: str = "repayment",
+    payment_at=None,
 ) -> dict:
     """
     Apply a payment to a contract.
@@ -509,6 +510,8 @@ def apply_payment_to_contract(
     Returns a dict with allocation details.
     """
     from portal.models import PaymentTransaction
+
+    payment_at = payment_at or timezone.now()
 
     if amount is None or amount <= Decimal("0"):
         return {
@@ -540,16 +543,43 @@ def apply_payment_to_contract(
                 "error": "Deposit is already fully paid.",
             }
         applied = min(amount, deposit_remaining)
+        was_complete = contract.deposit_complete
         contract.deposit_paid = (contract.deposit_paid or Decimal("0")) + applied
+        became_complete = contract.deposit_complete and not was_complete
+        access_expiry = None
+        if became_complete:
+            access_days = get_deposit_access_days(contract)
+            access_expiry = payment_at + timedelta(days=access_days)
+            contract.deposit_paid_at = payment_at
+            contract.last_payment_at = payment_at
+            contract.deposit_unlock_expires_at = access_expiry
+            contract.access_expires_at = access_expiry
+            contract.due_date = access_expiry.date()
+            contract.lock_date = access_expiry.date()
+            contract.status = "active"
         if db_save:
-            contract.save(update_fields=["deposit_paid"])
+            update_fields = ["deposit_paid"]
+            if became_complete:
+                update_fields.extend([
+                    "deposit_paid_at",
+                    "last_payment_at",
+                    "deposit_unlock_expires_at",
+                    "access_expires_at",
+                    "due_date",
+                    "lock_date",
+                    "status",
+                ])
+            contract.save(update_fields=update_fields)
         return {
             "applied": applied,
             "arrears_cleared": Decimal("0"),
-            "days_extended": 0,
+            "days_extended": get_deposit_access_days(contract) if became_complete else 0,
             "payment_type": payment_type,
             "deposit_remaining": contract.deposit_remaining,
             "deposit_complete": contract.deposit_complete,
+            "deposit_paid_at": contract.deposit_paid_at,
+            "deposit_unlock_expires_at": contract.deposit_unlock_expires_at,
+            "access_expires_at": contract.access_expires_at,
             "status": contract.status,
         }
 
@@ -589,15 +619,22 @@ def apply_payment_to_contract(
     if contract.amount_paid > contract.total_amount:
         contract.amount_paid = contract.total_amount
 
-    # Recalculate due date and lock date
-    new_due = calculate_next_due_date(contract)
-    contract.due_date = new_due
-    contract.lock_date = new_due + timedelta(days=3)
+    # Extend exact access timestamp. If the customer still has active access,
+    # extend from the current expiry; if expired, extend from this payment time.
+    current_expiry = getattr(contract, "access_expires_at", None)
+    if current_expiry and timezone.is_naive(current_expiry):
+        current_expiry = timezone.make_aware(current_expiry, timezone.get_current_timezone())
+    base_time = current_expiry if current_expiry and current_expiry > payment_at else payment_at
+    new_access_expiry = base_time + timedelta(days=days_extended)
+    contract.last_payment_at = payment_at
+    contract.access_expires_at = new_access_expiry
+    contract.due_date = new_access_expiry.date()
+    contract.lock_date = new_access_expiry.date()
 
     # Update status
     if contract.amount_paid >= contract.total_amount:
         contract.status = "completed"
-    elif new_due < timezone.localdate():
+    elif new_access_expiry <= timezone.now():
         contract.status = "overdue"
     else:
         contract.status = "active"
@@ -614,7 +651,7 @@ def apply_payment_to_contract(
     if db_save:
         contract.save(update_fields=[
             "amount_paid", "due_date", "lock_date", "status",
-            "daily_price", "thirty_day_price",
+            "daily_price", "thirty_day_price", "last_payment_at", "access_expires_at",
         ])
         # Refresh stored analytics after every successful payment
         try:
@@ -629,6 +666,7 @@ def apply_payment_to_contract(
         "payment_type": payment_type,
         "new_due_date": contract.due_date,
         "new_lock_date": contract.lock_date,
+        "access_expires_at": contract.access_expires_at,
         "remaining": remaining_after,
         "status": contract.status,
     }
@@ -920,7 +958,7 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
 
     # Resolve deposit_access_days from the deal or fall back to setting default
     from django.conf import settings as django_settings
-    _default_access_days = int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 14))
+    _default_access_days = int(getattr(django_settings, "DEFAULT_DEPOSIT_ACCESS_DAYS", 7))
     try:
         _deal = getattr(application, "deal", None)
         _deposit_access_days = int(_deal.unlock_days) if _deal and _deal.unlock_days else _default_access_days

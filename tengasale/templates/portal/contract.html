@@ -85,7 +85,10 @@
       {% endif %}
       <div><span class="cpd-label">Term</span><strong>{{ contract.term_months }} months</strong></div>
       <div><span class="cpd-label">Daily Rate</span><strong>{{ contract.daily_price|daily_mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit Access</span><strong>{{ contract.deposit_access_days|default:14 }} days</strong></div>
+      <div><span class="cpd-label">Deposit Access</span><strong>{{ contract.deposit_access_days|default:7 }} days</strong></div>
+      {% if contract.access_expires_at %}
+      <div><span class="cpd-label">Access valid until</span><strong>{{ contract.access_expires_at|date:"d M Y H:i" }}</strong></div>
+      {% endif %}
     </div>
   </section>
 
@@ -99,13 +102,13 @@
     {% elif lock_status == 'warning' and lock_warning %}
     <section class="cpd-alert-card cpd-alert-card--warning">
       <strong>Device will lock in {{ lock_warning.days }} day{{ lock_warning.days|pluralize }}</strong>
-      <span>Pay {{ lock_warning.amount|mwk }} before {{ lock_warning.date|date:"d M Y" }} to keep your device unlocked.</span>
+      <span>Pay {{ lock_warning.amount|mwk }} before {{ lock_warning.date|date:"d M Y H:i" }} to keep your device unlocked.</span>
       {% if last_paid_tx %}<small>Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }} · {{ last_paid_tx.amount|mwk }}</small>{% endif %}
     </section>
     {% else %}
     <section class="cpd-alert-card cpd-alert-card--safe">
       <strong>Your device is safe</strong>
-      <span>{% if contract.due_date %}Next payment due {{ contract.due_date|date:"d M Y" }}.{% else %}Your account is in good standing.{% endif %}</span>
+      <span>{% if contract.access_expires_at %}Next payment due {{ contract.access_expires_at|date:"d M Y H:i" }}.{% elif contract.due_date %}Next payment due {{ contract.due_date|date:"d M Y" }}.{% else %}Your account is in good standing.{% endif %}</span>
     </section>
     {% endif %}
   {% endif %}
@@ -152,7 +155,7 @@
   {% elif deposit_required and deposit_complete %}
   <section class="cpd-alert-card cpd-alert-card--safe">
     <strong>Deposit paid &#10003;</strong>
-    <span>Deposit of {{ deposit_required|mwk }} is complete. This gave you {{ contract.deposit_access_days|default:14 }} days of initial access.</span>
+    <span>Deposit of {{ deposit_required|mwk }} is complete. Deposit unlocks the device for 7 days{% if contract.deposit_unlock_expires_at %}, until {{ contract.deposit_unlock_expires_at|date:"d M Y H:i" }}{% endif %}.</span>
   </section>
   {% endif %}
 
@@ -278,10 +281,15 @@
   {% if contract.status == 'completed' %}
   <section class="cpd-alert-card cpd-alert-card--safe">
     <strong>Contract completed</strong>
-    <span>Your device is fully owned. View your payment statement anytime.</span>
+    <span>Ownership transfers only after the full contract balance is paid. View your payment statement anytime.</span>
     <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-inline-action">View statement</a>
   </section>
   {% endif %}
+
+  <section class="cpd-alert-card cpd-alert-card--safe">
+    <strong>Ownership notice</strong>
+    <span>Ownership is retained by TengaSale until full repayment. Customer has conditional possession and use while the agreement remains active.</span>
+  </section>
 
   <section class="cpd-support-card cpd-support-card--simple">
     <div>

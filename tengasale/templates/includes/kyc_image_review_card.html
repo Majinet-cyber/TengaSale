@@ -40,13 +40,41 @@ Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missi
         data-kyc-portrait-img
       >
     </a>
+    <div
+      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
+      class="kyc-portrait-card__placeholder"
+      hidden
+    >
+      <p>Missing photo</p>
+      <span>Request retake</span>
+    </div>
     {% elif status == 'broken' %}
-    <div class="kyc-portrait-card__placeholder kyc-portrait-card__placeholder--broken">
+    <img
+      {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
+      alt="{{ label }}"
+      class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
+      hidden
+      data-kyc-portrait-img
+    >
+    <div
+      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
+      class="kyc-portrait-card__placeholder kyc-portrait-card__placeholder--broken"
+    >
       <p>Photo unavailable</p>
       <span>Request retake</span>
     </div>
     {% else %}
-    <div class="kyc-portrait-card__placeholder">
+    <img
+      {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
+      alt="{{ label }}"
+      class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
+      hidden
+      data-kyc-portrait-img
+    >
+    <div
+      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
+      class="kyc-portrait-card__placeholder"
+    >
       <p>Missing photo</p>
       <span>Request retake</span>
     </div>

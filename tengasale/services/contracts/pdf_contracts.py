@@ -259,9 +259,17 @@ def get_contract_context(contract) -> dict[str, Any]:
     # PayG number and customer payment URL (from linked portal PaymentContract)
     payg_number = ""
     payment_url = ""
+    deposit_paid_at = None
+    deposit_unlock_expires_at = None
+    access_expires_at = None
     try:
         payg_number = contract.payg_number or ""
         payment_url = contract.payment_url or ""
+        portal_contract = getattr(app, "payment_contract", None) if app else None
+        if portal_contract:
+            deposit_paid_at = portal_contract.deposit_paid_at
+            deposit_unlock_expires_at = portal_contract.deposit_unlock_expires_at
+            access_expires_at = portal_contract.access_expires_at
     except Exception:
         pass
 
@@ -315,7 +323,10 @@ def get_contract_context(contract) -> dict[str, Any]:
         "payment_channels": "Airtel Money, TNM Mpamba, Bank Transfer",
 
         # Deposit access
-        "deposit_access_days": getattr(deal, "unlock_days", None) or 14,
+        "deposit_access_days": getattr(deal, "unlock_days", None) or 7,
+        "deposit_paid_at": deposit_paid_at,
+        "deposit_unlock_expires_at": deposit_unlock_expires_at,
+        "access_expires_at": access_expires_at,
         "activation_date": contract.active_at.date() if getattr(contract, "active_at", None) else (contract.created_at.date() if contract.created_at else ""),
 
         # Signatures

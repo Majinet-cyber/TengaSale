@@ -302,7 +302,7 @@ TENGASALE_GOVERNING_LAW = os.environ.get("TENGASALE_GOVERNING_LAW", "the laws of
 # ── Deposit Access Period ─────────────────────────────────────────────────────
 # Number of days of device access granted by the deposit payment.
 # New contracts use this value. Existing contracts retain their stored deposit_access_days.
-DEFAULT_DEPOSIT_ACCESS_DAYS = int(os.environ.get("DEFAULT_DEPOSIT_ACCESS_DAYS", "14"))
+DEFAULT_DEPOSIT_ACCESS_DAYS = int(os.environ.get("DEFAULT_DEPOSIT_ACCESS_DAYS", "7"))
 
 # ── Device Lock Integration Layer ─────────────────────────────────────────────
 # Master switch — set True when a real provider is available.

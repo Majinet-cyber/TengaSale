@@ -484,7 +484,8 @@ class ApplicationListTests(ApplicationTestCase):
         app = self.create_application()
         app.customer_name = "Jane Banda"
         app.imei_number = "123456789012345"
-        app.status = "approved"
+        app.status = "device_locked"
+        app.imei_number = "123456789012345"
         app.save()
 
         response = self.client.get(reverse("approved_applications"), {"q": "123456789012345"})
@@ -865,7 +866,7 @@ class SignaturePageTests(ApplicationTestCase):
 
         response = self.client.post(
             reverse("signature", args=[app.id]),
-            {"save_signature": "1", "signature_data": valid_signature_data()},
+            {"save_signature": "1", "agreed_to_terms": "on", "signature_data": valid_signature_data()},
         )
 
         app.refresh_from_db()
@@ -1994,7 +1995,7 @@ class MotionJsRegressionTests(TestCase):
         motion_path = Path(django_settings.BASE_DIR) / "static" / "js" / "tengasale-motion.js"
         source = motion_path.read_text(encoding="utf-8")
         self.assertNotIn("slice(0, 2).map", source)
-        self.assertIn("Photo failed to load", source)
+        self.assertIn("Image unavailable", source)
 
 
 class ApplicationStabilityE2ETests(ApplicationTestCase):
@@ -2072,7 +2073,7 @@ class ApplicationStabilityE2ETests(ApplicationTestCase):
         self.client.post(reverse("work_details", args=[app.id]), self.work_data())
         self.client.post(
             reverse("signature", args=[app.id]),
-            {"save_signature": "1", "signature_data": valid_signature_data()},
+            {"save_signature": "1", "agreed_to_terms": "on", "signature_data": valid_signature_data()},
         )
 
         app.refresh_from_db()
@@ -2102,7 +2103,7 @@ class ApplicationStabilityE2ETests(ApplicationTestCase):
             "consent_communication": "on",
             "confirm_information_true": "on",
         })
-        contract = Contract.objects.get(application=app)
+        contract, _ = Contract.from_application(app)
         self.client.post(
             reverse("contract_signature", args=[contract.id]),
             {"signature_data": valid_signature_data(), "customer_terms_accepted": "on"},

@@ -483,6 +483,13 @@ def process_application_approval(application, approved_by):
             if approved_by:
                 award_spin_for_application(application, approved_by)
 
+    try:
+        from notifications.utils import notify_application_approved
+
+        notify_application_approved(application, approved_by=approved_by)
+    except Exception:
+        pass
+
     return {
         "sale_amount": sale_amount,
         "merchant_commission": merchant_commission,

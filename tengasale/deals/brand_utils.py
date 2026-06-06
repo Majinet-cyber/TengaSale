@@ -15,12 +15,12 @@ BRAND_ALIASES = {
     "infinix": "Infinix",
 }
 
-PREFERRED_BRAND_ORDER = ["Tecno", "Itel", "Infinix", "Samsung", "Redmi/Xiaomi"]
+VISIBLE_BRAND_NAMES = {"Tecno", "Itel", "Samsung", "Redmi/Xiaomi"}
+PREFERRED_BRAND_ORDER = ["Tecno", "Itel", "Samsung", "Redmi/Xiaomi"]
 
 BRAND_STATIC_LOGOS = {
     "Tecno": "img/brands/tecno.svg",
     "Itel": "img/brands/itel.svg",
-    "Infinix": "img/brands/infinix.svg",
     "Redmi/Xiaomi": "img/brands/redmi.svg",
     "Samsung": "img/brands/samsung.svg",
 }
@@ -35,7 +35,10 @@ def canonical_brand(name: str) -> str:
 
 def ordered_brand_names(raw_names):
     """Unique canonical brand names in preferred display order."""
-    canonical = list(dict.fromkeys(canonical_brand(n) for n in raw_names if n))
+    canonical = [
+        name for name in dict.fromkeys(canonical_brand(n) for n in raw_names if n)
+        if name in VISIBLE_BRAND_NAMES
+    ]
     ordered = [n for n in PREFERRED_BRAND_ORDER if n in canonical]
     for name in canonical:
         if name not in ordered:

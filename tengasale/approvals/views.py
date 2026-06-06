@@ -102,11 +102,6 @@ def sync_legacy_corrections(app):
 def underwriter_dashboard(request):
     my_active = FinancingApplication.objects.filter(claimed_by=request.user, status="under_review")
     pending_count = FinancingApplication.objects.filter(status="pending_review", claimed_by__isnull=True).count()
-    pending_queue = (
-        FinancingApplication.objects.select_related("created_by")
-        .filter(status="pending_review", claimed_by__isnull=True)
-        .order_by("submitted_at", "id")[:10]
-    )
     completed_reviews = FinancingApplication.objects.filter(
         reviewed_by=request.user,
         status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed", "contract_complete"],
@@ -124,7 +119,6 @@ def underwriter_dashboard(request):
     return render(request, "approvals/home.html", {
         "my_active": my_active,
         "pending_count": pending_count,
-        "pending_queue": pending_queue,
         "completed_reviews": completed_reviews,
         "rejected_reviews": rejected_reviews,
         "active_count": my_active.count(),
@@ -158,6 +152,12 @@ def claim_next(request):
         app.save(update_fields=["claimed_by", "claimed_at", "status", "review_status"])
 
     messages.success(request, "Application claimed.")
+    try:
+        from notifications.utils import notify_application_claimed
+
+        notify_application_claimed(app, request.user)
+    except Exception:
+        pass
     return redirect("underwriter_review_application", app_id=app.id)
 
 
@@ -183,6 +183,12 @@ def review_application(request, app_id):
             app.review_status = "rejected"
             cancel_application_commissions(app)
             app.save(update_fields=["status", "review_status", "manager_comment", "reviewed_by", "reviewed_at"])
+            try:
+                from notifications.utils import notify_application_rejected
+
+                notify_application_rejected(app, rejected_by=request.user)
+            except Exception:
+                pass
             messages.error(request, "Application rejected.")
             return redirect("underwriter_dashboard")
         if decision == "request_correction":
@@ -222,8 +228,17 @@ def active_reviews(request):
 
 @underwriter_required
 def queue(request):
-    apps = FinancingApplication.objects.filter(status="pending_review", claimed_by__isnull=True).order_by("submitted_at", "id")
-    return render(request, "approvals/list.html", {"title": "Queue", "apps": apps, "claim_mode": True})
+    pending_count = FinancingApplication.objects.filter(status="pending_review", claimed_by__isnull=True).count()
+    active_count = FinancingApplication.objects.filter(claimed_by=request.user, status="under_review").count()
+    return render(request, "approvals/list.html", {
+        "title": "Queue",
+        "apps": FinancingApplication.objects.none(),
+        "claim_mode": True,
+        "pending_count": pending_count,
+        "active_count": active_count,
+        "max_active": MAX_ACTIVE,
+        "can_claim": pending_count > 0 and active_count < MAX_ACTIVE,
+    })
 
 
 @underwriter_required

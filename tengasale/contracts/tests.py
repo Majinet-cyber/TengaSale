@@ -66,10 +66,13 @@ class ContractFlowTests(TestCase):
         )
         self.client.login(username="merchant", password="test-pass-123")
 
-    def test_approved_app_routes_to_contract_terms(self):
-        self.assertEqual(self.app.get_continue_url(), reverse("contract_terms", args=[self.app.id]))
+    def test_approved_app_routes_to_imei_entry(self):
+        self.assertEqual(self.app.get_continue_url(), reverse("capture_imei", args=[self.app.id]))
 
     def test_contract_terms_requires_all_checkboxes(self):
+        self.app.status = "device_locked"
+        self.app.imei_number = "123456789012347"
+        self.app.save(update_fields=["status", "imei_number"])
         # Empty post fails with 200 (validation errors)
         response = self.client.post(reverse("contract_terms", args=[self.app.id]), {})
         self.assertEqual(response.status_code, 200)
@@ -81,6 +84,9 @@ class ContractFlowTests(TestCase):
         self.assertFalse(Contract.objects.exists())
 
     def test_contract_terms_all_checkboxes_creates_contract(self):
+        self.app.status = "device_locked"
+        self.app.imei_number = "123456789012347"
+        self.app.save(update_fields=["status", "imei_number"])
         response = self.client.post(reverse("contract_terms", args=[self.app.id]), {
             "confirmed_terms": "on",
             "accept_contract_summary": "on",
@@ -837,10 +843,11 @@ class LegalAcceptanceContractTermsViewTests(TestCase):
         )
         self.app = FinancingApplication.objects.create(
             created_by=self.merchant,
-            status="approved",
+            status="device_locked",
             customer_name="Grace Tembo",
             customer_phone="0991234567",
             national_id="MWI99999",
+            imei_number="123456789012347",
             deal=self.deal,
             selected_cash_price=Decimal("175000"),
             calculated_total_loan=Decimal("437500"),

@@ -20,6 +20,7 @@ def validate_didit_production_settings(
     webhook_url: str,
     callback_url: str,
     allow_unsigned_webhooks: bool,
+    strict_mode: bool = True,
 ) -> None:
     """
     Enforce Didit production safety when DEBUG is False.
@@ -32,6 +33,9 @@ def validate_didit_production_settings(
         raise ImproperlyConfigured(
             "DIDIT_ALLOW_UNSIGNED_WEBHOOKS cannot be True when DEBUG=False."
         )
+
+    if not strict_mode:
+        return
 
     if not (api_key or "").strip():
         raise ImproperlyConfigured("DIDIT_API_KEY is required in production.")

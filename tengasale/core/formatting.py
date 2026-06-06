@@ -1,6 +1,6 @@
 """Shared MWK currency formatting for Python code and template filters."""
 
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 
 def _to_decimal(value):
@@ -24,8 +24,8 @@ def format_mwk(value, decimals=False):
         return ""
     if d <= 0 and value in (None, "", 0, "0", "0.00"):
         return ""
-    if not decimals and d == d.to_integral_value():
-        return f"MWK {int(d):,}"
+    if not decimals:
+        return f"MWK {int(d.quantize(Decimal('1'), rounding=ROUND_HALF_UP)):,}"
     return f"MWK {d:,.2f}"
 
 
@@ -34,8 +34,8 @@ def format_mwk_plain(value, decimals=False):
     d = _to_decimal(value)
     if d is None:
         return ""
-    if not decimals and d == d.to_integral_value():
-        return f"{int(d):,}"
+    if not decimals:
+        return f"{int(d.quantize(Decimal('1'), rounding=ROUND_HALF_UP)):,}"
     return f"{d:,.2f}"
 
 
@@ -46,6 +46,6 @@ def format_mwk_signed(value, decimals=False):
         return ""
     prefix = "+" if d >= 0 else "-"
     abs_d = abs(d)
-    if not decimals and abs_d == abs_d.to_integral_value():
-        return f"{prefix}MWK {int(abs_d):,}"
+    if not decimals:
+        return f"{prefix}MWK {int(abs_d.quantize(Decimal('1'), rounding=ROUND_HALF_UP)):,}"
     return f"{prefix}MWK {abs_d:,.2f}"

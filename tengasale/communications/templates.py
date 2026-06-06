@@ -14,11 +14,11 @@ def format_mwk(value):
 SMS_TEMPLATES = {
     "payment_confirmation": {
         "ny": (
-            "Zikomo, mwalipira MWK{amount_paid}.\n"
+            "Talandila ndalama MWK{amount_paid}.\n"
             "Zalipira masiku pafupifupi {days_covered}.\n"
             "Zalipira mpaka: {paid_through_date}.\n"
             "Masiku otsala: {days_remaining}.\n"
-            "Ngongole yotsala: MWK{balance_left}.\n"
+            "Ngongole yotsala ndi MWK{balance_left}.\n"
             "TengaSale. Thandizo: {support_number}."
         ),
         "en": (
@@ -45,13 +45,13 @@ SMS_TEMPLATES = {
     "approval": {
         "ny": (
             "Pempho lanu la TengaSale lavomerezedwa.\n"
-            "Deposit yanu imapereka masiku 14 ogwiritsa ntchito foni ikakhazikitsidwa.\n"
+            "Deposit yanu imatsegula foni kwa masiku 7 ikatsimikizidwa.\n"
             "Pitirizani kulipira nthawi isanakwane kuti foni isatsekedwe.\n"
             "TengaSale."
         ),
         "en": (
             "Your TengaSale application has been approved.\n"
-            "Your deposit gives 14 days of access after device setup.\n"
+            "Deposit unlocks the device for 7 days.\n"
             "Keep paying before your due date to continue using the phone.\n"
             "TengaSale."
         ),
@@ -124,7 +124,20 @@ def normalize_language(language):
 def render_sms_template(purpose, language="ny", **context):
     templates = SMS_TEMPLATES.get(purpose) or SMS_TEMPLATES["payment_confirmation"]
     template = templates.get(normalize_language(language)) or templates["ny"]
-    return template.format(**context)
+    defaults = {
+        "amount_paid": "0",
+        "days_covered": "0",
+        "paid_through_date": context.get("next_payment_date") or context.get("due_date") or "",
+        "days_remaining": "0",
+        "balance_left": "0",
+        "support_number": "",
+        "next_payment_due": context.get("next_payment_date") or context.get("due_date") or "",
+        "due_date": context.get("next_payment_date") or "",
+        "days_until_due": "0",
+        "otp_code": "",
+    }
+    defaults.update(context)
+    return template.format(**defaults)
 
 
 def format_sms_date(value):

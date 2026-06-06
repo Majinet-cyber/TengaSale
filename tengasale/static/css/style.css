@@ -336,14 +336,15 @@ img.ts-logo-hero {
 }
 
 .claim-button-ready {
-    background: var(--green);
+    background: var(--orange);
     color: #ffffff;
-    box-shadow: 0 14px 26px rgba(22, 138, 69, 0.22);
+    box-shadow: 0 14px 26px rgba(255, 90, 0, 0.22);
 }
 
 .claim-button-disabled {
-    background: #d7dde3;
+    background: #f8fafc;
     color: #7a828c;
+    border: 1.5px dashed #d7dde3;
 }
 
 .active-review-card {
@@ -352,10 +353,10 @@ img.ts-logo-hero {
     margin-bottom: 24px;
     padding: 22px;
     border-radius: 18px;
-    background: linear-gradient(135deg, #ff5a00, #e64d00);
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
     color: #ffffff;
     text-decoration: none;
-    box-shadow: 0 14px 26px rgba(255, 106, 0, 0.25);
+    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.24);
 }
 
 .active-review-card span {
@@ -450,9 +451,9 @@ img.ts-logo-hero {
 
 .menu-row {
     min-height: 66px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    justify-content: space-between;
     gap: 14px;
     padding: 12px 0;
     border-bottom: 1px solid var(--border);
@@ -460,6 +461,12 @@ img.ts-logo-hero {
     font-size: 18px;
     font-weight: 760;
     text-decoration: none;
+}
+
+.menu-row .arrow {
+    justify-self: end;
+    color: #94a3b8;
+    line-height: 1;
 }
 
 .menu-row .left {
@@ -5677,18 +5684,20 @@ body {
 .notif-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     padding: 0 14px 24px;
 }
 
 .notif-card {
     background: #ffffff;
     border: 1.5px solid #e5e7eb;
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 14px 16px;
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: flex-start;
     gap: 12px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
 }
 
 .notif-card--unread {
@@ -5713,7 +5722,7 @@ body {
 
 .notif-card__title {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 850;
     color: #101828;
     margin-bottom: 2px;
 }
@@ -5731,10 +5740,31 @@ body {
 
 .notif-card__actions {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
     align-items: flex-end;
+    justify-content: flex-end;
     flex-shrink: 0;
+}
+
+.notif-card__actions form {
+    margin: 0;
+}
+
+.notif-mark-all {
+    margin: 0 18px 12px;
+}
+
+@media (max-width: 430px) {
+    .notif-card {
+        grid-template-columns: auto 1fr;
+    }
+
+    .notif-card__actions {
+        grid-column: 2;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
 }
 
 /* Notification dropdown */

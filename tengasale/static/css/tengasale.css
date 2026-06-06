@@ -3458,6 +3458,7 @@ label,
 .merchant-dashboard-shell .action-row-icon--device { background: #eff6ff; color: #2563eb; }
 .merchant-dashboard-shell .action-row-icon--spin { background: #fff7ed; color: #ff5a00; }
 .merchant-dashboard-shell .action-row-icon--deals { background: #f8fafc; color: #475569; }
+.merchant-dashboard-shell .action-row-icon--support { background: #eef2ff; color: #4f46e5; }
 
 .merchant-dashboard-shell .action-row-label {
   font-size: 15px;
@@ -4235,4 +4236,174 @@ label,
   fill: none; stroke: #ff5a00; stroke-width: 2;
   stroke-linecap: round; flex-shrink: 0;
   margin-top: 2px;
+}
+
+/* == Underwriter queue fairness and action polish ================== */
+.uw-home-simple .uw-queue-status-card {
+  border-color: rgba(255, 90, 0, 0.28);
+  box-shadow: 0 8px 22px rgba(255, 90, 0, 0.08);
+}
+
+.uw-home-simple .uw-queue-status-card--empty {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.uw-home-simple .uw-primary-action {
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+}
+
+.uw-home-simple .uw-primary-action--queue {
+  background: #ff5a00;
+  box-shadow: 0 12px 28px rgba(255, 90, 0, 0.24);
+}
+
+.uw-home-simple .uw-primary-action--queue-empty {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.uw-home-simple .uw-primary-action--queue-empty span {
+  color: #d97706;
+  opacity: 1;
+}
+
+.uw-home-simple .uw-primary-action--navy {
+  background: #0f172a;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+}
+
+.uw-home-simple .ts-app-row {
+  border-radius: 14px;
+  border: 1px solid #eef2f7;
+  margin: 0 0 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.uw-home-simple .ts-menu-section,
+.uw-home-simple .action-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.uw-home-simple .ts-menu-row {
+  grid-template-columns: auto 1fr auto auto;
+  min-height: 62px;
+  padding: 0 14px;
+}
+
+.uw-home-simple .action-row-icon--rules {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.uw-home-simple .action-row-value {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.uw-home-simple .action-row-chevron,
+.uw-home-simple .row-arrow {
+  justify-self: end;
+  color: #94a3b8;
+}
+
+.queue-privacy-card {
+  margin: 14px 0 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.queue-privacy-card__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 90, 0, 0.10);
+  color: #ff5a00;
+}
+
+.queue-privacy-card__icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.queue-privacy-card__body {
+  min-width: 0;
+}
+
+.queue-privacy-card__kicker,
+.queue-privacy-card__limit {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.queue-privacy-card h2 {
+  margin: 3px 0 7px;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.queue-privacy-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.queue-privacy-card__form {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.queue-privacy-card__button {
+  grid-column: 1 / -1;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.20);
+}
+
+.queue-privacy-card__button--disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 430px) {
+  .queue-privacy-card {
+    margin-left: 0;
+    margin-right: 0;
+    grid-template-columns: 1fr;
+  }
 }

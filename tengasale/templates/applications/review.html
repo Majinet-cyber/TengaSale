@@ -63,7 +63,7 @@
 
     <label class="check-row{% if 'agreed_to_terms' in app.correction_fields %} has-correction{% endif %}" for="{{ form.agreed_to_terms.id_for_label }}">
         {{ form.agreed_to_terms }}
-        <span>I confirm the customer agrees to the TengaSale financing terms.</span>
+        <span>Customer confirms and agrees to the TengaSale contract terms.</span>
     </label>
     {{ form.agreed_to_terms.errors }}
 
@@ -73,7 +73,7 @@
         <span>Deposit</span>
         <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
         <span>Deposit unlock</span>
-        <strong style="color:#ff5a00;">14 days access</strong>
+        <strong style="color:#ff5a00;">7 days access</strong>
         <span>Daily rate</span>
         <strong>{{ app.calculated_daily_payment|mwk }}</strong>
         <span>Weekly (7 days)</span>
@@ -81,7 +81,7 @@
         <span>Monthly (30 days)</span>
         <strong>{{ app.calculated_monthly_payment|mwk }}</strong>
     </div>
-    <p style="font-size:12px;color:#667085;margin:6px 0 0;padding:0 4px;">Deposit gives the customer 14 days of device access. After that, payments extend access based on the amount paid.</p>
+    <p style="font-size:12px;color:#667085;margin:6px 0 0;padding:0 4px;">Deposit unlocks the device for 7 days. After that, payments extend access based on the amount paid.</p>
 
     <div class="form-actions">
         <a href="{% url 'signature' app.id %}?redo=1" class="btn btn-outline">Back</a>

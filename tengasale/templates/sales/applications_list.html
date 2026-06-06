@@ -19,7 +19,29 @@
   <a href="?tab=queue"     class="ts-tab-v2 {% if tab == 'queue' %}ts-tab-v2--active{% endif %}">Queue</a>
 </div>
 
-{% if apps %}
+{% if tab == 'queue' %}
+  <section class="queue-privacy-card">
+    <div class="queue-privacy-card__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-5"/></svg>
+    </div>
+    <div class="queue-privacy-card__body">
+      <p class="queue-privacy-card__kicker">Pending Queue</p>
+      <h2>{% if pending_count %}{{ pending_count }} applications waiting{% else %}Queue is empty{% endif %}</h2>
+      <p>Next application will be assigned automatically. Customer, merchant, device, income, and location details are hidden until claim.</p>
+      <p class="queue-privacy-card__limit">Active reviews: {{ active_count }} / {{ max_active }}</p>
+    </div>
+    {% if can_claim %}
+      <form method="post" action="{% url 'sales_claim_next' %}" class="queue-privacy-card__form">
+        {% csrf_token %}
+        <button type="submit" class="queue-privacy-card__button">Claim Next Application</button>
+      </form>
+    {% else %}
+      <button type="button" class="queue-privacy-card__button queue-privacy-card__button--disabled" disabled>
+        {% if pending_count %}Claim unavailable{% else %}Queue is empty{% endif %}
+      </button>
+    {% endif %}
+  </section>
+{% elif apps %}
   <div class="app-card-list" style="margin-top:10px;">
   {% for app in apps %}
     <a href="{% url 'sales_review_summary' app.id %}" class="app-card-v2">

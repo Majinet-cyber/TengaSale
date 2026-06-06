@@ -33,7 +33,8 @@
                     <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" role="listitem">
                         <span class="brand-card-logo">
                             {% if card.logo_url %}
-                                <img src="{{ card.logo_url }}" alt="{{ card.label }}" class="brand-card-logo-img" width="56" height="32">
+                                <img src="{{ card.logo_url }}" alt="{{ card.label }}" class="brand-card-logo-img" width="56" height="32" data-brand-logo>
+                                <span class="brand-card-logo-badge" data-brand-fallback hidden>{{ card.label|slice:":3" }}</span>
                             {% else %}
                                 <span class="brand-card-logo-badge">{{ card.label|slice:":3" }}</span>
                             {% endif %}
@@ -107,7 +108,7 @@
 
                 <div class="pricing-grid offer-grid">
                     <div>
-                        <span>12 months price</span>
+                        <span>Total contract value</span>
                         <strong>MWK <span data-total-loan></span></strong>
                     </div>
                     <div>
@@ -122,8 +123,21 @@
                         <span><span data-term-copy-daily>12</span> months price per day</span>
                         <strong>MWK <span data-daily></span></strong>
                     </div>
+                    <div>
+                        <span>Per week</span>
+                        <strong>MWK <span data-weekly></span></strong>
+                    </div>
+                    <div>
+                        <span>Per 2 weeks</span>
+                        <strong>MWK <span data-two-week></span></strong>
+                    </div>
+                    <div>
+                        <span>Per 2 months</span>
+                        <strong>MWK <span data-two-month></span></strong>
+                    </div>
                 </div>
 
+                <p class="deal-lock-note">Deposit unlocks device for 7 days.</p>
                 <div class="early-pay-panel">
                     <h3>Pay early, pay less</h3>
                     <div class="early-pay-list">
@@ -151,10 +165,10 @@
                         </div>
                     </div>
                 </div>
-                <p class="deal-lock-note">The phone will only lock if the customer falls behind the 12-month payments.</p>
+                <p class="deal-lock-note">Ownership is retained by TengaSale until full repayment. The device may be locked if required payments are not made.</p>
             </article>
 
-            <button class="new-application-button deal-continue-btn ts-button-primary primary-big-action" type="submit">CONTINUE TO KYC</button>
+            <button class="new-application-button deal-continue-btn ts-button-primary primary-big-action" type="submit">Start Application</button>
         </section>
     </form>
 {% else %}
@@ -184,6 +198,14 @@
         const hiddenTerm = document.getElementById("selected-term-months");
         const form = document.getElementById("deal-form");
         const termChips = document.querySelectorAll(".term-chip");
+
+        document.querySelectorAll("[data-brand-logo]").forEach(function (img) {
+            img.addEventListener("error", function () {
+                const fallback = img.parentElement && img.parentElement.querySelector("[data-brand-fallback]");
+                img.hidden = true;
+                if (fallback) fallback.hidden = false;
+            });
+        });
 
         let selectedBrand = "";
         let selectedModel = "";
@@ -320,6 +342,9 @@
             document.querySelector("[data-deposit]").textContent = money(deposit);
             document.querySelector("[data-monthly]").textContent = money(monthly);
             document.querySelector("[data-daily]").textContent = money(daily);
+            document.querySelector("[data-weekly]").textContent = money(daily * 7);
+            document.querySelector("[data-two-week]").textContent = money(daily * 14);
+            document.querySelector("[data-two-month]").textContent = money(monthly * 2);
             document.querySelector("[data-six-total]").textContent = money(sixTotal);
             document.querySelector("[data-six-monthly]").textContent = money(sixTotal / 6);
             document.querySelector("[data-six-daily]").textContent = money(sixTotal / 180);

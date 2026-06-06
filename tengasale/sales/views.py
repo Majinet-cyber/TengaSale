@@ -190,6 +190,12 @@ def sales_claim_next(request):
 
     _audit(request.user, AuditLog.ACTION_CLAIM, "FinancingApplication", app.id,
            {"application_number": app.application_number}, request)
+    try:
+        from notifications.utils import notify_application_claimed
+
+        notify_application_claimed(app, request.user)
+    except Exception:
+        pass
     messages.success(request, f"Application {app.application_number} claimed.")
     return redirect("sales_review_summary", app_id=app.id)
 
@@ -215,19 +221,31 @@ def sales_applications(request):
             reviewed_by=request.user, status__in=["sent_back", "correction_requested"]
         ).order_by("-reviewed_at")
     elif tab == "queue":
-        apps = FinancingApplication.objects.filter(
-            status="pending_review", claimed_by__isnull=True
-        ).order_by("submitted_at", "id")
+        apps = FinancingApplication.objects.none()
     else:
         apps = FinancingApplication.objects.filter(
             claimed_by=request.user, status="under_review"
         ).order_by("-claimed_at")
         tab = "active"
 
+    rule = _queue_rule()
+    active_count = FinancingApplication.objects.filter(
+        claimed_by=request.user, status="under_review"
+    ).count()
+    pending_count = FinancingApplication.objects.filter(
+        status="pending_review", claimed_by__isnull=True
+    ).count()
+    cooldown_remaining, can_claim = _cooldown_state(request.user)
+
     return render(request, "sales/applications_list.html", {
         "page_heading": "Applications",
         "apps": apps.select_related("deal", "created_by")[:50],
         "tab": tab,
+        "pending_count": pending_count,
+        "active_count": active_count,
+        "max_active": rule.max_active_applications,
+        "cooldown_remaining": int(cooldown_remaining),
+        "can_claim": can_claim and pending_count > 0,
     })
 
 
@@ -442,6 +460,12 @@ def sales_final_review(request, app_id):
             app.save(update_fields=["status", "review_status", "manager_comment", "reviewed_by", "reviewed_at"])
             _audit(request.user, AuditLog.ACTION_REJECT, "FinancingApplication", app.id,
                    {"reason": reject_reason}, request)
+            try:
+                from notifications.utils import notify_application_rejected
+
+                notify_application_rejected(app, rejected_by=request.user)
+            except Exception:
+                pass
             messages.error(request, "Application rejected.")
             return render(request, "sales/reject_success.html", {"app": app, "page_heading": "Rejected"})
 

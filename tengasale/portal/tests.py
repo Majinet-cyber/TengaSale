@@ -28,7 +28,7 @@ Coverage:
 """
 
 from decimal import Decimal
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from django.test import TestCase, Client
 from django.utils import timezone
@@ -921,6 +921,53 @@ class DepositPaymentTest(TestCase):
         apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")
         c.refresh_from_db()
         self.assertTrue(c.deposit_complete)
+
+    def test_deposit_payment_sets_exact_seven_day_access_expiry(self):
+        paid_at = timezone.make_aware(datetime(2026, 6, 5, 20, 13, 0))
+        c = self._make_contract(deposit_access_days=7)
+
+        result = apply_payment_to_contract(
+            c,
+            Decimal("5000"),
+            payment_type="deposit",
+            payment_at=paid_at,
+        )
+        c.refresh_from_db()
+
+        expected = paid_at + timedelta(days=7)
+        self.assertEqual(c.deposit_paid_at, paid_at)
+        self.assertEqual(c.last_payment_at, paid_at)
+        self.assertEqual(c.deposit_unlock_expires_at, expected)
+        self.assertEqual(c.access_expires_at, expected)
+        self.assertEqual(result["deposit_unlock_expires_at"], expected)
+
+    def test_repayment_extends_from_current_expiry_when_access_is_active(self):
+        paid_at = timezone.make_aware(datetime(2026, 6, 6, 9, 0, 0))
+        current_expiry = timezone.make_aware(datetime(2026, 6, 12, 20, 13, 0))
+        c = self._make_contract(
+            deposit_paid=Decimal("5000"),
+            access_expires_at=current_expiry,
+            daily_price=Decimal("125"),
+        )
+
+        apply_payment_to_contract(c, Decimal("125"), payment_type="repayment", payment_at=paid_at)
+        c.refresh_from_db()
+
+        self.assertEqual(c.access_expires_at, current_expiry + timedelta(days=1))
+
+    def test_repayment_extends_from_payment_time_when_access_is_expired(self):
+        paid_at = timezone.make_aware(datetime(2026, 6, 13, 9, 0, 0))
+        expired_at = timezone.make_aware(datetime(2026, 6, 12, 20, 13, 0))
+        c = self._make_contract(
+            deposit_paid=Decimal("5000"),
+            access_expires_at=expired_at,
+            daily_price=Decimal("125"),
+        )
+
+        apply_payment_to_contract(c, Decimal("125"), payment_type="repayment", payment_at=paid_at)
+        c.refresh_from_db()
+
+        self.assertEqual(c.access_expires_at, paid_at + timedelta(days=1))
 
     # --- Payment transaction type ---
 

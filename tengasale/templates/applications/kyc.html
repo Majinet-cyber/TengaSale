@@ -590,6 +590,12 @@
         if (!saveUrl || !file) return;
         var fieldName = stepFieldMap[stepNum];
         if (!fieldName) return;
+        var section = document.querySelector('[data-kyc-section][data-step="' + stepNum + '"]');
+        var statusEl = section && section.querySelector('[data-status]');
+        if (statusEl) {
+            statusEl.textContent = 'Uploading photo...';
+            statusEl.classList.remove('captured');
+        }
 
         var body = new FormData();
         body.append('field', fieldName);
@@ -610,19 +616,31 @@
                     if (stepNum === 1) form.dataset.idFrontDone = 'true';
                     if (stepNum === 2) form.dataset.idBackDone = 'true';
                     if (photoState[stepNum]) photoState[stepNum].previewOk = true;
+                    if (statusEl) {
+                        statusEl.textContent = 'Photo saved.';
+                        statusEl.classList.add('captured');
+                    }
                     if (serverPhotoReady(0) && serverPhotoReady(1) && serverPhotoReady(2)) {
                         form.dataset.kycComplete = 'true';
                     }
                     updateReviewImage(stepNum, data.url, true);
                 } else {
                     setSectionSaved(stepNum, false);
-                    showKycError(data && data.error ? data.error : 'Photo did not save. Please retake or upload it again.');
+                    if (statusEl) {
+                        statusEl.textContent = 'Photo upload failed. Retake or retry.';
+                        statusEl.classList.remove('captured');
+                    }
+                    showKycError(data && data.error ? data.error : 'Photo upload failed. Retake or retry.');
                     if (previewUrl) updateReviewImage(stepNum, previewUrl, false);
                 }
             })
             .catch(function () {
                 setSectionSaved(stepNum, false);
-                showKycError('Photo did not save. Please retake or upload it again.');
+                if (statusEl) {
+                    statusEl.textContent = 'Photo upload failed. Retake or retry.';
+                    statusEl.classList.remove('captured');
+                }
+                showKycError('Photo upload failed. Retake or retry.');
                 if (previewUrl) updateReviewImage(stepNum, previewUrl, false);
             });
     }

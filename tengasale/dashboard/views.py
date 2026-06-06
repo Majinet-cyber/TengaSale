@@ -191,7 +191,8 @@ def hq_dashboard(request):
         submitted_at__date=today,
     ).count()
     active_contracts_count = PaymentContract.objects.filter(status="active").count()
-    overdue_contracts_count = PaymentContract.objects.filter(status__in=["overdue", "locked"]).count()
+    locked_contracts_count = PaymentContract.objects.filter(status="locked").count()
+    overdue_contracts_count = PaymentContract.objects.filter(status="overdue").count()
     merchant_payout_pending = (
         MerchantContractPayout.objects.filter(status="pending")
         .aggregate(t=Sum("total_payable"))["t"] or 0
@@ -230,15 +231,17 @@ def hq_dashboard(request):
         status__in=["active", "overdue", "locked", "defaulted", "completed"]
     ).count()
     default_rate = round((defaulted_count / total_ever_active * 100) if total_ever_active else 0, 1)
+    risk_contracts_count = overdue_contracts_count + locked_contracts_count
     portfolio_at_risk = round(
-        (overdue_contracts_count / (active_contracts_count + overdue_contracts_count) * 100)
-        if (active_contracts_count + overdue_contracts_count) else 0, 1
+        (risk_contracts_count / (active_contracts_count + risk_contracts_count) * 100)
+        if (active_contracts_count + risk_contracts_count) else 0, 1
     )
     # Merchant & underwriter earnings
     merchant_earnings_total = (
         MerchantContractPayout.objects.filter(status="paid")
         .aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
     )
+    gross_profit_total = max(Decimal("0"), total_portfolio_value - merchant_earnings_total)
     try:
         uw_earnings_total = (
             CommissionLedger.objects.filter(status="paid")
@@ -360,6 +363,7 @@ def hq_dashboard(request):
         "show_developer_preview": settings.DEBUG and request.user.is_superuser,
         "paid_today": paid_today,
         "active_contracts_count": active_contracts_count,
+        "locked_contracts_count": locked_contracts_count,
         "overdue_contracts_count": overdue_contracts_count,
         "merchant_payout_pending": merchant_payout_pending,
         # Command Pulse
@@ -378,6 +382,7 @@ def hq_dashboard(request):
         "default_rate": default_rate,
         "portfolio_at_risk": portfolio_at_risk,
         "merchant_earnings_total": merchant_earnings_total,
+        "gross_profit_total": gross_profit_total,
         "uw_earnings_total": uw_earnings_total,
         "sms_total_sent": sms_total_sent,
         "sms_failed_count": sms_failed_count,
@@ -2673,5 +2678,4 @@ def hq_agreement_pdf(request, agreement_id):
     except FileNotFoundError:
         messages.error(request, "PDF file not found.")
         return redirect("hq_merchant_agreements")
-
 

@@ -6,16 +6,14 @@
 {% block content %}
 <div class="ts-page-header">
     <h1 class="ts-page-header__title">Notifications</h1>
-    {% if unread_count %}
-        <span class="ts-badge ts-badge--orange">{{ unread_count }} unread</span>
-    {% endif %}
+    <span class="ts-badge ts-badge--orange">{{ unread_count }} unread</span>
 </div>
 
 {% if unread_count %}
 <form method="post" action="{% url 'notifications_mark_all_read' %}">
     {% csrf_token %}
     <input type="hidden" name="next" value="{% url 'notifications_list' %}">
-    <button type="submit" class="btn btn-outline" style="margin:0 18px 12px;">
+    <button type="submit" class="btn btn-outline notif-mark-all">
         Mark all as read
     </button>
 </form>

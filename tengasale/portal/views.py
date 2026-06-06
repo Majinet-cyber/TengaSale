@@ -11,6 +11,7 @@ Contract-number routes (/pay/contract/TS-MW-XXXXXXXX/) remain for backward compa
 import json
 import logging
 import re
+from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -98,6 +99,7 @@ def portal_contract(request, contract_number):
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
 
     today = timezone.localdate()
+    now = timezone.now()
     remaining = calculate_remaining_amount(contract)
     early_options = calculate_early_settlement_options(contract)
 
@@ -106,21 +108,28 @@ def portal_contract(request, contract_number):
     lock_status = "safe"
     if contract.status == "completed":
         lock_status = "completed"
-    elif contract.lock_date:
-        days_until_lock = (contract.lock_date - today).days
-        hours_until_lock = days_until_lock * 24
-        if days_until_lock < 0:
+    elif contract.access_expires_at or contract.lock_date:
+        lock_at = contract.access_expires_at
+        if lock_at is None and contract.lock_date:
+            lock_at = timezone.make_aware(
+                datetime.combine(contract.lock_date, time.min),
+                timezone.get_current_timezone(),
+            )
+        seconds_until_lock = (lock_at - now).total_seconds() if lock_at else 0
+        hours_until_lock = int(seconds_until_lock // 3600)
+        days_until_lock = int(seconds_until_lock // 86400)
+        if seconds_until_lock < 0:
             lock_status = "overdue"
             lock_warning = {
-                "date": contract.lock_date,
+                "date": lock_at,
                 "amount": remaining,
                 "days": days_until_lock,
                 "hours": hours_until_lock,
             }
-        elif days_until_lock <= 4:
+        elif seconds_until_lock <= 4 * 86400:
             lock_status = "warning"
             lock_warning = {
-                "date": contract.lock_date,
+                "date": lock_at,
                 "amount": (
                     contract.daily_price * max(days_until_lock, 0)
                     if contract.daily_price else remaining

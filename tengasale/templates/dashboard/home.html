@@ -188,7 +188,7 @@
     <a href="{% url 'earnings_home' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-gift"></i></span>
       <span class="action-row-label">My Earnings</span>
-      <span class="action-row-value">{{ earnings_total|mwk:"decimals" }}</span>
+      <span class="action-row-value">{{ earnings_total|mwk }}</span>
       <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
     </a>
     <a href="{% url 'payments_home' %}" class="action-row simple-row">
@@ -202,6 +202,12 @@
       <span class="action-row-label">Spin &amp; Win</span>
       {% if spin_wallet.balance %}<span class="action-row-value">{{ spin_wallet.balance }} pts</span>{% else %}<span class="action-row-value">—</span>{% endif %}
       <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'ticket_create' %}" class="action-row simple-row">
+      <span class="action-row-icon action-row-icon--support" aria-hidden="true"><i class="bi bi-life-preserver"></i></span>
+      <span class="action-row-label">Support</span>
+      <span class="action-row-value">Help</span>
+      <span class="action-row-chevron row-arrow" aria-hidden="true">&rarr;</span>
     </a>
   </nav>
 </div>
