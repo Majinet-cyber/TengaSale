@@ -5,71 +5,125 @@
 
 {% block extra_head %}
 <style>
-.equity-page{max-width:1200px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
-.equity-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
-.equity-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
-.equity-title{margin:4px 0;font-size:29px;line-height:1.1}
-.equity-sub{margin:0;color:#667085;font-size:14px}
-.equity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
-.equity-card,.equity-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
-.equity-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
-.equity-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
-.equity-section{margin-bottom:14px}
-.equity-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
-.equity-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
-.equity-table{width:100%;min-width:880px;border-collapse:collapse}
-.equity-table th,.equity-table td{padding:10px 11px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
-.equity-table th{background:#f8fafc;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
-.equity-note{background:#fff7d6;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:12px;font-weight:750}
+.equity-cockpit{max-width:1280px;margin:0 auto;padding:20px 16px 56px;background:#f6f8fb;color:#0f172a}
+.equity-head{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:16px}
+.equity-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#475569}
+.equity-title{margin:5px 0;font-size:clamp(28px,5vw,42px);line-height:1;font-weight:950;letter-spacing:0}
+.equity-sub{margin:0;color:#64748b;font-size:14px;line-height:1.45;max-width:760px}
+.equity-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.eq-btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:9px 13px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;color:#0f172a;text-decoration:none;font-size:12px;font-weight:900}
+.eq-btn--dark{background:#0f172a;border-color:#0f172a;color:#fff}.eq-btn--green{background:#16a34a;border-color:#16a34a;color:#fff}
+.eq-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.eq-kpi,.eq-panel,.founder-card,.insight-card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;box-shadow:0 10px 28px rgba(15,23,42,.055)}
+.eq-kpi{min-height:108px;padding:13px;display:grid;gap:7px;align-content:start}.eq-kpi span{color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.eq-kpi strong{font-size:25px;line-height:1;font-weight:950}.eq-kpi small{color:#94a3b8;font-size:11px;font-weight:750}
+.eq-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:12px;margin-bottom:14px}.eq-panel{padding:14px;min-width:0}.eq-panel h2{margin:0 0 12px;font-size:15px;font-weight:950}
+.pool-list{display:grid;gap:10px}.pool-row{display:grid;gap:6px}.pool-row__top{display:flex;justify-content:space-between;gap:10px;font-size:12px;font-weight:900}.pool-track{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}.pool-fill{display:block;height:100%;border-radius:999px;background:#0f172a}.pool-fill--founder{background:#16a34a}.pool-fill--investor{background:#2563eb}.pool-fill--employee{background:#d97706}
+.donut{width:min(100%,260px);aspect-ratio:1;margin:4px auto 12px;border-radius:50%;background:conic-gradient(#16a34a 0 70%,#2563eb 70% 90%,#d97706 90% 100%);display:grid;place-items:center}.donut::after{content:"100,000";width:58%;aspect-ratio:1;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px;font-weight:950;color:#0f172a;box-shadow:inset 0 0 0 1px #e5eaf0}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:850;color:#64748b}.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.legal-note{margin-bottom:14px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:14px;padding:13px;font-size:13px;font-weight:800;line-height:1.45}
+.insight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}.insight-card{display:grid;gap:7px;padding:13px;border-left:4px solid #2563eb}.insight-card--warning{border-left-color:#d97706}.insight-card--critical{border-left-color:#dc2626}.insight-card--success{border-left-color:#16a34a}.insight-card strong{font-size:14px}.insight-card p{margin:0;color:#64748b;font-size:12px;line-height:1.4}
+.founder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.founder-card{display:grid;gap:12px;padding:14px}.founder-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.founder-name{margin:0;font-size:17px;font-weight:950;line-height:1.15}.founder-role{margin:3px 0 0;color:#64748b;font-size:12px;font-weight:750}.status-pill,.risk-pill{display:inline-flex;align-items:center;min-height:24px;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900}.status-pill{background:#dcfce7;color:#166534}.status-pill--paused{background:#fef9c3;color:#854d0e}.status-pill--forfeited{background:#fee2e2;color:#991b1b}.risk-pill{background:#f3f4f6;color:#334155}.risk-pill--inactive,.risk-pill--breach{background:#fee2e2;color:#991b1b}.risk-pill--ok{background:#dcfce7;color:#166534}
+.share-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}.share-facts div{padding:9px;border-radius:10px;background:#f8fafc}.share-facts dt{font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:900}.share-facts dd{margin:3px 0 0;color:#0f172a;font-size:13px;font-weight:900}
+.vest-bar{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden;display:flex}.vest-bar__vested{background:#16a34a}.vest-bar__unvested{background:#cbd5e1;flex:1}
+.founder-actions{display:flex;flex-wrap:wrap;gap:7px}.founder-actions a{min-height:34px;display:inline-flex;align-items:center;border:1px solid #dbe3ee;border-radius:9px;background:#fff;color:#0f172a;text-decoration:none;padding:7px 10px;font-size:11px;font-weight:900}.founder-actions .primary{background:#0f172a;border-color:#0f172a;color:#fff}
+.empty{padding:24px;text-align:center;color:#64748b}
+@media(max-width:980px){.eq-kpis{grid-template-columns:repeat(2,1fr)}.eq-layout,.founder-grid,.insight-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.equity-cockpit{padding:14px 10px 44px}.equity-head{grid-template-columns:1fr}.equity-actions{justify-content:flex-start}.share-facts{grid-template-columns:1fr 1fr}}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="equity-page">
+<div class="equity-cockpit">
   <header class="equity-head">
     <div>
       <div class="equity-kicker">Founder Equity</div>
-      <h1 class="equity-title">Ownership tracking and vesting</h1>
-      <p class="equity-sub">Equity belongs to long-term builders. Volts belong to workers.</p>
+      <h1 class="equity-title">Ownership tracking and vesting cockpit</h1>
+      <p class="equity-sub">Founder equity belongs to builders. This page tracks internal allocation, vesting readiness, founder activity risk and document governance.</p>
+    </div>
+    <div class="equity-actions">
+      <a class="eq-btn" href="{% url 'hq_staff_roles' %}?founder=1">Founder Profiles</a>
+      <a class="eq-btn eq-btn--dark" href="{% url 'hq_staff_documents' %}">Generate Documents</a>
+      <a class="eq-btn eq-btn--green" href="{% url 'hq_kpi_dashboard' %}">Founder KPIs</a>
     </div>
   </header>
 
-  <section class="equity-grid">
-    <div class="equity-card"><span>Authorized Shares</span><strong>{{ structure.total_authorized_shares|default:0|tsnum }}</strong></div>
-    <div class="equity-card"><span>Founder Pool</span><strong>{{ structure.founder_pool|default:0|tsnum }}</strong></div>
-    <div class="equity-card"><span>Investor Reserve</span><strong>{{ structure.investor_reserve|default:0|tsnum }}</strong></div>
-    <div class="equity-card"><span>Employee / Advisor Pool</span><strong>{{ structure.employee_advisor_pool|default:0|tsnum }}</strong></div>
-    <div class="equity-card"><span>Founder Allocated</span><strong>{{ founder_total|tsnum }}</strong></div>
+  <section class="eq-kpis" aria-label="Founder equity KPIs">
+    <article class="eq-kpi"><span>Authorized shares</span><strong>{{ structure.total_authorized_shares|tsnum }}</strong><small>Company structure</small></article>
+    <article class="eq-kpi"><span>Founder pool</span><strong>{{ structure.founder_pool|tsnum }}</strong><small>Builder reserve</small></article>
+    <article class="eq-kpi"><span>Investor reserve</span><strong>{{ structure.investor_reserve|tsnum }}</strong><small>Capital reserve</small></article>
+    <article class="eq-kpi"><span>Employee / advisor pool</span><strong>{{ structure.employee_advisor_pool|tsnum }}</strong><small>Future talent</small></article>
+    <article class="eq-kpi"><span>Founder allocated</span><strong>{{ founder_total|tsnum }}</strong><small>Current records</small></article>
+    <article class="eq-kpi"><span>Founder vested</span><strong>{{ vested_total|tsnum }}</strong><small>Earned internally</small></article>
+    <article class="eq-kpi"><span>Founder unvested</span><strong>{{ unvested_total|tsnum }}</strong><small>Still at risk</small></article>
+    <article class="eq-kpi"><span>Unallocated shares</span><strong>{{ unallocated|tsnum }}</strong><small>Not founder allocated</small></article>
+    <article class="eq-kpi"><span>Vesting risk</span><strong>{{ inactive_count|tsnum }}</strong><small>Inactive or breach flags</small></article>
   </section>
 
-  <section class="equity-section">
-    <div class="equity-note">{{ legal_notice }}</div>
+  <div class="legal-note">{{ legal_notice }}</div>
+
+  <section class="eq-layout" aria-label="Founder equity charts">
+    <article class="eq-panel">
+      <h2>Share pool donut</h2>
+      <div class="donut" aria-label="Founder pool 70 percent, investor reserve 20 percent, employee advisor pool 10 percent"></div>
+      <div class="legend">
+        <span><i style="background:#16a34a"></i>Founder pool</span>
+        <span><i style="background:#2563eb"></i>Investor reserve</span>
+        <span><i style="background:#d97706"></i>Employee/advisor pool</span>
+      </div>
+    </article>
+    <article class="eq-panel">
+      <h2>Ownership allocation</h2>
+      <div class="pool-list">
+        <div class="pool-row"><div class="pool-row__top"><span>Founder pool</span><span>{{ structure.founder_pool|tsnum }}</span></div><div class="pool-track"><span class="pool-fill pool-fill--founder" style="width:70%"></span></div></div>
+        <div class="pool-row"><div class="pool-row__top"><span>Investor reserve</span><span>{{ structure.investor_reserve|tsnum }}</span></div><div class="pool-track"><span class="pool-fill pool-fill--investor" style="width:20%"></span></div></div>
+        <div class="pool-row"><div class="pool-row__top"><span>Employee / advisor pool</span><span>{{ structure.employee_advisor_pool|tsnum }}</span></div><div class="pool-track"><span class="pool-fill pool-fill--employee" style="width:10%"></span></div></div>
+      </div>
+    </article>
   </section>
 
-  <section class="equity-section">
-    <h2>Founder Records</h2>
-    <div class="equity-table-wrap">
-      <table class="equity-table">
-        <thead><tr><th>Founder</th><th>Role</th><th>Allocated</th><th>Vested</th><th>Unvested</th><th>Start</th><th>Cliff</th><th>Status</th><th>Flags</th></tr></thead>
-        <tbody>
-          {% for record in records %}
-          <tr>
-            <td>{{ record.founder_user.get_full_name|default:record.founder_user.username }}</td>
-            <td>{{ record.role_title }}</td>
-            <td>{{ record.allocated_shares|tsnum }}</td>
-            <td>{{ record.vested_shares|tsnum }}</td>
-            <td>{{ record.unvested_shares|tsnum }}</td>
-            <td>{{ record.vesting_start_date|date:"d M Y"|default:"-" }}</td>
-            <td>{{ record.cliff_date|date:"d M Y"|default:"-" }}</td>
-            <td>{{ record.get_vesting_status_display }}</td>
-            <td>{% if record.inactive_flag %}Inactive {% endif %}{% if record.breach_flag %}Breach{% endif %}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="9">No founder equity records yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <section class="insight-grid" aria-label="Founder equity insights">
+    {% for insight in insights %}
+      <article class="insight-card insight-card--{{ insight.severity }}">
+        <strong>{{ insight.title }}</strong>
+        <p>{{ insight.explanation }}</p>
+        <p>{{ insight.recommendation }}</p>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="founder-grid" aria-label="Founder records">
+    {% for row in founder_rows %}
+      <article class="founder-card">
+        <div class="founder-top">
+          <div>
+            <h2 class="founder-name">{{ row.record.founder_user.get_full_name|default:row.record.founder_user.username }}</h2>
+            <p class="founder-role">{{ row.record.role_title }}</p>
+          </div>
+          <span class="status-pill status-pill--{{ row.record.vesting_status }}">{{ row.record.get_vesting_status_display }}</span>
+        </div>
+        <dl class="share-facts">
+          <div><dt>Allocated</dt><dd>{{ row.record.allocated_shares|tsnum }}</dd></div>
+          <div><dt>Vested</dt><dd>{{ row.record.vested_shares|tsnum }}</dd></div>
+          <div><dt>Unvested</dt><dd>{{ row.record.unvested_shares|tsnum }}</dd></div>
+          <div><dt>Start date</dt><dd>{{ row.record.vesting_start_date|date:"d M Y"|default:"-" }}</dd></div>
+          <div><dt>Cliff date</dt><dd>{{ row.record.cliff_date|date:"d M Y"|default:"-" }}</dd></div>
+          <div><dt>KPI / discipline</dt><dd>{% if row.last_kpi_score %}{{ row.last_kpi_score }}{% else %}-{% endif %} / {% if row.last_discipline_score %}{{ row.last_discipline_score }}{% else %}-{% endif %}</dd></div>
+        </dl>
+        <div class="vest-bar" aria-label="Vested versus unvested shares">
+          <span class="vest-bar__vested" style="width:{% if row.record.allocated_shares %}{% widthratio row.record.vested_shares row.record.allocated_shares 100 %}{% else %}0{% endif %}%"></span>
+          <span class="vest-bar__unvested"></span>
+        </div>
+        <span class="risk-pill risk-pill--{{ row.risk_class }}">{{ row.risk_flag }}</span>
+        <div class="founder-actions">
+          <a class="primary" href="{% url 'hq_user_edit' row.record.founder_user.id %}">View founder</a>
+          <a href="{% url 'hq_staff_documents' %}">Founder agreement</a>
+          <a href="{% url 'hq_staff_documents' %}">Vesting annexure</a>
+          <a href="{% url 'hq_audit_trail' %}?user={{ row.record.founder_user.id }}">Audit log</a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="eq-panel empty">No founder equity records yet. Run the staff system seed command or add founder records before generating agreements.</div>
+    {% endfor %}
   </section>
 </div>
 {% endblock %}

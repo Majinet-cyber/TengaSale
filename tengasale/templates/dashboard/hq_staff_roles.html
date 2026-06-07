@@ -5,68 +5,164 @@
 
 {% block extra_head %}
 <style>
-.roles-page{max-width:1280px;margin:0 auto;padding:20px 16px 54px;background:#f8fafc;color:#101828}
-.roles-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
-.roles-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}
-.roles-title{margin:4px 0;font-size:29px;line-height:1.1}
-.roles-sub{margin:0;color:#667085;font-size:14px}
-.roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}
-.roles-card,.roles-section{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:15px;box-shadow:0 2px 10px rgba(15,23,42,.05);min-width:0}
-.roles-card span{display:block;color:#667085;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
-.roles-card strong{display:block;margin-top:7px;font-size:22px;overflow-wrap:anywhere}
-.roles-section{margin-bottom:14px}
-.roles-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
-.roles-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
-.roles-table{width:100%;min-width:980px;border-collapse:collapse}
-.roles-table th,.roles-table td{padding:10px 11px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
-.roles-table th{background:#f8fafc;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
-.roles-chip{display:inline-flex;border-radius:999px;padding:4px 9px;background:#fff3eb;color:#ff5a00;font-weight:850;font-size:12px}
+.cockpit-page{max-width:1320px;margin:0 auto;padding:20px 16px 56px;background:#f6f8fb;color:#0f172a}
+.cockpit-head{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:16px}
+.cockpit-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#475569}
+.cockpit-title{margin:5px 0;font-size:clamp(28px,5vw,42px);line-height:1;font-weight:950;letter-spacing:0}
+.cockpit-sub{margin:0;color:#64748b;font-size:14px;line-height:1.45;max-width:760px}
+.cockpit-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.cockpit-btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;color:#0f172a;text-decoration:none;font-size:12px;font-weight:900;cursor:pointer}
+.cockpit-btn--dark{background:#0f172a;border-color:#0f172a;color:#fff}
+.cockpit-btn--green{background:#16a34a;border-color:#16a34a;color:#fff}
+.cockpit-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.cockpit-kpi,.cockpit-panel,.staff-card,.insight-card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;box-shadow:0 10px 28px rgba(15,23,42,.055)}
+.cockpit-kpi{min-height:104px;padding:13px;display:grid;align-content:start;gap:7px}
+.cockpit-kpi span{color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;line-height:1.1}
+.cockpit-kpi strong{font-size:25px;line-height:1;font-weight:950}
+.cockpit-kpi small{color:#94a3b8;font-size:11px;font-weight:750}
+.cockpit-filter{position:sticky;top:0;z-index:10;margin-bottom:14px;padding:12px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border:1px solid #e5eaf0;border-radius:14px;box-shadow:0 12px 30px rgba(15,23,42,.08)}
+.filter-grid{display:grid;grid-template-columns:2fr repeat(5,1fr) auto auto;gap:9px;align-items:end}
+.filter-field{display:grid;gap:5px}
+.filter-field label{font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase}
+.filter-field input,.filter-field select{height:40px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;padding:0 10px;color:#0f172a;font-size:13px;font-weight:700;min-width:0}
+.filter-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.filter-chip{display:inline-flex;gap:5px;align-items:center;border-radius:999px;background:#eef2ff;color:#3730a3;padding:5px 9px;font-size:11px;font-weight:850}
+.insight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.insight-card{display:grid;gap:7px;padding:13px;border-left:4px solid #2563eb}
+.insight-card--warning{border-left-color:#d97706}.insight-card--critical{border-left-color:#dc2626}.insight-card--success{border-left-color:#16a34a}.insight-card--info{border-left-color:#2563eb}
+.insight-card strong{font-size:14px}.insight-card p{margin:0;color:#64748b;font-size:12px;line-height:1.4}.insight-card a{color:#0f172a;font-size:12px;font-weight:900;text-decoration:none}
+.staff-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.staff-card{display:grid;gap:12px;padding:14px;min-width:0}
+.staff-card__top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start}
+.staff-avatar{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#0f172a;color:#fff;font-weight:950}
+.staff-name{margin:0;font-size:17px;font-weight:950;line-height:1.1;overflow-wrap:anywhere}
+.staff-meta{margin:3px 0 0;color:#64748b;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+.badge-row{display:flex;flex-wrap:wrap;gap:6px}
+.role-badge,.rank-badge,.status-badge,.dept-badge,.founder-badge,.perf-badge{display:inline-flex;align-items:center;min-height:24px;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;line-height:1}
+.role-badge{background:#dbeafe;color:#1e40af}.rank-badge{background:#f3f4f6;color:#111827}.dept-badge{background:#ecfeff;color:#155e75}.founder-badge{background:#fef3c7;color:#92400e}
+.status-badge{background:#dcfce7;color:#166534}.status-badge--suspended,.status-badge--terminated{background:#fee2e2;color:#991b1b}.status-badge--inactive{background:#f3f4f6;color:#475569}
+.perf-badge{background:#ecfdf5;color:#166534}.perf-badge--warn{background:#fef9c3;color:#854d0e}.perf-badge--danger{background:#fee2e2;color:#991b1b}
+.staff-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+.staff-facts div{padding:9px;border-radius:10px;background:#f8fafc;min-width:0}
+.staff-facts dt{font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:900}.staff-facts dd{margin:3px 0 0;color:#0f172a;font-size:12px;font-weight:850;overflow-wrap:anywhere}
+.completion{height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden}.completion span{display:block;height:100%;background:#16a34a;border-radius:999px}
+.warning-list{display:flex;flex-wrap:wrap;gap:6px}.warning-pill{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:850}
+.staff-actions{display:flex;flex-wrap:wrap;gap:7px}
+.staff-actions a,.staff-actions button{min-height:34px;display:inline-flex;align-items:center;border:1px solid #dbe3ee;border-radius:9px;background:#fff;color:#0f172a;text-decoration:none;padding:7px 10px;font-size:11px;font-weight:900}
+.staff-actions .primary{background:#0f172a;border-color:#0f172a;color:#fff}
+.empty-state{padding:24px;text-align:center;color:#64748b}
+@media(max-width:1100px){.cockpit-kpis{grid-template-columns:repeat(3,1fr)}.filter-grid{grid-template-columns:1fr 1fr}.staff-grid,.insight-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.cockpit-page{padding:14px 10px 44px}.cockpit-head{grid-template-columns:1fr}.cockpit-actions{justify-content:flex-start}.cockpit-kpis{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:1fr}.staff-card__top{grid-template-columns:auto 1fr}.staff-card__top .badge-row{grid-column:1/-1}.staff-facts{grid-template-columns:1fr 1fr}}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="roles-page">
-  <header class="roles-head">
+<div class="cockpit-page">
+  <header class="cockpit-head">
     <div>
-      <div class="roles-kicker">Staff & Roles</div>
-      <h1 class="roles-title">Identity, access, rank and accountability</h1>
-      <p class="roles-sub">Users only see the modules assigned to their role and department.</p>
+      <div class="cockpit-kicker">Staff & Roles</div>
+      <h1 class="cockpit-title">Identity, access, rank and accountability</h1>
+      <p class="cockpit-sub">Login gives identity. Role gives access. Rank gives earning power. Every profile below is measured for access hygiene, compensation readiness, Volts output and discipline governance.</p>
+    </div>
+    <div class="cockpit-actions">
+      <a class="cockpit-btn" href="{% url 'hq_staff_documents' %}">Documents</a>
+      <a class="cockpit-btn cockpit-btn--dark" href="{% url 'hq_kpi_dashboard' %}">KPI Cockpit</a>
+      <a class="cockpit-btn cockpit-btn--green" href="{% url 'hq_volts_engine' %}">Volts Engine</a>
     </div>
   </header>
 
-  <section class="roles-grid">
-    <div class="roles-card"><span>Active Profiles</span><strong>{{ active_count|tsnum }}</strong></div>
-    <div class="roles-card"><span>Founders</span><strong>{{ founder_count|tsnum }}</strong></div>
-    <div class="roles-card"><span>Staff / Executives</span><strong>{{ staff_count|tsnum }}</strong></div>
-    <div class="roles-card"><span>Departments</span><strong>{{ departments|length|tsnum }}</strong></div>
-    <div class="roles-card"><span>Roles</span><strong>{{ roles|length|tsnum }}</strong></div>
-    <div class="roles-card"><span>Ranks</span><strong>{{ ranks|length|tsnum }}</strong></div>
+  <section class="cockpit-kpis" aria-label="Staff and role KPIs">
+    <article class="cockpit-kpi"><span>Active profiles</span><strong>{{ active_count|tsnum }}</strong><small>Can access portals</small></article>
+    <article class="cockpit-kpi"><span>Founders</span><strong>{{ founder_count|tsnum }}</strong><small>Builder equity records</small></article>
+    <article class="cockpit-kpi"><span>Staff / Executives</span><strong>{{ staff_count|tsnum }}</strong><small>Measured workers</small></article>
+    <article class="cockpit-kpi"><span>Merchants</span><strong>{{ merchant_count|tsnum }}</strong><small>Sales access</small></article>
+    <article class="cockpit-kpi"><span>Underwriters</span><strong>{{ underwriter_count|tsnum }}</strong><small>Review access</small></article>
+    <article class="cockpit-kpi"><span>Merchant Admins</span><strong>{{ merchant_admin_count|tsnum }}</strong><small>Field operations</small></article>
+    <article class="cockpit-kpi"><span>Departments</span><strong>{{ departments|length|tsnum }}</strong><small>Configured units</small></article>
+    <article class="cockpit-kpi"><span>Roles configured</span><strong>{{ roles|length|tsnum }}</strong><small>Permission profiles</small></article>
+    <article class="cockpit-kpi"><span>Missing emails</span><strong>{{ missing_email_count|tsnum }}</strong><small>Notice risk</small></article>
+    <article class="cockpit-kpi"><span>Missing ranks</span><strong>{{ missing_rank_count|tsnum }}</strong><small>Payroll risk</small></article>
+    <article class="cockpit-kpi"><span>Suspended users</span><strong>{{ suspended_count|tsnum }}</strong><small>Access restricted</small></article>
+    <article class="cockpit-kpi"><span>Pending reviews</span><strong>{{ pending_reviews|tsnum }}</strong><small>Probation or due</small></article>
   </section>
 
-  <section class="roles-section">
-    <h2>Profiles</h2>
-    <div class="roles-table-wrap">
-      <table class="roles-table">
-        <thead><tr><th>User</th><th>Portal Role</th><th>Staff Role</th><th>Department</th><th>Rank</th><th>Status</th><th>Type</th><th>Supervisor</th><th>Founder</th></tr></thead>
-        <tbody>
-          {% for profile in profiles %}
-          <tr>
-            <td><strong>{{ profile.display_name }}</strong><br><small>{{ profile.user.email|default:"-" }}</small></td>
-            <td>{{ profile.get_role_display|default:"-" }}</td>
-            <td>{{ profile.staff_role.name|default:"-" }}</td>
-            <td>{{ profile.department.name|default:"-" }}</td>
-            <td><span class="roles-chip">{{ profile.rank.code|default:"-" }}</span></td>
-            <td>{{ profile.get_status_display }}</td>
-            <td>{{ profile.get_user_type_display|default:"-" }}</td>
-            <td>{% if profile.supervisor %}{{ profile.supervisor.get_full_name|default:profile.supervisor.username }}{% else %}-{% endif %}</td>
-            <td>{% if profile.is_founder %}Yes{% else %}No{% endif %}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="9">No profiles found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <form class="cockpit-filter" method="get" aria-label="Staff filters">
+    <div class="filter-grid">
+      <div class="filter-field"><label for="q">Search user</label><input id="q" name="q" value="{{ filters.q }}" placeholder="Name, username, email, phone"></div>
+      <div class="filter-field"><label for="role">Role</label><select id="role" name="role"><option value="">All roles</option>{% for code,label in portal_roles %}<option value="{{ code }}" {% if filters.role == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="filter-field"><label for="department">Department</label><select id="department" name="department"><option value="">All departments</option>{% for item in departments %}<option value="{{ item.id }}" {% if filters.department == item.id|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="filter-field"><label for="rank">Rank</label><select id="rank" name="rank"><option value="">All ranks</option>{% for item in ranks %}<option value="{{ item.id }}" {% if filters.rank == item.id|stringformat:"s" %}selected{% endif %}>{{ item.code }}{% if item.title %} - {{ item.title }}{% endif %}</option>{% endfor %}</select></div>
+      <div class="filter-field"><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>{% for code,label in statuses %}<option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="filter-field"><label for="missing">Missing</label><select id="missing" name="missing"><option value="">Any field</option><option value="email" {% if filters.missing == "email" %}selected{% endif %}>Email</option><option value="rank" {% if filters.missing == "rank" %}selected{% endif %}>Rank</option><option value="department" {% if filters.missing == "department" %}selected{% endif %}>Department</option><option value="supervisor" {% if filters.missing == "supervisor" %}selected{% endif %}>Supervisor</option></select></div>
+      <button class="cockpit-btn cockpit-btn--dark" type="submit">Apply</button>
+      <a class="cockpit-btn" href="{% url 'hq_staff_roles' %}">Reset</a>
     </div>
+    {% if active_filter_chips %}
+      <div class="filter-chips">{% for chip in active_filter_chips %}<span class="filter-chip">{{ chip.label }}: {{ chip.value }}</span>{% endfor %}</div>
+    {% endif %}
+  </form>
+
+  <section class="insight-grid" aria-label="Staff insights">
+    {% for insight in insights %}
+      <article class="insight-card insight-card--{{ insight.severity }}">
+        <strong>{{ insight.title }}</strong>
+        <p>{{ insight.explanation }}</p>
+        <p>{{ insight.recommendation }}</p>
+        {% if insight.href %}<a href="{{ insight.href }}">Open drilldown</a>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="staff-grid" aria-label="Staff profiles">
+    {% for row in profile_rows %}
+      <article class="staff-card">
+        <div class="staff-card__top">
+          <span class="staff-avatar">{{ row.profile.initials }}</span>
+          <div>
+            <h2 class="staff-name">{{ row.profile.display_name }}</h2>
+            <p class="staff-meta">@{{ row.profile.user.username }}{% if row.profile.public_email %} · {{ row.profile.public_email }}{% endif %}{% if row.profile.public_phone %} · {{ row.profile.public_phone }}{% endif %}</p>
+            <p class="staff-meta">Joined {% if row.profile.date_joined_company %}{{ row.profile.date_joined_company|date:"d M Y" }}{% else %}{{ row.profile.user.date_joined|date:"d M Y" }}{% endif %} · Last login {% if row.profile.user.last_login %}{{ row.profile.user.last_login|timesince }} ago{% else %}Never{% endif %}</p>
+          </div>
+          <div class="badge-row">
+            <span class="role-badge">{{ row.role_label }}</span>
+            <span class="rank-badge">{{ row.rank_label }}</span>
+            <span class="status-badge status-badge--{{ row.profile.status }}">{{ row.status_label }}</span>
+            {% if row.profile.is_founder %}<span class="founder-badge">Founder</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="badge-row">
+          <span class="dept-badge">{{ row.department_label }}</span>
+          <span class="role-badge">{{ row.staff_role_label }}</span>
+          <span class="perf-badge {% if row.performance_score < 70 %}perf-badge--danger{% elif row.performance_score < 85 %}perf-badge--warn{% endif %}">Performance {{ row.performance_score }}%</span>
+        </div>
+
+        <dl class="staff-facts">
+          <div><dt>Monthly volts</dt><dd>{{ row.monthly_volts|tsnum }}</dd></div>
+          <div><dt>Pending volts</dt><dd>{{ row.pending_volts|tsnum }}</dd></div>
+          <div><dt>Discipline</dt><dd>{% if row.discipline_score is not None %}{{ row.discipline_score }}%{% else %}No score{% endif %}</dd></div>
+          <div><dt>Supervisor</dt><dd>{% if row.profile.supervisor %}{{ row.profile.supervisor.get_full_name|default:row.profile.supervisor.username }}{% else %}Unassigned{% endif %}</dd></div>
+          <div><dt>User type</dt><dd>{{ row.type_label }}</dd></div>
+          <div><dt>Completeness</dt><dd>{{ row.completion }}%</dd></div>
+        </dl>
+        <div class="completion" aria-label="Profile completeness {{ row.completion }} percent"><span style="width:{{ row.completion }}%"></span></div>
+
+        {% if row.warnings %}
+          <div class="warning-list">{% for warning in row.warnings %}<span class="warning-pill">{{ warning }}</span>{% endfor %}</div>
+        {% endif %}
+
+        <div class="staff-actions">
+          <a class="primary" href="{% url 'hq_user_edit' row.profile.user.id %}">View profile</a>
+          <a href="{% url 'hq_user_edit' row.profile.user.id %}">Edit user</a>
+          <a href="{% url 'hq_kpi_dashboard' %}?user={{ row.profile.user.id }}">View KPIs</a>
+          <a href="{% url 'hq_volts_engine' %}?user={{ row.profile.user.id }}">View volts</a>
+          <a href="{% url 'hq_staff_documents' %}">Generate documents</a>
+          <a href="{% url 'hq_audit_trail' %}?user={{ row.profile.user.id }}">Audit log</a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="cockpit-panel empty-state">No profiles match these filters.</div>
+    {% endfor %}
   </section>
 </div>
 {% endblock %}

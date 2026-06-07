@@ -1,4 +1,5 @@
 import csv
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -10,6 +11,7 @@ from django.db.models import Avg, Count, Sum, Q, F
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from accounts.decorators import hq_required, merchant_required
 from accounts.forms import HQUserForm
@@ -67,6 +69,106 @@ from .portfolio_services import (
 )
 
 MAX_ACTIVE_UNDERWRITER_REVIEWS = 5
+
+
+ROLE_DISPLAY_LABELS = {
+    UserProfile.ROLE_HQ: "HQ",
+    UserProfile.ROLE_MERCHANT_ADMIN: "Merchant Admin",
+    UserProfile.ROLE_UNDERWRITER: "Underwriter",
+    UserProfile.ROLE_MERCHANT: "Merchant",
+    UserProfile.ROLE_TECH_SUPPORT: "Tech Support",
+    "customer_support": "Customer Support",
+    "collections": "Collections",
+    "finance_risk": "Finance & Risk",
+    "legal_compliance": "Legal & Compliance",
+    "ceo_strategy": "CEO / Strategy Lead",
+}
+
+
+def _clean_label(value, fallback="-"):
+    if not value:
+        return fallback
+    return ROLE_DISPLAY_LABELS.get(str(value), str(value).replace("_", " ").title())
+
+
+def _is_truthy_filter(value):
+    return value in {"1", "true", "yes", "on"}
+
+
+def _active_filter_chips(filters):
+    chips = []
+    for key, value in filters.items():
+        if value in ("", None):
+            continue
+        chips.append({"key": key, "label": key.replace("_", " ").title(), "value": _clean_label(value, value)})
+    return chips
+
+
+def _profile_completion(profile):
+    checks = [
+        bool(profile.public_email),
+        bool(profile.public_phone),
+        bool(profile.role),
+        bool(profile.department_id),
+        bool(profile.staff_role_id),
+        bool(profile.rank_id),
+        bool(profile.supervisor_id),
+    ]
+    return round((sum(checks) / len(checks)) * 100)
+
+
+def _latest_discipline_score(user_id):
+    period = (
+        DisciplineScorePeriod.objects.filter(user_id=user_id)
+        .only("final_score")
+        .order_by("-month")
+        .first()
+    )
+    return period.final_score if period else None
+
+
+def _profile_row(profile):
+    monthly = founder_staff_dashboard_context(profile.user)["volts"]
+    discipline_score = _latest_discipline_score(profile.user_id)
+    performance_score = 100
+    if discipline_score is not None:
+        performance_score = min(100, max(0, round(float(discipline_score))))
+    warnings = []
+    if not profile.public_email:
+        warnings.append("No email set")
+    if not profile.rank_id:
+        warnings.append("No rank assigned")
+    if not profile.department_id:
+        warnings.append("No department assigned")
+    if not profile.supervisor_id:
+        warnings.append("No supervisor assigned")
+    if profile.is_founder and not FounderEquityRecord.objects.filter(founder_user=profile.user).exists():
+        warnings.append("Founder equity incomplete")
+    return {
+        "profile": profile,
+        "role_label": _clean_label(profile.role),
+        "department_label": profile.department.name if profile.department else "No department",
+        "staff_role_label": profile.staff_role.name if profile.staff_role else "No staff role",
+        "rank_label": profile.rank.code if profile.rank else "No rank",
+        "status_label": profile.get_status_display(),
+        "type_label": profile.get_user_type_display() or "-",
+        "monthly_volts": monthly["approved_volts"],
+        "pending_volts": monthly["pending_volts"],
+        "discipline_score": discipline_score,
+        "performance_score": performance_score,
+        "completion": _profile_completion(profile),
+        "warnings": warnings,
+    }
+
+
+def _insight(title, severity, explanation, recommendation, href=""):
+    return {
+        "title": title,
+        "severity": severity,
+        "explanation": explanation,
+        "recommendation": recommendation,
+        "href": href,
+    }
 
 
 def staff_module_required(module):
@@ -560,41 +662,124 @@ def staff_dashboard(request):
 def hq_volts_engine(request):
     transactions = VoltsTransaction.objects.select_related(
         "user",
+        "user__profile",
+        "user__profile__rank",
+        "user__profile__staff_role",
         "action_type",
         "department",
         "approved_by",
     ).order_by("-created_at")
+    filters = {
+        "start_date": request.GET.get("start_date", ""),
+        "end_date": request.GET.get("end_date", ""),
+        "department": request.GET.get("department", ""),
+        "role": request.GET.get("role", ""),
+        "rank": request.GET.get("rank", ""),
+        "user": request.GET.get("user", ""),
+        "status": request.GET.get("status", ""),
+    }
+    if filters["start_date"]:
+        start_date = parse_date(filters["start_date"])
+        if start_date:
+            transactions = transactions.filter(created_at__date__gte=start_date)
+    if filters["end_date"]:
+        end_date = parse_date(filters["end_date"])
+        if end_date:
+            transactions = transactions.filter(created_at__date__lte=end_date)
+    if filters["department"]:
+        transactions = transactions.filter(department_id=filters["department"])
+    if filters["role"]:
+        transactions = transactions.filter(user__profile__role=filters["role"])
+    if filters["rank"]:
+        transactions = transactions.filter(user__profile__rank_id=filters["rank"])
+    if filters["user"]:
+        transactions = transactions.filter(user_id=filters["user"])
+    if filters["status"]:
+        transactions = transactions.filter(status=filters["status"])
+
     pending = transactions.filter(status=VoltsTransaction.STATUS_PENDING)
+    approved = transactions.filter(status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID])
+    reversed_transactions = transactions.filter(status=VoltsTransaction.STATUS_REVERSED)
+    pending_amount = pending.aggregate(total=Sum("estimated_amount_mwk"))["total"] or Decimal("0")
+    top_earner = (
+        approved.values("user__username", "user__first_name", "user__last_name")
+        .annotate(total=Sum("final_volts"), pay=Sum("estimated_amount_mwk"))
+        .order_by("-pay")
+        .first()
+    )
+    highest_pending_department = (
+        pending.values("department__name")
+        .annotate(total=Sum("final_volts"), count=Count("id"))
+        .order_by("-count")
+        .first()
+    )
     month_summary = {
-        "total_volts": transactions.filter(
-            status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID]
-        ).aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
-        "estimated_payroll": transactions.filter(
-            status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID]
-        ).aggregate(total=Sum("estimated_amount_mwk"))["total"] or Decimal("0"),
+        "total_volts": approved.aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
+        "approved_volts": approved.aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
+        "pending_volts": pending.aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
+        "reversed_volts": reversed_transactions.aggregate(total=Sum("final_volts"))["total"] or Decimal("0"),
+        "estimated_payroll": approved.aggregate(total=Sum("estimated_amount_mwk"))["total"] or Decimal("0"),
+        "pending_amount": pending_amount,
         "pending_count": pending.count(),
+        "approved_count": approved.count(),
+        "reversed_count": reversed_transactions.count(),
         "penalties": PenaltyTransaction.objects.filter(status=PenaltyTransaction.STATUS_APPROVED).count(),
+        "top_earner": top_earner,
+        "highest_pending_department": highest_pending_department,
     }
     by_department = (
-        transactions.filter(status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID])
+        approved
         .values("department__name")
         .annotate(total=Sum("final_volts"), count=Count("id"))
         .order_by("-total")
     )
     by_user = (
-        transactions.filter(status__in=[VoltsTransaction.STATUS_APPROVED, VoltsTransaction.STATUS_PAID])
+        approved
         .values("user", "user__username", "user__first_name", "user__last_name")
         .annotate(total=Sum("final_volts"), pay=Sum("estimated_amount_mwk"))
         .order_by("-total")[:20]
     )
+    insights = []
+    if pending.count():
+        insights.append(_insight(
+            "Volts pending approval",
+            "warning",
+            f"{pending.count()} transaction(s) are waiting for approval.",
+            "Department leads should review evidence and approve or reject before payroll.",
+            reverse("hq_volts_engine"),
+        ))
+    if reversed_transactions.count():
+        insights.append(_insight(
+            "Reversed volts detected",
+            "critical",
+            f"{reversed_transactions.count()} reversed transaction(s) are inside this filter view.",
+            "Open the evidence trail before approving related payouts.",
+            reverse("hq_volts_engine") + "?status=reversed",
+        ))
+    if not insights:
+        insights.append(_insight(
+            "Volts approvals clear",
+            "success",
+            "No pending approval risk in the current filter view.",
+            "Keep approval discipline tight and audit large payouts before month-end.",
+            reverse("hq_volts_engine"),
+        ))
     return render(request, "dashboard/hq_volts_engine.html", {
         "summary": month_summary,
         "pending_transactions": pending[:50],
         "transactions": transactions[:100],
         "action_types": VoltsActionType.objects.select_related("department").filter(active=True),
         "departments": Department.objects.filter(active=True),
+        "ranks": Rank.objects.filter(active=True),
+        "roles": UserProfile.ROLE_CHOICES,
+        "statuses": VoltsTransaction.STATUS_CHOICES,
+        "staff_users": get_user_model().objects.select_related("profile").filter(profile__isnull=False).order_by("username")[:300],
+        "filters": filters,
+        "active_filter_chips": _active_filter_chips(filters),
         "by_department": by_department,
         "by_user": by_user,
+        "insights": insights,
+        "formula": "approved_volts_pay = approved_volts x volt_rate x rank_multiplier x quality_score x discipline_score x results_score",
         "can_approve": True,
     })
 
@@ -636,10 +821,80 @@ def hq_founder_equity(request):
         )
     records = FounderEquityRecord.objects.select_related("founder_user", "founder_user__profile").order_by("role_title")
     structure = CompanyShareStructure.objects.first()
+    if not structure:
+        structure = CompanyShareStructure.objects.create(
+            total_authorized_shares=100000,
+            founder_pool=70000,
+            investor_reserve=20000,
+            employee_advisor_pool=10000,
+        )
+    founder_total = records.aggregate(total=Sum("allocated_shares"))["total"] or 0
+    vested_total = records.aggregate(total=Sum("vested_shares"))["total"] or 0
+    unvested_total = records.aggregate(total=Sum("unvested_shares"))["total"] or 0
+    authorized = getattr(structure, "total_authorized_shares", 0) or 0
+    unallocated = max(authorized - founder_total, 0)
+    inactive_count = records.filter(Q(inactive_flag=True) | Q(breach_flag=True)).count()
+    founder_rows = []
+    for record in records:
+        profile = getattr(record.founder_user, "profile", None)
+        latest_period = (
+            DisciplineScorePeriod.objects.filter(user=record.founder_user)
+            .only("final_score")
+            .order_by("-month")
+            .first()
+        )
+        founder_rows.append({
+            "record": record,
+            "profile": profile,
+            "last_kpi_score": (
+                KPIResult.objects.filter(user=record.founder_user)
+                .order_by("-period")
+                .values_list("score", flat=True)
+                .first()
+            ),
+            "last_discipline_score": latest_period.final_score if latest_period else None,
+            "risk_flag": "Inactive founder" if record.inactive_flag else ("Breach flag" if record.breach_flag else "On track"),
+            "risk_class": "inactive" if record.inactive_flag else ("breach" if record.breach_flag else "ok"),
+        })
+    insights = []
+    if not records.exists():
+        insights.append(_insight(
+            "Founder equity records incomplete",
+            "critical",
+            "No founder allocation records exist yet.",
+            "Run the staff system seed command or add founder records before generating legal annexures.",
+        ))
+    if founder_total != 70000:
+        insights.append(_insight(
+            "Founder allocation differs from target",
+            "warning",
+            f"Founder allocated shares are {founder_total:,}; target founder pool allocation is 70,000.",
+            "Review founder records and regenerate vesting annexures after correction.",
+        ))
+    if inactive_count:
+        insights.append(_insight(
+            "Inactive founder flags",
+            "critical",
+            f"{inactive_count} founder record(s) have inactive or breach flags.",
+            "Pause vesting review and open the audit trail before any ownership change.",
+        ))
+    if not insights:
+        insights.append(_insight(
+            "Founder equity structure healthy",
+            "success",
+            "Founder records align with the internal ownership cockpit.",
+            "Keep signed legal documents synced with internal tracking.",
+        ))
     return render(request, "dashboard/hq_founder_equity.html", {
         "records": records,
+        "founder_rows": founder_rows,
         "structure": structure,
-        "founder_total": records.aggregate(total=Sum("allocated_shares"))["total"] or 0,
+        "founder_total": founder_total,
+        "vested_total": vested_total,
+        "unvested_total": unvested_total,
+        "unallocated": unallocated,
+        "inactive_count": inactive_count,
+        "insights": insights,
         "legal_notice": "The app tracks equity and vesting internally, but signed legal documents govern actual ownership.",
     })
 
@@ -648,14 +903,108 @@ def hq_founder_equity(request):
 def hq_staff_roles(request):
     User = get_user_model()
     profiles = UserProfile.objects.select_related("user", "department", "staff_role", "rank", "supervisor").order_by("user__username")
+    filters = {
+        "q": request.GET.get("q", "").strip(),
+        "role": request.GET.get("role", ""),
+        "department": request.GET.get("department", ""),
+        "rank": request.GET.get("rank", ""),
+        "status": request.GET.get("status", ""),
+        "founder": request.GET.get("founder", ""),
+        "missing": request.GET.get("missing", ""),
+    }
+    if filters["q"]:
+        profiles = profiles.filter(
+            Q(user__username__icontains=filters["q"])
+            | Q(user__first_name__icontains=filters["q"])
+            | Q(user__last_name__icontains=filters["q"])
+            | Q(user__email__icontains=filters["q"])
+            | Q(full_name__icontains=filters["q"])
+            | Q(email__icontains=filters["q"])
+            | Q(phone_number__icontains=filters["q"])
+            | Q(phone__icontains=filters["q"])
+        )
+    if filters["role"]:
+        profiles = profiles.filter(role=filters["role"])
+    if filters["department"]:
+        profiles = profiles.filter(department_id=filters["department"])
+    if filters["rank"]:
+        profiles = profiles.filter(rank_id=filters["rank"])
+    if filters["status"]:
+        profiles = profiles.filter(status=filters["status"])
+    if filters["founder"]:
+        profiles = profiles.filter(is_founder=_is_truthy_filter(filters["founder"]))
+    if filters["missing"] == "email":
+        profiles = profiles.filter(Q(email="") & Q(user__email=""))
+    elif filters["missing"] == "rank":
+        profiles = profiles.filter(rank__isnull=True)
+    elif filters["missing"] == "department":
+        profiles = profiles.filter(department__isnull=True)
+    elif filters["missing"] == "supervisor":
+        profiles = profiles.filter(supervisor__isnull=True)
+
+    profile_rows = [_profile_row(profile) for profile in profiles[:200]]
+    all_profiles = UserProfile.objects.select_related("user", "department", "staff_role", "rank")
+    missing_email_count = all_profiles.filter(Q(email="") & Q(user__email="")).count()
+    missing_rank_count = all_profiles.filter(rank__isnull=True).count()
+    suspended_count = all_profiles.filter(status=UserProfile.STATUS_SUSPENDED).count()
+    underwriter_count = all_profiles.filter(role=UserProfile.ROLE_UNDERWRITER).count()
+    merchant_admin_count = all_profiles.filter(role=UserProfile.ROLE_MERCHANT_ADMIN).count()
+    merchant_count = all_profiles.filter(role=UserProfile.ROLE_MERCHANT).count()
+    pending_reviews = all_profiles.filter(Q(next_review_date__lte=timezone.localdate()) | Q(probation_status=UserProfile.PROBATION_ACTIVE)).count()
+    insights = []
+    if missing_email_count:
+        insights.append(_insight(
+            "Users missing email",
+            "warning",
+            f"{missing_email_count} profile(s) cannot receive formal notices by email.",
+            "Filter by Missing Email and complete identity records.",
+            reverse("hq_staff_roles") + "?missing=email",
+        ))
+    if missing_rank_count:
+        insights.append(_insight(
+            "Staff profile missing rank",
+            "critical",
+            f"{missing_rank_count} profile(s) have no rank, weakening compensation governance.",
+            "Assign rank before Volts payout or compensation documents are generated.",
+            reverse("hq_staff_roles") + "?missing=rank",
+        ))
+    if suspended_count:
+        insights.append(_insight(
+            "Suspended users present",
+            "info",
+            f"{suspended_count} user(s) are suspended.",
+            "Review access and audit logs before reactivation.",
+            reverse("hq_staff_roles") + "?status=suspended",
+        ))
+    if not insights:
+        insights.append(_insight(
+            "Identity governance healthy",
+            "success",
+            "No major rank, email, or suspension warnings are active.",
+            "Keep profile completeness above 90% and review staff monthly.",
+            reverse("hq_staff_roles"),
+        ))
     return render(request, "dashboard/hq_staff_roles.html", {
         "profiles": profiles,
+        "profile_rows": profile_rows,
         "departments": Department.objects.filter(active=True),
         "roles": StaffRole.objects.select_related("department").filter(active=True),
+        "portal_roles": UserProfile.ROLE_CHOICES,
+        "statuses": UserProfile.STATUS_CHOICES,
         "ranks": Rank.objects.filter(active=True),
-        "founder_count": profiles.filter(is_founder=True).count(),
-        "staff_count": profiles.filter(user_type__in=[UserProfile.USER_TYPE_STAFF, UserProfile.USER_TYPE_EXECUTIVE, UserProfile.USER_TYPE_FOUNDER]).count(),
-        "active_count": profiles.filter(status=UserProfile.STATUS_ACTIVE).count(),
+        "founder_count": all_profiles.filter(is_founder=True).count(),
+        "staff_count": all_profiles.filter(user_type__in=[UserProfile.USER_TYPE_STAFF, UserProfile.USER_TYPE_EXECUTIVE, UserProfile.USER_TYPE_FOUNDER]).count(),
+        "active_count": all_profiles.filter(status=UserProfile.STATUS_ACTIVE).count(),
+        "merchant_count": merchant_count,
+        "underwriter_count": underwriter_count,
+        "merchant_admin_count": merchant_admin_count,
+        "missing_email_count": missing_email_count,
+        "missing_rank_count": missing_rank_count,
+        "suspended_count": suspended_count,
+        "pending_reviews": pending_reviews,
+        "filters": filters,
+        "active_filter_chips": _active_filter_chips(filters),
+        "insights": insights,
         "users": User.objects.select_related("profile").order_by("username")[:200],
     })
 

@@ -539,6 +539,54 @@ class FounderStaffVoltsTests(TestCase):
         self.assertEqual(allowed.status_code, 200)
         self.assertContains(allowed, "Founder Equity")
 
+    def test_staff_roles_cockpit_uses_clean_labels_and_missing_rank_filter(self):
+        no_rank = self.User.objects.create_user(username="norank", password="test-pass-123", email="")
+        assign_role(no_rank, "merchant_admin")
+        no_rank.profile.rank = None
+        no_rank.profile.save(update_fields=["rank"])
+
+        self.client.login(username="ceo", password="test-pass-123")
+        response = self.client.get(reverse("hq_staff_roles"), {"missing": "rank"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Staff & Roles")
+        self.assertContains(response, "Merchant Admin")
+        self.assertContains(response, "No rank assigned")
+        self.assertContains(response, "norank")
+        self.assertNotContains(response, "Merchant_Admin")
+
+    def test_founder_equity_cockpit_shows_seeded_share_structure(self):
+        self.client.login(username="ceo", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_founder_equity"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ownership tracking and vesting cockpit")
+        self.assertContains(response, "100,000")
+        self.assertContains(response, "70,000")
+        self.assertContains(response, "20,000")
+        self.assertContains(response, "10,000")
+        self.assertContains(response, "signed legal documents govern actual ownership")
+
+    def test_volts_engine_cockpit_shows_formula_filters_and_pending_approvals(self):
+        action = VoltsActionType.objects.get(name="Bug fixed")
+        VoltsTransaction.objects.create(
+            user=self.tech,
+            action_type=action,
+            base_volts=action.base_volts,
+            evidence_text="Merged tested fix.",
+        )
+        self.client.login(username="ceo", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_volts_engine"), {"status": VoltsTransaction.STATUS_PENDING})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Compensation intelligence cockpit")
+        self.assertContains(response, "approved_volts_pay")
+        self.assertContains(response, "Volts pending approval")
+        self.assertContains(response, "Merged tested fix.")
+        self.assertContains(response, "Apply")
+
 
 class DisciplineKPIDocumentGovernanceTests(TestCase):
     def setUp(self):
