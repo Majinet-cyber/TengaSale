@@ -8,65 +8,188 @@
 {% endblock %}
 
 {% block content %}
-<div class="sales-main uw-home-simple mobile-shell">
-  <div class="ts-greeting-row uw-home-head">
-    <div>
+<div class="sales-main uw-home-simple uw-home-premium mobile-shell ts-motion-page">
+  <section class="uw-hero-panel ts-motion-slide" aria-labelledby="uw-home-title">
+    <div class="uw-hero-panel__copy">
       <p class="ts-greeting">Hi, {{ request.user.first_name|default:request.user.username }}</p>
-      <p class="ts-greeting-sub">Underwriter Home</p>
+      <h1 id="uw-home-title">Underwriter Queue</h1>
+      <p>Review, claim, and verify customer applications.</p>
+      <span class="uw-live-status"><span class="ts-live-dot" aria-hidden="true"></span> Live queue updated recently</span>
     </div>
-    {% include "includes/flag_pill.html" %}
-  </div>
-
-  <div class="uw-queue-status-card ts-fade-in {% if not pending_count %}uw-queue-status-card--empty{% endif %}">
-    <div>
-      <span>Applications in Queue</span>
-      <strong>{% if pending_count %}{{ pending_count }} waiting{% else %}Queue is empty{% endif %}</strong>
-      <p>Active reviews: {{ active_count }} / {{ max_active }}</p>
+    <div class="uw-hero-panel__actions">
+      {% include "includes/flag_pill.html" %}
+      <button type="button" class="uw-sound-toggle ts-motion-tap" data-ts-sound-toggle aria-pressed="false">
+        <i class="bi bi-volume-mute" aria-hidden="true"></i>
+        <span>Sound off</span>
+      </button>
     </div>
-    <a href="{% url 'sales_applications' %}?tab=queue" class="merchant-status-link" aria-label="View queue">&rarr;</a>
-  </div>
+  </section>
 
-  <div class="uw-primary-grid">
+  <section class="uw-kpi-grid ts-motion-stagger" aria-label="Today's queue summary">
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--neutral"><i class="bi bi-inboxes" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Available</span>
+      <strong data-counter>{{ pending_count }}</strong>
+      <small>Ready to claim</small>
+    </article>
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--active"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Claimed by You</span>
+      <strong>{{ active_count }} / {{ max_active }}</strong>
+      <small>Active reviews</small>
+    </article>
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--success"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Approved Today</span>
+      <strong data-counter>{{ approved_today }}</strong>
+      <small>Completed approvals</small>
+    </article>
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--warning"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Needs Review</span>
+      <strong data-counter>{{ urgent_count }}</strong>
+      <small>Waiting over 30m</small>
+    </article>
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--danger"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Rejected Today</span>
+      <strong data-counter>{{ rejected_today }}</strong>
+      <small>Declined applications</small>
+    </article>
+    <article class="uw-kpi-card ts-motion-item ts-motion-card">
+      <span class="uw-kpi-card__icon uw-kpi-card__icon--processing"><i class="bi bi-stopwatch" aria-hidden="true"></i></span>
+      <span class="uw-kpi-card__label">Average Review Time</span>
+      <strong>{{ average_review_time_label }}</strong>
+      <small>Last 50 reviews</small>
+    </article>
+  </section>
+
+  <section class="uw-claim-panel ts-motion-slide {% if not pending_count %}uw-claim-panel--empty{% endif %}" aria-label="Claim next application">
+    <div class="uw-claim-panel__status">
+      <span class="ts-status-badge ts-status-badge--pending">{% if pending_count %}{{ pending_count }} pending{% else %}Queue clear{% endif %}</span>
+      <strong>{% if can_claim %}Claim Next Application{% elif pending_count %}Active limit or cooldown{% else %}No Applications{% endif %}</strong>
+      <p>
+        {% if can_claim %}
+          Oldest unclaimed application will be assigned to you.
+        {% elif pending_count %}
+          Finish an active review or wait for cooldown before claiming.
+        {% else %}
+          You are clear for now. New applications will appear here automatically.
+        {% endif %}
+      </p>
+    </div>
     {% if can_claim %}
-      <form method="post" action="{% url 'sales_claim_next' %}" class="uw-primary-form">
+      <form method="post" action="{% url 'sales_claim_next' %}" class="uw-primary-form uw-claim-form" data-claim-next-form>
         {% csrf_token %}
-        <button type="submit" class="uw-primary-action uw-primary-action--queue primary-big-action">
-          <span class="ts-sr-only">CLAIM NEXT</span>
-          <span><i class="bi bi-hourglass-split"></i> Pending Queue</span>
-          <strong>Claim next &middot; {{ pending_count }} waiting</strong>
+        <button type="submit" class="uw-primary-action uw-primary-action--queue uw-claim-button ts-motion-tap" data-ts-sound="claim">
+          <span class="uw-claim-button__fill" aria-hidden="true"></span>
+          <span class="uw-claim-button__label">
+            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+            <span data-claim-label>Claim Next</span>
+          </span>
+          <strong data-claim-sub>{{ pending_count }} waiting</strong>
+          <span class="ts-spinner sm uw-claim-button__spinner" aria-hidden="true"></span>
         </button>
       </form>
     {% else %}
-      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action uw-primary-action--queue-empty primary-big-action">
-        {% if not pending_count %}<span class="ts-sr-only">NO APPLICATIONS IN QUEUE</span>{% endif %}
-        <span><i class="bi bi-hourglass-split"></i> Pending Queue</span>
-        <strong>{% if pending_count %}{{ pending_count }} in queue{% else %}Queue is empty{% endif %}</strong>
+      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action uw-primary-action--queue-empty uw-claim-button uw-claim-button--disabled ts-motion-tap">
+        <span class="uw-claim-button__label">
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+          {% if pending_count %}View Queue{% else %}Refresh Queue{% endif %}
+        </span>
+        <strong>{% if pending_count %}{{ pending_count }} pending{% else %}No Applications{% endif %}</strong>
       </a>
     {% endif %}
-    <a href="{% url 'sales_applications' %}?tab=active" class="uw-primary-action uw-primary-action--active-reviews active-reviews-card primary-big-action">
-      <span class="ts-sr-only">MY ACTIVE</span>
-      <span><i class="bi bi-clipboard-check"></i> My Active Reviews</span>
-      <strong>{{ active_count }} / {{ max_active }}</strong>
-    </a>
-  </div>
+  </section>
 
-  <div class="ts-section-label simple-section">Applications</div>
-  {% if active_apps %}
-    <div class="ts-section-label">In Progress</div>
-    {% for app in active_apps %}
-      <a href="{% url 'sales_review_summary' app.id %}" class="ts-app-row uw-compact-row simple-row">
-        <span class="ts-app-row__icon" aria-hidden="true"><i class="bi bi-file-earmark-check"></i></span>
-        <div class="ts-app-row__body">
-          <div class="ts-app-row__name">{{ app.customer_name|default:"Unnamed customer" }}</div>
-          <div class="ts-app-row__meta">{{ app.application_number }}</div>
-        </div>
-        <span class="row-arrow" aria-hidden="true">&rsaquo;</span>
-      </a>
-    {% endfor %}
+  {% if urgent_count %}
+    <section class="uw-queue-alert ts-motion-slide" role="status">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <div>
+        <strong>{{ urgent_count }} application{{ urgent_count|pluralize }} need attention</strong>
+        <p>Some pending applications have waited longer than 30 minutes. Claiming still follows queue rules.</p>
+      </div>
+    </section>
   {% endif %}
 
+  <section class="uw-review-section" aria-labelledby="uw-active-title">
+    <div class="uw-section-head">
+      <div>
+        <span class="ts-section-label simple-section">Applications</span>
+        <h2 id="uw-active-title">My Active Reviews</h2>
+      </div>
+      <a href="{% url 'sales_applications' %}?tab=active" class="uw-section-link">View all</a>
+    </div>
+
+    {% if active_app_cards %}
+      <div class="uw-application-grid ts-motion-stagger">
+        {% for card in active_app_cards %}
+          <article class="uw-application-card ts-motion-item ts-motion-card">
+            <div class="uw-application-card__top">
+              <span class="uw-application-card__icon" aria-hidden="true"><i class="bi bi-file-earmark-check"></i></span>
+              <div>
+                <h3>{{ card.app.customer_name|default:"Unnamed customer" }}</h3>
+                <p>{{ card.app.application_number }}</p>
+              </div>
+              <span class="ts-status-badge ts-status-badge--active ts-status-badge--pulse">Under Review</span>
+            </div>
+            <dl class="uw-application-facts">
+              <div>
+                <dt>Merchant</dt>
+                <dd>{{ card.merchant_name }}</dd>
+              </div>
+              <div>
+                <dt>Device</dt>
+                <dd>{{ card.device_label }}</dd>
+              </div>
+              <div>
+                <dt>Deposit</dt>
+                <dd>{{ card.app.calculated_deposit_amount|mwk }}</dd>
+              </div>
+              <div>
+                <dt>Total Loan</dt>
+                <dd>{{ card.app.calculated_total_loan|mwk }}</dd>
+              </div>
+              <div>
+                <dt>Location</dt>
+                <dd>{{ card.location }}</dd>
+              </div>
+              <div>
+                <dt>Claimed</dt>
+                <dd>{% if card.app.claimed_at %}{{ card.app.claimed_at|timesince }} ago{% else %}Recently{% endif %}</dd>
+              </div>
+            </dl>
+            <div class="uw-application-card__footer">
+              <span class="uw-risk-badge uw-risk-badge--{{ card.risk_class }}">
+                {{ card.risk_label }}{% if card.risk_score_display %} &middot; {{ card.risk_score_display }}{% endif %}
+              </span>
+              <a href="{% url 'sales_review_summary' card.app.id %}" class="uw-review-button ts-motion-tap" data-ts-sound="notification">
+                Review
+                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+              </a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="uw-empty-state ts-motion-slide">
+        <span class="uw-empty-state__icon" aria-hidden="true"><i class="bi bi-check2-circle"></i></span>
+        <h3>No applications waiting</h3>
+        <p>You are clear for now. New applications will appear here automatically.</p>
+        <a href="{% url 'sales_applications' %}?tab=queue" class="uw-empty-state__button ts-motion-tap" data-ts-sound="notification">
+          Refresh Queue
+        </a>
+      </div>
+    {% endif %}
+
+    <div class="uw-skeleton-strip" data-claim-skeleton hidden aria-hidden="true">
+      <div class="ts-skeleton ts-skeleton-card"></div>
+      <div class="ts-skeleton ts-skeleton-card"></div>
+    </div>
+  </section>
+
   <div class="ts-section-label simple-section">More<span class="ts-sr-only"> Tools</span></div>
-  <div class="ts-menu-section action-card">
+  <div class="ts-menu-section action-card ts-motion-stagger">
     <a href="{% url 'sales_applications' %}?tab=completed" class="ts-menu-row simple-row action-row">
       <span class="ts-menu-row__icon action-row-icon action-row-icon--completed" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
       <span class="ts-menu-row__label action-row-label">Completed Reviews</span>

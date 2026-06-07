@@ -191,6 +191,199 @@
         });
     }
 
+    /* Audio feedback and toasts */
+    var soundKeys = {
+        enabled: 'tengasale.sound.enabled',
+        volume: 'tengasale.sound.volume'
+    };
+    var soundFiles = {
+        success: '/static/sounds/success.mp3',
+        error: '/static/sounds/error.mp3',
+        notification: '/static/sounds/notification.mp3',
+        claim: '/static/sounds/claim.mp3',
+        payment: '/static/sounds/payment.mp3',
+        spinWin: '/static/sounds/spin-win.mp3',
+        lock: '/static/sounds/lock.mp3'
+    };
+
+    function storageGet(key, fallback) {
+        try {
+            var value = window.localStorage.getItem(key);
+            return value === null ? fallback : value;
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function storageSet(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+
+    function soundEnabled() {
+        return storageGet(soundKeys.enabled, 'false') === 'true';
+    }
+
+    function soundVolume() {
+        var value = parseFloat(storageGet(soundKeys.volume, '0.35'));
+        if (isNaN(value)) return 0.35;
+        return Math.max(0, Math.min(1, value));
+    }
+
+    function setSoundEnabled(enabled) {
+        storageSet(soundKeys.enabled, enabled ? 'true' : 'false');
+        updateSoundToggles();
+    }
+
+    function setSoundVolume(volume) {
+        var next = Math.max(0, Math.min(1, parseFloat(volume)));
+        storageSet(soundKeys.volume, isNaN(next) ? '0.35' : String(next));
+    }
+
+    function playSound(name) {
+        if (!soundEnabled()) return;
+        var src = soundFiles[name];
+        if (!src || typeof window.Audio !== 'function') return;
+        try {
+            var audio = new window.Audio(src);
+            audio.volume = soundVolume();
+            var result = audio.play();
+            if (result && typeof result.catch === 'function') {
+                result.catch(function () {});
+            }
+        } catch (e) {}
+    }
+
+    window.TengaSaleAudio = {
+        play: playSound,
+        setEnabled: setSoundEnabled,
+        getEnabled: soundEnabled,
+        setVolume: setSoundVolume,
+        getVolume: soundVolume
+    };
+
+    function getToastStack() {
+        var stack = document.querySelector('[data-ts-toast-stack]');
+        if (stack) return stack;
+        stack = document.createElement('div');
+        stack.className = 'ts-toast-stack';
+        stack.setAttribute('data-ts-toast-stack', '1');
+        stack.setAttribute('aria-live', 'polite');
+        stack.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(stack);
+        return stack;
+    }
+
+    function closeToast(toast) {
+        if (!toast || toast.dataset.closing === '1') return;
+        toast.dataset.closing = '1';
+        toast.classList.add('is-leaving');
+        window.setTimeout(function () {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 180);
+    }
+
+    function showToast(message, options) {
+        options = options || {};
+        var type = options.type || 'info';
+        var stack = getToastStack();
+        var toast = document.createElement('div');
+        toast.className = 'ts-toast ts-toast--' + type;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.innerHTML = [
+            '<div class="ts-toast__message"></div>',
+            '<button type="button" class="ts-toast__close" aria-label="Close">&times;</button>'
+        ].join('');
+        toast.querySelector('.ts-toast__message').textContent = message;
+        toast.querySelector('.ts-toast__close').addEventListener('click', function () {
+            closeToast(toast);
+        });
+        stack.appendChild(toast);
+        if (options.sound) playSound(options.sound);
+        window.setTimeout(function () { closeToast(toast); }, options.duration || 3600);
+        return toast;
+    }
+
+    window.TengaSaleToast = {
+        show: showToast
+    };
+
+    function updateSoundToggles() {
+        var enabled = soundEnabled();
+        document.querySelectorAll('[data-ts-sound-toggle]').forEach(function (btn) {
+            btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+            var label = btn.querySelector('span');
+            var icon = btn.querySelector('i');
+            if (label) label.textContent = enabled ? 'Sound on' : 'Sound off';
+            if (icon) {
+                icon.classList.toggle('bi-volume-up', enabled);
+                icon.classList.toggle('bi-volume-mute', !enabled);
+            }
+        });
+    }
+
+    function initAudioFeedback() {
+        updateSoundToggles();
+        document.querySelectorAll('[data-ts-sound-toggle]').forEach(function (btn) {
+            if (btn.dataset.soundToggleInit) return;
+            btn.dataset.soundToggleInit = '1';
+            btn.addEventListener('click', function () {
+                var enabled = !soundEnabled();
+                setSoundEnabled(enabled);
+                showToast(enabled ? 'Sound feedback enabled' : 'Sound feedback muted', {
+                    type: enabled ? 'success' : 'info',
+                    sound: enabled ? 'notification' : null
+                });
+            });
+        });
+        document.querySelectorAll('[data-ts-sound]').forEach(function (el) {
+            if (el.dataset.soundInit) return;
+            el.dataset.soundInit = '1';
+            el.addEventListener('click', function () {
+                playSound(el.dataset.tsSound);
+            });
+        });
+    }
+
+    function initClaimForms() {
+        document.querySelectorAll('[data-claim-next-form]').forEach(function (form) {
+            if (form.dataset.claimInit) return;
+            form.dataset.claimInit = '1';
+            form.addEventListener('submit', function () {
+                var button = form.querySelector('button[type="submit"]');
+                var label = form.querySelector('[data-claim-label]');
+                var sub = form.querySelector('[data-claim-sub]');
+                var skeleton = document.querySelector('[data-claim-skeleton]');
+                form.classList.add('is-claiming');
+                if (button) button.disabled = true;
+                if (label) label.textContent = 'Claiming...';
+                if (sub) sub.textContent = 'Assigning application';
+                if (skeleton) skeleton.hidden = false;
+                try {
+                    window.sessionStorage.setItem('tengasale.lastAction', 'claim');
+                } catch (e) {}
+                showToast('Claiming next application...', { type: 'info', duration: 1800 });
+            });
+        });
+    }
+
+    function initMessageFeedback() {
+        var lastAction = null;
+        try {
+            lastAction = window.sessionStorage.getItem('tengasale.lastAction');
+            window.sessionStorage.removeItem('tengasale.lastAction');
+        } catch (e) {}
+        if (!lastAction) return;
+        var success = document.querySelector('.alert-success, .messages .success');
+        var error = document.querySelector('.alert-danger, .alert-error, .messages .error');
+        if (success) playSound(lastAction === 'claim' ? 'success' : 'notification');
+        if (error) playSound('error');
+    }
+
     /* ── Keyboard close for lightbox ────────────────────────────────── */
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeLightbox();
@@ -204,6 +397,9 @@
         initSectionLocking();
         initStagger();
         initKpiCards();
+        initAudioFeedback();
+        initClaimForms();
+        initMessageFeedback();
     }
 
     if (document.readyState === 'loading') {

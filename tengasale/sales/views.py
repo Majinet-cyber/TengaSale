@@ -6,6 +6,7 @@ All review-step business logic lives in approvals.views; this module adds the
 clean URL surface and enriched context for the polished sales UI.
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -113,6 +114,47 @@ def _merchant_business_name(app):
     return app.created_by.get_full_name() or app.created_by.username
 
 
+def _format_review_duration(seconds):
+    if not seconds:
+        return "No data"
+    minutes = max(1, round(seconds / 60))
+    if minutes < 60:
+        return f"{minutes}m"
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+    if remaining_minutes:
+        return f"{hours}h {remaining_minutes}m"
+    return f"{hours}h"
+
+
+def _active_app_card(app):
+    deal = app.deal
+    device_label = str(deal) if deal else "Device pending"
+    location = ", ".join(part for part in [app.region, app.district] if part) or "Location pending"
+    score = app.repayment_confidence_score
+    if score is None:
+        risk_label = "Risk pending"
+        risk_class = "neutral"
+    elif score >= 75:
+        risk_label = "Strong"
+        risk_class = "strong"
+    elif score >= 50:
+        risk_label = "Moderate"
+        risk_class = "moderate"
+    else:
+        risk_label = "Watchlist"
+        risk_class = "watch"
+    return {
+        "app": app,
+        "merchant_name": _merchant_business_name(app),
+        "device_label": device_label,
+        "location": location,
+        "risk_label": risk_label,
+        "risk_class": risk_class,
+        "risk_score_display": score if score is not None else "",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Home
 # ---------------------------------------------------------------------------
@@ -123,32 +165,76 @@ def sales_home(request):
     rule = _queue_rule()
     active_apps = FinancingApplication.objects.filter(
         claimed_by=request.user, status="under_review"
-    ).select_related("deal", "created_by").order_by("-claimed_at")
+    ).select_related("deal", "deal__brand", "created_by").order_by("-claimed_at")
     active_count = active_apps.count()
 
-    pending_count = FinancingApplication.objects.filter(
+    pending_qs = FinancingApplication.objects.filter(
         status="pending_review", claimed_by__isnull=True
-    ).count()
+    )
+    pending_count = pending_qs.count()
+
+    today = timezone.localdate()
+    completed_statuses = [
+        "approved",
+        "approved_pending_device_lock",
+        "device_locked",
+        "active_contract",
+        "completed",
+        "contract_complete",
+    ]
 
     completed_count = FinancingApplication.objects.filter(
         reviewed_by=request.user,
-        status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed", "contract_complete"],
+        status__in=completed_statuses,
     ).count()
     rejected_count = FinancingApplication.objects.filter(
         reviewed_by=request.user, status="rejected"
     ).count()
     reviewed_count = completed_count + rejected_count
+    approved_today = FinancingApplication.objects.filter(
+        reviewed_by=request.user,
+        reviewed_at__date=today,
+        status__in=completed_statuses,
+    ).count()
+    rejected_today = FinancingApplication.objects.filter(
+        reviewed_by=request.user,
+        reviewed_at__date=today,
+        status="rejected",
+    ).count()
+    urgent_threshold = timezone.now() - timedelta(minutes=30)
+    urgent_count = pending_qs.filter(submitted_at__lte=urgent_threshold).count()
+
+    reviewed_samples = FinancingApplication.objects.filter(
+        reviewed_by=request.user,
+        submitted_at__isnull=False,
+        reviewed_at__isnull=False,
+        status__in=completed_statuses + ["rejected"],
+    ).only("submitted_at", "reviewed_at").order_by("-reviewed_at")[:50]
+    review_durations = [
+        (app.reviewed_at - app.submitted_at).total_seconds()
+        for app in reviewed_samples
+        if app.reviewed_at and app.submitted_at and app.reviewed_at >= app.submitted_at
+    ]
+    average_review_time_label = _format_review_duration(
+        sum(review_durations) / len(review_durations) if review_durations else None
+    )
 
     cooldown_remaining, can_claim = _cooldown_state(request.user)
 
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
+    active_app_cards = [_active_app_card(app) for app in active_apps[:5]]
 
     return render(request, "sales/home.html", {
         "page_heading": "Home",
         "active_apps": active_apps[:5],
+        "active_app_cards": active_app_cards,
         "active_count": active_count,
         "max_active": rule.max_active_applications,
         "pending_count": pending_count,
+        "approved_today": approved_today,
+        "rejected_today": rejected_today,
+        "urgent_count": urgent_count,
+        "average_review_time_label": average_review_time_label,
         "completed_count": completed_count,
         "reviewed_count": reviewed_count,
         "cooldown_remaining": int(cooldown_remaining),
