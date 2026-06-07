@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Staff Documents - TengaSale{% endblock %}
+{% block extra_head %}
+<style>
+.doc-page{max-width:1260px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}.doc-kicker{font-size:11px;font-weight:900;text-transform:uppercase;color:#ff5a00;letter-spacing:.08em}.doc-title{font-size:28px;margin:3px 0}.doc-sub{margin:0 0 14px;color:#667085;font-size:13px}.doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}.doc-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px}.doc-card h2{font-size:16px;margin:0 0 5px}.doc-meta{color:#667085;font-size:12px;margin-bottom:10px}.doc-actions{display:flex;gap:7px;flex-wrap:wrap}.doc-actions a{display:inline-flex;align-items:center;min-height:32px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;padding:5px 8px;text-decoration:none;color:#344054;font-size:11px;font-weight:850}.doc-actions a:first-child{background:#ff5a00;color:#fff;border-color:#ff5a00}
+</style>
+{% endblock %}
+{% block content %}
+<div class="doc-page">
+  <div class="doc-kicker">Staff Documents</div><h1 class="doc-title">Live database PDF generation</h1><p class="doc-sub">Employment, compensation, KPI, Volts, discipline, rank review, warning and termination documents.</p>
+  <section class="doc-grid">
+    {% for profile in profiles %}
+    <article class="doc-card">
+      <h2>{{ profile.display_name }}</h2>
+      <div class="doc-meta">{{ profile.staff_role.name|default:profile.get_role_display }} | {{ profile.department.name|default:"Unassigned" }} | {{ profile.rank.code|default:"Unranked" }}</div>
+      <div class="doc-actions">
+      {% for code,label in document_types %}
+        <a href="{% url 'staff_document_pdf' profile.user.id code %}" target="_blank">{{ label }}</a>
+      {% endfor %}
+      </div>
+    </article>
+    {% empty %}
+    <article class="doc-card"><h2>No profiles found.</h2></article>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

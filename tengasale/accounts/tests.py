@@ -7,11 +7,40 @@ from django.contrib.staticfiles import finders
 from django.conf import settings
 from django.test import TestCase
 from django.urls import resolve, reverse
+from django.utils import timezone
 from decimal import Decimal
 
 from .admin import UserProfileInline
-from .models import Department, FounderEquityRecord, Rank, StaffRole, UserProfile, VoltsActionType, VoltsTransaction
-from .services import MODULE_EQUITY, MODULE_VOLTS, can_approve_volts, monthly_volts_summary, user_can_access_module
+from .documents import generate_staff_document_pdf
+from .models import (
+    CompensationCycle,
+    DisciplineDispute,
+    DisciplineEvent,
+    DisciplineEventType,
+    DisciplineScorePeriod,
+    FounderEquityRecord,
+    KPIResult,
+    KPITemplate,
+    Department,
+    Rank,
+    StaffDocument,
+    StaffRole,
+    UserProfile,
+    VoltsActionType,
+    VoltsTransaction,
+)
+from .services import (
+    MODULE_DISCIPLINE,
+    MODULE_EQUITY,
+    MODULE_KPIS,
+    MODULE_VOLTS,
+    approve_discipline_period,
+    can_approve_volts,
+    can_review_discipline,
+    can_view_compensation,
+    monthly_volts_summary,
+    user_can_access_module,
+)
 from .utils import (
     assign_role,
     get_tengasale_role,
@@ -390,8 +419,11 @@ class UserProfileAdminTests(TestCase):
             reverse("admin:accounts_userprofile_change", args=[user.profile.pk]),
             {
                 "user": user.pk,
+                "full_name": "",
+                "email": "",
                 "role": "underwriter",
                 "phone_number": "",
+                "phone": "",
                 "department": "",
                 "staff_role": "",
                 "rank": "",
@@ -399,7 +431,17 @@ class UserProfileAdminTests(TestCase):
                 "user_type": "",
                 "status": "active",
                 "is_founder": "",
+                "founder_equity_record": "",
                 "date_joined_company": "",
+                "probation_status": "none",
+                "next_review_date": "",
+                "base_salary_mwk": "",
+                "volt_rate_mwk": "",
+                "monthly_ceiling_mwk": "",
+                "can_approve_volts": "",
+                "can_approve_discipline": "",
+                "can_approve_payouts": "",
+                "can_override_scores": "",
                 "avatar_initials": "",
             },
         )
@@ -432,8 +474,8 @@ class FounderStaffVoltsTests(TestCase):
         self.tech.profile.save()
 
     def test_seed_staff_system_creates_reference_data(self):
-        self.assertEqual(Department.objects.count(), 7)
-        self.assertTrue(Rank.objects.filter(code="C2", multiplier=Decimal("2.50")).exists())
+        self.assertEqual(Department.objects.count(), 10)
+        self.assertTrue(Rank.objects.filter(code="C2", multiplier=Decimal("2.50"), base_salary_default_mwk=Decimal("650000")).exists())
         self.assertTrue(StaffRole.objects.filter(name="Merchant Administrator").exists())
         self.assertTrue(VoltsActionType.objects.filter(name="Funding secured", base_volts=5000).exists())
         self.assertEqual(FounderEquityRecord.objects.aggregate(total=Sum("allocated_shares"))["total"], 70000)
@@ -496,6 +538,116 @@ class FounderStaffVoltsTests(TestCase):
         allowed = self.client.get(reverse("hq_founder_equity"))
         self.assertEqual(allowed.status_code, 200)
         self.assertContains(allowed, "Founder Equity")
+
+
+class DisciplineKPIDocumentGovernanceTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        call_command("seed_staff_system")
+        self.finance = self.User.objects.create_user(username="financelead", password="test-pass-123", is_staff=True)
+        assign_role(self.finance, "hq")
+        finance_role = StaffRole.objects.get(name="Finance, Risk & Administration Lead")
+        self.finance.profile.staff_role = finance_role
+        self.finance.profile.department = finance_role.department
+        self.finance.profile.rank = Rank.objects.get(code="C3")
+        self.finance.profile.user_type = UserProfile.USER_TYPE_EXECUTIVE
+        self.finance.profile.can_approve_discipline = True
+        self.finance.profile.can_approve_payouts = True
+        self.finance.profile.save()
+
+        self.underwriter = self.User.objects.create_user(username="uw", password="test-pass-123")
+        assign_role(self.underwriter, "underwriter")
+        uw_role = StaffRole.objects.get(name="Underwriter")
+        self.underwriter.profile.staff_role = uw_role
+        self.underwriter.profile.department = uw_role.department
+        self.underwriter.profile.rank = Rank.objects.get(code="B1")
+        self.underwriter.profile.user_type = UserProfile.USER_TYPE_STAFF
+        self.underwriter.profile.save()
+
+        self.techlead = self.User.objects.create_user(username="techboss", password="test-pass-123", is_staff=True)
+        assign_role(self.techlead, "hq")
+        tech_role = StaffRole.objects.get(name="Technology & Product Lead")
+        self.techlead.profile.staff_role = tech_role
+        self.techlead.profile.department = tech_role.department
+        self.techlead.profile.rank = Rank.objects.get(code="C3")
+        self.techlead.profile.user_type = UserProfile.USER_TYPE_EXECUTIVE
+        self.techlead.profile.can_approve_discipline = True
+        self.techlead.profile.save()
+
+    def test_seed_creates_governance_reference_data(self):
+        self.assertTrue(CompensationCycle.objects.filter(start_day=25, end_day=24).exists())
+        self.assertTrue(DisciplineEventType.objects.filter(code="fraud-or-collusion", deduction_percentage=100, evidence_required=True).exists())
+        self.assertTrue(KPITemplate.objects.filter(role__name="Underwriter", name="applications reviewed").exists())
+        self.assertTrue(VoltsActionType.objects.filter(name="Merchant commission dispute resolved", code="merchant-commission-dispute-resolved").exists())
+
+    def test_discipline_score_calculation_and_bonus_cap(self):
+        period = DisciplineScorePeriod.objects.create(user=self.underwriter, month=timezone.localdate())
+        late = DisciplineEventType.objects.get(code="late-application-review")
+        bonus = DisciplineEventType.objects.get(code="zero-qc-errors")
+        DisciplineEvent.objects.create(user=self.underwriter, period=period, event_type=late, source=DisciplineEvent.SOURCE_AUTOMATIC, status=DisciplineEvent.STATUS_ACCEPTED)
+        DisciplineEvent.objects.create(user=self.underwriter, period=period, event_type=bonus, status=DisciplineEvent.STATUS_ACCEPTED)
+
+        period.recalculate()
+
+        self.assertEqual(period.final_score, Decimal("103.00"))
+        self.assertEqual(period.payout_score, Decimal("100"))
+        self.assertEqual(period.band_label, "Excellent discipline")
+
+    def test_no_self_approval_and_department_review_rules(self):
+        period = DisciplineScorePeriod.objects.create(user=self.underwriter, month=timezone.localdate(), status=DisciplineScorePeriod.STATUS_PENDING_REVIEW)
+
+        self.assertFalse(can_review_discipline(self.underwriter, period))
+        with self.assertRaises(ValueError):
+            period.approve(self.underwriter)
+
+        self.assertTrue(can_review_discipline(self.finance, period))
+        self.assertFalse(can_review_discipline(self.techlead, period))
+
+        approve_discipline_period(period, self.finance, reason="System evidence reviewed")
+        period.refresh_from_db()
+        self.assertEqual(period.status, DisciplineScorePeriod.STATUS_APPROVED)
+        self.assertEqual(period.approved_by, self.finance)
+
+    def test_staff_cannot_view_other_staff_compensation(self):
+        self.assertFalse(can_view_compensation(self.techlead, self.underwriter))
+        self.assertTrue(can_view_compensation(self.finance, self.underwriter))
+        self.assertTrue(can_view_compensation(self.underwriter, self.underwriter))
+
+    def test_kpi_result_calculation_and_no_self_approval(self):
+        template = KPITemplate.objects.get(role__name="Underwriter", name="applications reviewed")
+        result = KPIResult.objects.create(
+            user=self.underwriter,
+            kpi_template=template,
+            period=timezone.localdate(),
+            actual_value=Decimal("80"),
+            target_value=Decimal("100"),
+        )
+
+        self.assertEqual(result.score, Decimal("80.00"))
+        with self.assertRaises(ValueError):
+            result.approve(self.underwriter)
+        result.approve(self.finance)
+        result.refresh_from_db()
+        self.assertEqual(result.status, KPIResult.STATUS_APPROVED)
+
+    def test_dispute_submission_and_pdf_generation_audit(self):
+        period = DisciplineScorePeriod.objects.create(user=self.underwriter, month=timezone.localdate(), final_score=Decimal("65.00"))
+        self.client.login(username="uw", password="test-pass-123")
+        response = self.client.post(reverse("staff_discipline_dispute", args=[period.id]), {"dispute_text": "The queue was reassigned."})
+
+        period.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(DisciplineDispute.objects.filter(user=self.underwriter, dispute_text__icontains="queue").exists())
+        self.assertEqual(period.dispute_status, DisciplineScorePeriod.DISPUTE_SUBMITTED)
+
+        pdf_bytes, record = generate_staff_document_pdf(
+            self.underwriter,
+            StaffDocument.DOC_DISCIPLINE_REPORT,
+            prepared_by=self.finance,
+        )
+
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertEqual(record.document_type, StaffDocument.DOC_DISCIPLINE_REPORT)
 
 
 class SeedTengaSaleUsersCommandTests(TestCase):

@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}KPI Scorecards - TengaSale{% endblock %}
+{% block extra_head %}
+<style>
+.kpi-page{max-width:1260px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}.kpi-head{position:sticky;top:0;z-index:3;background:rgba(248,250,252,.92);backdrop-filter:blur(10px);padding:8px 0 14px}.kpi-kicker{font-size:11px;font-weight:900;text-transform:uppercase;color:#ff5a00;letter-spacing:.08em}.kpi-title{font-size:28px;margin:3px 0}.kpi-sub{margin:0;color:#667085;font-size:13px}.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin:0 0 14px}.kpi-card,.kpi-section{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px}.kpi-card span{display:block;font-size:11px;text-transform:uppercase;font-weight:850;color:#667085}.kpi-card strong{display:block;font-size:23px;margin-top:7px}.kpi-section{margin-bottom:14px}.kpi-section h2{margin:0 0 10px;font-size:15px;color:#344054;text-transform:uppercase;letter-spacing:.05em}.kpi-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:12px}.kpi-table{width:100%;min-width:880px;border-collapse:collapse}.kpi-table th,.kpi-table td{padding:9px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}.kpi-table th{background:#f8fafc;color:#667085;text-transform:uppercase;font-size:10px}.score{display:inline-flex;border-radius:999px;padding:4px 8px;background:#e8f7ee;color:#087443;font-weight:850}
+</style>
+{% endblock %}
+{% block content %}
+<div class="kpi-page">
+  <header class="kpi-head"><div class="kpi-kicker">KPI Library</div><h1 class="kpi-title">Founder, staff and operational scorecards</h1><p class="kpi-sub">Quality, discipline and results scores come from measurable templates and reviewed results.</p></header>
+  <section class="kpi-grid">
+    <div class="kpi-card"><span>Average Score</span><strong>{{ avg_score|floatformat:1 }}%</strong></div>
+    <div class="kpi-card"><span>Approved Results</span><strong>{{ approved_count|tsnum }}</strong></div>
+    <div class="kpi-card"><span>Draft Results</span><strong>{{ draft_count|tsnum }}</strong></div>
+    <div class="kpi-card"><span>Active Templates</span><strong>{{ templates|length|tsnum }}</strong></div>
+  </section>
+  <section class="kpi-section"><h2>Department Scores</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>Department</th><th>Average</th><th>Results</th></tr></thead><tbody>{% for row in department_scores %}<tr><td>{{ row.user__profile__department__name|default:"Unassigned" }}</td><td><span class="score">{{ row.avg|floatformat:1 }}%</span></td><td>{{ row.count|tsnum }}</td></tr>{% empty %}<tr><td colspan="3">No KPI results yet.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="kpi-section"><h2>Recent KPI Results</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>Person</th><th>KPI</th><th>Period</th><th>Actual</th><th>Target</th><th>Score</th><th>Weighted</th><th>Status</th></tr></thead><tbody>{% for result in results %}<tr><td>{{ result.user.profile.display_name|default:result.user.username }}</td><td>{{ result.kpi_template.name }}</td><td>{{ result.period|date:"Y-m" }}</td><td>{{ result.actual_value }}</td><td>{{ result.target_value }}</td><td><span class="score">{{ result.score|floatformat:1 }}%</span></td><td>{{ result.weighted_score|floatformat:1 }}</td><td>{{ result.get_status_display }}</td></tr>{% empty %}<tr><td colspan="8">No KPI results yet.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="kpi-section"><h2>Active Templates</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Role</th><th>Department</th><th>Target</th><th>Weight</th><th>Signals</th></tr></thead><tbody>{% for template in templates %}<tr><td>{{ template.name }}</td><td>{{ template.role.name|default:"-" }}</td><td>{{ template.department.name|default:"-" }}</td><td>{{ template.target_value }}</td><td>{{ template.weight }}</td><td>{% if template.affects_quality_score %}Quality {% endif %}{% if template.affects_discipline_score %}Discipline {% endif %}{% if template.affects_results_score %}Results{% endif %}</td></tr>{% empty %}<tr><td colspan="6">No KPI templates seeded.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

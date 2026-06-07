@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class BusinessSetting(models.Model):
@@ -116,11 +117,18 @@ class AuditLog(models.Model):
         blank=True,
         related_name="audit_logs",
     )
-    action = models.CharField(max_length=40, choices=ACTION_CHOICES)
+    action = models.CharField(max_length=80, choices=ACTION_CHOICES)
     object_type = models.CharField(max_length=80, blank=True)
     object_id = models.CharField(max_length=40, blank=True)
+    target_model = models.CharField(max_length=120, blank=True)
+    target_id = models.CharField(max_length=80, blank=True)
     detail = models.JSONField(default=dict, blank=True)
+    old_value = models.JSONField(default=dict, blank=True)
+    new_value = models.JSONField(default=dict, blank=True)
+    reason = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -128,8 +136,20 @@ class AuditLog(models.Model):
         indexes = [
             models.Index(fields=["action", "timestamp"]),
             models.Index(fields=["object_type", "object_id"]),
+            models.Index(fields=["target_model", "target_id"]),
             models.Index(fields=["user", "timestamp"]),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.object_type and not self.target_model:
+            self.target_model = self.object_type
+        if self.object_id and not self.target_id:
+            self.target_id = self.object_id
+        if self.target_model and not self.object_type:
+            self.object_type = self.target_model
+        if self.target_id and not self.object_id:
+            self.object_id = self.target_id
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.action} by {self.user_id} at {self.timestamp}"

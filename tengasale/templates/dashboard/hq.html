@@ -1520,6 +1520,30 @@ body {
       Founder Equity
     </a>
     {% endif %}
+    {% if 'discipline' in staff_module_keys %}
+    <a href="{% url 'hq_discipline_governance' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/></svg>
+      Discipline Governance
+    </a>
+    {% endif %}
+    {% if 'kpis' in staff_module_keys %}
+    <a href="{% url 'hq_kpi_dashboard' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-7"/></svg>
+      KPI Scorecards
+    </a>
+    {% endif %}
+    {% if 'payouts' in staff_module_keys %}
+    <a href="{% url 'hq_payout_approvals' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4z"/><path d="M8 11h.01"/><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M18 13h.01"/></svg>
+      Payout Approvals
+    </a>
+    {% endif %}
+    {% if 'staff_documents' in staff_module_keys %}
+    <a href="{% url 'hq_staff_documents' %}" class="hq-sidebar-link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>
+      Staff Documents
+    </a>
+    {% endif %}
     <a href="{% url 'hq_users' %}" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Users &amp; Roles

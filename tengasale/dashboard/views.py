@@ -16,22 +16,38 @@ from accounts.forms import HQUserForm
 from accounts.models import (
     CompanyShareStructure,
     Department,
+    DisciplineDispute,
+    DisciplineEvent,
+    DisciplineScorePeriod,
     FounderEquityRecord,
+    KPITemplate,
+    KPIResult,
     PenaltyTransaction,
     Rank,
     StaffRole,
+    StaffDocument,
     UserProfile,
     VoltsActionType,
     VoltsTransaction,
 )
+from accounts.documents import generate_staff_document_pdf
 from accounts.services import (
+    MODULE_DISCIPLINE,
     MODULE_EQUITY,
+    MODULE_KPIS,
+    MODULE_PAYOUTS,
+    MODULE_STAFF_DOCUMENTS,
     MODULE_STAFF_ROLES,
     MODULE_VOLTS,
     audit_sensitive_action,
+    approve_discipline_period,
+    approve_payout_impact,
     can_approve_volts,
     can_edit_equity,
+    can_view_compensation,
+    can_view_equity,
     founder_staff_dashboard_context,
+    governance_dashboard_context,
     user_allowed_modules,
     user_can_access_module,
     visible_hq_modules,
@@ -642,6 +658,135 @@ def hq_staff_roles(request):
         "active_count": profiles.filter(status=UserProfile.STATUS_ACTIVE).count(),
         "users": User.objects.select_related("profile").order_by("username")[:200],
     })
+
+
+@staff_module_required(MODULE_DISCIPLINE)
+def hq_discipline_governance(request):
+    return render(request, "dashboard/hq_discipline_governance.html", governance_dashboard_context())
+
+
+@staff_module_required(MODULE_DISCIPLINE)
+def hq_discipline_action(request, period_id):
+    if request.method != "POST":
+        return redirect("hq_discipline_governance")
+    period = get_object_or_404(DisciplineScorePeriod, id=period_id)
+    action = request.POST.get("action")
+    reason = request.POST.get("reason", "")
+    try:
+        if action == "approve":
+            approve_discipline_period(period, request.user, reason=reason)
+            messages.success(request, "Discipline score approved.")
+        elif action == "approve_payout":
+            approve_payout_impact(period, request.user, reason=reason)
+            messages.success(request, "Payout impact approved.")
+        elif action == "lock":
+            if period.user_id == request.user.id:
+                raise ValueError("Users cannot lock their own discipline score.")
+            period.status = DisciplineScorePeriod.STATUS_LOCKED
+            period.save(update_fields=["status", "updated_at"])
+            audit_sensitive_action(request.user, "discipline_score_locked", period, detail={"reason": reason}, reason=reason, request=request)
+            messages.success(request, "Discipline score locked.")
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    return redirect("hq_discipline_governance")
+
+
+@staff_module_required(MODULE_KPIS)
+def hq_kpi_dashboard(request):
+    results = KPIResult.objects.select_related("user", "user__profile", "user__profile__department", "kpi_template").order_by("-period")
+    templates = KPITemplate.objects.select_related("role", "department").filter(active=True)
+    return render(request, "dashboard/hq_kpi_dashboard.html", {
+        "results": results[:120],
+        "templates": templates,
+        "avg_score": results.aggregate(avg=Avg("score"))["avg"] or Decimal("0"),
+        "approved_count": results.filter(status=KPIResult.STATUS_APPROVED).count(),
+        "draft_count": results.filter(status=KPIResult.STATUS_DRAFT).count(),
+        "department_scores": results.values("user__profile__department__name").annotate(avg=Avg("score"), count=Count("id")).order_by("user__profile__department__name"),
+    })
+
+
+@staff_module_required(MODULE_PAYOUTS)
+def hq_payout_approvals(request):
+    periods = DisciplineScorePeriod.objects.select_related(
+        "user", "user__profile", "user__profile__department", "approved_by", "payout_impact_approved_by"
+    ).filter(status=DisciplineScorePeriod.STATUS_APPROVED).order_by("-month")
+    rows = []
+    for period in periods[:100]:
+        if can_view_compensation(request.user, period.user):
+            rows.append({"period": period, "volts": founder_staff_dashboard_context(period.user)["volts"]})
+    return render(request, "dashboard/hq_payout_approvals.html", {
+        "rows": rows,
+        "pending_count": periods.filter(payout_impact_approved_at__isnull=True).count(),
+    })
+
+
+@staff_module_required(MODULE_STAFF_DOCUMENTS)
+def hq_staff_documents(request):
+    profiles = UserProfile.objects.select_related("user", "department", "staff_role", "rank").order_by("user__username")
+    return render(request, "dashboard/hq_staff_documents.html", {
+        "profiles": profiles,
+        "document_types": StaffDocument.DOC_CHOICES,
+    })
+
+
+def staff_document_pdf(request, user_id, document_type):
+    User = get_user_model()
+    target_user = get_object_or_404(User, id=user_id)
+    may_view_own = request.user.is_authenticated and request.user.id == target_user.id
+    may_generate = request.user.is_authenticated and user_can_access_module(request.user, MODULE_STAFF_DOCUMENTS)
+    if document_type in {StaffDocument.DOC_COMPENSATION_ANNEXURE, StaffDocument.DOC_MONTHLY_VOLTS}:
+        may_generate = may_generate and can_view_compensation(request.user, target_user)
+    if document_type == StaffDocument.DOC_EMPLOYMENT_AGREEMENT:
+        try:
+            target_profile = target_user.profile
+        except Exception:
+            target_profile = None
+        if getattr(target_profile, "is_founder", False):
+            may_generate = may_generate and can_view_equity(request.user, target_user)
+    if not (may_view_own or may_generate):
+        return render(request, "accounts/role_forbidden.html", {"dashboard_url": role_redirect_url(request.user)}, status=403)
+    valid_types = {code for code, _label in StaffDocument.DOC_CHOICES}
+    if document_type not in valid_types:
+        messages.error(request, "Unknown staff document type.")
+        return redirect("staff_dashboard")
+    pdf_bytes, record = generate_staff_document_pdf(target_user, document_type, prepared_by=request.user, request=request)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="{record.document_number}.pdf"'
+    return response
+
+
+def staff_discipline_acknowledge(request, period_id):
+    period = get_object_or_404(DisciplineScorePeriod, id=period_id)
+    if not request.user.is_authenticated or request.user.id != period.user_id:
+        return render(request, "accounts/role_forbidden.html", {"dashboard_url": role_redirect_url(request.user)}, status=403)
+    if request.method == "POST":
+        period.acknowledge()
+        audit_sensitive_action(request.user, "discipline_score_acknowledged", period, request=request)
+        messages.success(request, "Discipline score acknowledged.")
+    return redirect("staff_dashboard")
+
+
+def staff_discipline_dispute(request, period_id):
+    period = get_object_or_404(DisciplineScorePeriod, id=period_id)
+    if not request.user.is_authenticated or request.user.id != period.user_id:
+        return render(request, "accounts/role_forbidden.html", {"dashboard_url": role_redirect_url(request.user)}, status=403)
+    if request.method == "POST":
+        text = request.POST.get("dispute_text", "").strip()
+        if text:
+            dispute = DisciplineDispute.objects.create(
+                user=request.user,
+                discipline_score_period=period,
+                dispute_text=text,
+            )
+            period.dispute_status = DisciplineScorePeriod.DISPUTE_SUBMITTED
+            period.status = DisciplineScorePeriod.STATUS_DISPUTED
+            period.user_response_text = text
+            period.save(update_fields=["dispute_status", "status", "user_response_text", "updated_at"])
+            audit_sensitive_action(request.user, "discipline_dispute_submitted", dispute, request=request)
+            messages.success(request, "Response submitted.")
+        else:
+            messages.error(request, "Please enter your response before submitting.")
+    return redirect("staff_dashboard")
 
 
 @hq_required

@@ -21,6 +21,7 @@
 .staff-section h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#344054}
 .staff-modules{display:flex;gap:8px;flex-wrap:wrap}
 .staff-chip{border:1px solid #d0d5dd;border-radius:999px;padding:6px 10px;background:#f8fafc;font-weight:800;font-size:12px}
+.staff-docs{display:flex;gap:8px;flex-wrap:wrap}.staff-docs a{display:inline-flex;align-items:center;min-height:34px;border-radius:9px;border:1px solid #d0d5dd;background:#fff;color:#344054;text-decoration:none;padding:6px 9px;font-size:12px;font-weight:850}.staff-form{display:grid;gap:8px}.staff-form textarea{min-height:86px;border:1px solid #d0d5dd;border-radius:10px;padding:9px;font:inherit}.staff-form button{border:0;border-radius:10px;background:#101828;color:#fff;padding:9px 12px;font-weight:850;width:max-content}
 @media(max-width:600px){.staff-page{padding:14px 10px 40px}.staff-title{font-size:24px}.staff-card strong{font-size:19px}}
 </style>
 {% endblock %}
@@ -49,6 +50,7 @@
     <div class="staff-card"><span>Estimated Pay</span><strong>{{ volts.capped_pay|mwk }}</strong></div>
     <div class="staff-card"><span>Monthly Ceiling</span><strong>{% if volts.monthly_ceiling %}{{ volts.monthly_ceiling|mwk }}{% else %}Board controlled{% endif %}</strong></div>
     <div class="staff-card"><span>Department Score</span><strong>{{ department_score }}%</strong></div>
+    <div class="staff-card"><span>Discipline Score</span><strong>{% if discipline %}{{ discipline.final_score|floatformat:1 }}%{% else %}100%{% endif %}</strong></div>
     <div class="staff-card"><span>Pending Responsibilities</span><strong>{{ pending_responsibilities|tsnum }}</strong></div>
     <div class="staff-card"><span>Penalties</span><strong>{{ penalties_count|tsnum }}</strong></div>
     {% if equity %}
@@ -66,6 +68,41 @@
       <span class="staff-chip">No modules assigned</span>
       {% endfor %}
     </div>
+  </section>
+
+  <section class="staff-section">
+    <h2>Staff Documents</h2>
+    <div class="staff-docs">
+      <a href="{% url 'staff_document_pdf' request.user.id 'employment_agreement' %}" target="_blank">Employment Agreement PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'compensation_annexure_a' %}" target="_blank">Compensation Annexure A PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'kpi_volts_annexure_b' %}" target="_blank">KPI & Volts Annexure B PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'monthly_volts_statement' %}" target="_blank">Monthly Volts Statement PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'monthly_performance_review' %}" target="_blank">Monthly Performance Review PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'discipline_score_report' %}" target="_blank">Discipline Score Report PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'promotion_rank_review' %}" target="_blank">Promotion/Rank Review PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'warning_letter' %}" target="_blank">Warning Letter PDF</a>
+      <a href="{% url 'staff_document_pdf' request.user.id 'termination_letter' %}" target="_blank">Termination Letter PDF</a>
+    </div>
+  </section>
+
+  <section class="staff-section">
+    <h2>Discipline Right To Respond</h2>
+    {% if discipline %}
+    <p class="staff-sub">Current score: {{ discipline.final_score|floatformat:1 }}% - {{ discipline.band_label }}. Status: {{ discipline.get_status_display }}.</p>
+    <div class="staff-actions" style="margin:10px 0">
+      <form method="post" action="{% url 'staff_discipline_acknowledge' discipline.id %}">
+        {% csrf_token %}
+        <button class="staff-btn" type="submit">Acknowledge</button>
+      </form>
+    </div>
+    <form class="staff-form" method="post" action="{% url 'staff_discipline_dispute' discipline.id %}">
+      {% csrf_token %}
+      <textarea name="dispute_text" placeholder="Submit Response / Dispute">{{ discipline.user_response_text }}</textarea>
+      <button type="submit">Submit Response</button>
+    </form>
+    {% else %}
+    <p class="staff-sub">No discipline score has been published to you yet.</p>
+    {% endif %}
   </section>
 
   {% if equity %}

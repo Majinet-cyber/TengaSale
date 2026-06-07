@@ -9,8 +9,11 @@ from django.utils.text import slugify
 
 from accounts.models import (
     CompanyShareStructure,
+    CompensationCycle,
     Department,
+    DisciplineEventType,
     FounderEquityRecord,
+    KPITemplate,
     PenaltyType,
     Rank,
     StaffRole,
@@ -24,13 +27,17 @@ from accounts.services import (
     MODULE_AUDIT_LOGS,
     MODULE_COLLECTIONS,
     MODULE_CONTRACTS,
+    MODULE_DISCIPLINE,
     MODULE_EQUITY,
+    MODULE_KPIS,
     MODULE_LEGAL_RECOVERY,
     MODULE_MERCHANT_ADMIN,
     MODULE_MERCHANTS,
     MODULE_PAYMENTS,
+    MODULE_PAYOUTS,
     MODULE_SALES_LEADS,
     MODULE_SETTINGS,
+    MODULE_STAFF_DOCUMENTS,
     MODULE_STAFF_ROLES,
     MODULE_TECH,
     MODULE_UNDERWRITING,
@@ -46,40 +53,43 @@ DEPARTMENTS = [
     "Sales, Marketing & Growth",
     "Merchant Operations & Customer Success",
     "Research, Innovation & Data Analytics",
+    "Collections & Recoveries",
+    "Customer Support",
+    "Merchant Administration",
 ]
 
 RANKS = [
-    ("A1", "Associate I", Decimal("1.00"), Decimal("750000")),
-    ("A2", "Associate II", Decimal("1.15"), Decimal("1500000")),
-    ("A3", "Associate III", Decimal("1.30"), Decimal("3000000")),
-    ("B1", "Manager I", Decimal("1.50"), Decimal("4000000")),
-    ("B2", "Manager II", Decimal("1.70"), Decimal("5000000")),
-    ("B3", "Manager III", Decimal("1.90"), Decimal("6000000")),
-    ("C1", "Department Lead I", Decimal("2.20"), Decimal("7000000")),
-    ("C2", "Department Lead II", Decimal("2.50"), Decimal("8000000")),
-    ("C3", "Department Lead III", Decimal("2.80"), Decimal("10000000")),
-    ("D1", "Executive I", Decimal("3.20"), None),
-    ("D2", "Executive II", Decimal("4.00"), None),
+    ("A1", "Trainee", Decimal("90000"), Decimal("13.50"), Decimal("1.00"), Decimal("750000"), False),
+    ("A2", "Rising Star", Decimal("126000"), Decimal("19.00"), Decimal("1.15"), Decimal("1500000"), False),
+    ("A3", "Strong Junior", Decimal("150000"), Decimal("22.00"), Decimal("1.30"), Decimal("3000000"), False),
+    ("B1", "Officer", Decimal("200000"), Decimal("25.00"), Decimal("1.50"), Decimal("4000000"), False),
+    ("B2", "Senior Officer", Decimal("300000"), Decimal("30.00"), Decimal("1.70"), Decimal("5000000"), False),
+    ("B3", "Lead Officer", Decimal("400000"), Decimal("35.00"), Decimal("1.90"), Decimal("6000000"), False),
+    ("C1", "Manager", Decimal("500000"), Decimal("40.00"), Decimal("2.20"), Decimal("7000000"), False),
+    ("C2", "Senior Manager", Decimal("650000"), Decimal("45.00"), Decimal("2.50"), Decimal("8000000"), False),
+    ("C3", "Head of Department", Decimal("800000"), Decimal("50.00"), Decimal("2.80"), Decimal("10000000"), False),
+    ("D1", "Executive", Decimal("1000000"), Decimal("60.00"), Decimal("3.20"), None, True),
+    ("D2", "CEO / Managing Director", Decimal("0"), Decimal("0"), Decimal("4.00"), None, True),
 ]
 
 ROLE_DATA = [
     ("CEO / Strategy Lead", "Executive & Strategy", StaffRole.PORTAL_HQ, ALL_HQ_MODULES),
-    ("Technology & Product Lead", "Technology & Product", StaffRole.PORTAL_HQ, [MODULE_TECH, MODULE_STAFF_ROLES, MODULE_AUDIT_LOGS, MODULE_SETTINGS]),
-    ("Finance, Risk & Administration Lead", "Finance, Risk & Underwriting", StaffRole.PORTAL_HQ, [MODULE_UNDERWRITING, MODULE_PAYMENTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS]),
-    ("Legal & Compliance Lead", "Legal, Compliance & Recovery", StaffRole.PORTAL_HQ, [MODULE_CONTRACTS, MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS, MODULE_AUDIT_LOGS]),
-    ("Sales & Marketing Lead", "Sales, Marketing & Growth", StaffRole.PORTAL_HQ, [MODULE_SALES_LEADS, MODULE_MERCHANTS, MODULE_ANALYTICS]),
-    ("Merchant Operations Lead", "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ, [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN, MODULE_SALES_LEADS]),
-    ("Research & Data Lead", "Research, Innovation & Data Analytics", StaffRole.PORTAL_HQ, [MODULE_ANALYTICS, MODULE_MERCHANTS, MODULE_APPLICATIONS]),
-    ("Merchant Administrator", "Merchant Operations & Customer Success", StaffRole.PORTAL_MERCHANT_ADMIN, [MODULE_MERCHANT_ADMIN, MODULE_MERCHANTS]),
+    ("Technology & Product Lead", "Technology & Product", StaffRole.PORTAL_HQ, [MODULE_TECH, MODULE_STAFF_ROLES, MODULE_AUDIT_LOGS, MODULE_SETTINGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_STAFF_DOCUMENTS]),
+    ("Finance, Risk & Administration Lead", "Finance, Risk & Underwriting", StaffRole.PORTAL_HQ, [MODULE_UNDERWRITING, MODULE_PAYMENTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_PAYOUTS, MODULE_STAFF_DOCUMENTS]),
+    ("Legal & Compliance Lead", "Legal, Compliance & Recovery", StaffRole.PORTAL_HQ, [MODULE_CONTRACTS, MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_STAFF_DOCUMENTS]),
+    ("Sales & Marketing Lead", "Sales, Marketing & Growth", StaffRole.PORTAL_HQ, [MODULE_SALES_LEADS, MODULE_MERCHANTS, MODULE_ANALYTICS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Merchant Operations Lead", "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ, [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN, MODULE_SALES_LEADS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Research & Data Lead", "Research, Innovation & Data Analytics", StaffRole.PORTAL_HQ, [MODULE_ANALYTICS, MODULE_MERCHANTS, MODULE_APPLICATIONS, MODULE_KPIS]),
+    ("Merchant Administrator", "Merchant Administration", StaffRole.PORTAL_MERCHANT_ADMIN, [MODULE_MERCHANT_ADMIN, MODULE_MERCHANTS, MODULE_KPIS]),
     ("Underwriter Lead", "Finance, Risk & Underwriting", StaffRole.PORTAL_UNDERWRITER, [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
     ("Underwriter", "Finance, Risk & Underwriting", StaffRole.PORTAL_UNDERWRITER, [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
-    ("Collections Officer", "Legal, Compliance & Recovery", StaffRole.PORTAL_HQ, [MODULE_COLLECTIONS, MODULE_PAYMENTS]),
-    ("Recovery Officer", "Legal, Compliance & Recovery", StaffRole.PORTAL_HQ, [MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS]),
-    ("Customer Support Officer", "Merchant Operations & Customer Success", StaffRole.PORTAL_SUPPORT, [MODULE_MERCHANTS]),
+    ("Collections Officer", "Collections & Recoveries", StaffRole.PORTAL_HQ, [MODULE_COLLECTIONS, MODULE_PAYMENTS, MODULE_KPIS]),
+    ("Recovery Officer", "Collections & Recoveries", StaffRole.PORTAL_HQ, [MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS]),
+    ("Customer Support Officer", "Customer Support", StaffRole.PORTAL_SUPPORT, [MODULE_MERCHANTS]),
     ("Field Verification Officer", "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ, [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN]),
     ("QA Officer", "Technology & Product", StaffRole.PORTAL_HQ, [MODULE_TECH, MODULE_AUDIT_LOGS]),
     ("Merchant", "Merchant Operations & Customer Success", StaffRole.PORTAL_MERCHANT, []),
-    ("Customer", "Merchant Operations & Customer Success", StaffRole.PORTAL_CUSTOMER, []),
+    ("Customer", "Customer Support", StaffRole.PORTAL_CUSTOMER, []),
 ]
 
 VOLTS_ACTIONS = [
@@ -89,6 +99,7 @@ VOLTS_ACTIONS = [
     ("Inactive merchant reactivated", "Merchant Operations & Customer Success", 150),
     ("Fraudulent merchant flagged", "Merchant Operations & Customer Success", 300),
     ("Weekly merchant report completed", "Merchant Operations & Customer Success", 100),
+    ("Merchant commission dispute resolved", "Merchant Administration", 100),
     ("Customer application reviewed", "Finance, Risk & Underwriting", 40),
     ("Clean approval", "Finance, Risk & Underwriting", 100),
     ("Send-back with clear reason", "Finance, Risk & Underwriting", 30),
@@ -100,6 +111,8 @@ VOLTS_ACTIONS = [
     ("Payment recovered", "Legal, Compliance & Recovery", 100),
     ("Overdue customer restored to active", "Legal, Compliance & Recovery", 200),
     ("Device recovered lawfully", "Legal, Compliance & Recovery", 400),
+    ("Broken promise followed up", "Collections & Recoveries", 40),
+    ("Collection reason captured correctly", "Collections & Recoveries", 25),
     ("Bug fixed", "Technology & Product", 100),
     ("Major feature shipped", "Technology & Product", 500),
     ("Integration completed", "Technology & Product", 800),
@@ -110,7 +123,58 @@ VOLTS_ACTIONS = [
     ("Funding secured", "Executive & Strategy", 5000),
     ("Strategic partner signed", "Executive & Strategy", 2000),
     ("Major risk removed", "Executive & Strategy", 1500),
+    ("Monthly investor report submitted", "Executive & Strategy", 300),
+    ("Runway improved", "Executive & Strategy", 1000),
+    ("Legal/compliance risk closed", "Executive & Strategy", 700),
 ]
+
+DISCIPLINE_EVENT_TYPES = [
+    ("Late application review", "late-application-review", "Assigned application review deadline breach.", 2, None, "low", False, True),
+    ("Ignored assigned queue", "ignored-assigned-queue", "Assigned tasks untouched beyond SLA.", 5, None, "medium", False, True),
+    ("No meaningful activity during working window", "no-meaningful-activity", "Login without completed assigned work.", 5, None, "medium", False, True),
+    ("Missing KYC fields", "missing-kyc-fields", "Application QC failure for missing KYC.", 5, None, "medium", False, True),
+    ("Wrong customer phone number", "wrong-customer-phone-number", "Customer phone corrected by QC/support.", 7, None, "high", False, True),
+    ("Wrong IMEI", "wrong-imei", "IMEI corrected in contract/device workflow.", 15, None, "critical", False, True),
+    ("Fake or unverified guarantor accepted", "fake-unverified-guarantor", "Unverified guarantor accepted.", 20, None, "critical", True, False),
+    ("Poor documentation", "poor-documentation", "QC send-back for weak documentation.", 5, None, "medium", False, True),
+    ("Broken follow-up", "broken-follow-up", "Due/overdue customer without contact log.", 5, None, "medium", False, True),
+    ("Unexplained absence", "unexplained-absence", "No approved absence evidence.", 10, None, "high", True, False),
+    ("Early default linked to negligence", "early-default-negligence", "Early default requiring review.", 15, None, "critical", True, False),
+    ("Fraud or collusion", "fraud-or-collusion", "Locks payout pending investigation.", 100, None, "critical", True, False),
+    ("Perfect attendance / availability", "perfect-attendance", "Monthly attendance bonus.", 0, 3, "low", False, False),
+    ("Queue cleared within SLA for full month", "queue-cleared-sla", "Monthly SLA bonus.", 0, 5, "low", False, False),
+    ("Zero QC errors", "zero-qc-errors", "Monthly quality bonus.", 0, 5, "low", False, False),
+    ("High-risk fraud prevented", "high-risk-fraud-prevented", "Fraud prevention bonus.", 0, 5, "medium", True, False),
+    ("Emergency support beyond role", "emergency-support-beyond-role", "Emergency support bonus.", 0, 3, "medium", True, False),
+]
+
+KPI_NAMES = {
+    "Underwriter": [
+        "applications reviewed", "average review time", "% applications reviewed under 5 minutes",
+        "% applications reviewed under 25 minutes", "approval rate", "rejection rate", "send-back rate",
+        "% contracts passed QC", "first payment missed rate", "1D40 rate", "fraud prevented",
+        "backup/escalation rate", "customer education accuracy", "documentation error rate",
+        "early default rate", "volts earned", "penalties",
+    ],
+    "Merchant Administrator": [
+        "merchants onboarded", "active merchants last 30 days", "merchant sales last 30 days",
+        "merchant conversion rate", "merchant 1D40", "missing documents", "merchant application error rate",
+        "merchant reactivation count", "fraudulent merchants flagged", "merchant commission disputes resolved",
+        "training completion rate", "merchant ranking",
+    ],
+    "Collections Officer": [
+        "customers due today contacted", "customers reminded before due date", "overdue customers contacted",
+        "recovery promises made", "promises kept", "promises broken", "payments recovered",
+        "overdue customers restored to active", "locked devices", "devices recovered lawfully",
+        "arrears reasons captured", "unreachable customers", "stolen/lost phone cases",
+    ],
+    "CEO / Strategy Lead": [
+        "capital raised", "investor meetings advanced", "supplier credit secured", "strategic partnerships signed",
+        "monthly revenue growth", "cash runway", "default rate", "collection rate", "product uptime",
+        "legal/compliance readiness", "team performance", "investor reporting completed",
+        "capital discipline score", "founder volts", "major risks removed",
+    ],
+}
 
 PENALTIES = [
     ("Ignored assigned queue", 100),
@@ -164,13 +228,17 @@ class Command(BaseCommand):
             )
 
         ranks = {}
-        for code, title, multiplier, ceiling in RANKS:
+        for code, title, base_salary, volt_rate, multiplier, ceiling, board_controlled in RANKS:
             ranks[code], _ = Rank.objects.update_or_create(
                 code=code,
                 defaults={
                     "title": title,
+                    "base_salary_default_mwk": base_salary,
+                    "volt_rate_default_mwk": volt_rate,
                     "multiplier": multiplier,
+                    "rank_multiplier": multiplier,
                     "monthly_ceiling_mwk": ceiling,
+                    "is_board_controlled": board_controlled,
                     "description": f"{code} rank with {multiplier}x volts earning power.",
                     "active": True,
                 },
@@ -193,6 +261,7 @@ class Command(BaseCommand):
             VoltsActionType.objects.update_or_create(
                 name=name,
                 defaults={
+                    "code": slugify(name),
                     "department": departments.get(department_name),
                     "base_volts": volts,
                     "requires_approval": True,
@@ -205,6 +274,53 @@ class Command(BaseCommand):
                 name=name,
                 defaults={"default_volts_deducted": volts, "active": True},
             )
+
+        CompensationCycle.objects.update_or_create(
+            name="Default monthly compensation cycle",
+            defaults={"start_day": 25, "end_day": 24, "active": True},
+        )
+
+        severity_map = {
+            "low": DisciplineEventType.SEVERITY_LOW,
+            "medium": DisciplineEventType.SEVERITY_MEDIUM,
+            "high": DisciplineEventType.SEVERITY_HIGH,
+            "critical": DisciplineEventType.SEVERITY_CRITICAL,
+        }
+        for name, code, description, deduction, bonus, severity, evidence_required, auto_generated in DISCIPLINE_EVENT_TYPES:
+            DisciplineEventType.objects.update_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "description": description,
+                    "deduction_percentage": Decimal(str(deduction)),
+                    "bonus_percentage": Decimal(str(bonus)) if bonus is not None else None,
+                    "severity": severity_map[severity],
+                    "evidence_required": evidence_required,
+                    "auto_generated": auto_generated,
+                    "active": True,
+                },
+            )
+
+        for role_name, kpi_names in KPI_NAMES.items():
+            role = staff_roles.get(role_name)
+            for index, kpi_name in enumerate(kpi_names, start=1):
+                lower_is_better = any(term in kpi_name for term in ["time", "missed", "1D40", "error", "default", "penalties", "unreachable"])
+                KPITemplate.objects.update_or_create(
+                    role=role,
+                    department=role.department if role else None,
+                    name=kpi_name,
+                    defaults={
+                        "description": f"{role_name} KPI: {kpi_name}.",
+                        "target_value": Decimal("100"),
+                        "weight": Decimal("1.00"),
+                        "lower_is_better": lower_is_better,
+                        "data_source": "system",
+                        "affects_quality_score": index % 3 == 0,
+                        "affects_discipline_score": "penalties" in kpi_name or "attendance" in kpi_name,
+                        "affects_results_score": True,
+                        "active": True,
+                    },
+                )
 
         CompanyShareStructure.objects.update_or_create(
             pk=1,
@@ -240,9 +356,16 @@ class Command(BaseCommand):
             profile.department = staff_roles[staff_role_name].department
             profile.staff_role = staff_roles[staff_role_name]
             profile.rank = ranks["D1"] if staff_role_name == "CEO / Strategy Lead" else ranks["C2"]
+            profile.can_approve_volts = True
+            profile.can_approve_discipline = True
+            profile.can_approve_payouts = staff_role_name in {"CEO / Strategy Lead", "Finance, Risk & Administration Lead"}
+            profile.can_override_scores = staff_role_name == "CEO / Strategy Lead"
             profile.date_joined_company = profile.date_joined_company or start_date
+            profile.base_salary_mwk = profile.base_salary_mwk if profile.base_salary_mwk is not None else profile.rank.base_salary_default_mwk
+            profile.volt_rate_mwk = profile.volt_rate_mwk if profile.volt_rate_mwk is not None else profile.rank.volt_rate_default_mwk
+            profile.monthly_ceiling_mwk = profile.monthly_ceiling_mwk if profile.monthly_ceiling_mwk is not None else profile.rank.monthly_ceiling_mwk
             profile.save()
-            FounderEquityRecord.objects.update_or_create(
+            equity, _ = FounderEquityRecord.objects.update_or_create(
                 founder_user=user,
                 defaults={
                     "role_title": role_title,
@@ -254,6 +377,8 @@ class Command(BaseCommand):
                     "vesting_status": FounderEquityRecord.STATUS_ACTIVE,
                 },
             )
+            profile.founder_equity_record = equity
+            profile.save(update_fields=["founder_equity_record"])
 
         self.stdout.write(self.style.SUCCESS(
             "Seeded founder/staff departments, roles, ranks, volts, penalties, and equity records."

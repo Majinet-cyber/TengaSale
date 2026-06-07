@@ -1,0 +1,85 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Discipline Governance - TengaSale{% endblock %}
+
+{% block extra_head %}
+<style>
+.gov-page{max-width:1280px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}
+.gov-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px;position:sticky;top:0;background:rgba(248,250,252,.92);backdrop-filter:blur(10px);z-index:3;padding-top:8px}
+.gov-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#ff5a00}.gov-title{margin:3px 0;font-size:28px}.gov-sub{margin:0;color:#667085;font-size:13px}
+.gov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin-bottom:14px}.gov-card,.gov-section{background:rgba(255,255,255,.88);border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px;min-width:0}.gov-card span{display:block;font-size:11px;text-transform:uppercase;font-weight:850;color:#667085}.gov-card strong{display:block;font-size:23px;margin-top:7px}
+.gov-section{margin-bottom:14px}.gov-section h2{margin:0 0 10px;font-size:15px;color:#344054;text-transform:uppercase;letter-spacing:.05em}.gov-table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:12px}.gov-table{width:100%;min-width:940px;border-collapse:collapse}.gov-table th,.gov-table td{padding:9px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px;vertical-align:top}.gov-table th{background:#f8fafc;color:#667085;text-transform:uppercase;font-size:10px}.pill{display:inline-flex;border-radius:999px;padding:4px 8px;font-weight:850;background:#fff3eb;color:#ff5a00}.gov-actions{display:flex;gap:6px;flex-wrap:wrap}.gov-actions button{border:0;border-radius:8px;background:#101828;color:#fff;padding:7px 9px;font-weight:850}.gov-actions input{border:1px solid #d0d5dd;border-radius:8px;padding:7px;max-width:150px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gov-page">
+  <header class="gov-head">
+    <div>
+      <div class="gov-kicker">Discipline Governance</div>
+      <h1 class="gov-title">Evidence first. No self approval.</h1>
+      <p class="gov-sub">Department review, Finance/Risk payout approval, staff right to respond, and CEO/founder accountability.</p>
+    </div>
+  </header>
+
+  <section class="gov-grid">
+    <div class="gov-card"><span>Pending Reviews</span><strong>{{ pending_discipline_reviews|tsnum }}</strong></div>
+    <div class="gov-card"><span>Pending Disputes</span><strong>{{ pending_disputes|tsnum }}</strong></div>
+    <div class="gov-card"><span>Pending Volts</span><strong>{{ pending_volts|tsnum }}</strong></div>
+    <div class="gov-card"><span>Pending Payout Impact</span><strong>{{ pending_payout_approvals|tsnum }}</strong></div>
+    <div class="gov-card"><span>Average KPI</span><strong>{{ avg_kpi_score|floatformat:1 }}%</strong></div>
+  </section>
+
+  <section class="gov-section">
+    <h2>Monthly Discipline Scores</h2>
+    <div class="gov-table-wrap">
+      <table class="gov-table">
+        <thead><tr><th>Person</th><th>Department</th><th>Month</th><th>Score</th><th>Band</th><th>Status</th><th>Dispute</th><th>Reviewer</th><th>Approvals</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for period in discipline_periods %}
+          <tr>
+            <td>{{ period.user.profile.display_name|default:period.user.username }}</td>
+            <td>{{ period.user.profile.department.name|default:"-" }}</td>
+            <td>{{ period.month|date:"Y-m" }}</td>
+            <td><span class="pill">{{ period.final_score|floatformat:1 }}%</span></td>
+            <td>{{ period.band_label }}</td>
+            <td>{{ period.get_status_display }}</td>
+            <td>{{ period.get_dispute_status_display }}</td>
+            <td>{{ period.reviewed_by.username|default:"-" }}</td>
+            <td>Score: {{ period.approved_by.username|default:"-" }}<br>Payout: {{ period.payout_impact_approved_by.username|default:"-" }}</td>
+            <td>
+              <form class="gov-actions" method="post" action="{% url 'hq_discipline_action' period.id %}">
+                {% csrf_token %}
+                <input name="reason" placeholder="Reason">
+                <button name="action" value="approve">Approve</button>
+                <button name="action" value="approve_payout">Payout</button>
+                <button name="action" value="lock">Lock</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="10">No discipline score periods yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="gov-section">
+    <h2>Recent Evidence Events</h2>
+    <div class="gov-table-wrap">
+      <table class="gov-table">
+        <thead><tr><th>Person</th><th>Event</th><th>Source</th><th>Deduction</th><th>Bonus</th><th>Severity</th><th>Status</th><th>Evidence</th></tr></thead>
+        <tbody>
+        {% for event in discipline_events %}
+          <tr><td>{{ event.user.profile.display_name|default:event.user.username }}</td><td>{{ event.event_type.name }}</td><td>{{ event.get_source_display }}</td><td>{{ event.deduction_percentage }}%</td><td>{{ event.bonus_percentage|default:"0" }}%</td><td>{{ event.event_type.get_severity_display }}</td><td>{{ event.get_status_display }}</td><td>{{ event.evidence_text|default:"-" }}</td></tr>
+        {% empty %}
+          <tr><td colspan="8">No discipline events yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

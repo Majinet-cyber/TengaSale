@@ -1,0 +1,16 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Payout Approvals - TengaSale{% endblock %}
+{% block extra_head %}
+<style>
+.pay-page{max-width:1200px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}.pay-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.pay-kicker{font-size:11px;font-weight:900;text-transform:uppercase;color:#ff5a00;letter-spacing:.08em}.pay-title{font-size:28px;margin:3px 0}.pay-sub{margin:0;color:#667085;font-size:13px}.pay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px;margin-bottom:14px}.pay-card,.pay-section{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px}.pay-card span{display:block;font-size:11px;text-transform:uppercase;font-weight:850;color:#667085}.pay-card strong{display:block;font-size:23px;margin-top:7px}.pay-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:12px}.pay-table{width:100%;min-width:980px;border-collapse:collapse}.pay-table th,.pay-table td{padding:9px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}.pay-table th{background:#f8fafc;color:#667085;text-transform:uppercase;font-size:10px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pay-page">
+  <header class="pay-head"><div><div class="pay-kicker">Finance/Risk Approval</div><h1 class="pay-title">Payout impact queue</h1><p class="pay-sub">Money changes require Finance/Risk or authorized executive approval, never self approval.</p></div></header>
+  <section class="pay-grid"><div class="pay-card"><span>Pending Payout Impact</span><strong>{{ pending_count|tsnum }}</strong></div><div class="pay-card"><span>Visible Rows</span><strong>{{ rows|length|tsnum }}</strong></div></section>
+  <section class="pay-section"><div class="pay-wrap"><table class="pay-table"><thead><tr><th>Person</th><th>Month</th><th>Discipline</th><th>Base</th><th>Volts Pay</th><th>Monthly Pay</th><th>Ceiling</th><th>Final Pay</th><th>Payout Approval</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.period.user.profile.display_name|default:row.period.user.username }}</td><td>{{ row.period.month|date:"Y-m" }}</td><td>{{ row.period.final_score|floatformat:1 }}%</td><td>{{ row.volts.base_salary|mwk }}</td><td>{{ row.volts.estimated_pay|mwk }}</td><td>{{ row.volts.monthly_pay|mwk }}</td><td>{% if row.volts.monthly_ceiling %}{{ row.volts.monthly_ceiling|mwk }}{% else %}Board controlled{% endif %}</td><td>{{ row.volts.final_monthly_pay|mwk }}</td><td>{{ row.period.payout_impact_approved_by.username|default:"Pending" }}</td></tr>{% empty %}<tr><td colspan="9">No payout approvals available.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 28px; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #101828; font-size: 11px; line-height: 1.45; }
+    h1 { color: #ff5a00; font-size: 22px; margin: 0 0 6px; }
+    h2 { font-size: 13px; margin: 18px 0 8px; color: #344054; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; color: #475467; }
+    .brand { border-bottom: 3px solid #ff5a00; padding-bottom: 10px; margin-bottom: 16px; }
+    .muted { color: #667085; }
+    .notice { background: #fff3eb; border: 1px solid #ffd6bd; padding: 9px; margin: 10px 0; }
+    .sig td { height: 56px; vertical-align: bottom; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <h1>TengaSale</h1>
+    <div><strong>{{ document_title }}</strong></div>
+    <div class="muted">Document No: {{ document_number }} | Version {{ version }} | Generated {{ generated_at|date:"Y-m-d H:i" }}</div>
+    <div class="muted">Prepared by: {% if prepared_by %}{{ prepared_by.get_full_name|default:prepared_by.username }}{% else %}System{% endif %}</div>
+  </div>
+
+  <h2>Staff Identity</h2>
+  <table>
+    <tr><th>Name</th><td>{{ profile.display_name|default:user.username }}</td><th>Email</th><td>{{ profile.public_email|default:user.email }}</td></tr>
+    <tr><th>Role</th><td>{{ staff_role.name|default:profile.get_role_display }}</td><th>Department</th><td>{{ department.name|default:"-" }}</td></tr>
+    <tr><th>Rank</th><td>{{ rank.code|default:"-" }} {{ rank.title }}</td><th>Status</th><td>{{ profile.get_status_display|default:"-" }}</td></tr>
+    <tr><th>Joined</th><td>{{ profile.date_joined_company|default:"-" }}</td><th>Next Review</th><td>{{ profile.next_review_date|default:"-" }}</td></tr>
+  </table>
+
+  {% if document_type == "employment_agreement" %}
+  <h2>Employment Agreement Terms</h2>
+  <p>This agreement records the live company, staff, role, department and rank details above. Duties include lawful execution of assigned TengaSale workflows, accurate customer and device data handling, responsible task completion, confidentiality, fraud prevention, and compliance with Malawi law.</p>
+  <p>Performance-based compensation is governed by the current Compensation Annexure A and KPI & Volts Annexure B. Fraud, collusion, misconduct, customer data abuse, device information misuse, or deliberate negligence may trigger discipline, payout lock, suspension, or termination according to company policy and governing law Malawi.</p>
+  {% endif %}
+
+  {% if document_type == "compensation_annexure_a" or document_type == "monthly_volts_statement" %}
+  <h2>Compensation</h2>
+  <table>
+    <tr><th>Base salary / retainer</th><td>MWK {{ profile.effective_base_salary_mwk|floatformat:2 }}</td><th>Volt rate</th><td>MWK {{ profile.effective_volt_rate_mwk|floatformat:2 }}</td></tr>
+    <tr><th>Rank multiplier</th><td>{{ rank.rank_multiplier|default:"1.00" }}</td><th>Monthly ceiling</th><td>{% if profile.effective_monthly_ceiling_mwk %}MWK {{ profile.effective_monthly_ceiling_mwk|floatformat:2 }}{% else %}Board controlled{% endif %}</td></tr>
+    <tr><th>Approved volts</th><td>{{ volts.approved_volts|floatformat:2 }}</td><th>Pending volts</th><td>{{ volts.pending_volts|floatformat:2 }}</td></tr>
+    <tr><th>Gross volts pay</th><td>MWK {{ volts.estimated_pay|floatformat:2 }}</td><th>Final estimated pay</th><td>MWK {{ volts.final_monthly_pay|floatformat:2 }}</td></tr>
+    <tr><th>Ceiling adjustment</th><td colspan="3">MWK {{ volts.ceiling_adjustment|floatformat:2 }}</td></tr>
+  </table>
+  <p>Compensation cycle: 25th to 24th. Formula: monthly_pay = base_salary + approved_volts_pay. Approved volts pay uses approved volts, rank multiplier, quality score, discipline score and results score. Monthly ceilings are applied before payout approval.</p>
+  {% endif %}
+
+  {% if document_type == "kpi_volts_annexure_b" or document_type == "monthly_performance_review" %}
+  <h2>KPI & Volts Annexure</h2>
+  <table>
+    <tr><th>KPI</th><th>Target</th><th>Weight</th><th>Score Type</th></tr>
+    {% for kpi in kpis %}
+    <tr><td>{{ kpi.name }}</td><td>{{ kpi.target_value }}</td><td>{{ kpi.weight }}</td><td>{% if kpi.affects_quality_score %}Quality {% endif %}{% if kpi.affects_discipline_score %}Discipline {% endif %}{% if kpi.affects_results_score %}Results{% endif %}</td></tr>
+    {% empty %}
+    <tr><td colspan="4">No active KPI templates assigned.</td></tr>
+    {% endfor %}
+  </table>
+  <p>Staff have the right to view evidence, acknowledge scores, submit a response, and dispute within the configured response window. Promotion, demotion, discipline and payout decisions must use system evidence and approvals.</p>
+  {% endif %}
+
+  {% if document_type == "discipline_score_report" or document_type == "warning_letter" or document_type == "termination_letter" %}
+  <h2>Discipline Score</h2>
+  {% if discipline %}
+  <table>
+    <tr><th>Month</th><td>{{ discipline.month }}</td><th>Opening score</th><td>{{ discipline.opening_score }}</td></tr>
+    <tr><th>Automatic penalties</th><td>{{ discipline.automatic_penalties_total }}</td><th>Manual adjustments</th><td>{{ discipline.manual_adjustments_total }}</td></tr>
+    <tr><th>Bonuses</th><td>{{ discipline.bonus_points_total }}</td><th>Final score</th><td>{{ discipline.final_score }} - {{ discipline.band_label }}</td></tr>
+    <tr><th>Status</th><td>{{ discipline.get_status_display }}</td><th>Dispute</th><td>{{ discipline.get_dispute_status_display }}</td></tr>
+    <tr><th>User response</th><td colspan="3">{{ discipline.user_response_text|default:"No response recorded." }}</td></tr>
+  </table>
+  {% else %}
+  <p>No discipline score period is recorded for this staff member.</p>
+  {% endif %}
+  {% endif %}
+
+  {% if equity %}
+  <h2>Founder Equity Note</h2>
+  <div class="notice">Equity belongs to builders. App records support operational tracking, but signed legal documents govern actual ownership.</div>
+  <table><tr><th>Allocated shares</th><td>{{ equity.allocated_shares }}</td><th>Vested shares</th><td>{{ equity.vested_shares }}</td></tr></table>
+  {% endif %}
+
+  <h2>Signature Blocks</h2>
+  <table class="sig">
+    <tr><th>Employee / Founder</th><th>Company Representative</th><th>Witness / Reviewer</th></tr>
+    <tr><td>Signature:<br>Date:</td><td>Signature:<br>Date:</td><td>Signature:<br>Date:</td></tr>
+  </table>
+</body>
+</html>
