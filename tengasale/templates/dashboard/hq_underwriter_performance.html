@@ -38,6 +38,7 @@
       <h1 class="uwp-title">Underwriter Performance</h1>
       <p class="uwp-sub">Review metrics, approval rates, commissions, and review times per underwriter.</p>
     </div>
+    <a href="{% url 'hq_call_recording_qc' %}" style="color:#fff;background:#ff5a00;text-decoration:none;border-radius:10px;padding:10px 14px;font-weight:800;font-size:.82rem;">Call Recording QC</a>
   </div>
 
   {% if not stats %}
@@ -87,6 +88,18 @@
         <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
         {% endif %}
         <div class="uwp-metric-lbl">Avg review time</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#16a34a;">{{ s.qc_pass_rate }}%</div>
+        <div class="uwp-metric-lbl">QC pass rate</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.qc_failed }}</div>
+        <div class="uwp-metric-lbl">Failed QC</div>
+      </div>
+      <div class="uwp-metric">
+        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.qc_penalties|mwk }}</div>
+        <div class="uwp-metric-lbl">QC penalties</div>
       </div>
     </div>
     {% if s.reviewed %}

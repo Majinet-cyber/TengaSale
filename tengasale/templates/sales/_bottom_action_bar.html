@@ -1,0 +1,15 @@
+<div class="mobile-bottom-action-bar">
+  <div class="mobile-bottom-action-bar__inner">
+    {% if back_url %}
+      <a href="{{ back_url }}" class="mobile-bottom-action-bar__btn mobile-bottom-action-bar__btn--back">{{ back_label|default:"Back" }}</a>
+    {% endif %}
+    {% if secondary_url %}
+      <a href="{{ secondary_url }}" class="mobile-bottom-action-bar__btn mobile-bottom-action-bar__btn--secondary">{{ secondary_label|default:"Cancel" }}</a>
+    {% endif %}
+    {% if primary_label %}
+      <button type="submit" class="mobile-bottom-action-bar__btn mobile-bottom-action-bar__btn--primary mobile-bottom-action-bar__btn--{{ primary_variant|default:"orange" }}" {% if disabled %}disabled{% endif %}>
+        {{ primary_label }}
+      </button>
+    {% endif %}
+  </div>
+</div>

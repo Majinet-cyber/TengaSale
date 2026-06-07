@@ -599,7 +599,10 @@ class ApprovalQueueTests(TestCase):
 # ──────────────────────────────────────────────────────────────────────────────
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from approvals.models import CallEvidence
+from django.test import override_settings
+
+from approvals.models import CallEvidence, QCOffenseType, UnderwriterCallRecording, UnderwriterQCPenalty
+from commissions.models import CommissionLedger
 
 
 class CallRecordingUploadTests(TestCase):
@@ -709,6 +712,155 @@ class CallRecordingUploadTests(TestCase):
             uploaded_by=self.underwriter,
         )
         self.assertIn("Employer", str(evidence))
+
+    def test_underwriter_can_upload_valid_recording(self):
+        self.client.login(username="uw_ce", password="pass123")
+        response = self.client.post(
+            reverse("sales_upload_call_recording", args=[self.app.id]),
+            {
+                "recording_consent_acknowledged": "true",
+                "call_recording": self._make_audio_file(),
+            },
+        )
+        self.assertRedirects(response, reverse("sales_customer_call", args=[self.app.id]))
+        recording = UnderwriterCallRecording.objects.get(application=self.app)
+        self.assertEqual(recording.status, UnderwriterCallRecording.STATUS_PENDING_QC)
+        self.assertTrue(recording.consent_acknowledged)
+
+    def test_invalid_recording_file_type_rejected(self):
+        self.client.login(username="uw_ce", password="pass123")
+        bad_file = SimpleUploadedFile("call.txt", b"hello", content_type="text/plain")
+        self.client.post(
+            reverse("sales_upload_call_recording", args=[self.app.id]),
+            {
+                "recording_consent_acknowledged": "true",
+                "call_recording": bad_file,
+            },
+        )
+        self.assertFalse(UnderwriterCallRecording.objects.filter(application=self.app).exists())
+
+    @override_settings(MAX_CALL_RECORDING_SIZE_MB=1)
+    def test_oversized_recording_rejected(self):
+        self.client.login(username="uw_ce", password="pass123")
+        large_file = SimpleUploadedFile("call.mp3", b"x" * ((1024 * 1024) + 1), content_type="audio/mpeg")
+        self.client.post(
+            reverse("sales_upload_call_recording", args=[self.app.id]),
+            {
+                "recording_consent_acknowledged": "true",
+                "call_recording": large_file,
+            },
+        )
+        self.assertFalse(UnderwriterCallRecording.objects.filter(application=self.app).exists())
+
+    @override_settings(MAX_CALL_RECORDINGS_PER_APPLICATION=1)
+    def test_more_than_limit_recordings_rejected(self):
+        self.client.login(username="uw_ce", password="pass123")
+        UnderwriterCallRecording.objects.create(
+            application=self.app,
+            underwriter=self.underwriter,
+            file=self._make_audio_file("first.mp3"),
+            original_filename="first.mp3",
+            mime_type="audio/mpeg",
+            file_size=10,
+            consent_acknowledged=True,
+        )
+        self.client.post(
+            reverse("sales_upload_call_recording", args=[self.app.id]),
+            {
+                "recording_consent_acknowledged": "true",
+                "call_recording": self._make_audio_file("second.mp3"),
+            },
+        )
+        self.assertEqual(UnderwriterCallRecording.objects.filter(application=self.app).count(), 1)
+
+    def test_unauthenticated_upload_rejected(self):
+        response = self.client.post(reverse("sales_upload_call_recording", args=[self.app.id]))
+        self.assertIn(response.status_code, [302, 403])
+        self.assertFalse(UnderwriterCallRecording.objects.filter(application=self.app).exists())
+
+    def test_other_underwriter_cannot_access_recording_file(self):
+        other = get_user_model().objects.create_user(username="uw_other_ce", password="pass123")
+        assign_role(other, "underwriter")
+        recording = UnderwriterCallRecording.objects.create(
+            application=self.app,
+            underwriter=self.underwriter,
+            file=self._make_audio_file("private.mp3"),
+            original_filename="private.mp3",
+            mime_type="audio/mpeg",
+            file_size=10,
+            consent_acknowledged=True,
+        )
+        self.client.login(username="uw_other_ce", password="pass123")
+        response = self.client.get(reverse("sales_call_recording_file", args=[recording.id]))
+        self.assertIn(response.status_code, [302, 403])
+
+    @override_settings(REQUIRE_CALL_RECORDING_FOR_APPROVAL=True)
+    def test_sales_approval_blocked_when_recording_required_but_missing(self):
+        self.client.login(username="uw_ce", password="pass123")
+        response = self.client.post(reverse("sales_confirm_approve", args=[self.app.id]), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Call recording required")
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, "under_review")
+
+    @override_settings(REQUIRE_CALL_RECORDING_FOR_APPROVAL=False)
+    def test_sales_approval_allowed_when_recording_requirement_disabled(self):
+        attach_complete_pricing(self.app)
+        self.client.login(username="uw_ce", password="pass123")
+        response = self.client.post(reverse("sales_confirm_approve", args=[self.app.id]))
+        self.assertEqual(response.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, "approved")
+
+    def test_hq_can_review_recording_and_issue_penalty_with_ledger(self):
+        hq = get_user_model().objects.create_user(username="hq_qc_ce", password="pass123", is_staff=True)
+        assign_role(hq, "hq")
+        offense = QCOffenseType.objects.create(
+            code="TEST_INVALID_PHONE",
+            name="Invalid test phone",
+            severity=QCOffenseType.SEVERITY_CRITICAL,
+            default_penalty_mwk="50000.00",
+        )
+        recording = UnderwriterCallRecording.objects.create(
+            application=self.app,
+            underwriter=self.underwriter,
+            file=self._make_audio_file("qc.mp3"),
+            original_filename="qc.mp3",
+            mime_type="audio/mpeg",
+            file_size=10,
+            consent_acknowledged=True,
+        )
+        self.client.login(username="hq_qc_ce", password="pass123")
+        response = self.client.post(
+            reverse("hq_call_recording_qc_action", args=[recording.id]),
+            {"qc_result": "fail_penalty", "offense_ids": [str(offense.id)], "notes": "Bad number"},
+        )
+        self.assertRedirects(response, reverse("hq_call_recording_qc"))
+        penalty = UnderwriterQCPenalty.objects.get(evidence_recording=recording)
+        self.assertEqual(penalty.status, UnderwriterQCPenalty.STATUS_APPLIED)
+        ledger = CommissionLedger.objects.get(pk=penalty.ledger_entry_id)
+        self.assertEqual(ledger.amount, -penalty.amount_mwk)
+
+    def test_penalty_reversal_creates_positive_ledger_entry(self):
+        hq = get_user_model().objects.create_user(username="hq_reverse_ce", password="pass123", is_staff=True)
+        assign_role(hq, "hq")
+        offense = QCOffenseType.objects.create(
+            code="TEST_POOR_AUDIO",
+            name="Poor audio",
+            severity=QCOffenseType.SEVERITY_MINOR,
+            default_penalty_mwk="5000.00",
+        )
+        penalty = UnderwriterQCPenalty.objects.create(
+            application=self.app,
+            underwriter=self.underwriter,
+            offense_type=offense,
+            amount_mwk="5000.00",
+            issued_by=hq,
+        )
+        penalty.apply_to_ledger(actor=hq)
+        penalty.reverse_to_ledger(actor=hq, reason="Accepted dispute")
+        self.assertEqual(penalty.reversal_ledger_entry.amount, penalty.amount_mwk)
+        self.assertEqual(penalty.status, UnderwriterQCPenalty.STATUS_REVERSED)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

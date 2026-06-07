@@ -7,12 +7,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Avg, Count, Sum, Q, F
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from accounts.decorators import hq_required, merchant_required
 from accounts.forms import HQUserForm
 from accounts.models import (
@@ -57,6 +59,7 @@ from accounts.services import (
 from accounts.utils import primary_role, role_redirect_url
 from core.business_hours import business_hours_context
 from applications.models import FinancingApplication
+from approvals.models import QCOffenseType, UnderwriterCallRecording, UnderwriterQCPenalty
 from commissions.models import Commission, MerchantContractPayout, CommissionLedger
 from contracts.models import Contract
 from core.view_safety import safe_page
@@ -3146,6 +3149,21 @@ def hq_underwriter_performance(request):
             user=uw, entry_type=CommissionLedger.ENTRY_ARREARS
         ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
         net = gross + deductions
+        qc_reviewed = UnderwriterCallRecording.objects.filter(
+            underwriter=uw
+        ).exclude(status=UnderwriterCallRecording.STATUS_PENDING_QC).count()
+        qc_passed = UnderwriterCallRecording.objects.filter(
+            underwriter=uw,
+            status=UnderwriterCallRecording.STATUS_PASSED_QC,
+        ).count()
+        qc_failed = UnderwriterCallRecording.objects.filter(
+            underwriter=uw,
+            status=UnderwriterCallRecording.STATUS_FAILED_QC,
+        ).count()
+        qc_pass_rate = round((qc_passed / qc_reviewed * 100) if qc_reviewed else 0, 1)
+        qc_penalties = UnderwriterQCPenalty.objects.filter(underwriter=uw).aggregate(
+            t=Sum("amount_mwk")
+        )["t"] or Decimal("0")
 
         # Average review time (approved/rejected with reviewed_at and submitted_at)
         apps_with_times = FinancingApplication.objects.filter(
@@ -3170,6 +3188,10 @@ def hq_underwriter_performance(request):
             "deductions": deductions,
             "net_commission": net,
             "avg_review_hours": avg_review_hours,
+            "qc_reviewed": qc_reviewed,
+            "qc_pass_rate": qc_pass_rate,
+            "qc_failed": qc_failed,
+            "qc_penalties": qc_penalties,
         })
 
     stats.sort(key=lambda x: x["reviewed"], reverse=True)
@@ -3177,6 +3199,177 @@ def hq_underwriter_performance(request):
     return render(request, "dashboard/hq_underwriter_performance.html", {
         "stats": stats,
     })
+
+
+@hq_required
+def hq_call_recording_qc(request):
+    """HQ review queue for underwriter call recording evidence."""
+    User = get_user_model()
+    status = request.GET.get("status", "").strip()
+    underwriter_id = request.GET.get("underwriter", "").strip()
+    search = request.GET.get("q", "").strip()
+
+    recordings = (
+        UnderwriterCallRecording.objects.select_related(
+            "application", "application__deal", "application__created_by", "underwriter", "reviewed_by"
+        )
+        .annotate(penalty_total=Sum("qc_penalties__amount_mwk"))
+        .order_by("-uploaded_at")
+    )
+    if status:
+        recordings = recordings.filter(status=status)
+    if underwriter_id:
+        recordings = recordings.filter(underwriter_id=underwriter_id)
+    if search:
+        recordings = recordings.filter(
+            Q(application__application_number__icontains=search)
+            | Q(application__customer_name__icontains=search)
+            | Q(application__customer_phone__icontains=search)
+            | Q(underwriter__username__icontains=search)
+        )
+
+    month_start = timezone.localdate().replace(day=1)
+    base_recordings = UnderwriterCallRecording.objects.all()
+    penalty_base = UnderwriterQCPenalty.objects.all()
+    approved_without_recording = FinancingApplication.objects.filter(
+        status__in=["approved", "approved_pending_device_lock", "device_locked", "active_contract", "completed"],
+        underwriter_call_recordings__isnull=True,
+    ).count()
+
+    offense_counts = (
+        UnderwriterQCPenalty.objects.values("offense_type__code", "offense_type__name")
+        .annotate(count=Count("id"), total=Sum("amount_mwk"))
+        .order_by("-count")[:8]
+    )
+    underwriter_quality = []
+    for uw in User.objects.filter(profile__role="underwriter").order_by("username")[:50]:
+        uw_recordings = base_recordings.filter(underwriter=uw)
+        reviewed = uw_recordings.exclude(status=UnderwriterCallRecording.STATUS_PENDING_QC).count()
+        passed = uw_recordings.filter(status=UnderwriterCallRecording.STATUS_PASSED_QC).count()
+        underwriter_quality.append({
+            "user": uw,
+            "reviewed": reviewed,
+            "pass_rate": round((passed / reviewed * 100) if reviewed else 0, 1),
+            "penalties": penalty_base.filter(underwriter=uw).aggregate(t=Sum("amount_mwk"))["t"] or Decimal("0"),
+        })
+    underwriter_quality.sort(key=lambda row: (row["reviewed"], row["pass_rate"]), reverse=True)
+
+    return render(request, "dashboard/hq_call_recording_qc.html", {
+        "recordings": recordings[:100],
+        "offense_types": QCOffenseType.objects.filter(active=True).order_by("severity", "code"),
+        "underwriters": User.objects.filter(profile__role="underwriter").order_by("username"),
+        "filters": {"status": status, "underwriter": underwriter_id, "q": search},
+        "qc_status_choices": UnderwriterCallRecording.STATUS_CHOICES,
+        "kpis": {
+            "pending": base_recordings.filter(status=UnderwriterCallRecording.STATUS_PENDING_QC).count(),
+            "failed_month": base_recordings.filter(
+                status=UnderwriterCallRecording.STATUS_FAILED_QC,
+                reviewed_at__date__gte=month_start,
+            ).count(),
+            "penalties_issued": penalty_base.aggregate(t=Sum("amount_mwk"))["t"] or Decimal("0"),
+            "penalties_reversed": penalty_base.filter(status=UnderwriterQCPenalty.STATUS_REVERSED).aggregate(t=Sum("amount_mwk"))["t"] or Decimal("0"),
+            "approved_without_recording": approved_without_recording,
+        },
+        "offense_counts": offense_counts,
+        "underwriter_quality": underwriter_quality[:8],
+    })
+
+
+@hq_required
+@require_POST
+def hq_call_recording_qc_action(request, recording_id):
+    recording = get_object_or_404(
+        UnderwriterCallRecording.objects.select_related("application", "underwriter"),
+        pk=recording_id,
+    )
+    result = request.POST.get("qc_result", "")
+    notes = (request.POST.get("notes") or "").strip()
+    offense_ids = request.POST.getlist("offense_ids")
+
+    before = {"status": recording.status, "qc_notes": recording.qc_notes}
+    if result == "pass":
+        recording.mark_reviewed(UnderwriterCallRecording.STATUS_PASSED_QC, request.user, notes)
+        messages.success(request, "Recording marked as passed QC.")
+    elif result in {"fail_warning", "fail_penalty"}:
+        recording.mark_reviewed(UnderwriterCallRecording.STATUS_FAILED_QC, request.user, notes)
+        if result == "fail_penalty":
+            offenses = QCOffenseType.objects.filter(pk__in=offense_ids, active=True)
+            created_count = 0
+            with transaction.atomic():
+                for offense in offenses:
+                    amount = offense.default_penalty_mwk
+                    override_key = f"amount_{offense.pk}"
+                    raw_override = (request.POST.get(override_key) or "").strip()
+                    if raw_override:
+                        if not request.user.has_perm("approvals.hq_override_penalty_amount"):
+                            messages.error(request, "Penalty amount override requires HQ override permission.")
+                            return redirect("hq_call_recording_qc")
+                        if not notes:
+                            messages.error(request, "Penalty overrides require notes.")
+                            return redirect("hq_call_recording_qc")
+                        amount = Decimal(raw_override)
+                    penalty = UnderwriterQCPenalty.objects.create(
+                        application=recording.application,
+                        contract=recording.contract,
+                        underwriter=recording.underwriter,
+                        offense_type=offense,
+                        amount_mwk=amount,
+                        notes=notes,
+                        evidence_recording=recording,
+                        issued_by=request.user,
+                    )
+                    penalty.apply_to_ledger(actor=request.user)
+                    created_count += 1
+            messages.success(request, f"Recording failed QC and {created_count} penalty item(s) were applied.")
+        else:
+            messages.warning(request, "Recording failed QC with warning only.")
+    else:
+        messages.error(request, "Choose a QC result.")
+        return redirect("hq_call_recording_qc")
+
+    try:
+        from core.models import AuditLog
+
+        AuditLog.objects.create(
+            user=request.user,
+            action=AuditLog.ACTION_KYC_CHANGE,
+            object_type="UnderwriterCallRecording",
+            object_id=str(recording.pk),
+            detail={
+                "action": "call_recording_qc_saved",
+                "before": before,
+                "after": {"status": recording.status, "qc_notes": recording.qc_notes},
+                "offense_ids": offense_ids,
+            },
+        )
+    except Exception:
+        pass
+    return redirect("hq_call_recording_qc")
+
+
+@hq_required
+@require_POST
+def hq_qc_penalty_reverse(request, penalty_id):
+    penalty = get_object_or_404(UnderwriterQCPenalty.objects.select_related("offense_type"), pk=penalty_id)
+    reason = (request.POST.get("reason") or "").strip()
+    if not reason:
+        messages.error(request, "Reversal reason is required.")
+        return redirect("hq_call_recording_qc")
+    penalty.reverse_to_ledger(actor=request.user, reason=reason)
+    try:
+        from core.models import AuditLog
+
+        AuditLog.objects.create(
+            user=request.user,
+            action=AuditLog.ACTION_KYC_CHANGE,
+            object_type="UnderwriterQCPenalty",
+            object_id=str(penalty.pk),
+            detail={"action": "penalty_reversed", "reason": reason},
+        )
+    except Exception:
+        pass
+    messages.success(request, "QC penalty reversed and ledger credit created.")
+    return redirect("hq_call_recording_qc")
 
 
 @hq_required

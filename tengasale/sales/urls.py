@@ -10,6 +10,7 @@ urlpatterns = [
     path("applications/", views.sales_applications, name="sales_applications"),
     path("queue-rules/", views.sales_queue_rules, name="sales_queue_rules"),
     path("wallet/", views.sales_wallet, name="sales_wallet"),
+    path("wallet/qc-penalties/<int:penalty_id>/dispute/", views.sales_qc_penalty_dispute, name="sales_qc_penalty_dispute"),
     path("spin/", earnings_views.sales_spin, name="sales_spin"),
     path("payments/", views.sales_payments, name="sales_payments"),
 
@@ -18,6 +19,9 @@ urlpatterns = [
     path("applications/<int:app_id>/identity/", views.sales_identity_check, name="sales_identity_check"),
     path("applications/<int:app_id>/address/", views.sales_address_check, name="sales_address_check"),
     path("applications/<int:app_id>/customer-call/", views.sales_customer_call, name="sales_customer_call"),
+    path("applications/<int:app_id>/call-recordings/upload/", views.sales_upload_call_recording, name="sales_upload_call_recording"),
+    path("call-recordings/<int:recording_id>/", views.sales_call_recording_file, name="sales_call_recording_file"),
+    path("call-recordings/<int:recording_id>/delete/", views.sales_delete_call_recording, name="sales_delete_call_recording"),
     path("applications/<int:app_id>/call-questionnaire/", views.sales_call_questionnaire, name="sales_call_questionnaire"),
     path("applications/<int:app_id>/guarantor-call/", views.sales_guarantor_call, name="sales_guarantor_call"),
     path("applications/<int:app_id>/income/", views.sales_income_check, name="sales_income_check"),

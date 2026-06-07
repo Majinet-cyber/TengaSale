@@ -51,6 +51,9 @@ urlpatterns = [
     path("tengasale/hq/reconciliation/", views.hq_reconciliation, name="hq_reconciliation"),
     path("tengasale/hq/sales-analytics/", views.hq_sales_analytics, name="hq_sales_analytics"),
     path("tengasale/hq/underwriter-performance/", views.hq_underwriter_performance, name="hq_underwriter_performance"),
+    path("tengasale/hq/qc/call-recordings/", views.hq_call_recording_qc, name="hq_call_recording_qc"),
+    path("tengasale/hq/qc/call-recordings/<int:recording_id>/action/", views.hq_call_recording_qc_action, name="hq_call_recording_qc_action"),
+    path("tengasale/hq/qc/penalties/<int:penalty_id>/reverse/", views.hq_qc_penalty_reverse, name="hq_qc_penalty_reverse"),
     path("tengasale/hq/fraud-checks/", views.hq_fraud_checks, name="hq_fraud_checks"),
     path("tengasale/hq/audit-trail/", views.hq_audit_trail, name="hq_audit_trail"),
     path("tengasale/hq/payment-intelligence/", views.hq_payment_intelligence, name="hq_payment_intelligence"),
@@ -86,4 +89,5 @@ urlpatterns = [
     path("hq/repossession-resale/", RedirectView.as_view(pattern_name="hq_repossession_resale", permanent=False), name="hq_repossession_resale_alias"),
     path("hq/staff-payouts/", RedirectView.as_view(pattern_name="hq_staff_payouts", permanent=False), name="hq_staff_payouts_alias"),
     path("hq/auto-approval/", RedirectView.as_view(pattern_name="hq_auto_approval", permanent=False), name="hq_auto_approval_alias"),
+    path("hq/qc/call-recordings/", RedirectView.as_view(pattern_name="hq_call_recording_qc", permanent=False), name="hq_call_recording_qc_alias"),
 ]

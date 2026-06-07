@@ -101,6 +101,11 @@
     >Deductions</button>
     <button
       class="tab-item"
+      x-bind:class="{ 'tab-item--active': tab === 'qc' }"
+      x-on:click="tab = 'qc'"
+    >QC Penalties</button>
+    <button
+      class="tab-item"
       x-bind:class="{ 'tab-item--active': tab === 'payouts' }"
       x-on:click="tab = 'payouts'"
     >Payouts</button>
@@ -172,6 +177,52 @@
       {% endfor %}
     {% else %}
       <div class="empty-state"><p>No arrears deductions.</p></div>
+    {% endif %}
+  </div>
+
+
+  <div x-show="tab === 'qc'" x-cloak>
+    <div class="earnings-kpi-grid">
+      <div class="earnings-kpi">
+        <span>Applied</span>
+        <strong class="text-red">{{ qc_penalty_totals.applied.total|default:0|mwk }}</strong>
+      </div>
+      <div class="earnings-kpi">
+        <span>Pending</span>
+        <strong>{{ qc_penalty_totals.pending.total|default:0|mwk }}</strong>
+      </div>
+      <div class="earnings-kpi">
+        <span>Disputed</span>
+        <strong>{{ qc_penalty_totals.disputed.total|default:0|mwk }}</strong>
+      </div>
+      <div class="earnings-kpi">
+        <span>Reversed</span>
+        <strong class="text-green">{{ qc_penalty_totals.reversed.total|default:0|mwk }}</strong>
+      </div>
+    </div>
+    {% if qc_penalties %}
+      {% for penalty in qc_penalties %}
+        <div class="tx-row tx-row--debit" data-testid="qc-penalty-row">
+          <div class="tx-row__left">
+            <div class="tx-row__type">QC penalty: {{ penalty.offense_type.name }}</div>
+            <div class="tx-row__meta">{{ penalty.application.application_number }} - {{ penalty.get_status_display }}</div>
+            <div class="tx-row__date">{{ penalty.issued_at|date:"d M Y, H:i" }}</div>
+            {% if penalty.notes %}<div class="tx-row__meta">{{ penalty.notes|linebreaksbr }}</div>{% endif %}
+            {% if penalty.status != "reversed" and penalty.status != "disputed" %}
+              <form method="post" action="{% url 'sales_qc_penalty_dispute' penalty.id %}" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                {% csrf_token %}
+                <input class="input" name="explanation" placeholder="Dispute explanation" required style="flex:1;min-width:180px;">
+                <button type="submit" class="btn-secondary">Dispute</button>
+              </form>
+            {% endif %}
+          </div>
+          <div class="tx-row__amount {% if penalty.status == 'reversed' %}text-green{% else %}text-red{% endif %}">
+            {% if penalty.status == 'reversed' %}+{% else %}-{% endif %}{{ penalty.amount_mwk|mwk }}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state"><p>No QC penalties.</p></div>
     {% endif %}
   </div>
 

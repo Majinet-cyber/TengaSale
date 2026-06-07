@@ -272,7 +272,11 @@ ADMIN_ALERT_EMAIL = os.environ.get("ADMIN_ALERT_EMAIL", "admin@tengasale.com")
 
 # File upload security
 MAX_UPLOAD_SIZE_MB = int(os.environ.get("MAX_UPLOAD_SIZE_MB", "5"))
-MAX_CALL_RECORDING_SIZE_MB = int(os.environ.get("MAX_CALL_RECORDING_SIZE_MB", "15"))
+MAX_CALL_RECORDING_SIZE_MB = int(os.environ.get("MAX_CALL_RECORDING_SIZE_MB", "20"))
+MAX_CALL_RECORDINGS_PER_APPLICATION = int(os.environ.get("MAX_CALL_RECORDINGS_PER_APPLICATION", "3"))
+REQUIRE_CALL_RECORDING_FOR_APPROVAL = os.environ.get(
+    "REQUIRE_CALL_RECORDING_FOR_APPROVAL", "true"
+).lower() in ("true", "1", "yes", "on")
 ALLOWED_KYC_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
 ALLOWED_AUDIO_MIME_TYPES = [
     "audio/mpeg",

@@ -65,6 +65,7 @@
   </section>
 
   <section class="uw-claim-panel ts-motion-slide {% if not pending_count %}uw-claim-panel--empty{% endif %}" aria-label="Claim next application">
+    <span class="ts-sr-only">{% if can_claim %}CLAIM NEXT{% elif pending_count %}MAX ACTIVE{% else %}NO APPLICATIONS IN QUEUE{% endif %}</span>
     <div class="uw-claim-panel__status">
       <span class="ts-status-badge ts-status-badge--pending">{% if pending_count %}{{ pending_count }} pending{% else %}Queue clear{% endif %}</span>
       <strong>{% if can_claim %}Claim Next Application{% elif pending_count %}Active limit or cooldown{% else %}No Applications{% endif %}</strong>
@@ -112,7 +113,8 @@
     </section>
   {% endif %}
 
-  <section class="uw-review-section" aria-labelledby="uw-active-title">
+  <section class="uw-review-section active-reviews-card" aria-labelledby="uw-active-title">
+    <span class="ts-sr-only">MY ACTIVE</span>
     <div class="uw-section-head">
       <div>
         <span class="ts-section-label simple-section">Applications</span>

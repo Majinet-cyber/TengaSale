@@ -4238,6 +4238,138 @@ label,
   margin-top: 2px;
 }
 
+.mobile-bottom-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  margin: 18px -4px 0;
+  padding: 12px 8px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+.mobile-bottom-action-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+.mobile-bottom-action-bar__btn {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 12px 16px;
+  font-weight: 900;
+  text-decoration: none;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.1;
+  box-sizing: border-box;
+}
+.mobile-bottom-action-bar__btn--back,
+.mobile-bottom-action-bar__btn--secondary {
+  color: #0f172a;
+  background: #fff;
+  border-color: #e2e8f0;
+  flex: 0 0 auto;
+}
+.mobile-bottom-action-bar__btn--primary {
+  color: #fff;
+  flex: 1 1 auto;
+  border: 0;
+  cursor: pointer;
+}
+.mobile-bottom-action-bar__btn--orange { background: #ff5a00; }
+.mobile-bottom-action-bar__btn--green { background: #16a34a; }
+.mobile-bottom-action-bar__btn--blue { background: #2563eb; }
+.mobile-bottom-action-bar__btn--red { background: #dc2626; }
+.mobile-bottom-action-bar__btn--yellow { background: #d97706; }
+.mobile-bottom-action-bar__btn[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.ts-recording-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.ts-recording-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: .68rem;
+  font-weight: 900;
+}
+.ts-recording-status--pending_qc { background: #fef3c7; color: #92400e; }
+.ts-recording-status--passed_qc { background: #dcfce7; color: #166534; }
+.ts-recording-status--failed_qc { background: #fee2e2; color: #991b1b; }
+.ts-recording-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ts-recording-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+.ts-recording-item__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.ts-recording-item__name {
+  font-weight: 900;
+  color: #0f172a;
+  word-break: break-word;
+}
+.ts-recording-item__meta {
+  color: #64748b;
+  font-size: .76rem;
+  margin-top: 3px;
+}
+.ts-recording-empty {
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  color: #64748b;
+  text-align: center;
+  background: #fff;
+  font-size: .86rem;
+}
+.ts-call-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.ts-call-section-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+.ts-call-section-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #0f172a;
+}
+.ts-call-section-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: .84rem;
+  word-break: break-word;
+}
+
 /* == Underwriter queue fairness and action polish ================== */
 .uw-home-simple .uw-queue-status-card {
   border-color: rgba(22, 163, 74, 0.32);

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -43,6 +45,262 @@ class CallEvidence(models.Model):
 
     def __str__(self):
         return f"{self.get_stage_display()} evidence for {self.application_id}"
+
+
+class UnderwriterCallRecording(models.Model):
+    STATUS_PENDING_QC = "pending_qc"
+    STATUS_PASSED_QC = "passed_qc"
+    STATUS_FAILED_QC = "failed_qc"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING_QC, "Pending QC"),
+        (STATUS_PASSED_QC, "Passed QC"),
+        (STATUS_FAILED_QC, "Failed QC"),
+    ]
+
+    application = models.ForeignKey(
+        FinancingApplication,
+        on_delete=models.CASCADE,
+        related_name="underwriter_call_recordings",
+    )
+    contract = models.ForeignKey(
+        "portal.PaymentContract",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="underwriter_call_recordings",
+    )
+    underwriter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="underwriter_call_recordings",
+    )
+    file = models.FileField(upload_to="underwriter_call_recordings/")
+    original_filename = models.CharField(max_length=255)
+    mime_type = models.CharField(max_length=120, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    consent_acknowledged = models.BooleanField(default=False)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING_QC)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_underwriter_call_recordings",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    qc_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        permissions = [
+            ("underwriter_upload_call_recording", "Can upload underwriter call recordings"),
+            ("hq_review_call_recording_qc", "Can review underwriter call recording QC"),
+        ]
+        verbose_name = "Underwriter Call Recording"
+        verbose_name_plural = "Underwriter Call Recordings"
+
+    @property
+    def file_size_mb(self):
+        return round((self.file_size or 0) / (1024 * 1024), 2)
+
+    @property
+    def can_delete(self):
+        return self.status == self.STATUS_PENDING_QC
+
+    def mark_reviewed(self, status, reviewed_by, notes=""):
+        self.status = status
+        self.reviewed_by = reviewed_by
+        self.reviewed_at = timezone.now()
+        self.qc_notes = notes
+        self.save(update_fields=["status", "reviewed_by", "reviewed_at", "qc_notes"])
+
+    def __str__(self):
+        return f"{self.original_filename} for {self.application_id}"
+
+
+class QCOffenseType(models.Model):
+    SEVERITY_MINOR = "minor"
+    SEVERITY_MODERATE = "moderate"
+    SEVERITY_MAJOR = "major"
+    SEVERITY_CRITICAL = "critical"
+
+    SEVERITY_CHOICES = [
+        (SEVERITY_MINOR, "Minor"),
+        (SEVERITY_MODERATE, "Moderate"),
+        (SEVERITY_MAJOR, "Major"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    code = models.CharField(max_length=80, unique=True)
+    name = models.CharField(max_length=180)
+    description = models.TextField(blank=True)
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default=SEVERITY_MINOR)
+    default_penalty_mwk = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["severity", "code"]
+        verbose_name = "QC Offense Type"
+        verbose_name_plural = "QC Offense Types"
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
+class UnderwriterQCPenalty(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_APPLIED = "applied"
+    STATUS_REVERSED = "reversed"
+    STATUS_DISPUTED = "disputed"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_APPLIED, "Applied"),
+        (STATUS_REVERSED, "Reversed"),
+        (STATUS_DISPUTED, "Disputed"),
+    ]
+
+    application = models.ForeignKey(
+        FinancingApplication,
+        on_delete=models.CASCADE,
+        related_name="underwriter_qc_penalties",
+    )
+    contract = models.ForeignKey(
+        "portal.PaymentContract",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="underwriter_qc_penalties",
+    )
+    underwriter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="qc_penalties",
+    )
+    offense_type = models.ForeignKey(
+        QCOffenseType,
+        on_delete=models.PROTECT,
+        related_name="penalties",
+    )
+    amount_mwk = models.DecimalField(max_digits=14, decimal_places=2)
+    notes = models.TextField(blank=True)
+    evidence_recording = models.ForeignKey(
+        UnderwriterCallRecording,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="qc_penalties",
+    )
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issued_qc_penalties",
+    )
+    issued_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    payroll_period = models.DateField(null=True, blank=True)
+    ledger_entry = models.ForeignKey(
+        "commissions.CommissionLedger",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="qc_penalties",
+    )
+    reversal_ledger_entry = models.ForeignKey(
+        "commissions.CommissionLedger",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reversed_qc_penalties",
+    )
+    reversed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reversed_qc_penalties",
+    )
+    reversed_at = models.DateTimeField(null=True, blank=True)
+    reversal_reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-issued_at"]
+        permissions = [
+            ("hq_issue_qc_penalty", "Can issue underwriter QC penalties"),
+            ("hq_reverse_qc_penalty", "Can reverse underwriter QC penalties"),
+            ("hq_override_penalty_amount", "Can override underwriter QC penalty amount"),
+            ("underwriter_view_own_penalties", "Can view own underwriter QC penalties"),
+            ("underwriter_dispute_penalty", "Can dispute own underwriter QC penalties"),
+        ]
+        verbose_name = "Underwriter QC Penalty"
+        verbose_name_plural = "Underwriter QC Penalties"
+
+    def apply_to_ledger(self, actor=None):
+        if self.ledger_entry_id:
+            return self.ledger_entry
+        from commissions.models import CommissionLedger
+
+        entry = CommissionLedger.objects.create(
+            user=self.underwriter,
+            contract=self.contract,
+            application=self.application,
+            entry_type=CommissionLedger.ENTRY_ADJUSTMENT,
+            amount=Decimal("0") - Decimal(self.amount_mwk),
+            base_amount=self.amount_mwk,
+            description=f"QC penalty: {self.offense_type.name}",
+            created_by=actor or self.issued_by,
+            metadata={
+                "qc_penalty_id": self.pk,
+                "offense_code": self.offense_type.code,
+                "evidence_recording_id": self.evidence_recording_id,
+            },
+        )
+        self.ledger_entry = entry
+        self.status = self.STATUS_APPLIED
+        self.save(update_fields=["ledger_entry", "status"])
+        return entry
+
+    def reverse_to_ledger(self, actor, reason=""):
+        if self.reversal_ledger_entry_id:
+            return self.reversal_ledger_entry
+        from commissions.models import CommissionLedger
+
+        entry = CommissionLedger.objects.create(
+            user=self.underwriter,
+            contract=self.contract,
+            application=self.application,
+            entry_type=CommissionLedger.ENTRY_REVERSAL,
+            amount=self.amount_mwk,
+            base_amount=self.amount_mwk,
+            description=f"QC penalty reversed: {self.offense_type.name}",
+            created_by=actor,
+            metadata={
+                "qc_penalty_id": self.pk,
+                "offense_code": self.offense_type.code,
+                "reversal_reason": reason,
+            },
+        )
+        self.reversal_ledger_entry = entry
+        self.status = self.STATUS_REVERSED
+        self.reversed_by = actor
+        self.reversed_at = timezone.now()
+        self.reversal_reason = reason
+        self.save(update_fields=[
+            "reversal_ledger_entry", "status", "reversed_by", "reversed_at", "reversal_reason",
+        ])
+        return entry
+
+    def __str__(self):
+        return f"{self.offense_type.code} - {self.underwriter_id} - MWK {self.amount_mwk}"
 
 
 class UnderwriterReview(models.Model):

@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import CustomerCallQuestionnaire, UnderwriterReview
+from .models import (
+    CustomerCallQuestionnaire,
+    QCOffenseType,
+    UnderwriterCallRecording,
+    UnderwriterQCPenalty,
+    UnderwriterReview,
+)
 
 
 @admin.register(UnderwriterReview)
@@ -66,3 +72,29 @@ class CustomerCallQuestionnaireAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_at", "updated_at", "completed_at", "completed_by", "recommendation", "risk_score")
     ordering = ("-completed_at", "-updated_at")
+
+
+@admin.register(UnderwriterCallRecording)
+class UnderwriterCallRecordingAdmin(admin.ModelAdmin):
+    list_display = ("application", "underwriter", "original_filename", "status", "uploaded_at", "reviewed_by")
+    list_filter = ("status", "consent_acknowledged", "uploaded_at", "reviewed_at")
+    search_fields = ("application__application_number", "application__customer_name", "original_filename", "underwriter__username")
+    readonly_fields = ("uploaded_at", "reviewed_at")
+    ordering = ("-uploaded_at",)
+
+
+@admin.register(QCOffenseType)
+class QCOffenseTypeAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "severity", "default_penalty_mwk", "active")
+    list_filter = ("severity", "active")
+    search_fields = ("code", "name", "description")
+    ordering = ("severity", "code")
+
+
+@admin.register(UnderwriterQCPenalty)
+class UnderwriterQCPenaltyAdmin(admin.ModelAdmin):
+    list_display = ("application", "underwriter", "offense_type", "amount_mwk", "status", "issued_at")
+    list_filter = ("status", "offense_type", "issued_at")
+    search_fields = ("application__application_number", "underwriter__username", "offense_type__code", "notes")
+    readonly_fields = ("issued_at", "reversed_at", "ledger_entry", "reversal_ledger_entry")
+    ordering = ("-issued_at",)

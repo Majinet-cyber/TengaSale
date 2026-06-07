@@ -9,10 +9,12 @@ clean URL surface and enriched context for the polished sales UI.
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Sum
-from django.http import JsonResponse
+from django.db.models import Count, Sum
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -22,7 +24,13 @@ from accounts.utils import is_hq, is_underwriter
 from applications.models import ApplicationCorrection, ApplicationFieldReview, FinancingApplication
 from applications.models import ApplicationCorrectionToken
 from approvals.forms import CustomerCallQuestionnaireForm
-from approvals.models import CallEvidence, CustomerCallQuestionnaire, UnderwriterReview
+from approvals.models import (
+    CallEvidence,
+    CustomerCallQuestionnaire,
+    UnderwriterCallRecording,
+    UnderwriterQCPenalty,
+    UnderwriterReview,
+)
 from approvals.views import (
     MAX_ACTIVE,
     bool_from_post,
@@ -418,7 +426,7 @@ def sales_address_check(request, app_id):
     if response:
         return response
     review = get_review(app, request.user)
-    fields = ["location_neighbour_spoken", "location_confirmed", "location_traceable"]
+    fields = ["location_neighbour_spoken", "location_confirmed", "location_traceable", "location_address_clear"]
     if request.method == "POST":
         for field in fields:
             setattr(review, field, bool_from_post(request, field))
@@ -427,6 +435,7 @@ def sales_address_check(request, app_id):
             "spoke_to_neighbour": review.location_neighbour_spoken,
             "neighbour_confirmed_location": review.location_confirmed,
             "can_locate_if_defaulted": review.location_traceable,
+            "location_description_clear": review.location_address_clear,
         }
         app.save(update_fields=["address_check_answers"])
         return redirect("sales_customer_call", app_id=app.id)
@@ -438,24 +447,96 @@ def sales_address_check(request, app_id):
 
 
 ALLOWED_AUDIO_TYPES = {
-    "audio/mpeg", "audio/mp3", "audio/wav", "audio/mp4",
-    "audio/webm", "audio/ogg", "audio/x-m4a",
+    "audio/aac", "audio/mpeg", "audio/mp3", "audio/mp4",
+    "audio/wav", "audio/webm", "audio/ogg", "audio/x-m4a", "video/webm",
 }
-MAX_CALL_RECORDING_BYTES = 15 * 1024 * 1024  # 15 MB
+ALLOWED_AUDIO_EXTENSIONS = (".mp3", ".m4a", ".wav", ".aac", ".ogg", ".webm")
 
 
-def _save_call_recording(request, app, stage):
-    """Save uploaded call recording as CallEvidence. Returns the object or None."""
+def _call_recording_limit_bytes():
+    return int(getattr(settings, "MAX_CALL_RECORDING_SIZE_MB", 20)) * 1024 * 1024
+
+
+def _recording_contract_for_application(app):
+    related = getattr(app, "portal_contracts", None)
+    if related is None:
+        return None
+    return related.order_by("-created_at").first()
+
+
+def _validate_underwriter_recording_upload(request, app, uploaded, consent_acknowledged):
+    max_recordings = int(getattr(settings, "MAX_CALL_RECORDINGS_PER_APPLICATION", 3))
+    current_count = UnderwriterCallRecording.objects.filter(application=app).count()
+    if current_count >= max_recordings:
+        messages.error(request, f"Recording not saved: maximum {max_recordings} recordings per application.")
+        return False
+    if not consent_acknowledged:
+        messages.error(request, "Recording not saved: acknowledge customer recording consent first.")
+        return False
+    if uploaded.size > _call_recording_limit_bytes():
+        messages.error(
+            request,
+            f"Recording not saved: file exceeds {getattr(settings, 'MAX_CALL_RECORDING_SIZE_MB', 20)} MB limit.",
+        )
+        return False
+    content_type = uploaded.content_type or ""
+    if content_type not in ALLOWED_AUDIO_TYPES and not uploaded.name.lower().endswith(ALLOWED_AUDIO_EXTENSIONS):
+        messages.error(request, "Recording not saved: use mp3, m4a, wav, aac, ogg, or webm.")
+        return False
+    return True
+
+
+def _save_underwriter_call_recording(request, app):
     uploaded = request.FILES.get("call_recording")
     if not uploaded:
         return None
-    if uploaded.size > MAX_CALL_RECORDING_BYTES:
-        messages.warning(request, "Recording not saved: file exceeds 15 MB limit.")
+    consent_acknowledged = request.POST.get("recording_consent_acknowledged") in {"yes", "true", "on", "1"}
+    if not _validate_underwriter_recording_upload(request, app, uploaded, consent_acknowledged):
+        return None
+    questionnaire, _created = CustomerCallQuestionnaire.objects.get_or_create(application=app)
+    if consent_acknowledged and not questionnaire.recording_consent_acknowledged:
+        questionnaire.recording_consent_acknowledged = True
+        questionnaire.save(update_fields=["recording_consent_acknowledged", "updated_at"])
+    recording = UnderwriterCallRecording.objects.create(
+        application=app,
+        contract=_recording_contract_for_application(app),
+        underwriter=request.user,
+        file=uploaded,
+        original_filename=uploaded.name,
+        mime_type=uploaded.content_type or "",
+        file_size=uploaded.size,
+        consent_acknowledged=consent_acknowledged,
+    )
+    _audit(
+        request.user,
+        AuditLog.ACTION_KYC_CHANGE,
+        "UnderwriterCallRecording",
+        recording.pk,
+        {
+            "action": "recording_uploaded",
+            "application": app.application_number,
+            "filename": uploaded.name,
+            "file_size": uploaded.size,
+        },
+        request,
+    )
+    messages.success(request, "Call recording uploaded for HQ QC.")
+    return recording
+
+
+def _save_call_recording(request, app, stage):
+    """Legacy call evidence upload used by non-customer-call review steps."""
+    uploaded = request.FILES.get("call_recording")
+    if not uploaded:
+        return None
+    if uploaded.size > _call_recording_limit_bytes():
+        messages.warning(
+            request,
+            f"Recording not saved: file exceeds {getattr(settings, 'MAX_CALL_RECORDING_SIZE_MB', 20)} MB limit.",
+        )
         return None
     content_type = uploaded.content_type or ""
-    if content_type not in ALLOWED_AUDIO_TYPES and not uploaded.name.lower().endswith(
-        (".mp3", ".wav", ".mp4", ".webm", ".ogg", ".m4a")
-    ):
+    if content_type not in ALLOWED_AUDIO_TYPES and not uploaded.name.lower().endswith(ALLOWED_AUDIO_EXTENSIONS):
         messages.warning(request, "Recording not saved: unsupported file type.")
         return None
     notified = bool_from_post(request, f"{stage.split('_')[0]}_notified_recording")
@@ -475,6 +556,27 @@ def _save_call_recording(request, app, stage):
         detail={"stage": stage, "application": app.application_number},
     )
     return evidence
+
+
+def _call_recording_gate(app):
+    required = bool(getattr(settings, "REQUIRE_CALL_RECORDING_FOR_APPROVAL", True))
+    recordings = UnderwriterCallRecording.objects.filter(application=app)
+    has_recording = recordings.exists()
+    consent_acknowledged = recordings.filter(consent_acknowledged=True).exists()
+    can_approve = (not required) or (has_recording and consent_acknowledged)
+    reason = ""
+    if required and not has_recording:
+        reason = "Call recording required before approval."
+    elif required and not consent_acknowledged:
+        reason = "Recording consent must be acknowledged before approval."
+    return {
+        "required": required,
+        "has_recording": has_recording,
+        "consent_acknowledged": consent_acknowledged,
+        "can_approve": can_approve,
+        "blocked_reason": reason,
+        "count": recordings.count(),
+    }
 
 
 @underwriter_required
@@ -497,15 +599,70 @@ def sales_customer_call(request, app_id):
         for field in call_fields:
             setattr(review, field, bool_from_post(request, field))
         review.save(update_fields=[*call_fields, "updated_at"])
-        _save_call_recording(request, app, CallEvidence.STAGE_CUSTOMER_CALL)
         return redirect("sales_income_check", app_id=app.id)
-    call_evidence = app.call_evidence.filter(stage=CallEvidence.STAGE_CUSTOMER_CALL).first()
+    call_recordings = UnderwriterCallRecording.objects.filter(application=app).select_related("underwriter", "reviewed_by")
+    questionnaire, _created = CustomerCallQuestionnaire.objects.get_or_create(application=app)
     return render(request, "sales/customer_call.html", {
         "page_heading": "Customer Call",
         "app": app, "review": review, "step": 4, "total_steps": 6,
-        "call_evidence": call_evidence,
+        "call_recordings": call_recordings,
+        "questionnaire": questionnaire,
+        "recording_limit": getattr(settings, "MAX_CALL_RECORDINGS_PER_APPLICATION", 3),
+        "recording_size_mb": getattr(settings, "MAX_CALL_RECORDING_SIZE_MB", 20),
         **correction_context(app),
     })
+
+
+@underwriter_required
+@require_POST
+def sales_upload_call_recording(request, app_id):
+    app, response = review_guard(request, app_id)
+    if response:
+        return response
+    _save_underwriter_call_recording(request, app)
+    return redirect("sales_customer_call", app_id=app.id)
+
+
+@underwriter_required
+@require_POST
+def sales_delete_call_recording(request, recording_id):
+    recording = get_object_or_404(UnderwriterCallRecording, pk=recording_id)
+    if recording.underwriter_id != request.user.id or recording.application.claimed_by_id != request.user.id:
+        raise PermissionDenied
+    if not recording.can_delete:
+        messages.error(request, "Only pending-QC recordings can be deleted.")
+        return redirect("sales_customer_call", app_id=recording.application_id)
+    app_id = recording.application_id
+    filename = recording.original_filename
+    recording.delete()
+    _audit(
+        request.user,
+        AuditLog.ACTION_KYC_CHANGE,
+        "UnderwriterCallRecording",
+        recording_id,
+        {"action": "recording_deleted", "filename": filename},
+        request,
+    )
+    messages.success(request, "Recording deleted.")
+    return redirect("sales_customer_call", app_id=app_id)
+
+
+@role_required(_underwriter_or_hq)
+def sales_call_recording_file(request, recording_id):
+    recording = get_object_or_404(UnderwriterCallRecording, pk=recording_id)
+    user = request.user
+    allowed = (
+        is_hq(user)
+        or user.is_staff
+        or user.is_superuser
+        or recording.underwriter_id == user.id
+        or recording.application.claimed_by_id == user.id
+    )
+    if not allowed:
+        raise PermissionDenied
+    if not recording.file:
+        raise Http404("Recording file not found.")
+    return FileResponse(recording.file.open("rb"), content_type=recording.mime_type or "application/octet-stream")
 
 
 @underwriter_required
@@ -653,8 +810,19 @@ def sales_confirm_approve(request, app_id):
     from risk.services import run_fraud_check, can_approve_application
     fraud_check = run_fraud_check(app, checked_by=request.user)
     approval_guard = can_approve_application(app, requesting_user=request.user)
+    recording_gate = _call_recording_gate(app)
 
     if request.method == "POST":
+        if not recording_gate["can_approve"]:
+            messages.error(request, recording_gate["blocked_reason"])
+            return render(request, "sales/confirm_approve.html", {
+                "app": app,
+                "page_heading": "Confirm Approve",
+                "fraud_check": fraud_check,
+                "approval_guard": approval_guard,
+                "recording_gate": recording_gate,
+            })
+
         # Block if fraud check says cannot approve (unless HQ override already applied)
         if not approval_guard["can_approve"]:
             messages.error(request, approval_guard["blocked_reason"])
@@ -663,6 +831,7 @@ def sales_confirm_approve(request, app_id):
                 "page_heading": "Confirm Approve",
                 "fraud_check": fraud_check,
                 "approval_guard": approval_guard,
+                "recording_gate": recording_gate,
             })
 
         from core.commercial import validate_application_pricing
@@ -678,6 +847,7 @@ def sales_confirm_approve(request, app_id):
                 "page_heading": "Confirm Approve",
                 "fraud_check": fraud_check,
                 "approval_guard": approval_guard,
+                "recording_gate": recording_gate,
             })
 
         from approvals.views import ALREADY_APPROVED_MSG, TERMINAL_STATUSES
@@ -723,6 +893,7 @@ def sales_confirm_approve(request, app_id):
         "page_heading": "Confirm Approve",
         "fraud_check": fraud_check,
         "approval_guard": approval_guard,
+        "recording_gate": recording_gate,
     })
 
 
@@ -863,6 +1034,19 @@ def sales_wallet(request):
     gross_earnings_total = summary.get("total_commissions_earned", Decimal("0")) or Decimal("0")
     deductions_total = abs(summary.get("total_arrears_deductions", Decimal("0")) or Decimal("0"))
     net_earnings_total = gross_earnings_total - deductions_total
+    qc_penalties = (
+        UnderwriterQCPenalty.objects.filter(underwriter=request.user)
+        .select_related("offense_type", "application", "evidence_recording", "issued_by")
+        .order_by("-issued_at")[:50]
+    )
+    qc_penalty_totals = {
+        item["status"]: {"total": item["total"] or Decimal("0"), "count": item["count"]}
+        for item in (
+            UnderwriterQCPenalty.objects.filter(underwriter=request.user)
+            .values("status")
+            .annotate(total=Sum("amount_mwk"), count=Count("id"))
+        )
+    }
 
     today = timezone.now().date()
     earnings_days = []
@@ -919,6 +1103,8 @@ def sales_wallet(request):
         "gross_earnings_total": gross_earnings_total,
         "deductions_total": deductions_total,
         "net_earnings_total": net_earnings_total,
+        "qc_penalties": qc_penalties,
+        "qc_penalty_totals": qc_penalty_totals,
         "earnings_chart": earnings_chart,
         "earnings_chart_has_data": earnings_chart_has_data,
         "active_tab": active_tab,
@@ -926,6 +1112,42 @@ def sales_wallet(request):
         "spin_rewards": spin_rewards,
         "spin_bonus_total": spin_bonus_total,
     })
+
+
+@underwriter_required
+@require_POST
+def sales_qc_penalty_dispute(request, penalty_id):
+    penalty = get_object_or_404(
+        UnderwriterQCPenalty.objects.select_related("offense_type"),
+        pk=penalty_id,
+        underwriter=request.user,
+    )
+    if penalty.status == UnderwriterQCPenalty.STATUS_REVERSED:
+        messages.info(request, "This penalty has already been reversed.")
+        return redirect("sales_wallet")
+    explanation = (request.POST.get("explanation") or "").strip()
+    if not explanation:
+        messages.error(request, "Add a short explanation before submitting a dispute.")
+        return redirect("sales_wallet")
+    before = {"status": penalty.status, "notes": penalty.notes}
+    penalty.status = UnderwriterQCPenalty.STATUS_DISPUTED
+    penalty.notes = (penalty.notes + "\n\nDispute: " + explanation).strip()
+    penalty.save(update_fields=["status", "notes"])
+    _audit(
+        request.user,
+        AuditLog.ACTION_KYC_CHANGE,
+        "UnderwriterQCPenalty",
+        penalty.pk,
+        {
+            "action": "penalty_disputed",
+            "offense": penalty.offense_type.code,
+            "before": before,
+            "after": {"status": penalty.status, "notes": penalty.notes},
+        },
+        request,
+    )
+    messages.success(request, "Penalty dispute sent to HQ.")
+    return redirect("sales_wallet")
 
 
 # ---------------------------------------------------------------------------

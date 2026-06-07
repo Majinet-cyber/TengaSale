@@ -1,18 +1,11 @@
 {% extends "sales/base.html" %}
 {% load static %}
 
-{% block page_title %}Customer Call — {{ app.application_number }}{% endblock %}
+{% block page_title %}Customer Call - {{ app.application_number }}{% endblock %}
 
 {% block content %}
 {% include "sales/_sticky_summary.html" %}
 <div class="sales-main">
-
-  <div class="ts-back-row">
-    <a href="{% url 'sales_address_check' app.id %}" class="ts-back-btn">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      Back
-    </a>
-  </div>
 
   {% include "sales/_step_bar.html" with step=step total_steps=total_steps %}
 
@@ -28,29 +21,17 @@
     {% endif %}
   </div>
 
-
   <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
     {% if app.customer_phone %}
     <a href="tel:+265{{ app.customer_phone }}" class="action-btn-large primary">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/>
       </svg>
-      <span class="btn-label">CALL PRIMARY — +265 {{ app.customer_phone }}</span>
-    </a>
-    {% endif %}
-    {% if app.secondary_phone %}
-    <a href="tel:+265{{ app.secondary_phone }}" class="action-btn-large" style="background:#1e3a5f;color:#fff;">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/>
-      </svg>
-      <span class="btn-label">CALL SECONDARY — +265 {{ app.secondary_phone }}</span>
+      <span class="btn-label">CALL PRIMARY - +265 {{ app.customer_phone }}</span>
     </a>
     {% endif %}
     {% if app.customer_phone %}
     <a href="https://wa.me/265{{ app.customer_phone }}" class="action-btn-large whatsapp" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
-      </svg>
       <span class="btn-label">WHATSAPP CUSTOMER</span>
     </a>
     {% endif %}
@@ -60,11 +41,79 @@
     <div class="ts-call-script__label">Suggested Introduction</div>
     <p class="ts-call-script__text">
       "Hi {{ app.customer_name }}, I am {{ request.user.get_full_name|default:request.user.username }} from TengaSale.
-      I am reviewing your phone-financing application and confirming that you understand your TengaSale contract."
+      Before we start, please note this call may be recorded for quality and compliance verification. I am reviewing your phone-financing application and confirming that you understand your TengaSale contract."
     </p>
   </div>
 
-  <form method="post" enctype="multipart/form-data">
+  <div class="ts-review-card ts-mb-8 ts-recording-card">
+    <div class="ts-recording-card__header">
+      <div>
+        <div class="ts-review-card__title">Call Recording Evidence</div>
+        <p class="ts-meta-small">Upload the consented customer call recording used for underwriting. HQ may review this for quality and compliance control.</p>
+      </div>
+      <span class="ts-badge ts-badge--orange">{{ call_recordings|length }}/{{ recording_limit }} uploaded</span>
+    </div>
+
+    <div class="ts-call-section-grid ts-mt-8">
+      <div class="ts-call-section-card">
+        <strong>Primary phone</strong>
+        <p>+265 {{ app.customer_phone|default:"Not captured" }}</p>
+      </div>
+      <div class="ts-call-section-card">
+        <strong>Consent</strong>
+        <p>{% if questionnaire.recording_consent_acknowledged %}Acknowledged{% else %}Pending acknowledgement{% endif %}</p>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'sales_upload_call_recording' app.id %}" enctype="multipart/form-data" class="ts-mt-8">
+      {% csrf_token %}
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-weight:800;color:#0f172a;">
+        <input type="checkbox" name="recording_consent_acknowledged" value="yes" {% if questionnaire.recording_consent_acknowledged %}checked{% endif %} style="margin-top:3px;">
+        <span>Recording consent acknowledged</span>
+      </label>
+      <div class="field-group">
+        <label class="field-label">Upload Recording</label>
+        <input
+          type="file"
+          name="call_recording"
+          class="input"
+          accept="audio/mpeg,audio/mp3,audio/wav,audio/mp4,audio/aac,audio/webm,audio/ogg,.mp3,.m4a,.wav,.aac,.ogg,.webm"
+          required
+        >
+        <div class="ts-meta-small" style="margin-top:4px;">Max {{ recording_size_mb }} MB. MP3, M4A, WAV, AAC, OGG, WebM.</div>
+      </div>
+      <button type="submit" class="ts-btn-secondary ts-btn-full ts-mt-8">Upload Recording</button>
+    </form>
+
+    <div class="ts-recording-list">
+      {% for recording in call_recordings %}
+        <div class="ts-recording-item">
+          <div class="ts-recording-item__top">
+            <div>
+              <div class="ts-recording-item__name">{{ recording.original_filename }}</div>
+              <div class="ts-recording-item__meta">
+                {{ recording.file_size_mb }} MB uploaded by {{ recording.underwriter.get_full_name|default:recording.underwriter.username }}
+                on {{ recording.uploaded_at|date:"d M Y, H:i" }}
+                {% if recording.duration_seconds %} - {{ recording.duration_seconds }}s{% endif %}
+              </div>
+            </div>
+            <span class="ts-recording-status ts-recording-status--{{ recording.status }}">{{ recording.get_status_display }}</span>
+          </div>
+          <audio controls preload="none" src="{% url 'sales_call_recording_file' recording.id %}" style="width:100%;margin-top:10px;"></audio>
+          {% if recording.can_delete %}
+            <form method="post" action="{% url 'sales_delete_call_recording' recording.id %}" style="margin-top:8px;">
+              {% csrf_token %}
+              <button type="submit" class="ts-btn-secondary ts-btn-full">Delete</button>
+            </form>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="ts-recording-empty">No recordings uploaded yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form method="post">
     {% csrf_token %}
     <div class="ts-review-card">
       <div class="ts-review-card__title">Call Checklist</div>
@@ -76,29 +125,10 @@
       {% include "sales/_yes_no.html" with field_name="customer_confirmed_repayment" label="Did the customer understand the daily/monthly repayment?" current_value=review.customer_confirmed_repayment %}
       {% include "sales/_yes_no.html" with field_name="customer_understands_direct_payment" label="Did the customer understand payments must be made directly to TengaSale?" current_value=review.customer_understands_direct_payment %}
       {% include "sales/_yes_no.html" with field_name="customer_understands_nonpayment" label="Did the customer understand the device may lock if payments are missed?" current_value=review.customer_understands_nonpayment %}
-      {% include "sales/_yes_no.html" with field_name="customer_notified_recording" label="Was the customer notified that this call may be recorded for quality and compliance?" current_value=None %}
     </div>
 
-
-    <div class="ts-review-card ts-mb-8">
-      <div class="ts-review-card__title">📎 Call Recording (Optional)</div>
-      {% if call_evidence %}
-        <div class="ts-badge ts-badge--green ts-mb-8">✓ Recording uploaded</div>
-      {% endif %}
-      <p class="ts-meta-small">Upload an audio recording of this call for quality and compliance purposes.</p>
-      <div class="field-group ts-mt-8">
-        <label class="field-label">Upload Recording</label>
-        <input
-          type="file"
-          name="call_recording"
-          class="input"
-          accept="audio/mpeg,audio/mp3,audio/wav,audio/mp4,audio/webm,audio/ogg,.mp3,.wav,.mp4,.webm,.ogg,.m4a"
-        >
-        <div class="ts-meta-small" style="margin-top:4px;">Max 15 MB · MP3, WAV, MP4, WebM, OGG</div>
-      </div>
-    </div>
-
-    <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">Continue to Income Check →</button>
+    {% url 'sales_address_check' app.id as back_url %}
+    {% include "sales/_bottom_action_bar.html" with back_url=back_url back_label="Back" primary_label="Continue" primary_variant="orange" %}
   </form>
 
 </div>

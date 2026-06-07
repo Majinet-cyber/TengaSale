@@ -1,0 +1,162 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Underwriter Call Recording QC - TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<style>
+.qc-wrap { max-width:1180px; margin:0 auto; padding:24px 16px; overflow-x:hidden; }
+.qc-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.qc-title { margin:0; color:#0f172a; font-size:1.45rem; font-weight:900; }
+.qc-sub { margin:4px 0 0; color:#64748b; font-size:.86rem; }
+.qc-link { color:#ff5a00; text-decoration:none; font-weight:800; font-size:.82rem; }
+.qc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+.qc-kpi, .qc-panel, .qc-record { background:#fff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 4px 16px rgba(15,23,42,.06); }
+.qc-kpi { padding:14px; }
+.qc-kpi span { display:block; color:#64748b; font-size:.72rem; font-weight:800; text-transform:uppercase; }
+.qc-kpi strong { display:block; margin-top:5px; color:#0f172a; font-size:1.2rem; }
+.qc-panel { padding:14px; margin-bottom:14px; }
+.qc-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; align-items:end; }
+.qc-input, .qc-select, .qc-textarea { width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; font:inherit; box-sizing:border-box; }
+.qc-label { display:block; color:#475569; font-size:.72rem; font-weight:800; margin-bottom:5px; }
+.qc-btn { border:0; border-radius:10px; padding:10px 14px; font-weight:900; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.qc-btn--orange { background:#ff5a00; color:#fff; }
+.qc-btn--green { background:#16a34a; color:#fff; }
+.qc-btn--red { background:#dc2626; color:#fff; }
+.qc-btn--soft { background:#f8fafc; color:#0f172a; border:1px solid #e2e8f0; }
+.qc-record { padding:16px; margin-bottom:12px; }
+.qc-record-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.qc-app { color:#0f172a; font-weight:900; font-size:1rem; word-break:break-word; }
+.qc-meta { color:#64748b; font-size:.78rem; margin-top:2px; word-break:break-word; }
+.qc-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 9px; font-size:.7rem; font-weight:900; }
+.qc-badge--pending { background:#fef3c7; color:#92400e; }
+.qc-badge--passed { background:#dcfce7; color:#166534; }
+.qc-badge--failed { background:#fee2e2; color:#991b1b; }
+.qc-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-bottom:12px; }
+.qc-fact { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px; }
+.qc-fact span { display:block; color:#64748b; font-size:.68rem; font-weight:800; text-transform:uppercase; }
+.qc-fact strong { display:block; color:#0f172a; font-size:.9rem; margin-top:4px; word-break:break-word; }
+.qc-audio { width:100%; margin:8px 0 12px; }
+.qc-offenses { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; margin:8px 0; }
+.qc-offense { display:flex; gap:8px; align-items:flex-start; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px; font-size:.8rem; }
+.qc-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.qc-empty { text-align:center; color:#64748b; border:1.5px dashed #e2e8f0; border-radius:14px; padding:30px 16px; background:#fff; }
+@media (max-width:640px) { .qc-wrap { padding:18px 12px; } .qc-title { font-size:1.2rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qc-wrap" data-testid="hq-call-recording-qc">
+  <div class="qc-header">
+    <div>
+      <a class="qc-link" href="{% url 'hq_dashboard' %}">Back to HQ</a>
+      <h1 class="qc-title">Underwriter Call Recording QC</h1>
+      <p class="qc-sub">Review consented customer calls, compare application facts, and apply QC penalties where needed.</p>
+    </div>
+    <a class="qc-btn qc-btn--soft" href="{% url 'hq_underwriter_performance' %}">Performance</a>
+  </div>
+
+  <div class="qc-grid">
+    <div class="qc-kpi"><span>Pending QC</span><strong>{{ kpis.pending }}</strong></div>
+    <div class="qc-kpi"><span>Failed This Month</span><strong>{{ kpis.failed_month }}</strong></div>
+    <div class="qc-kpi"><span>Penalties Issued</span><strong>{{ kpis.penalties_issued|mwk }}</strong></div>
+    <div class="qc-kpi"><span>Reversed</span><strong>{{ kpis.penalties_reversed|mwk }}</strong></div>
+    <div class="qc-kpi"><span>Approved No Recording</span><strong>{{ kpis.approved_without_recording }}</strong></div>
+  </div>
+
+  <div class="qc-panel">
+    <form class="qc-filters" method="get">
+      <div>
+        <label class="qc-label">QC Status</label>
+        <select class="qc-select" name="status">
+          <option value="">All statuses</option>
+          {% for value,label in qc_status_choices %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="qc-label">Underwriter</label>
+        <select class="qc-select" name="underwriter">
+          <option value="">All underwriters</option>
+          {% for underwriter in underwriters %}
+            <option value="{{ underwriter.id }}" {% if filters.underwriter == underwriter.id|stringformat:"s" %}selected{% endif %}>{{ underwriter.get_full_name|default:underwriter.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="qc-label">Search</label>
+        <input class="qc-input" type="search" name="q" value="{{ filters.q }}" placeholder="Application, customer, phone">
+      </div>
+      <button class="qc-btn qc-btn--orange" type="submit">Filter</button>
+    </form>
+  </div>
+
+  {% for recording in recordings %}
+    <article class="qc-record">
+      <div class="qc-record-head">
+        <div>
+          <div class="qc-app">{{ recording.application.application_number }} - {{ recording.application.customer_name }}</div>
+          <div class="qc-meta">Uploaded by {{ recording.underwriter.get_full_name|default:recording.underwriter.username }} on {{ recording.uploaded_at|date:"d M Y, H:i" }}</div>
+        </div>
+        <span class="qc-badge {% if recording.status == 'passed_qc' %}qc-badge--passed{% elif recording.status == 'failed_qc' %}qc-badge--failed{% else %}qc-badge--pending{% endif %}">
+          {{ recording.get_status_display }}
+        </span>
+      </div>
+
+      <div class="qc-facts">
+        <div class="qc-fact"><span>Customer Phone</span><strong>+265 {{ recording.application.customer_phone }}</strong></div>
+        <div class="qc-fact"><span>National ID</span><strong>{{ recording.application.national_id|default:"Not captured" }}</strong></div>
+        <div class="qc-fact"><span>Device</span><strong>{{ recording.application.deal|default:"No deal" }}</strong></div>
+        <div class="qc-fact"><span>Deposit</span><strong>{{ recording.application.calculated_deposit_amount|mwk }}</strong></div>
+        <div class="qc-fact"><span>Total</span><strong>{{ recording.application.calculated_total_loan|mwk }}</strong></div>
+        <div class="qc-fact"><span>Penalty Total</span><strong>{{ recording.penalty_total|default:0|mwk }}</strong></div>
+      </div>
+
+      <audio class="qc-audio" controls preload="none" src="{% url 'sales_call_recording_file' recording.id %}"></audio>
+
+      <form method="post" action="{% url 'hq_call_recording_qc_action' recording.id %}">
+        {% csrf_token %}
+        <label class="qc-label">QC Notes</label>
+        <textarea class="qc-textarea" name="notes" rows="3" placeholder="Add comparison notes, call quality, customer education issues">{{ recording.qc_notes }}</textarea>
+
+        <div class="qc-offenses">
+          {% for offense in offense_types %}
+            <label class="qc-offense">
+              <input type="checkbox" name="offense_ids" value="{{ offense.id }}">
+              <span><strong>{{ offense.code }}</strong><br>{{ offense.name }} - {{ offense.default_penalty_mwk|mwk }}</span>
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="qc-actions">
+          <button class="qc-btn qc-btn--green" type="submit" name="qc_result" value="pass">Pass</button>
+          <button class="qc-btn qc-btn--soft" type="submit" name="qc_result" value="fail_warning">Fail with Warning</button>
+          <button class="qc-btn qc-btn--red" type="submit" name="qc_result" value="fail_penalty">Fail with Penalty</button>
+        </div>
+      </form>
+
+      {% if recording.qc_penalties.all %}
+        <div class="qc-panel" style="margin:12px 0 0;box-shadow:none;">
+          <strong>Penalty items</strong>
+          {% for penalty in recording.qc_penalties.all %}
+            <div class="qc-fact" style="margin-top:8px;">
+              <span>{{ penalty.get_status_display }}</span>
+              <strong>{{ penalty.offense_type.name }} - {{ penalty.amount_mwk|mwk }}</strong>
+              {% if penalty.status != "reversed" %}
+                <form method="post" action="{% url 'hq_qc_penalty_reverse' penalty.id %}" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                  {% csrf_token %}
+                  <input class="qc-input" name="reason" placeholder="Reversal reason" required style="flex:1;min-width:180px;">
+                  <button class="qc-btn qc-btn--soft" type="submit">Reverse</button>
+                </form>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </article>
+  {% empty %}
+    <div class="qc-empty">No call recordings match these filters.</div>
+  {% endfor %}
+</div>
+{% endblock %}
