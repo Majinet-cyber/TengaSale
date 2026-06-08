@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -23,6 +24,7 @@ from accounts.models import (
     DisciplineDispute,
     DisciplineEvent,
     DisciplineScorePeriod,
+    ExecutiveSignature,
     FounderEquityRecord,
     KPITemplate,
     KPIResult,
@@ -1074,10 +1076,87 @@ def hq_payout_approvals(request):
 
 @staff_module_required(MODULE_STAFF_DOCUMENTS)
 def hq_staff_documents(request):
-    profiles = UserProfile.objects.select_related("user", "department", "staff_role", "rank").order_by("user__username")
+    profiles = (
+        UserProfile.objects
+        .select_related("user", "department", "staff_role", "rank")
+        .filter(user__is_active=True)
+        .order_by("user__first_name", "user__last_name")
+    )
+    active_sig = ExecutiveSignature.get_active()
     return render(request, "dashboard/hq_staff_documents.html", {
         "profiles": profiles,
         "document_types": StaffDocument.DOC_CHOICES,
+        "active_signature": active_sig,
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Executive Signature Management
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def hq_executive_signatures(request):
+    """Manage CEO / executive signatures used in official documents."""
+    from accounts.utils import is_hq
+    if not (is_hq(request.user) or request.user.is_superuser):
+        return render(request, "accounts/role_forbidden.html",
+                      {"dashboard_url": role_redirect_url(request.user)}, status=403)
+
+    sigs = ExecutiveSignature.objects.select_related("user", "created_by", "revoked_by").order_by("-created_at")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "upload":
+            full_name = request.POST.get("full_name", "").strip()
+            position  = request.POST.get("position", "Chief Executive Officer").strip()
+            image     = request.FILES.get("signature_image")
+            if not full_name or not image:
+                messages.error(request, "Full name and signature image are required.")
+            else:
+                # Deactivate all existing active signatures before uploading new one
+                ExecutiveSignature.objects.filter(is_active=True).update(is_active=False)
+                sig = ExecutiveSignature.objects.create(
+                    user=request.user,
+                    full_name=full_name,
+                    position=position,
+                    signature_image=image,
+                    is_active=True,
+                    created_by=request.user,
+                )
+                audit_sensitive_action(request.user, "executive_signature_uploaded", sig, request=request)
+                messages.success(request, f"Signature for {full_name} uploaded and set as active.")
+            return redirect("hq_executive_signatures")
+
+        if action == "revoke":
+            sig_id = request.POST.get("signature_id")
+            sig = get_object_or_404(ExecutiveSignature, id=sig_id)
+            from django.utils import timezone as tz
+            sig.is_active = False
+            sig.revoked_at = tz.now()
+            sig.revoked_by = request.user
+            sig.save(update_fields=["is_active", "revoked_at", "revoked_by"])
+            audit_sensitive_action(request.user, "executive_signature_revoked", sig, request=request)
+            messages.warning(request, f"Signature for {sig.full_name} has been revoked.")
+            return redirect("hq_executive_signatures")
+
+        if action == "set_active":
+            sig_id = request.POST.get("signature_id")
+            sig = get_object_or_404(ExecutiveSignature, id=sig_id)
+            ExecutiveSignature.objects.filter(is_active=True).update(is_active=False)
+            sig.is_active = True
+            sig.revoked_at = None
+            sig.revoked_by = None
+            sig.save(update_fields=["is_active", "revoked_at", "revoked_by"])
+            audit_sensitive_action(request.user, "executive_signature_activated", sig, request=request)
+            messages.success(request, f"Signature for {sig.full_name} set as active.")
+            return redirect("hq_executive_signatures")
+
+    active_sig = ExecutiveSignature.get_active()
+    return render(request, "dashboard/hq_executive_signatures.html", {
+        "signatures": sigs,
+        "active_signature": active_sig,
+        "page_title": "Executive Signatures",
     })
 
 

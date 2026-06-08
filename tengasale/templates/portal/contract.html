@@ -58,8 +58,8 @@
     </div>
 
     <div class="cpd-money-grid">
-      <div><span class="cpd-label">Paid</span><strong class="cpd-val--green">{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}Pending setup{% endif %}</strong></div>
-      <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}Pending setup{% endif %}</strong></div>
+      <div><span class="cpd-label">Paid</span><strong class="cpd-val--green">{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}—{% endif %}</strong></div>
+      <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}—{% endif %}</strong></div>
       <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
     </div>
 
@@ -269,8 +269,8 @@
       <div class="cpd-section-card__title">Device Information</div>
     </div>
     <div class="cpd-detail-grid cpd-detail-grid--simple">
-      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{% if device_info.model or contract.device_model %}{{ device_info.model|default:contract.device_model }}{% else %}Pending setup{% endif %}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{% if device_info.brand %}{{ device_info.brand }}{% else %}Pending setup{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{% if device_info.model or contract.device_model %}{{ device_info.model|default:contract.device_model }}{% else %}Not captured{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{% if device_info.brand %}{{ device_info.brand }}{% else %}Not captured{% endif %}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{% if device_info.imei %}{{ device_info.imei }}{% else %}Not entered yet{% endif %}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">Contract start</span><span class="cpd-detail-val">{{ contract.start_date|date:"d M Y" }}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">Lock provider</span><span class="cpd-detail-val">{{ lock_provider_label }}</span></div>

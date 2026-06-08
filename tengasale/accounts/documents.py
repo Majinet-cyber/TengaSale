@@ -3,7 +3,7 @@ from io import BytesIO
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import DisciplineScorePeriod, KPITemplate, StaffDocument
+from .models import DisciplineScorePeriod, ExecutiveSignature, KPITemplate, StaffDocument
 from .services import audit_sensitive_action, monthly_volts_summary
 
 
@@ -28,6 +28,7 @@ def staff_document_context(user, document_type, prepared_by=None, period=None):
     if profile:
         kpis = kpis.filter(role=profile.staff_role) | kpis.filter(department=profile.department, role__isnull=True)
     volts = monthly_volts_summary(user)
+    active_signature = ExecutiveSignature.get_active()
     return {
         "company_name": "TengaSale",
         "document_title": DOCUMENT_TITLES.get(document_type, "Staff Document"),
@@ -46,6 +47,7 @@ def staff_document_context(user, document_type, prepared_by=None, period=None):
         "discipline": discipline,
         "kpis": kpis.distinct().order_by("name")[:30],
         "month": month,
+        "active_signature": active_signature,
     }
 
 
@@ -67,6 +69,8 @@ def generate_staff_document_pdf(user, document_type, prepared_by=None, request=N
         document_number=context["document_number"],
         version=context["version"],
         prepared_by=prepared_by if getattr(prepared_by, "is_authenticated", False) else None,
+        used_signature=context.get("active_signature"),
+        status=StaffDocument.STATUS_DRAFT,
         metadata={
             "title": context["document_title"],
             "month": context["month"].isoformat() if context["month"] else "",

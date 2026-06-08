@@ -1,0 +1,84 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Commission Rules</h1>
+    <p>Configure commission rates for merchants and underwriters.</p>
+  </div>
+  <button onclick="document.getElementById('add-rule-modal').style.display='flex'" class="btn btn-orange">+ Add Rule</button>
+</div>
+
+<div class="pay-alert info">
+  Commission rules are applied automatically when a customer payment succeeds.
+  Rules with <strong>Is Active = Yes</strong> are used. Only one active rule per earner type is applied (the first match).
+</div>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Commission Rules ({{ rules.count }})</h3></div>
+  {% if rules %}
+  <table class="pay-table">
+    <thead>
+      <tr><th>Name</th><th>Earner Type</th><th>Rate</th><th>Fixed Amount</th><th>Deposit</th><th>Repayments</th><th>Active</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for rule in rules %}
+      <tr>
+        <td style="font-weight:600;">{{ rule.name }}</td>
+        <td><span class="badge {% if rule.earner_type == 'merchant' %}approved{% elif rule.earner_type == 'underwriter' %}processing{% else %}pending{% endif %}">{{ rule.get_earner_type_display }}</span></td>
+        <td>{% if rule.percentage %}{{ rule.percentage }}%{% else %}—{% endif %}</td>
+        <td>{% if rule.fixed_amount %}MWK {{ rule.fixed_amount|intcomma }}{% else %}—{% endif %}</td>
+        <td>{% if rule.applies_to_deposit %}<span style="color:var(--pay-green);">✓</span>{% else %}<span style="color:var(--pay-red);">✗</span>{% endif %}</td>
+        <td>{% if rule.applies_to_repayments %}<span style="color:var(--pay-green);">✓</span>{% else %}<span style="color:var(--pay-red);">✗</span>{% endif %}</td>
+        <td>{% if rule.is_active %}<span class="badge approved">Active</span>{% else %}<span class="badge cancelled">Inactive</span>{% endif %}</td>
+        <td>
+          <button onclick="document.getElementById('edit-rule-{{ rule.id }}').style.display='flex'" class="btn btn-ghost btn-sm">Edit</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><p>No commission rules defined. Add the first one.</p></div>
+  {% endif %}
+</div>
+
+{# Default rules suggestion #}
+<div class="pay-alert warning">
+  <strong>Defaults:</strong> Underwriter = 7% on repayments (not deposit). Merchant = 1% on total or repayments.
+  Create rules above to enable automatic commission accrual on successful payments.
+</div>
+
+{# Edit modals #}
+{% for rule in rules %}
+<div id="edit-rule-{{ rule.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:460px;max-width:92vw;max-height:92vh;overflow-y:auto;">
+    <h3 style="margin:0 0 20px;font-size:18px;font-weight:800;">Edit: {{ rule.name }}</h3>
+    <form method="post" action="{% url 'payments:commission_rule_edit' rule_id=rule.id %}">
+      {% csrf_token %}
+      {% include "payments/_commission_rule_form.html" with obj=rule %}
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button type="submit" class="btn btn-orange" style="flex:1;">Save Changes</button>
+        <button type="button" onclick="document.getElementById('edit-rule-{{ rule.id }}').style.display='none'" class="btn btn-ghost" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+{# Add Rule Modal #}
+<div id="add-rule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:460px;max-width:92vw;max-height:92vh;overflow-y:auto;">
+    <h3 style="margin:0 0 20px;font-size:18px;font-weight:800;">Add Commission Rule</h3>
+    <form method="post" action="{% url 'payments:commission_rule_save' %}">
+      {% csrf_token %}
+      {% include "payments/_commission_rule_form.html" %}
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button type="submit" class="btn btn-orange" style="flex:1;">Create Rule</button>
+        <button type="button" onclick="document.getElementById('add-rule-modal').style.display='none'" class="btn btn-ghost" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

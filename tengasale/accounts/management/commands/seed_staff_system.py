@@ -56,6 +56,11 @@ DEPARTMENTS = [
     "Collections & Recoveries",
     "Customer Support",
     "Merchant Administration",
+    "Branding & Marketing",
+    "Human Resources",
+    "Finance",
+    "Operations",
+    "Recovery",
 ]
 
 RANKS = [
@@ -73,23 +78,55 @@ RANKS = [
 ]
 
 ROLE_DATA = [
-    ("CEO / Strategy Lead", "Executive & Strategy", StaffRole.PORTAL_HQ, ALL_HQ_MODULES),
-    ("Technology & Product Lead", "Technology & Product", StaffRole.PORTAL_HQ, [MODULE_TECH, MODULE_STAFF_ROLES, MODULE_AUDIT_LOGS, MODULE_SETTINGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_STAFF_DOCUMENTS]),
-    ("Finance, Risk & Administration Lead", "Finance, Risk & Underwriting", StaffRole.PORTAL_HQ, [MODULE_UNDERWRITING, MODULE_PAYMENTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_PAYOUTS, MODULE_STAFF_DOCUMENTS]),
-    ("Legal & Compliance Lead", "Legal, Compliance & Recovery", StaffRole.PORTAL_HQ, [MODULE_CONTRACTS, MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_STAFF_DOCUMENTS]),
-    ("Sales & Marketing Lead", "Sales, Marketing & Growth", StaffRole.PORTAL_HQ, [MODULE_SALES_LEADS, MODULE_MERCHANTS, MODULE_ANALYTICS, MODULE_DISCIPLINE, MODULE_KPIS]),
-    ("Merchant Operations Lead", "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ, [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN, MODULE_SALES_LEADS, MODULE_DISCIPLINE, MODULE_KPIS]),
-    ("Research & Data Lead", "Research, Innovation & Data Analytics", StaffRole.PORTAL_HQ, [MODULE_ANALYTICS, MODULE_MERCHANTS, MODULE_APPLICATIONS, MODULE_KPIS]),
-    ("Merchant Administrator", "Merchant Administration", StaffRole.PORTAL_MERCHANT_ADMIN, [MODULE_MERCHANT_ADMIN, MODULE_MERCHANTS, MODULE_KPIS]),
-    ("Underwriter Lead", "Finance, Risk & Underwriting", StaffRole.PORTAL_UNDERWRITER, [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
-    ("Underwriter", "Finance, Risk & Underwriting", StaffRole.PORTAL_UNDERWRITER, [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
-    ("Collections Officer", "Collections & Recoveries", StaffRole.PORTAL_HQ, [MODULE_COLLECTIONS, MODULE_PAYMENTS, MODULE_KPIS]),
-    ("Recovery Officer", "Collections & Recoveries", StaffRole.PORTAL_HQ, [MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS]),
-    ("Customer Support Officer", "Customer Support", StaffRole.PORTAL_SUPPORT, [MODULE_MERCHANTS]),
-    ("Field Verification Officer", "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ, [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN]),
-    ("QA Officer", "Technology & Product", StaffRole.PORTAL_HQ, [MODULE_TECH, MODULE_AUDIT_LOGS]),
-    ("Merchant", "Merchant Operations & Customer Success", StaffRole.PORTAL_MERCHANT, []),
-    ("Customer", "Customer Support", StaffRole.PORTAL_CUSTOMER, []),
+    # ── Executive ──────────────────────────────────────────────────────────
+    ("CEO / Strategy Lead",          "Executive & Strategy",               StaffRole.PORTAL_HQ,            ALL_HQ_MODULES),
+    ("COO / Chief Operating Officer","Executive & Strategy",               StaffRole.PORTAL_HQ,            [MODULE_APPLICATIONS, MODULE_UNDERWRITING, MODULE_MERCHANTS, MODULE_COLLECTIONS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_STAFF_DOCUMENTS, MODULE_STAFF_ROLES]),
+    ("CFO / Chief Finance Officer",  "Finance",                            StaffRole.PORTAL_HQ,            [MODULE_PAYMENTS, MODULE_PAYOUTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_STAFF_DOCUMENTS]),
+    ("Executive Director",           "Executive & Strategy",               StaffRole.PORTAL_HQ,            ALL_HQ_MODULES),
+    ("Head of Operations",           "Operations",                         StaffRole.PORTAL_HQ,            [MODULE_APPLICATIONS, MODULE_UNDERWRITING, MODULE_MERCHANTS, MODULE_COLLECTIONS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Head of Credit",               "Finance, Risk & Underwriting",       StaffRole.PORTAL_HQ,            [MODULE_UNDERWRITING, MODULE_APPLICATIONS, MODULE_PAYMENTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Head of Recovery",             "Recovery",                           StaffRole.PORTAL_HQ,            [MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS, MODULE_PAYMENTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS]),
+    ("Head of Tech Support",         "Technology & Product",               StaffRole.PORTAL_HQ,            [MODULE_TECH, MODULE_STAFF_ROLES, MODULE_AUDIT_LOGS, MODULE_SETTINGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_STAFF_DOCUMENTS]),
+    ("Head of Branding & Marketing", "Branding & Marketing",               StaffRole.PORTAL_HQ,            [MODULE_SALES_LEADS, MODULE_MERCHANTS, MODULE_ANALYTICS, MODULE_DISCIPLINE]),
+    ("Head of Finance",              "Finance",                            StaffRole.PORTAL_HQ,            [MODULE_PAYMENTS, MODULE_PAYOUTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS]),
+
+    # ── Technology & Product ──────────────────────────────────────────────
+    ("Technology & Product Lead",    "Technology & Product",               StaffRole.PORTAL_HQ,            [MODULE_TECH, MODULE_STAFF_ROLES, MODULE_AUDIT_LOGS, MODULE_SETTINGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_STAFF_DOCUMENTS]),
+    ("Tech Support Officer",         "Technology & Product",               StaffRole.PORTAL_SUPPORT,       [MODULE_TECH, MODULE_AUDIT_LOGS]),
+    ("QA Officer",                   "Technology & Product",               StaffRole.PORTAL_HQ,            [MODULE_TECH, MODULE_AUDIT_LOGS]),
+
+    # ── Finance & Risk ─────────────────────────────────────────────────────
+    ("Finance, Risk & Administration Lead", "Finance, Risk & Underwriting",StaffRole.PORTAL_HQ,            [MODULE_UNDERWRITING, MODULE_PAYMENTS, MODULE_COLLECTIONS, MODULE_VOLTS, MODULE_ANALYTICS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_KPIS, MODULE_PAYOUTS, MODULE_STAFF_DOCUMENTS]),
+    ("Finance Officer",              "Finance",                            StaffRole.PORTAL_HQ,            [MODULE_PAYMENTS, MODULE_PAYOUTS, MODULE_COLLECTIONS, MODULE_ANALYTICS]),
+    ("Underwriter Lead",             "Finance, Risk & Underwriting",       StaffRole.PORTAL_UNDERWRITER,   [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
+    ("Underwriter",                  "Finance, Risk & Underwriting",       StaffRole.PORTAL_UNDERWRITER,   [MODULE_UNDERWRITING, MODULE_APPLICATIONS]),
+    ("Call Quality Control Officer", "Finance, Risk & Underwriting",       StaffRole.PORTAL_HQ,            [MODULE_UNDERWRITING, MODULE_AUDIT_LOGS]),
+
+    # ── Legal & Compliance ─────────────────────────────────────────────────
+    ("Legal & Compliance Lead",      "Legal, Compliance & Recovery",       StaffRole.PORTAL_HQ,            [MODULE_CONTRACTS, MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS, MODULE_AUDIT_LOGS, MODULE_DISCIPLINE, MODULE_STAFF_DOCUMENTS]),
+
+    # ── Sales & Marketing ─────────────────────────────────────────────────
+    ("Sales & Marketing Lead",       "Sales, Marketing & Growth",          StaffRole.PORTAL_HQ,            [MODULE_SALES_LEADS, MODULE_MERCHANTS, MODULE_ANALYTICS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Branding Officer",             "Branding & Marketing",               StaffRole.PORTAL_HQ,            [MODULE_SALES_LEADS, MODULE_ANALYTICS]),
+    ("Field Agent",                  "Sales, Marketing & Growth",          StaffRole.PORTAL_HQ,            [MODULE_SALES_LEADS, MODULE_MERCHANTS]),
+
+    # ── Merchant Operations ───────────────────────────────────────────────
+    ("Merchant Operations Lead",     "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ,        [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN, MODULE_SALES_LEADS, MODULE_DISCIPLINE, MODULE_KPIS]),
+    ("Merchant Administrator",       "Merchant Administration",            StaffRole.PORTAL_MERCHANT_ADMIN,[MODULE_MERCHANT_ADMIN, MODULE_MERCHANTS, MODULE_KPIS]),
+    ("HQ Admin",                     "Executive & Strategy",               StaffRole.PORTAL_HQ,            ALL_HQ_MODULES),
+    ("Field Verification Officer",   "Merchant Operations & Customer Success", StaffRole.PORTAL_HQ,        [MODULE_MERCHANTS, MODULE_MERCHANT_ADMIN]),
+
+    # ── Customer & Support ─────────────────────────────────────────────────
+    ("Customer Support Officer",     "Customer Support",                   StaffRole.PORTAL_SUPPORT,       [MODULE_MERCHANTS]),
+    ("Research & Data Lead",         "Research, Innovation & Data Analytics", StaffRole.PORTAL_HQ,         [MODULE_ANALYTICS, MODULE_MERCHANTS, MODULE_APPLICATIONS, MODULE_KPIS]),
+
+    # ── Collections & Recovery ─────────────────────────────────────────────
+    ("Collections Officer",          "Collections & Recoveries",           StaffRole.PORTAL_HQ,            [MODULE_COLLECTIONS, MODULE_PAYMENTS, MODULE_KPIS]),
+    ("Recovery Officer",             "Recovery",                           StaffRole.PORTAL_HQ,            [MODULE_LEGAL_RECOVERY, MODULE_COLLECTIONS]),
+
+    # ── External roles ─────────────────────────────────────────────────────
+    ("Merchant",                     "Merchant Operations & Customer Success", StaffRole.PORTAL_MERCHANT,  []),
+    ("Customer",                     "Customer Support",                   StaffRole.PORTAL_CUSTOMER,      []),
 ]
 
 VOLTS_ACTIONS = [

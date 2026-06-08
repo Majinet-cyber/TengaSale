@@ -1,0 +1,141 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Payment Settings</h1>
+    <p>PayChangu integration status and system configuration.</p>
+  </div>
+</div>
+
+{# Status badges #}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">PayChangu Mode</div>
+    <span class="badge {% if config.paychangu_mock_mode %}mock{% elif config.payments_mode == 'live' %}live{% else %}sandbox{% endif %}" style="font-size:13px;padding:5px 14px;">
+      {% if config.paychangu_mock_mode %}Mock{% elif config.payments_mode == 'live' %}Live{% else %}Sandbox{% endif %}
+    </span>
+  </div>
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">API Keys</div>
+    {% if config.paychangu_configured %}
+    <span class="badge approved">Configured</span>
+    {% else %}
+    <span class="badge failed">Not Configured</span>
+    {% endif %}
+  </div>
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">Live Charges</div>
+    {% if config.allow_live_charges %}
+    <span class="badge live">Enabled</span>
+    {% else %}
+    <span class="badge cancelled">Disabled</span>
+    {% endif %}
+  </div>
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">Live Disbursements</div>
+    {% if config.allow_live_disbursements %}
+    <span class="badge live">Enabled</span>
+    {% else %}
+    <span class="badge cancelled">Disabled</span>
+    {% endif %}
+  </div>
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">Webhook Secret</div>
+    {% if config.webhook_secret_set %}
+    <span class="badge approved">Set</span>
+    {% else %}
+    <span class="badge failed">Not Set</span>
+    {% endif %}
+  </div>
+  <div class="pay-table-card" style="padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);margin-bottom:8px;">Mock Payments</div>
+    {% if config.mock_payments %}
+    <span class="badge mock">Mock Mode</span>
+    {% else %}
+    <span class="badge approved">Real Payments</span>
+    {% endif %}
+  </div>
+</div>
+
+{# API Base #}
+<div class="pay-table-card" style="padding:24px;margin-bottom:20px;">
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 16px;">Configuration Details</h3>
+  <table style="font-size:13px;width:100%;">
+    <tr><td style="color:var(--pay-muted);padding:7px 0;width:200px;">API Base URL</td><td style="font-family:monospace;">{{ config.paychangu_api_base }}</td></tr>
+    <tr><td style="color:var(--pay-muted);padding:7px 0;">Public Key</td><td>{% if config.public_key_set %}<span style="color:var(--pay-green);">✓ Set</span>{% else %}<span style="color:var(--pay-red);">✗ Not set — payments will fail</span>{% endif %}</td></tr>
+    <tr><td style="color:var(--pay-muted);padding:7px 0;">Secret Key</td><td>{% if config.secret_key_set %}<span style="color:var(--pay-green);">✓ Set</span>{% else %}<span style="color:var(--pay-red);">✗ Not set — payments will fail</span>{% endif %}</td></tr>
+    <tr><td style="color:var(--pay-muted);padding:7px 0;">Callback URL</td><td>{% if config.callback_url %}<span style="font-family:monospace;font-size:12px;">{{ config.callback_url }}</span>{% else %}<span style="color:var(--pay-muted);">Not set</span>{% endif %}</td></tr>
+  </table>
+</div>
+
+{# Warnings #}
+{% if not config.paychangu_configured %}
+<div class="pay-alert error">
+  <strong>PayChangu not configured.</strong> Set PAYCHANGU_PUBLIC_KEY and PAYCHANGU_SECRET_KEY in your .env file.
+  Currently running in mock mode — no real payments will be processed.
+</div>
+{% endif %}
+
+{% if config.mock_payments %}
+<div class="pay-alert warning">
+  <strong>MOCK_PAYMENTS=true.</strong> All payments are simulated. Set MOCK_PAYMENTS=false and configure PayChangu keys to enable real payments.
+</div>
+{% endif %}
+
+{# Test Numbers Reference #}
+<div class="pay-table-card" style="padding:24px;margin-bottom:20px;">
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 16px;">PayChangu Sandbox Test Numbers</h3>
+  <table class="pay-table" style="font-size:13px;">
+    <thead><tr><th>Network</th><th>Phone</th><th>Expected</th></tr></thead>
+    <tbody>
+      <tr><td>Airtel Money</td><td style="font-family:monospace;">+265 990 000 000</td><td><span class="badge approved">Success</span></td></tr>
+      <tr><td>Airtel Money</td><td style="font-family:monospace;">+265 990 000 001</td><td><span class="badge failed">Failure</span></td></tr>
+      <tr><td>TNM Mpamba</td><td style="font-family:monospace;">+265 899 817 565</td><td><span class="badge approved">Success</span></td></tr>
+      <tr><td>TNM Mpamba</td><td style="font-family:monospace;">+265 899 817 566</td><td><span class="badge failed">Failure</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+{# Env vars reference #}
+<div class="pay-table-card" style="padding:24px;margin-bottom:20px;">
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Required Environment Variables</h3>
+  <pre style="background:#f8fafc;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;border:1px solid var(--pay-border);">PAYCHANGU_PUBLIC_KEY=pub-...
+PAYCHANGU_SECRET_KEY=sec-...
+PAYCHANGU_WEBHOOK_SECRET=...
+PAYCHANGU_API_BASE=https://api.paychangu.com
+PAYCHANGU_CALLBACK_URL=https://yourdomain.com/pay/webhooks/paychangu/
+PAYCHANGU_ENVIRONMENT=sandbox
+PAYMENTS_MODE=sandbox
+MOCK_PAYMENTS=true
+PAYMENTS_ALLOW_LIVE_CHARGES=false
+PAYOUTS_ALLOW_LIVE_DISBURSEMENTS=false</pre>
+</div>
+
+{# Recent Audit Log #}
+<div class="pay-table-card">
+  <div class="pay-table-header">
+    <h3>Recent Payment Events</h3>
+    <a href="{% url 'payments:audit_log' %}" class="btn btn-ghost btn-sm">View All</a>
+  </div>
+  {% if recent_audit %}
+  <table class="pay-table">
+    <thead><tr><th>Action</th><th>User</th><th>Reference</th><th>Notes</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for log in recent_audit %}
+      <tr>
+        <td style="font-family:monospace;font-size:12px;">{{ log.action }}</td>
+        <td>{{ log.user|default:"System" }}</td>
+        <td style="font-family:monospace;font-size:12px;">{{ log.transaction_ref|default:"—" }}</td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ log.notes|truncatechars:60 }}</td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ log.created_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><p>No audit events yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

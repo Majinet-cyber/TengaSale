@@ -1,0 +1,92 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Salary Schedules</h1>
+    <p>{{ salary_month|date:"F Y" }} — {{ schedules.count }} staff record{{ schedules.count|pluralize }}</p>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <form method="post" action="{% url 'payments:generate_payroll' %}">
+      {% csrf_token %}
+      <input type="hidden" name="month" value="{{ salary_month|date:'Y-m' }}">
+      <button type="submit" class="btn btn-ghost">Generate Payroll</button>
+    </form>
+    {% if schedules %}
+    <form method="post" action="{% url 'payments:approve_all_salaries' %}">
+      {% csrf_token %}
+      <input type="hidden" name="month" value="{{ salary_month|date:'Y-m' }}">
+      <button type="submit" class="btn btn-green">Approve All</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{# Month navigation #}
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+  {% for m in months %}
+  <a href="?month={{ m|date:'Y-m' }}" class="btn {% if m == salary_month %}btn-orange{% else %}btn-ghost{% endif %} btn-sm">
+    {{ m|date:"M Y" }}
+  </a>
+  {% endfor %}
+</div>
+
+{# Summary #}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:20px;">
+  <div class="pay-table-card" style="padding:18px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);">Total Net Pay</div>
+    <div style="font-size:22px;font-weight:800;color:var(--pay-ink);margin-top:6px;">MWK {{ total_net|intcomma }}</div>
+  </div>
+  <div class="pay-table-card" style="padding:18px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);">Approved</div>
+    <div style="font-size:22px;font-weight:800;color:var(--pay-green);margin-top:6px;">{{ approved_count }} / {{ schedules.count }}</div>
+  </div>
+</div>
+
+<div class="pay-table-card">
+  <div class="pay-table-header">
+    <h3>Staff Payroll — {{ salary_month|date:"F Y" }}</h3>
+  </div>
+  {% if schedules %}
+  <table class="pay-table">
+    <thead>
+      <tr>
+        <th>Staff</th><th>Role</th><th>Base Salary</th><th>Bonus</th><th>Deductions</th><th>Net Pay</th><th>Method</th><th>Phone</th><th>Status</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in schedules %}
+      <tr>
+        <td style="font-weight:600;">{{ s.staff_name }}</td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ s.role|default:"—" }}</td>
+        <td>MWK {{ s.base_salary|intcomma }}</td>
+        <td style="color:var(--pay-green);">{% if s.bonus_amount %}+ MWK {{ s.bonus_amount|intcomma }}{% else %}—{% endif %}</td>
+        <td style="color:var(--pay-red);">{% if s.penalty_deduction %}- MWK {{ s.penalty_deduction|intcomma }}{% else %}—{% endif %}</td>
+        <td style="font-weight:800;">MWK {{ s.net_pay|intcomma }}</td>
+        <td>{{ s.get_payment_method_display }}</td>
+        <td>{{ s.phone_number|default:"—" }}</td>
+        <td><span class="badge {{ s.status }}">{{ s.get_status_display }}</span></td>
+        <td>
+          {% if s.status == 'draft' %}
+          <form method="post" action="{% url 'payments:approve_salary' salary_id=s.id %}">{% csrf_token %}
+            <button type="submit" class="btn btn-green btn-sm">Approve</button>
+          </form>
+          {% elif s.status == 'approved' %}
+          <span style="font-size:12px;color:var(--pay-green);">✓ Approved</span>
+          {% elif s.status == 'paid' %}
+          <span style="font-size:12px;color:var(--pay-green);">✓ Paid {{ s.paid_at|date:"d M" }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <p>No salary records for {{ salary_month|date:"F Y" }}. Click "Generate Payroll" to create them.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

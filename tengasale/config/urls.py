@@ -27,6 +27,7 @@ urlpatterns = [
     path("deals/", include("deals.urls")),
     path("earnings/", include("earnings.urls")),
     path("payments/", payments_home, name="payments_home"),
+    path("hq/payments/", include("payments.urls", namespace="payments")),
     path("tengasale/underwriter/", include("approvals.urls")),
     path("approvals/", include("approvals.legacy_urls")),
     path("contracts/", include("contracts.urls")),

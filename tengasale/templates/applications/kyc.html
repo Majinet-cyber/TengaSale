@@ -5,13 +5,9 @@
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
 <div class="application-flow-page">
-<a href="{% url 'choose_device' app.id %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
-
 {% include "applications/partials/stepper.html" with current_step=3 %}
-<h1 class="greeting">KYC Capture</h1>
+<h1 class="greeting">KYC &amp; Documents</h1>
+<p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 3 — ID photos &amp; customer selfie</p>
 
 {% include "applications/partials/didit_kyc_card.html" with app=app kyc_status_label=kyc_status_label %}
 

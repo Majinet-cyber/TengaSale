@@ -4,15 +4,105 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'kyc_capture' app.id %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
+<style>
+/* ── Location Step — GPS Capture Card ─────────────────────────── */
+.loc-page { padding: 0 16px 120px; max-width: 520px; margin: 0 auto; }
+
+/* GPS Capture Card */
+.gps-capture-card {
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid transparent;
+  transition: background .2s, border-color .2s;
+}
+.gps-capture-card--idle {
+  background: #f8fafc;
+  border-color: #e5e7eb;
+}
+.gps-capture-card--loading {
+  background: #fffbeb;
+  border-color: rgba(245,158,11,0.3);
+}
+.gps-capture-card--success {
+  background: #f0fdf4;
+  border-color: rgba(22,163,74,0.3);
+}
+.gps-capture-card--error {
+  background: #fef2f2;
+  border-color: rgba(220,38,38,0.3);
+}
+
+.gps-capture-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.gps-capture-card--idle .gps-capture-icon    { background: #e5e7eb; color: #6b7280; }
+.gps-capture-card--loading .gps-capture-icon { background: rgba(245,158,11,0.15); color: #d97706; }
+.gps-capture-card--success .gps-capture-icon { background: rgba(22,163,74,0.15); color: #16a34a; }
+.gps-capture-card--error .gps-capture-icon   { background: rgba(220,38,38,0.12); color: #dc2626; }
+
+.gps-capture-body { flex: 1; min-width: 0; }
+.gps-capture-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #101828;
+  margin: 0 0 3px;
+}
+.gps-capture-sub {
+  font-size: 13px;
+  color: #667085;
+  margin: 0;
+}
+.gps-capture-card--success .gps-capture-title { color: #15803d; }
+.gps-capture-card--error .gps-capture-title   { color: #b91c1c; }
+
+.gps-btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
+}
+.gps-btn:active { transform: scale(.96); }
+.gps-btn--idle    { background: #ff5a00; color: #fff; }
+.gps-btn--loading { background: #fbbf24; color: #78350f; cursor: wait; }
+.gps-btn--retry   { background: #fee2e2; color: #b91c1c; }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.gps-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+</style>
 
 {% include "applications/partials/stepper.html" with current_step=4 %}
-<h1 class="greeting">Location</h1>
 
-<form method="post" enctype="multipart/form-data" class="card{% if app.district %} section-locked{% endif %}" data-lockable-section>
+<div class="loc-page">
+<h1 class="greeting">Location</h1>
+<p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 4 — Customer location &amp; next of kin</p>
+
+<form method="post" enctype="multipart/form-data" class="form-card card{% if app.district %} section-locked{% endif %}" data-lockable-section>
     {% if app.district %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -29,13 +119,13 @@
     {{ form.non_field_errors }}
 
     <div class="form-group{% if 'region' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.region.id_for_label }}">Region</label>
+        <label for="{{ form.region.id_for_label }}">Region <span class="required-star">*</span></label>
         {{ form.region }}
         {{ form.region.errors }}
     </div>
 
     <div class="form-group{% if 'district' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.district.id_for_label }}">District</label>
+        <label for="{{ form.district.id_for_label }}">District <span class="required-star">*</span></label>
         {{ form.district }}
         {{ form.district.errors }}
     </div>
@@ -47,118 +137,204 @@
     </div>
 
     <div class="form-group{% if 'precise_location' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.precise_location.id_for_label }}">Precise location</label>
+        <label for="{{ form.precise_location.id_for_label }}">Precise location <span class="required-star">*</span></label>
         {{ form.precise_location }}
         {{ form.precise_location.errors }}
     </div>
 
-    <div class="form-group{% if 'gps_coordinates' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.gps_coordinates.id_for_label }}">GPS coordinates if available</label>
-        {{ form.gps_coordinates }}
-        {{ form.gps_coordinates.errors }}
-        <button type="button" class="btn btn-outline" data-location-button>USE CURRENT LOCATION</button>
-    </div>
+    {# ── GPS Capture Card ───────────────────────────────────────── #}
+    <div class="form-group">
+      <label>Customer GPS location</label>
 
-    <div class="form-group{% if 'map_screenshot' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.map_screenshot.id_for_label }}">Map screenshot</label>
-        {% if app.map_screenshot %}
-            <img class="upload-preview" src="{{ app.map_screenshot.url }}" alt="Map screenshot">
-        {% endif %}
-        {{ form.map_screenshot }}
-        {{ form.map_screenshot.errors }}
+      {# Card controlled by Alpine.js #}
+      <div x-data="gpsCapture()" x-cloak>
+        <div class="gps-capture-card"
+             :class="{
+               'gps-capture-card--idle':    state === 'idle',
+               'gps-capture-card--loading': state === 'loading',
+               'gps-capture-card--success': state === 'success',
+               'gps-capture-card--error':   state === 'error'
+             }">
+          <div class="gps-capture-icon">
+            <template x-if="state === 'idle'">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+            </template>
+            <template x-if="state === 'loading'">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="spin-icon" style="animation:spin .8s linear infinite"><circle cx="12" cy="12" r="10" opacity=".3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            </template>
+            <template x-if="state === 'success'">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </template>
+            <template x-if="state === 'error'">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </template>
+          </div>
+
+          <div class="gps-capture-body">
+            <p class="gps-capture-title" x-text="stateTitle"></p>
+            <p class="gps-capture-sub" x-text="stateSub"></p>
+          </div>
+
+          <template x-if="state !== 'success'">
+            <button type="button" class="gps-btn"
+                    :class="{
+                      'gps-btn--idle':    state === 'idle',
+                      'gps-btn--loading': state === 'loading',
+                      'gps-btn--retry':   state === 'error'
+                    }"
+                    :disabled="state === 'loading'"
+                    @click="capture()">
+              <span x-show="state === 'loading'" class="gps-spinner"></span>
+              <span x-text="state === 'error' ? 'Retry' : (state === 'loading' ? 'Getting…' : 'Get Location')"></span>
+            </button>
+          </template>
+          <template x-if="state === 'success'">
+            <button type="button" class="gps-btn" style="background:#dcfce7;color:#15803d;" @click="redo()">
+              Redo
+            </button>
+          </template>
+        </div>
+
+        {# Hidden input for the GPS coordinate — submitted with form #}
+        <input type="hidden" name="gps_coordinates" :value="coords" id="id_gps_coordinates">
+      </div>
+
+      {% if form.gps_coordinates.errors %}
+      <div class="field-error">{{ form.gps_coordinates.errors|join:", " }}</div>
+      {% endif %}
     </div>
 
     <div class="form-group{% if 'next_of_kin_1_name' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_1_name.id_for_label }}">{{ form.next_of_kin_1_name.label }}</label>
+        <label for="{{ form.next_of_kin_1_name.id_for_label }}">Next of kin — full name <span class="required-star">*</span></label>
         {{ form.next_of_kin_1_name }}
         {{ form.next_of_kin_1_name.errors }}
     </div>
 
     <div class="form-group{% if 'next_of_kin_1_phone' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_1_phone.id_for_label }}">{{ form.next_of_kin_1_phone.label }}</label>
-        <div class="phone-input">
-            <span>+265</span>
+        <label for="{{ form.next_of_kin_1_phone.id_for_label }}">Next of kin — phone number <span class="required-star">*</span></label>
+        <div class="input-prefix-group">
+            <span class="input-prefix">+265</span>
             {{ form.next_of_kin_1_phone }}
         </div>
         {{ form.next_of_kin_1_phone.errors }}
     </div>
 
     <div class="form-group{% if 'next_of_kin_1_relationship' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_1_relationship.id_for_label }}">{{ form.next_of_kin_1_relationship.label }}</label>
+        <label for="{{ form.next_of_kin_1_relationship.id_for_label }}">Relationship to customer <span class="required-star">*</span></label>
         {{ form.next_of_kin_1_relationship }}
         {{ form.next_of_kin_1_relationship.errors }}
     </div>
 
-    <div class="form-actions">
-        <a href="{% url 'kyc_capture' app.id %}" class="btn btn-outline ts-button-outline">Back</a>
-        <button type="submit" class="btn ts-button-primary">CONTINUE TO WORK / INCOME</button>
+    <div class="form-actions form-actions--sticky-bottom">
+        <a href="{% url 'kyc_capture' app.id %}" class="btn btn-outline ts-button-outline">← Back</a>
+        <button type="submit" class="btn ts-button-primary">Continue →</button>
     </div>
 </form>
+</div>
 
 {{ geography_data|json_script:"geography-data" }}
+
 <script>
-    (function () {
-        const geographyData = JSON.parse(document.getElementById("geography-data").textContent || "{}");
-        const region = document.getElementById("id_region");
-        const district = document.getElementById("id_district");
-        const traditionalAuthority = document.getElementById("id_traditional_authority");
-        const currentDistrict = district.value;
-        const currentTraditionalAuthority = traditionalAuthority.value;
+/* ── Geography cascade ─────────────────────────────────────────── */
+(function () {
+    const geographyData = JSON.parse(document.getElementById("geography-data").textContent || "{}");
+    const region = document.getElementById("id_region");
+    const district = document.getElementById("id_district");
+    const ta = document.getElementById("id_traditional_authority");
+    if (!region || !district) return;
 
-        function updateDistricts() {
-            const options = Object.keys(geographyData[region.value] || {});
-            district.innerHTML = '<option value="">Select district</option>';
-            options.forEach(function (name) {
-                const option = document.createElement("option");
-                option.value = name;
-                option.textContent = name;
-                if (name === currentDistrict) {
-                    option.selected = true;
-                }
-                district.appendChild(option);
-            });
-            updateTraditionalAuthorities();
-        }
+    const currentDistrict = district.value;
+    const currentTA = ta ? ta.value : "";
 
-        function updateTraditionalAuthorities() {
-            const options = (geographyData[region.value] && geographyData[region.value][district.value]) || [];
-            traditionalAuthority.innerHTML = '<option value="">Select traditional authority</option>';
-            options.forEach(function (name) {
-                const option = document.createElement("option");
-                option.value = name;
-                option.textContent = name;
-                if (name === currentTraditionalAuthority) {
-                    option.selected = true;
-                }
-                traditionalAuthority.appendChild(option);
-            });
-        }
-
-        region.addEventListener("change", updateDistricts);
-        district.addEventListener("change", updateTraditionalAuthorities);
-        updateDistricts();
-    })();
-
-    (function () {
-        document.querySelectorAll("[data-phone-input]").forEach(function (input) {
-            input.addEventListener("input", function () {
-                input.value = input.value.replace(/\D/g, "").slice(0, 9);
-            });
+    function updateDistricts() {
+        const options = Object.keys(geographyData[region.value] || {});
+        district.innerHTML = '<option value="">Select district</option>';
+        options.forEach(function (name) {
+            const option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            if (name === currentDistrict) option.selected = true;
+            district.appendChild(option);
         });
-    })();
+        updateTAs();
+    }
 
-    (function () {
-        const button = document.querySelector("[data-location-button]");
-        const input = document.getElementById("id_gps_coordinates");
-        if (!button || !input || !navigator.geolocation) {
-            return;
-        }
-        button.addEventListener("click", function () {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                input.value = position.coords.latitude.toFixed(6) + "," + position.coords.longitude.toFixed(6);
-            });
+    function updateTAs() {
+        if (!ta) return;
+        const options = (geographyData[region.value] && geographyData[region.value][district.value]) || [];
+        ta.innerHTML = '<option value="">Select traditional authority</option>';
+        options.forEach(function (name) {
+            const option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            if (name === currentTA) option.selected = true;
+            ta.appendChild(option);
         });
-    })();
+    }
+
+    region.addEventListener("change", updateDistricts);
+    district.addEventListener("change", updateTAs);
+    updateDistricts();
+})();
+
+/* ── Phone input clamp ─────────────────────────────────────────── */
+(function () {
+    document.querySelectorAll("[data-phone-input]").forEach(function (input) {
+        input.addEventListener("input", function () {
+            input.value = input.value.replace(/\D/g, "").slice(0, 9);
+        });
+    });
+})();
+
+/* ── GPS Capture Alpine component ──────────────────────────────── */
+function gpsCapture() {
+  /* Seed with any existing coordinate from the server */
+  const existingCoords = "{{ app.gps_coordinates|default:'' }}";
+
+  return {
+    state: existingCoords ? 'success' : 'idle',
+    coords: existingCoords,
+
+    get stateTitle() {
+      return {
+        idle:    'Get customer location',
+        loading: 'Getting location…',
+        success: 'Location obtained',
+        error:   'Location failed — retry',
+      }[this.state];
+    },
+    get stateSub() {
+      return {
+        idle:    'Tap to capture GPS coordinates automatically.',
+        loading: 'Please wait. Keep the device still.',
+        success: 'GPS location captured successfully.',
+        error:   'Could not get location. Check GPS permissions and try again.',
+      }[this.state];
+    },
+
+    capture() {
+      if (!navigator.geolocation) {
+        this.state = 'error';
+        return;
+      }
+      this.state = 'loading';
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.coords = position.coords.latitude.toFixed(6) + ',' + position.coords.longitude.toFixed(6);
+          this.state  = 'success';
+        },
+        () => {
+          this.state = 'error';
+        },
+        { timeout: 10000, maximumAge: 0 }
+      );
+    },
+
+    redo() {
+      this.state  = 'idle';
+      this.coords = '';
+    },
+  };
+}
 </script>
-
 {% endblock %}

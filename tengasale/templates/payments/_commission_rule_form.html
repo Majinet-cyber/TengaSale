@@ -1,0 +1,41 @@
+{% load humanize %}
+<div style="margin-bottom:14px;">
+  <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted,#667085);display:block;margin-bottom:5px;">Name *</label>
+  <input type="text" name="name" value="{{ obj.name|default:'' }}" required style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+</div>
+<div style="margin-bottom:14px;">
+  <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted,#667085);display:block;margin-bottom:5px;">Earner Type *</label>
+  <select name="earner_type" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+    <option value="merchant" {% if obj.earner_type == 'merchant' %}selected{% endif %}>Merchant</option>
+    <option value="underwriter" {% if obj.earner_type == 'underwriter' %}selected{% endif %}>Underwriter</option>
+    <option value="staff" {% if obj.earner_type == 'staff' %}selected{% endif %}>Staff</option>
+  </select>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+  <div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted,#667085);display:block;margin-bottom:5px;">Percentage (%)</label>
+    <input type="number" name="percentage" step="0.01" min="0" max="100" value="{{ obj.percentage|default:'0' }}" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+  </div>
+  <div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted,#667085);display:block;margin-bottom:5px;">Fixed Amount (MWK)</label>
+    <input type="number" name="fixed_amount" step="0.01" min="0" value="{{ obj.fixed_amount|default:'0' }}" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+  </div>
+</div>
+<div style="display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap;">
+  <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+    <input type="checkbox" name="applies_to_deposit" {% if obj.applies_to_deposit %}checked{% endif %}> Applies to Deposit
+  </label>
+  <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+    <input type="checkbox" name="applies_to_repayments" {% if obj.applies_to_repayments or not obj.pk %}checked{% endif %}> Applies to Repayments
+  </label>
+  <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+    <input type="checkbox" name="applies_to_contract_total" {% if obj.applies_to_contract_total %}checked{% endif %}> Applies to Contract Total
+  </label>
+  <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+    <input type="checkbox" name="is_active" {% if obj.is_active or not obj.pk %}checked{% endif %}> Is Active
+  </label>
+</div>
+<div style="margin-bottom:14px;">
+  <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--pay-muted,#667085);display:block;margin-bottom:5px;">Description</label>
+  <textarea name="description" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:vertical;" rows="2">{{ obj.description|default:'' }}</textarea>
+</div>

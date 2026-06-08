@@ -5,39 +5,508 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
+<style>
+/* ── Merchant Dashboard — Clean Fintech Shell ─────────────────── */
+.merchant-dashboard-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.merchant-shell {
+  flex: 1;
+  padding-bottom: 96px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.merchant-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 16px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  gap: 8px;
+}
+
+.merchant-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.merchant-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff5a00;
+}
+
+.merchant-brand-icon--fallback::after {
+  content: 'T';
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.merchant-brand-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+.merchant-brand-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: #101828;
+  letter-spacing: -0.02em;
+}
+
+.topbar-page-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667085;
+  flex: 1;
+  text-align: center;
+}
+
+.merchant-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.merchant-header-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #667085;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  text-decoration: none;
+  transition: background .12s, color .12s;
+  position: relative;
+}
+
+.merchant-header-btn:hover { background: #f1f5f9; color: #101828; }
+.merchant-header-btn--notify { position: relative; }
+
+.merchant-header-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+}
+
+.merchant-logout-form { margin: 0; }
+
+/* ── Greeting section ───────────────────────────────────────────── */
+.merchant-greeting {
+  padding: 20px 16px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.merchant-greeting-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #101828;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* ── Big new application button ─────────────────────────────────── */
+.primary-big-action {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px 16px 0;
+  padding: 0 20px;
+  min-height: 64px;
+  background: #ff5a00;
+  color: #fff;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 900;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px rgba(255,90,0,0.30);
+  transition: background .15s, transform .1s, box-shadow .15s;
+}
+
+.primary-big-action:hover { background: #e64d00; box-shadow: 0 8px 24px rgba(255,90,0,0.38); }
+.primary-big-action:active { transform: scale(.98); }
+
+.primary-contract-btn__icon { font-size: 22px; line-height: 1; }
+.primary-contract-btn__label { flex: 1; text-align: center; }
+.primary-contract-btn__arrow { font-size: 20px; opacity: .7; }
+
+/* ── Section label ──────────────────────────────────────────────── */
+.section-title,
+.simple-section {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9ca3af;
+  padding: 16px 16px 8px;
+  margin: 0;
+}
+
+/* ── Action card (nav list) ─────────────────────────────────────── */
+.action-card {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+  margin: 0 16px 14px;
+  overflow: hidden;
+}
+
+.action-row,
+.simple-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: #101828;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action-row:last-child,
+.simple-row:last-child { border-bottom: none; }
+.action-row:hover,
+.simple-row:hover { background: #f8fafc; }
+.action-row:active,
+.simple-row:active { background: #f1f5f9; }
+
+.action-row-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.action-row-icon--active    { background: rgba(29,78,216,0.10);  color: #1d4ed8; }
+.action-row-icon--pending   { background: rgba(245,158,11,0.10); color: #d97706; }
+.action-row-icon--completed { background: rgba(22,163,74,0.10);  color: #16a34a; }
+.action-row-icon--archived  { background: rgba(107,114,128,0.10);color: #6b7280; }
+.action-row-icon--deals     { background: rgba(99,102,241,0.10); color: #6366f1; }
+.action-row-icon--earnings  { background: rgba(255,90,0,0.10);   color: #ff5a00; }
+.action-row-icon--payments  { background: rgba(16,185,129,0.10); color: #059669; }
+.action-row-icon--spin      { background: rgba(245,158,11,0.10); color: #d97706; }
+.action-row-icon--support   { background: rgba(107,114,128,0.10);color: #6b7280; }
+
+.action-row-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: #101828;
+}
+
+.action-row-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #667085;
+}
+
+.action-row-chevron,
+.row-arrow {
+  font-size: 16px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* ── Overview card ──────────────────────────────────────────────── */
+.overview-card {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+  margin: 14px 16px 0;
+  padding: 16px;
+}
+
+.overview-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.overview-card__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #101828;
+  margin: 0;
+}
+
+.overview-card__link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff5a00;
+  text-decoration: none;
+}
+
+.overview-card__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.overview-stat {
+  text-align: center;
+}
+
+.overview-stat__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  margin: 0 auto 6px;
+}
+
+.overview-stat__icon--phone  { background: rgba(99,102,241,0.10); color: #6366f1; }
+.overview-stat__icon--active { background: rgba(22,163,74,0.10);  color: #16a34a; }
+.overview-stat__icon--locked { background: rgba(245,158,11,0.10); color: #d97706; }
+.overview-stat__icon--overdue{ background: rgba(220,38,38,0.10);  color: #dc2626; }
+
+.overview-stat__value {
+  font-size: 20px;
+  font-weight: 900;
+  color: #101828;
+  line-height: 1;
+}
+
+.overview-stat__label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ── Quality card ───────────────────────────────────────────────── */
+.merchant-quality-card {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 18px;
+  margin: 14px 16px 0;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.05);
+}
+
+.merchant-quality-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.merchant-quality-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #101828;
+}
+
+.merchant-quality-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+.merchant-quality-badge--great { background: #dcfce7; color: #15803d; }
+.merchant-quality-badge--ok    { background: #dbeafe; color: #1d4ed8; }
+.merchant-quality-badge--warn  { background: #fef3c7; color: #d97706; }
+
+.merchant-quality-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.merchant-quality-stat { text-align: center; }
+
+.merchant-quality-stat-val {
+  font-size: 22px;
+  font-weight: 900;
+  color: #101828;
+  line-height: 1;
+}
+
+.merchant-quality-stat-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: 3px;
+}
+
+.merchant-quality-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.merchant-quality-tip svg {
+  width: 16px;
+  height: 16px;
+  stroke: #d97706;
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Agreement banner ───────────────────────────────────────────── */
+.agreement-banner {
+  background: rgba(255,90,0,0.06);
+  border: 1.5px solid rgba(255,90,0,0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 14px 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.agreement-banner__text { flex: 1; min-width: 0; }
+.agreement-banner__title { font-size: 13px; font-weight: 700; color: #0f1923; }
+.agreement-banner__sub { font-size: 12px; color: #667085; margin-top: 2px; }
+
+.agreement-banner__btn {
+  background: #ff5a00;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .12s;
+}
+
+.agreement-banner__btn:hover { background: #e64d00; }
+
+/* ── Bottom nav ─────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom,0px));
+  z-index: 50;
+}
+
+.bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-decoration: none;
+  min-width: 48px;
+  transition: color .12s;
+}
+
+.bottom-nav__item i { font-size: 20px; }
+.bottom-nav__item--active { color: #ff5a00; }
+
+.bottom-nav__fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #ff5a00;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(255,90,0,.32);
+  transition: background .12s, transform .1s;
+}
+
+.bottom-nav__fab:active { transform: scale(.95); }
+</style>
 {% endblock %}
 
 {% block topbar %}{% endblock %}
-
 {% block page_footer %}{% endblock %}
 
 {% block content %}
 <div class="merchant-dashboard-shell mobile-shell">
 <div class="merchant-shell">
-  <header class="merchant-header topbar mobile-topbar">
+
+  {# ── Header ──────────────────────────────────────────────────── #}
+  <header class="merchant-header" aria-label="TengaSale merchant header">
     <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
       <span class="merchant-brand-icon" aria-hidden="true">
-        <img src="{% static 'images/Tenga.png' %}" alt="" width="36" height="36" onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
+        <img src="{% static 'images/Tenga.png' %}" alt="" width="34" height="34"
+             onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
       </span>
       <span class="merchant-brand-name">TengaSale</span>
     </a>
-    <span class="topbar-page-title">Home</span>
+
     <div class="merchant-header-actions">
-      <a
-        class="merchant-header-btn"
-        href="{{ tengasale_whatsapp_link|default:'#' }}"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="WhatsApp support"
-        title="WhatsApp support"
-      >
+      <a class="merchant-header-btn"
+         href="{{ tengasale_whatsapp_link|default:'#' }}"
+         target="_blank" rel="noopener noreferrer"
+         aria-label="WhatsApp support" title="WhatsApp support">
         <i class="bi bi-whatsapp" aria-hidden="true"></i>
       </a>
-      <a
-        href="{% url 'notifications_list' %}"
-        class="merchant-header-btn merchant-header-btn--notify"
-        aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}"
-      >
+      <a href="{% url 'notifications_list' %}"
+         class="merchant-header-btn merchant-header-btn--notify"
+         aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}">
         <i class="bi bi-bell" aria-hidden="true"></i>
         {% if unread_notification_count %}
           <span class="merchant-header-badge">{{ unread_notification_count }}</span>
@@ -52,30 +521,44 @@
     </div>
   </header>
 
+  {# ── Greeting ─────────────────────────────────────────────────── #}
   <section class="merchant-greeting" aria-label="Greeting">
-    <div class="merchant-greeting-copy">
-      <h1 class="merchant-greeting-title">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
+    <div>
+      <h1 class="merchant-greeting-title">Hi, {{ request.user.first_name|default:request.user.username }} 👋</h1>
+      <p style="font-size:13px;color:#667085;margin:3px 0 0;">
+        {% with merchant=request.user.merchant_set.first %}
+          {% if merchant %}{{ merchant.business_name }}{% else %}Welcome back{% endif %}
+        {% endwith %}
+      </p>
     </div>
     {% include "includes/flag_pill.html" %}
   </section>
 
-  <!-- Agreement status banner -->
+  {# ── Agreement banner ─────────────────────────────────────────── #}
   {% with merchant=request.user.merchant_set.first %}
   {% if merchant and not merchant.has_signed_agreement %}
-  <div style="background:rgba(255,90,0,0.06);border:1.5px solid rgba(255,90,0,0.25);border-radius:12px;padding:14px 16px;margin:0 16px 16px;display:flex;align-items:center;gap:12px;">
-    <svg viewBox="0 0 24 24" style="width:22px;height:22px;flex-shrink:0;fill:none;stroke:#ff5a00;stroke-width:2;">
+  <div class="agreement-banner">
+    <svg viewBox="0 0 24 24" style="width:22px;height:22px;flex-shrink:0;fill:none;stroke:#ff5a00;stroke-width:2;" aria-hidden="true">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
     </svg>
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:13px;font-weight:700;color:#0f1923;">Agreement signature required</div>
-      <div style="font-size:12px;color:#667085;">Sign the Merchant Participation Agreement to unlock all features.</div>
+    <div class="agreement-banner__text">
+      <div class="agreement-banner__title">Sign your Merchant Agreement</div>
+      <div class="agreement-banner__sub">Required to unlock all features.</div>
     </div>
-    <a href="{% url 'merchant_agreement_sign' %}" style="background:#ff5a00;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">Sign Now</a>
+    <a href="{% url 'merchant_agreement_sign' %}" class="agreement-banner__btn">Sign Now</a>
   </div>
   {% endif %}
   {% endwith %}
 
-  <!-- Overview stats card -->
+  {# ── New Application — Big Action ─────────────────────────────── #}
+  <a href="{% url 'new_application' %}" class="primary-contract-btn primary-big-action" aria-label="Start a new application"
+     style="margin-top:16px;">
+    <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
+    <span class="primary-contract-btn__label">NEW APPLICATION</span>
+    <span class="primary-contract-btn__arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+  </a>
+
+  {# ── Portfolio overview ───────────────────────────────────────── #}
   {% with stats=device_financing_stats %}
   <div class="overview-card ts-fade-in">
     <div class="overview-card__head">
@@ -107,15 +590,15 @@
   </div>
   {% endwith %}
 
-  <!-- Merchant Quality Score Card -->
+  {# ── Seller quality card ──────────────────────────────────────── #}
   {% with total=active_count|add:completed_count|add:archived_rejected_count %}
   {% if total > 0 %}
-  <div class="merchant-quality-card ts-fade-in ts-mb-8">
+  <div class="merchant-quality-card ts-fade-in">
     <div class="merchant-quality-header">
       <span class="merchant-quality-title">My Seller Quality</span>
       {% if completed_count > 0 and archived_rejected_count == 0 %}
         <span class="merchant-quality-badge merchant-quality-badge--great">Top Seller</span>
-      {% elif archived_rejected_count|add:0 > completed_count %}
+      {% elif archived_rejected_count > completed_count %}
         <span class="merchant-quality-badge merchant-quality-badge--warn">Needs Improvement</span>
       {% else %}
         <span class="merchant-quality-badge merchant-quality-badge--ok">Good Standing</span>
@@ -143,81 +626,79 @@
   {% endif %}
   {% endwith %}
 
-  <a href="{% url 'new_application' %}" class="primary-contract-btn primary-big-action" aria-label="Start a new contract">
-    <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
-    <span class="primary-contract-btn__label">+ NEW APPLICATION</span>
-    <span class="primary-contract-btn__arrow row-arrow" aria-hidden="true">→</span>
-  </a>
-
+  {# ── Applications ─────────────────────────────────────────────── #}
   <h2 class="section-title simple-section">Applications</h2>
   <nav class="action-card" aria-label="Applications">
     <a href="{% url 'active_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--active" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
       <span class="action-row-label">Active</span>
-      <span class="action-row-value">{{ active_count }}</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-value">{% if active_count %}{{ active_count }}{% else %}—{% endif %}</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'pending_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--pending" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
       <span class="action-row-label">Pending Queue</span>
       <span class="action-row-value">{% if pending_queue_count %}{{ pending_queue_count }}{% else %}—{% endif %}</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'completed_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--completed" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
       <span class="action-row-label">Completed</span>
-      <span class="action-row-value">{{ completed_count }}</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-value">{% if completed_count %}{{ completed_count }}{% else %}—{% endif %}</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'rejected_applications' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--archived" aria-hidden="true"><i class="bi bi-archive"></i></span>
       <span class="action-row-label">Archived / Rejected</span>
-      <span class="action-row-value">{{ archived_rejected_count }}</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-value">{% if archived_rejected_count %}{{ archived_rejected_count }}{% else %}—{% endif %}</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
   </nav>
 
+  {# ── Tools ────────────────────────────────────────────────────── #}
   <h2 class="section-title simple-section">Tools</h2>
   <nav class="action-card" aria-label="Tools">
     <a href="{% url 'all_deals' %}" class="action-row simple-row">
-      <span class="action-row-icon action-row-icon--deals" aria-hidden="true"><i class="bi bi-list-ul"></i></span>
+      <span class="action-row-icon action-row-icon--deals" aria-hidden="true"><i class="bi bi-grid"></i></span>
       <span class="action-row-label">All Deals</span>
       <span class="action-row-value">Browse</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'earnings_home' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-gift"></i></span>
       <span class="action-row-label">My Earnings</span>
       <span class="action-row-value">{{ earnings_total|mwk }}</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'payments_home' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--payments" aria-hidden="true"><i class="bi bi-coin"></i></span>
       <span class="action-row-label">Payments</span>
       <span class="action-row-value">Open</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'spin_rewards' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--spin" aria-hidden="true"><i class="bi bi-stars"></i></span>
       <span class="action-row-label">Spin &amp; Win</span>
       {% if spin_wallet.balance %}<span class="action-row-value">{{ spin_wallet.balance }} pts</span>{% else %}<span class="action-row-value">—</span>{% endif %}
-      <span class="action-row-chevron row-arrow" aria-hidden="true">→</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'ticket_create' %}" class="action-row simple-row">
       <span class="action-row-icon action-row-icon--support" aria-hidden="true"><i class="bi bi-life-preserver"></i></span>
       <span class="action-row-label">Support</span>
       <span class="action-row-value">Help</span>
-      <span class="action-row-chevron row-arrow" aria-hidden="true">&rarr;</span>
+      <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
   </nav>
-</div>
 
+</div>{# /merchant-shell #}
+
+{# ── Bottom navigation ────────────────────────────────────────── #}
 <nav class="bottom-nav" aria-label="Main navigation">
   <a href="{% url 'merchant_dashboard' %}" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
     <i class="bi bi-house-fill" aria-hidden="true"></i>
     <span>Home</span>
   </a>
-  <a href="{% url 'new_application' %}" class="bottom-nav__fab" aria-label="New contract">
+  <a href="{% url 'new_application' %}" class="bottom-nav__fab" aria-label="New application">
     <i class="bi bi-plus-lg" aria-hidden="true"></i>
   </a>
   <a href="{% url 'earnings_home' %}" class="bottom-nav__item">
@@ -225,5 +706,6 @@
     <span>Profile</span>
   </a>
 </nav>
-</div>
+
+</div>{# /merchant-dashboard-shell #}
 {% endblock %}

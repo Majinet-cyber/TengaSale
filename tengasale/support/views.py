@@ -11,7 +11,7 @@ from accounts.decorators import tech_support_required
 from accounts.utils import is_hq, is_hq_or_tech_support, is_merchant_admin
 from core.models import AuditLog
 
-from .models import BugEvent, SupportTicket, TicketComment
+from .models import BugEvent, SupportConversation, SupportTicket, TicketComment
 
 
 HEALTH_SOURCES = [
@@ -450,3 +450,18 @@ def bug_to_ticket(request, bug_id):
         messages.success(request, f"Ticket {ticket.ticket_number} created from bug #{bug.pk}.")
         return redirect("ticket_detail", ticket_id=ticket.pk)
     return redirect("bug_detail", bug_id=bug_id)
+
+
+@login_required
+@tech_support_required
+def conversation_list(request):
+    """HQ view of all WhatsApp chatbot conversations."""
+    conversations = (
+        SupportConversation.objects
+        .select_related("linked_user", "active_ticket")
+        .order_by("-last_message_at")[:200]
+    )
+    return render(request, "support/conversation_list.html", {
+        "conversations": conversations,
+        "page_title": "WhatsApp Conversations",
+    })

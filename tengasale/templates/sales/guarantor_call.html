@@ -18,49 +18,66 @@
 
   <div class="ts-app-num">{{ app.application_number }}</div>
 
+  {# ── Guarantor Details Card ──────────────────────────────────── #}
   <div class="ts-review-card ts-mb-8">
-    <div class="ts-review-card__title">Guarantor / Contact Details</div>
-    <div class="ts-review-row"><span>Guarantor / Next of Kin</span><strong>{{ app.next_of_kin_1_name|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Phone</span><strong>{{ app.next_of_kin_1_phone|default:"—" }}</strong></div>
+    <div class="ts-review-card__title">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Guarantor / Contact Details
+    </div>
+    <div class="ts-review-row"><span>Name</span><strong>{{ app.next_of_kin_1_name|default:"Not provided" }}</strong></div>
+    <div class="ts-review-row"><span>Phone</span><strong>{% if app.next_of_kin_1_phone %}+265 {{ app.next_of_kin_1_phone }}{% else %}—{% endif %}</strong></div>
     <div class="ts-review-row"><span>Relationship</span><strong>{{ app.next_of_kin_1_relationship|default:"—" }}</strong></div>
   </div>
 
+  {# ── Call Actions ─────────────────────────────────────────────── #}
   {% if app.next_of_kin_1_phone %}
-  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
     <a href="tel:+265{{ app.next_of_kin_1_phone }}" class="action-btn-large primary">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/>
       </svg>
-      <span class="btn-label">CALL GUARANTOR — {{ app.next_of_kin_1_name|default:"Contact" }} · +265 {{ app.next_of_kin_1_phone }}</span>
+      <span class="btn-label">Call — {{ app.next_of_kin_1_name|default:"Guarantor" }} &middot; +265 {{ app.next_of_kin_1_phone }}</span>
     </a>
     <a href="https://wa.me/265{{ app.next_of_kin_1_phone }}" class="action-btn-large whatsapp" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
       </svg>
-      <span class="btn-label">WHATSAPP GUARANTOR</span>
+      <span class="btn-label">WhatsApp Guarantor</span>
     </a>
+  </div>
+  {% else %}
+  <div class="ts-check-note" style="border-color:rgba(245,158,11,.30);background:rgba(245,158,11,.06);color:#92400e;">
+    <strong>No guarantor phone number captured.</strong> Verify details with merchant before proceeding.
   </div>
   {% endif %}
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
+
+    {# ── Verification Questions ────────────────────────────────── #}
     <div class="ts-review-card ts-mb-8">
-      <div class="ts-review-card__title">Guarantor Call Verification</div>
+      <div class="ts-review-card__title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Guarantor Verification
+      </div>
       <p class="ts-check-note">
-        📋 Before asking questions, inform the contact:
-        <em>"This call may be recorded for quality and compliance purposes."</em>
+        Before asking questions, inform the contact: <em>"This call may be recorded for quality and compliance purposes."</em>
       </p>
       {% include "sales/_yes_no.html" with field_name="location_neighbour_spoken" label="Did you speak with the guarantor / contact?" current_value=review.location_neighbour_spoken %}
       {% include "sales/_yes_no.html" with field_name="location_confirmed" label="Did the guarantor confirm they know the customer personally?" current_value=review.location_confirmed %}
       {% include "sales/_yes_no.html" with field_name="location_traceable" label="Did the guarantor confirm the customer's residence or workplace?" current_value=review.location_traceable %}
-      {% include "sales/_yes_no.html" with field_name="guarantor_notified_recording" label="Was the contact notified that this call may be recorded for quality and compliance?" current_value=None %}
+      {% include "sales/_yes_no.html" with field_name="guarantor_notified_recording" label="Was the guarantor notified that this call may be recorded for quality and compliance?" current_value=None %}
     </div>
 
+    {# ── Strength Assessment ───────────────────────────────────── #}
     <div class="ts-review-card ts-mb-8">
-      <div class="ts-review-card__title">Guarantor Strength Assessment</div>
-      <div class="ts-guarantor-hints" style="padding:12px;background:#f8fafc;border-radius:8px;font-size:12px;color:#64748b;line-height:1.7;">
-        <strong style="color:#0f172a;display:block;margin-bottom:6px;">Assessment checklist (note in your review):</strong>
-        <ul style="margin:0 0 0 16px;padding:0;">
+      <div class="ts-review-card__title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Guarantor Strength Assessment
+      </div>
+      <div class="ts-guarantor-hints">
+        <strong style="display:block;font-size:12px;font-weight:900;color:#101828;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Check as you speak</strong>
+        <ul>
           <li>Does the guarantor speak confidently about the customer?</li>
           <li>Can the guarantor confirm the customer's occupation or income?</li>
           <li>Did the guarantor answer questions without hesitation?</li>
@@ -71,27 +88,37 @@
       </div>
     </div>
 
-
+    {# ── Call Recording (Optional) ─────────────────────────────── #}
     <div class="ts-review-card ts-mb-8">
-      <div class="ts-review-card__title">📎 Call Recording (Optional)</div>
+      <div class="ts-review-card__title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+        Call Recording <span class="ts-badge ts-badge--soft">Optional</span>
+      </div>
       {% if call_evidence %}
-        <div class="ts-badge ts-badge--green ts-mb-8">✓ Recording uploaded</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(22,163,74,.07);border:1.5px solid rgba(22,163,74,.20);border-radius:10px;margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size:13px;font-weight:800;color:#16a34a;">Recording uploaded</span>
+        </div>
       {% endif %}
-      <p class="ts-meta-small">Upload an audio recording of this call for quality and compliance purposes.</p>
-      <div class="field-group ts-mt-8">
-        <label class="field-label">Upload Recording</label>
+      <div class="ts-recording-pilot-note">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Recording will not block this approval. Upload if available for QA purposes.
+      </div>
+      <div class="field-group" style="margin-top:12px;">
+        <label class="field-label">Upload Recording <span class="ts-field-optional">(optional)</span></label>
         <input
           type="file"
           name="call_recording"
           class="input"
           accept="audio/mpeg,audio/mp3,audio/wav,audio/mp4,audio/webm,audio/ogg,.mp3,.wav,.mp4,.webm,.ogg,.m4a"
         >
-        <div class="ts-meta-small" style="margin-top:4px;">Max 15 MB · MP3, WAV, MP4, WebM, OGG</div>
+        <div class="ts-meta-small" style="margin-top:4px;">Max 15 MB &middot; MP3, WAV, MP4, WebM, OGG</div>
       </div>
     </div>
 
     <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">
-      Continue to Income Check →
+      Continue to Income Check
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </button>
   </form>
 

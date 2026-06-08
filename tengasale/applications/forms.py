@@ -16,10 +16,15 @@ from .models import FinancingApplication
 
 INCOME_BANDS = [
     ("", "Select income band"),
-    ("0-100,000", "0-100,000"),
-    ("100,001-300,000", "100,001-300,000"),
-    ("300,001-600,000", "300,001-600,000"),
-    ("600,001+", "600,001+"),
+    ("less_than_100k", "Less than MWK 100,000"),
+    ("100k_150k", "MWK 100,000 – MWK 150,000"),
+    ("150k_200k", "MWK 150,000 – MWK 200,000"),
+    ("200k_250k", "MWK 200,000 – MWK 250,000"),
+    ("250k_300k", "MWK 250,000 – MWK 300,000"),
+    ("300k_350k", "MWK 300,000 – MWK 350,000"),
+    ("350k_400k", "MWK 350,000 – MWK 400,000"),
+    ("400k_600k", "MWK 400,000 – MWK 600,000"),
+    ("more_than_600k", "More than MWK 600,000"),
 ]
 
 REGIONS = [
@@ -39,23 +44,17 @@ PROOF_TYPES = [
 ]
 
 OCCUPATION_CHOICES = [
-    ("", "Select occupation"),
-    ("Self Employed", "Self Employed"),
-    ("Service", "Service"),
-    ("Trade and Commerce", "Trade and Commerce"),
-    ("Farming", "Farming"),
-    ("Civil Servant", "Civil Servant"),
-    ("Private Sector Employee", "Private Sector Employee"),
+    ("", "How does the customer earn money?"),
+    ("Employed", "They are employed"),
+    ("Business Owner", "They own a business"),
+    ("Farming", "Farming / agriculture"),
+    ("Piece Work", "Piece work / informal income"),
+    ("Civil Servant", "Civil servant"),
     ("Teacher", "Teacher"),
-    ("Health Worker", "Health Worker"),
-    ("Student", "Student"),
-    ("Security Services", "Security Services"),
-    ("Driver / Transport", "Driver / Transport"),
-    ("Construction", "Construction"),
-    ("Domestic Work", "Domestic Work"),
-    ("Artisan / Technician", "Artisan / Technician"),
-    ("Business Owner", "Business Owner"),
-    ("NGO / Development Sector", "NGO / Development Sector"),
+    ("Health Worker", "Health worker"),
+    ("Security Services", "Security services"),
+    ("Driver / Transport", "Driver / transport"),
+    ("NGO / Development Sector", "NGO / development sector"),
     ("Retired", "Retired"),
     ("Unemployed", "Unemployed"),
     ("Other", "Other"),

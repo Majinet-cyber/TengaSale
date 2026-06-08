@@ -29,13 +29,13 @@
       </svg>
     </a>
 
-    <button class="mh-icon-btn mh-btn-bell" type="button" aria-label="Notifications">
+    <a href="{% url 'notifications_list' %}" class="mh-icon-btn mh-btn-bell" aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
         <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
       </svg>
-      <span class="mh-badge">0</span>
-    </button>
+      {% if unread_notification_count %}<span class="mh-badge">{{ unread_notification_count }}</span>{% endif %}
+    </a>
 
     <form method="post" action="{% url 'logout' %}" style="margin:0;">
       {% csrf_token %}

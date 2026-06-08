@@ -1,0 +1,89 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Spin Reward Payouts</h1>
+    <p>Process winning spin reward disbursements to staff and underwriters.</p>
+  </div>
+  <span style="font-size:13px;color:var(--pay-muted);">Pending: <strong style="color:var(--pay-amber);">MWK {{ total_pending|intcomma }}</strong></span>
+</div>
+
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Status</label>
+    <select name="status">
+      <option value="">All</option>
+      <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="processing" {% if filter_status == 'processing' %}selected{% endif %}>Processing</option>
+      <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="failed" {% if filter_status == 'failed' %}selected{% endif %}>Failed</option>
+    </select>
+  </div>
+  <div><label>&nbsp;</label><button type="submit" class="btn btn-orange">Filter</button></div>
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Spin Reward Payouts ({{ page_obj.paginator.count }})</h3></div>
+  {% if page_obj %}
+  <table class="pay-table">
+    <thead>
+      <tr><th>User</th><th>Amount</th><th>Tier</th><th>Method</th><th>Phone</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for p in page_obj %}
+      <tr>
+        <td style="font-weight:600;">{{ p.user.get_full_name|default:p.user.username }}</td>
+        <td style="font-weight:700;white-space:nowrap;">MWK {{ p.amount|intcomma }}</td>
+        <td>{{ p.spin_reward.get_reward_tier_display|default:"—" }}</td>
+        <td>{{ p.get_payment_method_display }}</td>
+        <td>{{ p.phone_number|default:"—" }}</td>
+        <td><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ p.created_at|date:"d M Y" }}</td>
+        <td>
+          {% if p.status == 'pending' %}
+          <form method="post" action="{% url 'payments:spin_reward_process' payout_id=p.id %}" style="display:inline;">{% csrf_token %}
+            <button type="submit" class="btn btn-orange btn-sm">Process</button>
+          </form>
+          {% elif p.status == 'processing' %}
+          <button onclick="document.getElementById('spin-paid-{{ p.id }}').style.display='flex'" class="btn btn-green btn-sm">Mark Paid</button>
+          {% elif p.status == 'paid' %}
+          <span style="font-size:12px;color:var(--pay-green);">✓ {{ p.paid_at|date:"d M Y" }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {# Mark paid inline #}
+      <tr id="spin-paid-{{ p.id }}" style="display:none;background:var(--pay-green-lt);">
+        <td colspan="8" style="padding:16px;">
+          <form method="post" action="{% url 'payments:spin_reward_mark_paid' payout_id=p.id %}" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            {% csrf_token %}
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--pay-muted);display:block;margin-bottom:4px;">Proof Reference *</label>
+              <input type="text" name="proof_reference" placeholder="Provider transaction ID" style="padding:8px 12px;border:1px solid var(--pay-border);border-radius:7px;font-size:13px;min-width:220px;" required>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn btn-green btn-sm">Confirm Paid</button>
+              <button type="button" onclick="document.getElementById('spin-paid-{{ p.id }}').style.display='none'" class="btn btn-ghost btn-sm">Cancel</button>
+            </div>
+          </form>
+          <p style="margin:8px 0 0;font-size:12px;color:var(--pay-green);">
+            Congratulations. Your spin reward of MWK {{ p.amount|intcomma }} is being processed to {{ p.phone_number }}.
+          </p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ filter_status }}">&laquo; Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ filter_status }}">Next &raquo;</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><p>No spin reward payouts yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -43,8 +43,11 @@
 
   {% if not stats %}
   <div class="uwp-empty">
-    <div style="font-size:1.5rem;margin-bottom:8px;">📋</div>
-    No underwriters registered yet. Add underwriters to see performance metrics here.
+    <div style="width:52px;height:52px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div style="font-size:15px;font-weight:800;color:#101828;margin-bottom:6px;">No underwriter data yet</div>
+    <div style="font-size:13px;color:#94a3b8;line-height:1.5;">Performance metrics will appear here once underwriters start reviewing applications.</div>
   </div>
   {% else %}
 
@@ -58,27 +61,35 @@
     </div>
     <div class="uwp-metrics">
       <div class="uwp-metric">
-        <div class="uwp-metric-val" style="color:#ff5a00;">{{ s.reviewed }}</div>
+        <div class="uwp-metric-val" style="color:#ff5a00;">{{ s.reviewed|default:"0" }}</div>
         <div class="uwp-metric-lbl">Reviewed</div>
       </div>
       <div class="uwp-metric">
+        {% if s.approval_rate is not None %}
         <div class="uwp-metric-val" style="color:#16a34a;">{{ s.approval_rate }}%</div>
+        {% else %}
+        <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
+        {% endif %}
         <div class="uwp-metric-lbl">Approval rate</div>
       </div>
       <div class="uwp-metric">
+        {% if s.rejection_rate is not None %}
         <div class="uwp-metric-val" style="color:#dc2626;">{{ s.rejection_rate }}%</div>
+        {% else %}
+        <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
+        {% endif %}
         <div class="uwp-metric-lbl">Rejection rate</div>
       </div>
       <div class="uwp-metric">
-        <div class="uwp-metric-val" style="color:#16a34a;">{{ s.gross_commission|floatformat:0 }}</div>
+        <div class="uwp-metric-val" style="color:#16a34a;font-size:0.9rem;">{{ s.gross_commission|mwk }}</div>
         <div class="uwp-metric-lbl">Gross commission</div>
       </div>
       <div class="uwp-metric">
-        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.deductions|floatformat:0 }}</div>
+        <div class="uwp-metric-val" style="color:#dc2626;font-size:0.9rem;">{{ s.deductions|mwk }}</div>
         <div class="uwp-metric-lbl">Deductions</div>
       </div>
       <div class="uwp-metric">
-        <div class="uwp-metric-val">{{ s.net_commission|floatformat:0 }}</div>
+        <div class="uwp-metric-val" style="font-size:0.9rem;">{{ s.net_commission|mwk }}</div>
         <div class="uwp-metric-lbl">Net commission</div>
       </div>
       <div class="uwp-metric">
@@ -90,11 +101,15 @@
         <div class="uwp-metric-lbl">Avg review time</div>
       </div>
       <div class="uwp-metric">
+        {% if s.qc_pass_rate is not None %}
         <div class="uwp-metric-val" style="color:#16a34a;">{{ s.qc_pass_rate }}%</div>
+        {% else %}
+        <div class="uwp-metric-val" style="color:#94a3b8;">—</div>
+        {% endif %}
         <div class="uwp-metric-lbl">QC pass rate</div>
       </div>
       <div class="uwp-metric">
-        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.qc_failed }}</div>
+        <div class="uwp-metric-val" style="color:#dc2626;">{{ s.qc_failed|default:"0" }}</div>
         <div class="uwp-metric-lbl">Failed QC</div>
       </div>
       <div class="uwp-metric">
@@ -106,8 +121,8 @@
     <div style="margin-top:12px;">
       <div style="font-size:0.70rem;color:#64748b;margin-bottom:5px;font-weight:600;">Review distribution</div>
       <div style="background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden;display:flex;">
-        <div style="background:#16a34a;width:{{ s.approval_rate }}%;transition:width 0.9s;border-radius:6px 0 0 6px;"></div>
-        <div style="background:#dc2626;width:{{ s.rejection_rate }}%;transition:width 0.9s;"></div>
+        {% if s.approval_rate %}<div style="background:#16a34a;width:{{ s.approval_rate }}%;transition:width 0.9s;border-radius:6px 0 0 6px;"></div>{% endif %}
+        {% if s.rejection_rate %}<div style="background:#dc2626;width:{{ s.rejection_rate }}%;transition:width 0.9s;"></div>{% endif %}
       </div>
     </div>
     {% endif %}

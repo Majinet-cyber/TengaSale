@@ -16,6 +16,9 @@
     </a>
     <a href="{% url 'bug_monitor' %}" class="hq-topbar-btn"><span class="btn-label">Bugs</span></a>
     <a href="{% url 'ticket_list' %}" class="hq-topbar-btn"><span class="btn-label">Tickets</span></a>
+    <a href="{% url 'conversation_list' %}" class="hq-topbar-btn" title="WhatsApp Conversations">
+      <span class="btn-label">WhatsApp</span>
+    </a>
     {% if is_hq_user %}
     <a href="{% url 'hq_dashboard' %}" class="hq-topbar-btn"><span class="btn-label">HQ</span></a>
     {% endif %}

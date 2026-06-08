@@ -63,11 +63,11 @@
   <div class="ts-review-card">
     <div class="ts-review-card__title">Deal</div>
     <div class="ts-review-row"><span>Smartphone</span><strong>{{ app.deal }}</strong></div>
-    <div class="ts-review-row"><span>Cash Price</span><strong>MWK {{ app.selected_cash_price|floatformat:0|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Deposit</span><strong>MWK {{ app.calculated_deposit_amount|floatformat:0|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Daily Repayment</span><strong>MWK {{ app.calculated_daily_payment|floatformat:0|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Monthly (30-day)</span><strong>MWK {{ app.calculated_monthly_payment|floatformat:0|default:"—" }}</strong></div>
-    <div class="ts-review-row"><span>Total Contract</span><strong>MWK {{ app.calculated_total_loan|floatformat:0|default:"—" }}</strong></div>
+    <div class="ts-review-row"><span>Cash Price</span><strong class="ts-money">{{ app.selected_cash_price|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money">{{ app.calculated_deposit_amount|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Daily Repayment</span><strong class="ts-money">{{ app.calculated_daily_payment|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Monthly (30-day)</span><strong class="ts-money">{{ app.calculated_monthly_payment|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Total Contract</span><strong class="ts-money">{{ app.calculated_total_loan|mwk }}</strong></div>
   </div>
   {% endif %}
 
