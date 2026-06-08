@@ -181,9 +181,10 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# In development (DEBUG=True), serve source files directly — no collectstatic needed.
+# In development (DEBUG=True) or test runs, serve source files directly — no collectstatic needed.
 # In production, use whitenoise CompressedManifest for hashed, compressed assets.
-if DEBUG:
+_TESTING = "test" in sys.argv or "pytest" in sys.modules
+if DEBUG or _TESTING:
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",

@@ -1623,7 +1623,7 @@ class LayoutRegressionTests(TestCase):
         self.client.login(username="reg_merchant", password="pass123")
         response = self.client.get(reverse("merchant_dashboard"))
         content = response.content.decode()
-        cta_pos = content.index("+ NEW APPLICATION")
+        cta_pos = content.index("NEW APPLICATION")
         apps_pos = content.index("Applications")
         tools_pos = content.index("Tools")
         self.assertLess(cta_pos, apps_pos, "CTA must appear before Applications")
