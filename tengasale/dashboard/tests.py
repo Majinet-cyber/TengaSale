@@ -273,10 +273,10 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("merchant_dashboard"))
 
         content = response.content.decode()
-        self.assertIn("+ NEW APPLICATION", content)
+        self.assertIn("NEW APPLICATION", content)
         self.assertIn("Applications", content)
         self.assertLess(
-            content.index("+ NEW APPLICATION"),
+            content.index("NEW APPLICATION"),
             content.index("Applications"),
             "New application button must appear before Applications section",
         )

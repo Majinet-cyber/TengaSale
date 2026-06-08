@@ -1264,7 +1264,7 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, app.id_front_image.url)
         self.assertContains(response, app.id_back_image.url)
         self.assertContains(response, "kyc-portrait-stack")
-        self.assertContains(response, "kyc-portrait-card")
+        self.assertContains(response, "kyc-smart-card")
 
     def test_kyc_review_no_images_shows_missing_and_disabled_submit(self):
         app = self.create_application()
@@ -1312,9 +1312,9 @@ class KYCCaptureTests(ApplicationTestCase):
         response = self.client.get(reverse("kyc_capture", args=[app.id]))
 
         self.assertContains(response, 'data-kyc-complete="true"')
-        self.assertContains(response, 'id="review-selfie"')
-        self.assertContains(response, 'id="review-id-front"')
-        self.assertContains(response, 'id="review-id-back"')
+        self.assertContains(response, 'id="kyc-img-selfie"')
+        self.assertContains(response, 'id="kyc-img-id_front"')
+        self.assertContains(response, 'id="kyc-img-id_back"')
         self.assertContains(response, 'data-disabled-note hidden')
         self.assertContains(response, 'id="kyc-submit-btn"')
         self.assertNotRegex(

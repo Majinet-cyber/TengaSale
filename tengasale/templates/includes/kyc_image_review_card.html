@@ -1,94 +1,231 @@
 {% comment %}
-Portrait KYC evidence card.
-Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missing|broken),
-      retake_step (optional int), show_send_back (bool), correction (optional), field_name (for send-back)
+Orientation-aware KYC evidence card.
+Vars:
+  label         – display name for the image slot
+  image_url     – URL of the captured/uploaded image (optional)
+  card_type     – selfie | id_front | id_back | signature | proof
+  status        – ready | missing | broken
+  retake_step   – optional int (goto-step for merchant flow retake)
+  show_send_back – bool (show send-back / request-retake control)
+  correction    – optional dict with .note
+  field_name    – required if show_send_back is true
 {% endcomment %}
 
-<article class="kyc-portrait-card kyc-portrait-card--{{ card_type|default:'selfie' }} ts-kyc-img-card{% if correction %} ts-kyc-img-card--flagged{% endif %}{% if status == 'missing' %} ts-kyc-img-card--missing{% endif %}">
-  <div class="kyc-portrait-card__head">
-    <h3 class="kyc-portrait-card__label">{{ label }}</h3>
-    {% if show_send_back and field_name %}
-    <button
-      type="button"
-      class="review-edit-btn ts-edit-icon-btn{% if correction %} review-edit-btn--active{% endif %}"
-      aria-label="Request retake for {{ label }}"
-      data-correction-open
-      data-field-name="{{ field_name }}"
-      data-field-label="{{ label }}"
-      data-field-section="Images"
-      data-correction-note="{{ correction.note|default:'' }}"
-      data-correction-active="{% if correction %}true{% else %}false{% endif %}"
-      style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.90);border:1px solid rgba(0,0,0,0.10);"
-    >
-      {% if correction %}
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
+{% comment %}
+  Orientation map:
+    selfie      → portrait   (aspect-[3/4])
+    id_front    → landscape  (aspect-[16/10])
+    id_back     → landscape  (aspect-[16/10])
+    signature   → wide       (aspect-[4/1])
+    proof       → auto       (aspect-[4/3])
+{% endcomment %}
+
+{% with ct=card_type|default:"selfie" %}
+<article
+  class="kyc-smart-card kyc-smart-card--{{ ct }}{% if correction %} kyc-smart-card--flagged{% endif %}{% if status == 'missing' %} kyc-smart-card--missing{% endif %}"
+  data-kyc-card="{{ ct }}"
+  data-testid="kyc-card-{{ ct }}"
+>
+
+  {# ── Card header ──────────────────────────────────────────────── #}
+  <div class="kyc-smart-card__head">
+    <div class="kyc-smart-card__head-left">
+      <span class="kyc-smart-card__label">{{ label }}</span>
+      {# Orientation pill #}
+      {% if ct == 'selfie' %}
+        <span class="kyc-orient-pill kyc-orient-pill--portrait" aria-label="Best in portrait">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true"><rect x="1" y="0.5" width="8" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Portrait
+        </span>
+      {% elif ct == 'id_front' or ct == 'id_back' or ct == 'signature' %}
+        <span class="kyc-orient-pill kyc-orient-pill--landscape" aria-label="Best in landscape">
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true"><rect x="0.5" y="1" width="11" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Landscape
+        </span>
       {% else %}
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+        <span class="kyc-orient-pill kyc-orient-pill--auto" aria-label="Any orientation">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/></svg>
+          Auto
+        </span>
       {% endif %}
-    </button>
-    {% endif %}
+    </div>
+
+    {# Action menu #}
+    <div class="kyc-smart-card__actions" style="display:flex;align-items:center;gap:4px;">
+      {% if status == 'ready' and image_url %}
+        <a
+          href="{{ image_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="kyc-act-btn"
+          aria-label="View full {{ label }}"
+          title="View full image"
+          data-testid="kyc-view-full-{{ ct }}"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg>
+        </a>
+      {% endif %}
+      {% if retake_step is not None %}
+        <button
+          type="button"
+          class="kyc-act-btn kyc-act-btn--orange"
+          data-goto-step="{{ retake_step }}"
+          aria-label="Rotate {{ label }}"
+          title="Rotate image"
+          data-testid="kyc-rotate-{{ ct }}"
+          onclick="kycRotateImage(this)"
+          data-img-id="kyc-img-{{ ct }}"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>
+        </button>
+      {% endif %}
+      {% if show_send_back and field_name %}
+        <button
+          type="button"
+          class="kyc-act-btn{% if correction %} kyc-act-btn--flagged{% endif %}"
+          aria-label="{% if correction %}Edit correction for {% else %}Request retake for {% endif %}{{ label }}"
+          data-correction-open
+          data-field-name="{{ field_name }}"
+          data-field-label="{{ label }}"
+          data-field-section="Images"
+          data-correction-note="{{ correction.note|default:'' }}"
+          data-correction-active="{% if correction %}true{% else %}false{% endif %}"
+          title="{% if correction %}Edit correction{% else %}Request retake{% endif %}"
+          data-testid="kyc-send-back-{{ ct }}"
+        >
+          {% if correction %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-1"/></svg>
+          {% else %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+          {% endif %}
+        </button>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="kyc-portrait-card__frame">
+  {# ── Orientation helper text ───────────────────────────────────── #}
+  <p class="kyc-smart-card__helper">
+    {% if ct == 'selfie' %}Take a clear portrait photo of the customer's face.
+    {% elif ct == 'id_front' %}Capture the full ID card horizontally. All text must be readable.
+    {% elif ct == 'id_back' %}Capture the full back side horizontally. All text must be readable.
+    {% elif ct == 'signature' %}Sign inside the wide box. Keep the signature centered.
+    {% else %}Capture the document clearly. Any orientation is fine.
+    {% endif %}
+  </p>
+
+  {# ── Image frame ─────────────────────────────────────────────────── #}
+  <div class="kyc-smart-card__frame kyc-smart-card__frame--{{ ct }}" data-testid="kyc-frame-{{ ct }}">
     {% if status == 'ready' and image_url %}
-    <a href="{{ image_url }}" target="_blank" rel="noopener noreferrer" class="kyc-portrait-card__link" title="View full {{ label }}">
       <img
-        {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
+        id="kyc-img-{{ ct }}"
         src="{{ image_url }}"
         alt="{{ label }}"
-        class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
+        class="kyc-smart-card__img kyc-smart-card__img--{% if ct == 'selfie' %}cover{% else %}contain{% endif %}"
         loading="lazy"
-        data-kyc-portrait-img
+        data-kyc-img="{{ ct }}"
+        data-rotate-deg="0"
+        style="transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);"
       >
-    </a>
-    <div
-      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
-      class="kyc-portrait-card__placeholder"
-      hidden
-    >
-      <p>Missing photo</p>
-      <span>Request retake</span>
-    </div>
+      {# Wrong-orientation warning (JS will show this if aspect mismatch detected) #}
+      <div
+        class="kyc-orient-warn"
+        id="kyc-orient-warn-{{ ct }}"
+        style="display:none;"
+        role="alert"
+        data-testid="kyc-orient-warn-{{ ct }}"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>This image may be easier to review in
+          {% if ct == 'selfie' %}portrait{% else %}landscape{% endif %}.
+          You can continue or retake.
+        </span>
+      </div>
     {% elif status == 'broken' %}
-    <img
-      {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
-      alt="{{ label }}"
-      class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
-      hidden
-      data-kyc-portrait-img
-    >
-    <div
-      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
-      class="kyc-portrait-card__placeholder kyc-portrait-card__placeholder--broken"
-    >
-      <p>Photo unavailable</p>
-      <span>Request retake</span>
-    </div>
+      <div class="kyc-smart-card__placeholder kyc-smart-card__placeholder--broken">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+        <p>Photo unavailable</p>
+        <span>Request retake ↑</span>
+      </div>
     {% else %}
-    <img
-      {% if card_type == 'selfie' %}id="review-selfie"{% elif card_type == 'id_front' %}id="review-id-front"{% elif card_type == 'id_back' %}id="review-id-back"{% endif %}
-      alt="{{ label }}"
-      class="kyc-portrait-card__img kyc-portrait-card__img--{% if card_type == 'selfie' %}cover{% else %}contain{% endif %}"
-      hidden
-      data-kyc-portrait-img
-    >
-    <div
-      {% if card_type == 'selfie' %}id="review-selfie-empty"{% elif card_type == 'id_front' %}id="review-id-front-empty"{% elif card_type == 'id_back' %}id="review-id-back-empty"{% endif %}
-      class="kyc-portrait-card__placeholder"
-    >
-      <p>Missing photo</p>
-      <span>Request retake</span>
-    </div>
+      <div class="kyc-smart-card__placeholder">
+        {% if ct == 'selfie' %}
+          <svg width="28" height="36" viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="10" r="5"/><path d="M3 28c0-5 4-9 9-9s9 4 9 9"/></svg>
+        {% elif ct == 'id_front' or ct == 'id_back' %}
+          <svg width="36" height="26" viewBox="0 0 36 26" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="1" y="1" width="34" height="24" rx="3"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="13" x2="22" y2="13"/><line x1="7" y1="18" x2="14" y2="18"/><rect x="24" y="7" width="7" height="9" rx="1"/></svg>
+        {% elif ct == 'signature' %}
+          <svg width="40" height="18" viewBox="0 0 40 18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 14 C6 6 10 4 14 9 C18 14 20 4 24 9 C28 14 32 8 38 6"/></svg>
+        {% else %}
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/></svg>
+        {% endif %}
+        <p>Missing photo</p>
+        <span>{% if retake_step is not None %}Tap Retake below{% else %}Awaiting capture{% endif %}</span>
+      </div>
     {% endif %}
   </div>
 
+  {# ── Correction note ──────────────────────────────────────────────── #}
   {% if correction.note %}
-  <p class="kyc-portrait-card__note">{{ correction.note }}</p>
+  <p class="kyc-smart-card__correction-note">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-1"/></svg>
+    {{ correction.note }}
+  </p>
   {% endif %}
 
+  {# ── Retake button (merchant capture flow) ────────────────────────── #}
   {% if retake_step is not None %}
-  <button type="button" class="kyc-portrait-card__retake" data-goto-step="{{ retake_step }}" aria-label="Retake {{ label }}">
+  <button
+    type="button"
+    class="kyc-smart-card__retake"
+    data-goto-step="{{ retake_step }}"
+    aria-label="Retake {{ label }}"
+    data-testid="kyc-retake-{{ ct }}"
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>
     Retake photo
   </button>
   {% endif %}
+
 </article>
+{% endwith %}
+
+<script>
+(function () {
+  /* Orientation mismatch detection — runs after the card is rendered */
+  function checkOrientation(cardType, imgEl, warnEl) {
+    if (!imgEl || !warnEl) return;
+    function run() {
+      var w = imgEl.naturalWidth;
+      var h = imgEl.naturalHeight;
+      if (!w || !h) return;
+      var isPortrait = h > w;
+      var isLandscape = w > h;
+      var expectedPortrait  = cardType === 'selfie';
+      var expectedLandscape = cardType === 'id_front' || cardType === 'id_back' || cardType === 'signature';
+      if (expectedPortrait && isLandscape) {
+        warnEl.style.display = 'flex';
+      } else if (expectedLandscape && isPortrait) {
+        warnEl.style.display = 'flex';
+      }
+    }
+    if (imgEl.complete) { run(); } else { imgEl.addEventListener('load', run); }
+  }
+
+  /* Rotate helper */
+  window.kycRotateImage = function (btn) {
+    var imgId = btn.getAttribute('data-img-id');
+    var img = document.getElementById(imgId);
+    if (!img) return;
+    var deg = (parseInt(img.getAttribute('data-rotate-deg') || '0', 10) + 90) % 360;
+    img.setAttribute('data-rotate-deg', deg);
+    img.style.transform = 'rotate(' + deg + 'deg)';
+  };
+
+  /* Scan all cards on page */
+  document.querySelectorAll('[data-kyc-card]').forEach(function (card) {
+    var ct   = card.getAttribute('data-kyc-card');
+    var img  = card.querySelector('[data-kyc-img="' + ct + '"]');
+    var warn = document.getElementById('kyc-orient-warn-' + ct);
+    if (img && warn) checkOrientation(ct, img, warn);
+  });
+})();
+</script>
