@@ -40,4 +40,8 @@ urlpatterns = [
     # IMEI verification
     path("applications/<int:app_id>/imei-recheck/", views.sales_imei_recheck, name="sales_imei_recheck"),
     path("applications/<int:app_id>/imei-override/", views.sales_imei_override, name="sales_imei_override"),
+
+    # Emergency payout requests
+    path("emergency-payout/", views.sales_emergency_payout_request, name="sales_emergency_payout_request"),
+    path("emergency-payout/<int:payout_id>/cancel/", views.sales_emergency_payout_cancel, name="sales_emergency_payout_cancel"),
 ]

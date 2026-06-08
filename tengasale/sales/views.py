@@ -1490,3 +1490,107 @@ def sales_imei_override(request, app_id):
     )
     messages.success(request, "IMEI mismatch override recorded. Normal approval is now allowed.")
     return redirect("sales_final_review", app_id=app.id)
+
+
+# ---------------------------------------------------------------------------
+# Emergency Payout Request (Underwriter / Sales staff)
+# ---------------------------------------------------------------------------
+
+@underwriter_required
+def sales_emergency_payout_request(request):
+    """
+    Emergency payout request view.
+    Underwriters can request up to 20% of their current-month earned commission.
+    """
+    from earnings.models import EmergencyPayoutRequest, Wallet
+
+    wallet, _ = Wallet.objects.get_or_create(user=request.user)
+    emergency_info = EmergencyPayoutRequest.get_monthly_emergency_limit(wallet)
+
+    pending_requests = EmergencyPayoutRequest.objects.filter(
+        wallet=wallet, status=EmergencyPayoutRequest.STATUS_PENDING,
+    ).order_by("-created_at")[:5]
+
+    paid_requests = EmergencyPayoutRequest.objects.filter(
+        wallet=wallet, status=EmergencyPayoutRequest.STATUS_PAID,
+    ).order_by("-paid_at")[:10]
+
+    if request.method == "POST":
+        try:
+            requested_amount = Decimal(request.POST.get("amount", "0"))
+        except Exception:
+            messages.error(request, "Invalid amount entered.")
+            return redirect("sales_emergency_payout_request")
+
+        reason = request.POST.get("reason", "").strip()
+        payout_phone = request.POST.get("payout_phone", "").strip()
+        confirmed = request.POST.get("confirmed") == "on"
+
+        errors = []
+        if requested_amount <= 0:
+            errors.append("Amount must be greater than zero.")
+        if requested_amount > emergency_info["available"]:
+            errors.append(
+                f"Requested amount exceeds available limit of MWK {emergency_info['available']:,.0f}."
+            )
+        if not reason:
+            errors.append("A reason is required.")
+        if not confirmed:
+            errors.append("You must confirm the 20% emergency payout rule.")
+
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+        else:
+            ep = EmergencyPayoutRequest.objects.create(
+                wallet=wallet,
+                requested_amount=requested_amount,
+                reason=reason,
+                payout_phone=payout_phone,
+                confirmed=confirmed,
+                earned_this_month_snapshot=emergency_info["earned"],
+                emergency_limit_snapshot=emergency_info["limit"],
+                already_requested_snapshot=emergency_info["already_requested"],
+                status=EmergencyPayoutRequest.STATUS_PENDING,
+            )
+            _audit(
+                request.user, "emergency_payout_requested",
+                "EmergencyPayoutRequest", str(ep.pk),
+                {
+                    "amount": str(requested_amount),
+                    "reason": reason,
+                    "earned_snapshot": str(emergency_info["earned"]),
+                    "limit_snapshot": str(emergency_info["limit"]),
+                },
+                request=request,
+            )
+            messages.success(
+                request,
+                f"Emergency payout request of MWK {requested_amount:,.0f} submitted. "
+                "HQ will review and process your request."
+            )
+            return redirect("sales_emergency_payout_request")
+
+    return render(request, "sales/emergency_payout_request.html", {
+        "wallet": wallet,
+        "emergency_info": emergency_info,
+        "pending_requests": pending_requests,
+        "paid_requests": paid_requests,
+    })
+
+
+@underwriter_required
+@require_POST
+def sales_emergency_payout_cancel(request, payout_id):
+    """Cancel a pending emergency payout request."""
+    from earnings.models import EmergencyPayoutRequest, Wallet
+    wallet, _ = Wallet.objects.get_or_create(user=request.user)
+    payout = get_object_or_404(EmergencyPayoutRequest, id=payout_id, wallet=wallet)
+    if payout.status != EmergencyPayoutRequest.STATUS_PENDING:
+        messages.error(request, "Only pending requests can be cancelled.")
+        return redirect("sales_emergency_payout_request")
+    payout.status = EmergencyPayoutRequest.STATUS_CANCELLED
+    payout.save(update_fields=["status", "updated_at"])
+    _audit(request.user, "emergency_payout_cancelled", "EmergencyPayoutRequest", str(payout.pk), {})
+    messages.success(request, "Emergency payout request cancelled.")
+    return redirect("sales_emergency_payout_request")

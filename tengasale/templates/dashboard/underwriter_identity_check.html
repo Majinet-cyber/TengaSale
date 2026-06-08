@@ -40,12 +40,14 @@
 
     {% include "dashboard/partials/didit_kyc_panel.html" %}
 
-    <section class="uw-card">
+    <section class="uw-card" data-testid="kyc-images-section">
         <h2>KYC Images</h2>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
-            Tap any image to open full size. Compare selfie with ID document photo.
+        <p style="font-size:12px;color:var(--muted);margin:0 0 14px;">
+            Orientation-aware review. Selfie is portrait · ID cards are landscape. Tap any image for full size.
         </p>
-        <div class="kyc-portrait-stack">
+
+        {# Orientation-aware KYC image grid #}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:16px;">
             {% if app.customer_face_image %}
             {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
             {% else %}
@@ -63,48 +65,13 @@
             {% endif %}
         </div>
 
-        <div class="uw-image-grid" style="margin-top:20px;">
-            <div class="uw-image-block">
-                {% if app.signature_image %}
-                    <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer" title="Open signature full size">
-                        <img src="{{ app.signature_image.url }}" alt="Customer signature" loading="lazy"
-                             onerror="this.parentElement.style.display='none';this.parentElement.nextElementSibling&&(this.parentElement.nextElementSibling.hidden=false);">
-                    </a>
-                    <div hidden class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><path d="M3 17c3-1 5-6 7-6s2 6 4 6 3-5 5-6"/></svg>
-                        Signature unavailable
-                    </div>
-                {% else %}
-                    <div class="uw-image-missing">
-                        <svg viewBox="0 0 24 24"><path d="M3 17c3-1 5-6 7-6s2 6 4 6 3-5 5-6"/></svg>
-                        No signature uploaded
-                    </div>
-                {% endif %}
-                <div class="uw-kyc-label-row">
-                    <span class="review-field__label">Signature</span>
-                    <button
-                        type="button"
-                        class="review-edit-btn{% if corrections.customer_signature %} review-edit-btn--active{% endif %}"
-                        aria-label="Mark signature for correction"
-                        data-correction-open
-                        data-field-name="customer_signature"
-                        data-field-label="Signature"
-                        data-field-section="Images"
-                        data-correction-note="{{ corrections.customer_signature.note|default:'' }}"
-                        data-correction-active="{% if corrections.customer_signature %}true{% else %}false{% endif %}"
-                    >
-                        {% if corrections.customer_signature %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
-                        {% else %}
-                            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-                        {% endif %}
-                    </button>
-                </div>
-                {% if corrections.customer_signature.note %}
-                    <span class="review-field__note">{{ corrections.customer_signature.note }}</span>
-                {% endif %}
-            </div>
-        </div>
+        {# Signature — landscape wide card #}
+        {% if app.signature_image %}
+        {% include "includes/kyc_image_review_card.html" with label="Signature" image_url=app.signature_image.url card_type="signature" status="ready" show_send_back=True field_name="signature_image" correction=corrections.signature_image %}
+        {% else %}
+        {% include "includes/kyc_image_review_card.html" with label="Signature" card_type="signature" status="missing" show_send_back=True field_name="signature_image" correction=corrections.signature_image %}
+        {% endif %}
+
     </section>
 
 

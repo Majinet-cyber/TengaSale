@@ -12,6 +12,11 @@ urlpatterns = [
     path("<int:contract_id>/complete/", views.contract_complete, name="contract_complete"),
     path("<int:contract_id>/", views.contract_detail, name="contract_detail"),
 
+    # Deposit payment flow
+    path("<int:contract_id>/pay-deposit/", views.contract_pay_deposit, name="contract_pay_deposit"),
+    path("<int:contract_id>/deposit-status/", views.contract_deposit_status, name="contract_deposit_status"),
+    path("webhooks/deposit/", views.contract_deposit_webhook, name="contract_deposit_webhook"),
+
     # PDF downloads
     path("<int:contract_id>/pdf/initial/", views.contract_pdf_initial, name="contract_pdf_initial"),
     path("<int:contract_id>/pdf/completed/", views.contract_pdf_completed, name="contract_pdf_completed"),

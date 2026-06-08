@@ -794,6 +794,21 @@ html, body { overflow-x: hidden; }
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Merchant Expansion
       </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--danger" data-preset="high_default_stress"
+              data-deposit="10" data-collection="70" data-default="20" data-term="12" data-merchant-comm="1" data-uw-comm="7">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        High Default Stress
+      </button>
+      <button type="button" class="sim-preset-btn" data-preset="recovery_optimized"
+              data-deposit="30" data-collection="96" data-default="2" data-term="9" data-merchant-comm="0.8" data-uw-comm="6">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>
+        Recovery Optimized
+      </button>
+      <button type="button" class="sim-preset-btn sim-preset-btn--purple" data-preset="low_capital_pilot"
+              data-deposit="15" data-collection="88" data-default="6" data-term="6" data-merchant-comm="1" data-uw-comm="7">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Low Capital Pilot
+      </button>
     </div>
   </div>
 
@@ -1299,6 +1314,21 @@ html, body { overflow-x: hidden; }
         </div>
       </div>
 
+      <!-- 9b. Animated Cashflow Forecast Chart -->
+      <div class="sim-card">
+        <div class="sim-card-hdr" style="color:#0891b2;">
+          <div class="sim-card-hdr-icon" style="background:rgba(8,145,178,0.10);">
+            <svg viewBox="0 0 24 24" style="stroke:#0891b2;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          Monthly Collections &amp; Cumulative Profit Forecast
+        </div>
+        <div style="padding:16px 18px;">
+          <div style="position:relative;height:320px;">
+            <canvas id="sim-forecast-chart" aria-label="Collections and profit forecast chart"></canvas>
+          </div>
+        </div>
+      </div>
+
       <!-- 10. Assumptions & Disclaimer -->
       <div class="sim-disclaimer">
         <strong>Assumptions &amp; Compliance Notes</strong>
@@ -1336,14 +1366,21 @@ html, body { overflow-x: hidden; }
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (function() {
+  /* ── Extended preset scenarios ─────────────────────────────────── */
   var presets = {
-    conservative: { deposit_pct: '30', collection_rate: '95', default_rate: '3', term_months: '12', merchant_commission_rate: '1', uw_commission_rate: '7' },
-    balanced:     { deposit_pct: '20', collection_rate: '90', default_rate: '5', term_months: '12', merchant_commission_rate: '1', uw_commission_rate: '7' },
-    aggressive:   { deposit_pct: '13', collection_rate: '82', default_rate: '10', term_months: '12', merchant_commission_rate: '1.5', uw_commission_rate: '8' },
-    profit:       { deposit_pct: '25', collection_rate: '93', default_rate: '3', term_months: '10', merchant_commission_rate: '0.8', uw_commission_rate: '6' },
-    expansion:    { deposit_pct: '20', collection_rate: '88', default_rate: '7', term_months: '12', merchant_commission_rate: '2', uw_commission_rate: '7' },
+    conservative:       { deposit_pct: '30', collection_rate: '95', default_rate: '3',  term_months: '12', merchant_commission_rate: '1',   uw_commission_rate: '7' },
+    balanced:           { deposit_pct: '20', collection_rate: '90', default_rate: '5',  term_months: '12', merchant_commission_rate: '1',   uw_commission_rate: '7' },
+    aggressive:         { deposit_pct: '13', collection_rate: '82', default_rate: '10', term_months: '12', merchant_commission_rate: '1.5', uw_commission_rate: '8' },
+    profit:             { deposit_pct: '25', collection_rate: '93', default_rate: '3',  term_months: '10', merchant_commission_rate: '0.8', uw_commission_rate: '6' },
+    expansion:          { deposit_pct: '20', collection_rate: '88', default_rate: '7',  term_months: '12', merchant_commission_rate: '2',   uw_commission_rate: '7' },
+    high_default_stress:{ deposit_pct: '10', collection_rate: '70', default_rate: '20', term_months: '12', merchant_commission_rate: '1',   uw_commission_rate: '7' },
+    recovery_optimized: { deposit_pct: '30', collection_rate: '96', default_rate: '2',  term_months: '9',  merchant_commission_rate: '0.8', uw_commission_rate: '6' },
+    low_capital_pilot:  { deposit_pct: '15', collection_rate: '88', default_rate: '6',  term_months: '6',  merchant_commission_rate: '1',   uw_commission_rate: '7' },
+    zambia_expansion:   { deposit_pct: '20', collection_rate: '85', default_rate: '8',  term_months: '12', merchant_commission_rate: '1.5', uw_commission_rate: '8' },
+    malawi_pilot:       { deposit_pct: '20', collection_rate: '90', default_rate: '5',  term_months: '12', merchant_commission_rate: '1',   uw_commission_rate: '7' },
   };
 
   function applyPreset(name) {
@@ -1361,10 +1398,137 @@ html, body { overflow-x: hidden; }
   }
 
   document.querySelectorAll('.sim-preset-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      applyPreset(btn.dataset.preset);
-    });
+    btn.addEventListener('click', function() { applyPreset(btn.dataset.preset); });
   });
+
+  /* ── Run button progress animation ──────────────────────────────── */
+  var runBtn = document.querySelector('.sim-run-btn');
+  if (runBtn) {
+    /* Ensure inner progress span exists */
+    if (!runBtn.querySelector('.sim-run-progress')) {
+      var prog = document.createElement('span');
+      prog.className = 'sim-run-progress';
+      runBtn.insertBefore(prog, runBtn.firstChild);
+    }
+    runBtn.closest('form') && runBtn.closest('form').addEventListener('submit', function() {
+      runBtn.classList.add('running');
+      runBtn.disabled = true;
+    });
+  }
+
+  /* ── Count-up for result KPIs ──────────────────────────────────── */
+  var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    document.querySelectorAll('[data-count-up]').forEach(function(el) {
+      var to  = parseFloat(el.getAttribute('data-count-up')) || 0;
+      var dur = parseInt(el.getAttribute('data-count-duration') || '900', 10);
+      if (!to) return;
+      var start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(to * eased).toLocaleString();
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = to.toLocaleString();
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* ── Chart.js — Monthly Collections & Profit forecast ──────────── */
+  {% if result %}
+  (function() {
+    var months    = {{ result.term_months|default:12 }};
+    var monthlyIn = {{ result.expected_monthly_collections|default:0 }};
+    var merch     = {{ result.total_merchant_payouts|default:0 }};
+    var uwNet     = {{ result.total_uw_net|default:0 }};
+    var opCost    = {{ result.total_op_cost_display|default:0 }};
+
+    var labels = [];
+    var collectData = [];
+    var profitData  = [];
+    var cumProfit   = 0;
+    var monthlyOut  = (merch + uwNet + opCost) / Math.max(months, 1);
+
+    for (var i = 1; i <= months; i++) {
+      labels.push('M' + i);
+      collectData.push(Math.round(monthlyIn));
+      cumProfit += (monthlyIn - monthlyOut);
+      profitData.push(Math.round(cumProfit));
+    }
+
+    /* Cashflow forecast chart */
+    var ctx = document.getElementById('sim-forecast-chart');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Monthly Collections',
+              data: collectData,
+              borderColor: '#ff5a00',
+              backgroundColor: 'rgba(255,90,0,0.08)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            },
+            {
+              label: 'Cumulative Profit',
+              data: profitData,
+              borderColor: profitData[profitData.length-1] >= 0 ? '#16a34a' : '#dc2626',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              borderDash: [4,3],
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: prefersReduced ? 0 : 1000, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: 'Inter, system-ui', size: 12, weight: '700' }, padding: 16 } },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              padding: 10,
+              titleFont: { family: 'Inter, system-ui', size: 12, weight: '700' },
+              bodyFont:  { family: 'Inter, system-ui', size: 12 },
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': MWK ' + ctx.parsed.y.toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: {
+                font: { size: 11 },
+                callback: function(v) {
+                  if (Math.abs(v) >= 1000000) return 'MWK ' + (v/1000000).toFixed(1) + 'M';
+                  if (Math.abs(v) >= 1000)    return 'MWK ' + (v/1000).toFixed(0) + 'k';
+                  return 'MWK ' + v;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  })();
+  {% endif %}
+
 })();
 </script>
 {% endblock %}

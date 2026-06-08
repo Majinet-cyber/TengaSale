@@ -146,6 +146,121 @@ class ManagerPayout(models.Model):
         self.wallet.save(update_fields=["total_paid", "total_wht_withheld", "balance"])
 
 
+class EmergencyPayoutRequest(models.Model):
+    """
+    Underwriter emergency payout request.
+
+    Business rule: underwriters may request up to 20% of their earned-this-month
+    commission as an emergency payout before the normal month-end payout.
+    The remaining 80% stays for the normal salary/payout cycle.
+    Only HQ / Finance / CFO roles may approve and pay these requests.
+    """
+
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_PAID = "paid"
+    STATUS_REJECTED = "rejected"
+    STATUS_CANCELLED = "cancelled"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending HQ Approval"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_PAID, "Paid"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    EMERGENCY_PAYOUT_LIMIT_PERCENT = Decimal("0.20")
+
+    wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.CASCADE,
+        related_name="emergency_payout_requests",
+    )
+    requested_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    reason = models.TextField(blank=True)
+    payout_phone = models.CharField(max_length=20, blank=True)
+    confirmed = models.BooleanField(
+        default=False,
+        help_text="Requester confirmed understanding of 20% emergency payout rule.",
+    )
+
+    # Snapshot of earnings at request time for audit
+    earned_this_month_snapshot = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    emergency_limit_snapshot = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    already_requested_snapshot = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+
+    # Approval / payment tracking
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_emergency_payouts",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_provider = models.CharField(max_length=40, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Emergency Payout Request"
+        verbose_name_plural = "Emergency Payout Requests"
+
+    def __str__(self):
+        return (
+            f"Emergency payout {self.wallet.user.username} | "
+            f"MWK {self.requested_amount} | {self.status}"
+        )
+
+    @classmethod
+    def get_monthly_emergency_limit(cls, wallet, year=None, month=None):
+        """
+        Calculate the available emergency payout limit for the given wallet.
+        Returns a dict with keys: earned, limit, already_requested, available.
+        """
+        from django.utils import timezone
+
+        now = timezone.now()
+        year = year or now.year
+        month = month or now.month
+
+        # Sum of positive wallet transactions this month (commission credits)
+        earned = wallet.transactions.filter(
+            transaction_type__in=("commission_credit", "commission"),
+            created_at__year=year,
+            created_at__month=month,
+            amount__gt=0,
+        ).aggregate(total=models.Sum("amount"))["total"] or Decimal("0")
+
+        limit = (earned * cls.EMERGENCY_PAYOUT_LIMIT_PERCENT).quantize(Decimal("0.01"))
+
+        # Already requested (approved or paid) this month
+        already_requested = cls.objects.filter(
+            wallet=wallet,
+            status__in=(cls.STATUS_APPROVED, cls.STATUS_PAID),
+            created_at__year=year,
+            created_at__month=month,
+        ).aggregate(total=models.Sum("requested_amount"))["total"] or Decimal("0")
+
+        available = max(Decimal("0"), limit - already_requested)
+
+        return {
+            "earned": earned,
+            "limit": limit,
+            "already_requested": already_requested,
+            "available": available,
+            "remaining_for_salary": max(Decimal("0"), earned - already_requested),
+        }
+
+
 class MerchantPayout(models.Model):
     """
     Payout to a merchant for the cash price of a device they sold on financing.

@@ -1,0 +1,558 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Pay Deposit — {{ contract.contract_number }}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── Payment Page Premium Styles ────────────────────────────── */
+.pay-deposit-page { max-width: 520px; margin: 0 auto; padding: 0 0 40px; }
+
+/* Amount hero card */
+.payment-amount-hero {
+  background: linear-gradient(135deg, #ff5a00 0%, #ff8c42 60%, #ffb347 100%);
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  color: #fff;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px rgba(255,90,0,.25);
+  position: relative;
+  overflow: hidden;
+}
+.payment-amount-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  background: rgba(255,255,255,.1);
+  border-radius: 50%;
+}
+.payment-amount-hero__label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; opacity: .85; }
+.payment-amount-hero__amount { font-size: 42px; font-weight: 900; letter-spacing: -1px; line-height: 1.1; margin: 4px 0 2px; }
+.payment-amount-hero__sub { font-size: 13px; opacity: .8; }
+.payment-amount-hero__badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,.2); backdrop-filter: blur(4px);
+  border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 700;
+  margin-top: 10px;
+}
+
+/* Contract summary card */
+.contract-summary-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.contract-summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 1px solid #f8f8f8; font-size: 13.5px;
+}
+.contract-summary-row:last-child { border-bottom: none; }
+.contract-summary-row__label { color: #6b7280; }
+.contract-summary-row__value { font-weight: 700; color: #111; }
+
+/* Phone input card */
+.phone-input-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.phone-input-card__title { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 4px; }
+.phone-input-card__hint { font-size: 12px; color: #9ca3af; margin-bottom: 14px; }
+.phone-input-wrapper {
+  display: flex; align-items: center; gap: 0;
+  border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden;
+  transition: border-color .15s;
+}
+.phone-input-wrapper:focus-within { border-color: #ff5a00; }
+.phone-input-prefix {
+  padding: 12px 14px; background: #f9fafb;
+  font-size: 14px; font-weight: 700; color: #374151;
+  border-right: 1px solid #e5e7eb; white-space: nowrap;
+}
+.phone-input-field {
+  flex: 1; padding: 12px 14px; font-size: 15px;
+  border: none; outline: none; background: transparent;
+  font-weight: 600; letter-spacing: .5px; color: #111;
+}
+.operator-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  margin-top: 8px; transition: all .15s;
+}
+.operator-chip.airtel { background: #fff0e8; color: #ff5a00; }
+.operator-chip.tnm { background: #e8f5e9; color: #16a34a; }
+.operator-chip.unknown { background: #f3f4f6; color: #9ca3af; }
+
+/* Pay button */
+.pay-deposit-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 16px; border-radius: 14px;
+  background: linear-gradient(135deg, #ff5a00, #ff7a2e);
+  color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .3px;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255,90,0,.35);
+  transition: transform .1s, box-shadow .1s;
+}
+.pay-deposit-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(255,90,0,.45); }
+.pay-deposit-btn:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(255,90,0,.3); }
+.pay-deposit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+/* Payment timeline */
+.payment-timeline { margin: 16px 0; padding: 18px 20px; background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; }
+.payment-timeline__title { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+.timeline-steps { display: flex; flex-direction: column; gap: 0; }
+.timeline-step {
+  display: flex; gap: 14px; align-items: flex-start; position: relative; padding-bottom: 16px;
+}
+.timeline-step:last-child { padding-bottom: 0; }
+.timeline-step::before {
+  content: ''; position: absolute; left: 14px; top: 28px;
+  width: 2px; height: calc(100% - 14px);
+  background: #f0f0f0;
+}
+.timeline-step:last-child::before { display: none; }
+.timeline-step__circle {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
+  background: #f3f4f6; color: #9ca3af; border: 2px solid #e5e7eb;
+  transition: all .3s;
+}
+.timeline-step.done .timeline-step__circle { background: #10b981; border-color: #10b981; color: #fff; }
+.timeline-step.current .timeline-step__circle { background: #ff5a00; border-color: #ff5a00; color: #fff; }
+.timeline-step.pending .timeline-step__circle { background: #f9fafb; border-color: #e5e7eb; color: #d1d5db; }
+.timeline-step__label { font-size: 13.5px; font-weight: 700; color: #374151; padding-top: 4px; }
+.timeline-step__sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+.timeline-step.done .timeline-step__label { color: #10b981; }
+.timeline-step.current .timeline-step__label { color: #ff5a00; }
+
+/* Success receipt */
+.payment-receipt-card {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1.5px solid #86efac;
+  border-radius: 18px; padding: 24px; text-align: center;
+  animation: receiptSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes receiptSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.receipt-check {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #10b981; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1) .15s both;
+}
+@keyframes popIn {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+.receipt-amount { font-size: 32px; font-weight: 900; color: #059669; margin: 8px 0 4px; }
+.receipt-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #bbf7d0; }
+.receipt-row:last-child { border-bottom: none; }
+.receipt-row__label { color: #6b7280; }
+.receipt-row__value { font-weight: 700; color: #111; }
+
+/* Failure card */
+.payment-failure-card {
+  background: #fef2f2; border: 1.5px solid #fca5a5;
+  border-radius: 18px; padding: 20px; text-align: center;
+}
+.failure-icon { font-size: 40px; margin-bottom: 10px; }
+.failure-title { font-size: 16px; font-weight: 800; color: #dc2626; margin-bottom: 6px; }
+.failure-sub { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+
+/* Pending pulse */
+.pending-pulse {
+  background: #fff8f0; border: 1.5px solid #fed7aa;
+  border-radius: 18px; padding: 20px; text-align: center;
+}
+.pulse-circle {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #ff5a00; margin: 0 auto 12px; opacity: .8;
+  animation: pulsePing 1.4s ease-in-out infinite;
+}
+@keyframes pulsePing {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  50% { transform: scale(1.15); opacity: .5; }
+}
+.pending-title { font-size: 15px; font-weight: 800; color: #92400e; margin-bottom: 4px; }
+.pending-sub { font-size: 13px; color: #b45309; }
+
+/* Provider badge */
+.paychangu-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: #6b7280; padding: 4px 10px;
+  background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;
+  margin-top: 4px;
+}
+
+/* Entrance animations */
+.ts-fade-up {
+  animation: fadeUp .35s cubic-bezier(.25,.46,.45,.94) both;
+}
+.ts-fade-up--d1 { animation-delay: .05s; }
+.ts-fade-up--d2 { animation-delay: .1s; }
+.ts-fade-up--d3 { animation-delay: .15s; }
+.ts-fade-up--d4 { animation-delay: .2s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pay-deposit-page" x-data="depositPayment()" x-init="init()">
+
+  <!-- Back nav -->
+  <div class="ts-back-row">
+    <a href="{% url 'contract_progress' contract.id %}" class="ts-back-btn">
+      <svg viewBox="0 0 24 24" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+      Contract Progress
+    </a>
+  </div>
+
+  <h1 class="greeting" style="margin-bottom:4px;">Pay Deposit</h1>
+  <p style="font-size:13px;color:#9ca3af;margin:0 0 18px;">Contract {{ contract.contract_number }}</p>
+
+  <!-- ── PAID: Receipt ──────────────────────────────────────── -->
+  {% if is_paid %}
+  <div class="payment-receipt-card ts-fade-up">
+    <div class="receipt-check">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:#059669;margin-bottom:4px;">Deposit Paid</div>
+    <div class="receipt-amount">{{ contract.deposit_amount|mwk }}</div>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">Contract is now active</p>
+    <div style="text-align:left;">
+      {% if contract.deposit_payment_reference %}
+      <div class="receipt-row">
+        <span class="receipt-row__label">Transaction Ref</span>
+        <span class="receipt-row__value" style="font-family:monospace;font-size:12px;">{{ contract.deposit_payment_reference }}</span>
+      </div>
+      {% endif %}
+      {% if contract.deposit_paid_at %}
+      <div class="receipt-row">
+        <span class="receipt-row__label">Paid At</span>
+        <span class="receipt-row__value">{{ contract.deposit_paid_at|date:"d M Y H:i" }}</span>
+      </div>
+      {% endif %}
+      <div class="receipt-row">
+        <span class="receipt-row__label">Contract</span>
+        <span class="receipt-row__value">{{ contract.contract_number }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-row__label">Customer</span>
+        <span class="receipt-row__value">{{ contract.customer_name }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-row__label">Amount</span>
+        <span class="receipt-row__value" style="color:#059669;">{{ contract.deposit_amount|mwk }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-row__label">Status</span>
+        <span class="receipt-row__value" style="color:#10b981;">✓ Paid</span>
+      </div>
+    </div>
+    <div style="margin-top:18px;">
+      <a href="{% url 'contract_complete' contract.id %}" class="action-btn-large primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        View Completed Contract
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── PENDING: Awaiting payment ─────────────────────────── -->
+  {% if is_pending and not is_paid %}
+  <div class="pending-pulse ts-fade-up" x-show="!isPaid && isPending">
+    <div class="pulse-circle"></div>
+    <div class="pending-title">Awaiting Payment Confirmation</div>
+    <div class="pending-sub">The payment prompt has been sent. Please confirm on the phone.</div>
+    <p style="font-size:11px;color:#b45309;margin-top:8px;">Transaction Ref: <strong>{{ contract.deposit_payment_tx_ref }}</strong></p>
+    <button @click="checkStatus()" class="action-btn-large outline" style="margin-top:14px;font-size:13px;" :disabled="checking">
+      <span x-show="!checking">↻ Check Payment Status</span>
+      <span x-show="checking">Checking...</span>
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- ── FAILED: Retry card ─────────────────────────────────── -->
+  {% if is_failed and not is_paid %}
+  <div class="payment-failure-card ts-fade-up">
+    <div class="failure-icon">⚠️</div>
+    <div class="failure-title">Payment Failed</div>
+    <div class="failure-sub">The deposit payment was not completed. Please try again with a different phone number or payment method.</div>
+    <button @click="resetForRetry()" class="action-btn-large secondary">Retry Payment</button>
+  </div>
+  {% endif %}
+
+  <!-- ── NOT STARTED / RETRY FORM ──────────────────────────── -->
+  <template x-if="showForm">
+    <div>
+      <!-- Amount hero -->
+      <div class="payment-amount-hero ts-fade-up">
+        <div class="payment-amount-hero__label">Deposit Required</div>
+        <div class="payment-amount-hero__amount">{{ deposit_amount|mwk }}</div>
+        <div class="payment-amount-hero__sub">
+          Remaining after deposit: {{ amount_after_deposit|mwk }}
+        </div>
+        <div class="payment-amount-hero__badge">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          PayChangu Mobile Money
+        </div>
+        {% if mock_mode %}
+        <div style="font-size:10px;opacity:.7;margin-top:6px;">⚠ TEST MODE — no real charges</div>
+        {% endif %}
+      </div>
+
+      <!-- Contract summary -->
+      <div class="contract-summary-card ts-fade-up ts-fade-up--d1">
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Contract Summary</div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label">Contract Number</span>
+          <span class="contract-summary-row__value" style="font-family:monospace;">{{ contract.contract_number }}</span>
+        </div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label">Customer</span>
+          <span class="contract-summary-row__value">{{ contract.customer_name }}</span>
+        </div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label">Device / Deal</span>
+          <span class="contract-summary-row__value">{{ contract.deal_name|default:"–" }}</span>
+        </div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label">Cash Price</span>
+          <span class="contract-summary-row__value">{{ contract.cash_price|mwk }}</span>
+        </div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label" style="font-weight:700;">Deposit Due</span>
+          <span class="contract-summary-row__value" style="color:#ff5a00;">{{ deposit_amount|mwk }}</span>
+        </div>
+        <div class="contract-summary-row">
+          <span class="contract-summary-row__label">Remaining Balance</span>
+          <span class="contract-summary-row__value">{{ amount_after_deposit|mwk }}</span>
+        </div>
+      </div>
+
+      <!-- Phone input card -->
+      <div class="phone-input-card ts-fade-up ts-fade-up--d2">
+        <div class="phone-input-card__title">Payment Phone Number</div>
+        <div class="phone-input-card__hint">Enter the number that will receive the payment prompt.</div>
+        <div class="phone-input-wrapper">
+          <div class="phone-input-prefix">🇲🇼 +265</div>
+          <input
+            type="tel"
+            x-model="phone"
+            @input="detectOperator()"
+            class="phone-input-field"
+            placeholder="88 XXX XXXX"
+            inputmode="tel"
+            autocomplete="tel"
+            maxlength="15"
+          />
+        </div>
+        <div x-show="operator === 'airtel'" class="operator-chip airtel">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          Airtel Money
+        </div>
+        <div x-show="operator === 'tnm'" class="operator-chip tnm">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          TNM Mpamba
+        </div>
+        <div x-show="!operator && phone.length > 2" class="operator-chip unknown">Unknown provider</div>
+        <template x-if="phoneError">
+          <p style="color:#dc2626;font-size:12px;margin-top:6px;" x-text="phoneError"></p>
+        </template>
+      </div>
+
+      <!-- Pay button -->
+      <div class="ts-fade-up ts-fade-up--d3" style="margin-bottom:12px;">
+        <button
+          class="pay-deposit-btn"
+          @click="initiatePayment()"
+          :disabled="loading || !phone"
+        >
+          <template x-if="!loading">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </template>
+          <template x-if="loading">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="12"/>
+            </svg>
+          </template>
+          <span x-text="loading ? 'Creating checkout...' : 'Pay Deposit {{ deposit_amount|mwk }}'"></span>
+        </button>
+        <div class="paychangu-badge" style="display:flex;justify-content:center;margin-top:6px;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secured by PayChangu
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <template x-if="error">
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 14px;font-size:13px;color:#dc2626;margin-bottom:12px;" x-text="error"></div>
+      </template>
+    </div>
+  </template>
+
+  <!-- ── Payment Timeline ───────────────────────────────────── -->
+  <div class="payment-timeline ts-fade-up ts-fade-up--d4">
+    <div class="payment-timeline__title">Payment Steps</div>
+    <div class="timeline-steps">
+      {% for step in payment_states %}
+      <div class="timeline-step {% if step.done %}done{% elif forloop.first and not is_paid %}current{% else %}pending{% endif %}">
+        <div class="timeline-step__circle">
+          {% if step.done %}
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {% else %}
+            {{ forloop.counter }}
+          {% endif %}
+        </div>
+        <div>
+          <div class="timeline-step__label">{{ step.label }}</div>
+          <div class="timeline-step__sub">
+            {% if step.done %}Completed{% elif forloop.first and not is_paid %}In progress{% else %}Waiting{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+function depositPayment() {
+  return {
+    phone: '',
+    operator: '',
+    loading: false,
+    checking: false,
+    error: '',
+    phoneError: '',
+    isPaid: {% if is_paid %}true{% else %}false{% endif %},
+    isPending: {% if is_pending and not is_paid %}true{% else %}false{% endif %},
+    showForm: {% if not is_paid and not is_pending %}true{% else %}false{% endif %},
+    pollInterval: null,
+    contractId: {{ contract.id }},
+
+    init() {
+      if (this.isPending) {
+        this.startPolling();
+      }
+      // Check URL param for return from PayChangu
+      const urlParams = new URLSearchParams(window.location.search);
+      const txRef = urlParams.get('tx_ref') || urlParams.get('txRef');
+      if (txRef) {
+        this.checkStatus();
+      }
+    },
+
+    detectOperator() {
+      const digits = this.phone.replace(/\D/g, '');
+      if (!digits) { this.operator = ''; return; }
+      if (digits.startsWith('88') || digits.startsWith('99') || digits.startsWith('98')) {
+        this.operator = 'airtel';
+      } else if (digits.startsWith('08') || digits.startsWith('38')) {
+        this.operator = 'tnm';
+      } else {
+        this.operator = '';
+      }
+    },
+
+    async initiatePayment() {
+      this.error = '';
+      this.phoneError = '';
+      const digits = this.phone.replace(/\D/g, '');
+      if (!digits || digits.length < 9) {
+        this.phoneError = 'Please enter a valid Malawi phone number (9 digits).';
+        return;
+      }
+      this.loading = true;
+      try {
+        const res = await fetch(`/contracts/${this.contractId}/pay-deposit/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+          },
+          body: new URLSearchParams({ action: 'create_checkout', phone: this.phone }),
+        });
+        const data = await res.json();
+        if (data.ok && data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else if (data.ok && data.status === '{% if contract.deposit_payment_status %}{{ contract.deposit_payment_status }}{% else %}checkout_created{% endif %}') {
+          this.isPending = true;
+          this.showForm = false;
+          this.startPolling();
+        } else {
+          this.error = data.error || 'Could not create payment checkout. Please try again.';
+        }
+      } catch(e) {
+        this.error = 'Network error. Please check your connection and try again.';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async checkStatus() {
+      this.checking = true;
+      try {
+        const res = await fetch(`/contracts/${this.contractId}/deposit-status/`);
+        const data = await res.json();
+        if (data.deposit_paid) {
+          this.isPaid = true;
+          this.isPending = false;
+          this.showForm = false;
+          this.stopPolling();
+          if (data.redirect_url) {
+            setTimeout(() => { window.location.href = data.redirect_url; }, 2000);
+          } else {
+            window.location.reload();
+          }
+        } else if (data.status === 'failed') {
+          this.isPending = false;
+          this.showForm = false;
+          this.stopPolling();
+          window.location.reload();
+        }
+      } catch(e) {
+        // ignore
+      } finally {
+        this.checking = false;
+      }
+    },
+
+    startPolling() {
+      if (this.pollInterval) return;
+      this.pollInterval = setInterval(() => this.checkStatus(), 5000);
+    },
+
+    stopPolling() {
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval);
+        this.pollInterval = null;
+      }
+    },
+
+    resetForRetry() {
+      this.showForm = true;
+      this.error = '';
+    },
+  };
+}
+</script>
+{% endblock %}

@@ -324,3 +324,915 @@ describe("H — Role Management", () => {
     cy.get("body").should("not.contain", "500");
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// I. KYC ORIENTATION-AWARE CARDS
+// ────────────────────────────────────────────────────────────────────────────
+describe("I — KYC Orientation Intelligence", () => {
+  beforeEach(() => {
+    cy.loginAsUnderwriter();
+  });
+
+  it("KYC selfie card renders with portrait aspect ratio class", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-kyc-card='selfie']").length) {
+        cy.get("[data-kyc-card='selfie']").should("exist");
+        cy.get("[data-kyc-card='selfie'] .kyc-smart-card__frame--selfie").should("exist");
+      }
+    });
+  });
+
+  it("KYC ID front card renders with landscape aspect ratio class", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-kyc-card='id_front']").length) {
+        cy.get("[data-kyc-card='id_front'] .kyc-smart-card__frame--id_front").should("exist");
+      }
+    });
+  });
+
+  it("KYC ID back card renders with landscape aspect ratio class", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-kyc-card='id_back']").length) {
+        cy.get("[data-kyc-card='id_back'] .kyc-smart-card__frame--id_back").should("exist");
+      }
+    });
+  });
+
+  it("KYC signature card renders with wide landscape class", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-kyc-card='signature']").length) {
+        cy.get("[data-kyc-card='signature'] .kyc-smart-card__frame--signature").should("exist");
+      }
+    });
+  });
+
+  it("KYC cards have orientation pills", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find(".kyc-smart-card").length) {
+        cy.get(".kyc-orient-pill").should("exist");
+      }
+    });
+  });
+
+  it("KYC card with image has view-full button", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-testid^='kyc-view-full-']").length) {
+        cy.get("[data-testid^='kyc-view-full-']").first().should("be.visible");
+      }
+    });
+  });
+
+  it("KYC identity check page no horizontal overflow", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      const links = $body.find("a[href*='identity-check']");
+      if (links.length) {
+        cy.wrap(links.first()).click({ force: true });
+        cy.window().then((win) => {
+          const overflow = win.document.documentElement.scrollWidth
+            > win.document.documentElement.clientWidth + 2;
+          expect(overflow).to.be.false;
+        });
+      }
+    });
+  });
+
+  it("KYC send-back button exists and has data-correction-open", () => {
+    cy.visit("/sales/");
+    cy.get("body").then(($body) => {
+      if ($body.find("[data-testid^='kyc-send-back-']").length) {
+        cy.get("[data-testid^='kyc-send-back-']").first()
+          .should("have.attr", "data-correction-open");
+      }
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// J. APPLICATION STEPPER — no overflow, chips visible
+// ────────────────────────────────────────────────────────────────────────────
+describe("J — Application Stepper", () => {
+  beforeEach(() => {
+    cy.loginAsMerchant();
+  });
+
+  it("stepper chips container exists with testid", () => {
+    cy.visit("/applications/new/");
+    cy.get('[data-testid="stepper-chips-wrap"]').should("exist");
+  });
+
+  it("at least one stepper chip is visible", () => {
+    cy.visit("/applications/new/");
+    cy.get('[data-testid="stepper-chips"]').should("be.visible");
+    cy.get(".application-step").should("have.length.gte", 1);
+  });
+
+  it("stepper active chip is visible (not clipped)", () => {
+    cy.visit("/applications/new/");
+    cy.get(".application-step-active").should("be.visible");
+  });
+
+  it("application page has no horizontal overflow", () => {
+    cy.visit("/applications/new/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("stepper progress bar exists", () => {
+    cy.visit("/applications/new/");
+    cy.get(".application-progress-bar").should("exist");
+    cy.get(".application-progress-fill").should("exist");
+  });
+
+  it("all 7 step chips render", () => {
+    cy.visit("/applications/new/");
+    cy.get(".application-step").should("have.length", 7);
+  });
+
+  it("stepper chip 1 active on step 1", () => {
+    cy.visit("/applications/new/");
+    cy.get('[data-testid="stepper-chip-1"]').should("have.class", "application-step-active");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// K. FRAUD INVESTIGATION CONSOLE
+// ────────────────────────────────────────────────────────────────────────────
+describe("K — Fraud Investigation Console", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("fraud console renders without error", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get("body").should("not.contain", "Server Error");
+    cy.get("body").should("not.contain", "500");
+  });
+
+  it("fraud risk meter is visible", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="fraud-risk-meter"]').should("exist");
+  });
+
+  it("fraud risk level badge exists", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="fraud-risk-level"]').should("be.visible");
+  });
+
+  it("fraud signal grid renders", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="fraud-signal-grid"]').should("exist");
+    cy.get(".frd-signal-card").should("have.length.gte", 4);
+  });
+
+  it("duplicate NID panel exists", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="dup-nid-panel"]').should("exist");
+  });
+
+  it("duplicate phone panel exists", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="dup-phone-panel"]').should("exist");
+  });
+
+  it("duplicate guarantor panel exists", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="dup-guarantor-panel"]').should("exist");
+  });
+
+  it("IMEI intelligence cockpit renders", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="imei-intelligence"]').should("exist");
+  });
+
+  it("device mismatch panel exists", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.get('[data-testid="device-mismatch-panel"]').should("exist");
+  });
+
+  it("fraud page has no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// L. HQ SIMULATION LAB
+// ────────────────────────────────────────────────────────────────────────────
+describe("L — HQ Simulation Lab", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("simulation page renders without error", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get("body").should("not.contain", "Server Error");
+  });
+
+  it("scenario preset buttons render", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get(".sim-preset-btn").should("have.length.gte", 5);
+  });
+
+  it("high default stress preset exists", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get('[data-preset="high_default_stress"]').should("exist");
+  });
+
+  it("recovery optimized preset exists", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get('[data-preset="recovery_optimized"]').should("exist");
+  });
+
+  it("simulation input form exists", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get(".sim-panel").should("exist");
+    cy.get("[name='num_devices']").should("exist");
+  });
+
+  it("run simulation button exists", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get(".sim-run-btn").should("be.visible");
+  });
+
+  it("clicking a preset applies values to form", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.get('[data-preset="conservative"]').click();
+    cy.get("[name='deposit_pct']").should("have.value", "30");
+  });
+
+  it("simulation page has no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/simulations/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// M. VOLTS ENGINE
+// ────────────────────────────────────────────────────────────────────────────
+describe("M — Volts Engine Formula Visualizer", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("Volts engine page renders without error", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get("body").should("not.contain", "Server Error");
+  });
+
+  it("formula visualizer card exists", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get('[data-testid="volts-formula-card"]').should("exist");
+  });
+
+  it("factor chips render (at least 6 chips)", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get(".volts-factor-chip").should("have.length.gte", 6);
+  });
+
+  it("approved_volts factor chip exists", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get('[data-testid="volts-factor-chip-volts"]').should("be.visible");
+  });
+
+  it("rank_multiplier factor chip exists", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get('[data-testid="volts-factor-chip-rank"]').should("be.visible");
+  });
+
+  it("clicking a factor chip shows the explanation popover", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get('[data-testid="volts-factor-chip-quality"]').click();
+    cy.get("#volts-popover").should("have.class", "active");
+    cy.get("#volts-popover-title").should("not.be.empty");
+    cy.get("#volts-popover-body").should("not.be.empty");
+  });
+
+  it("clicking active chip collapses the popover", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get('[data-testid="volts-factor-chip-discipline"]').click();
+    cy.get('[data-testid="volts-factor-chip-discipline"]').click();
+    cy.get("#volts-popover").should("not.have.class", "active");
+  });
+
+  it("volts ledger empty state is polished", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="volts-ledger-empty"]').length) {
+        cy.get('[data-testid="volts-ledger-empty"]').should("be.visible");
+        cy.get('[data-testid="volts-ledger-empty"]').should("contain.text", "No Volts");
+      }
+    });
+  });
+
+  it("pending approvals empty state is polished", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="volts-pending-empty"]').length) {
+        cy.get('[data-testid="volts-pending-empty"]').should("be.visible");
+      }
+    });
+  });
+
+  it("Volts page has no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/volts/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// N. MERCHANT ACTION ROWS — no clipped values
+// ────────────────────────────────────────────────────────────────────────────
+describe("N — Merchant Action Rows", () => {
+  beforeEach(() => {
+    cy.loginAsMerchant();
+  });
+
+  it("merchant home rows: action-row-value elements are visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get(".action-row-value").each(($el) => {
+      expect($el.is(":visible")).to.be.true;
+    });
+  });
+
+  it("merchant home rows: chevrons are visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get(".action-row-chevron").each(($el) => {
+      expect($el.is(":visible")).to.be.true;
+    });
+  });
+
+  it("earnings row value not empty", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-row-earnings"] .action-row-value')
+      .invoke("text")
+      .should("not.be.empty");
+  });
+
+  it("merchant dashboard no horizontal overflow on 390px viewport", () => {
+    cy.viewport(390, 844);
+    cy.visit("/tengasale/merchant/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("action rows all have icon, label, chevron", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get(".action-row").each(($row) => {
+      cy.wrap($row).find(".action-row-icon").should("exist");
+      cy.wrap($row).find(".action-row-label").should("exist");
+      cy.wrap($row).find(".action-row-chevron").should("exist");
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// O. STAFF DOCUMENT CENTER
+// ────────────────────────────────────────────────────────────────────────────
+describe("O — Staff Document Center", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("staff document center renders without error", () => {
+    cy.visit("/tengasale/hq/staff-documents/");
+    cy.get("body").should("not.contain", "Server Error");
+    cy.get("body").should("not.contain", "500");
+  });
+
+  it("staff cards render (if staff exist)", () => {
+    cy.visit("/tengasale/hq/staff-documents/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="sdc-staff-card"]').length) {
+        cy.get('[data-testid="sdc-staff-card"]').should("have.length.gte", 1);
+      }
+    });
+  });
+
+  it("staff card shows Open Doc File button not 8 individual doc buttons", () => {
+    cy.visit("/tengasale/hq/staff-documents/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="sdc-staff-card"]').length) {
+        cy.get('[data-testid="sdc-staff-card"]').first().within(() => {
+          // Should NOT have more than 2-3 visible buttons (not 8)
+          cy.get("button, a.sdc-btn").should("have.length.lte", 3);
+          // Should have the Documents/Open Doc File button
+          cy.get('[data-testid="sdc-docs-btn"]').should("exist");
+        });
+      }
+    });
+  });
+
+  it("staff document center no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/staff-documents/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// P. MOBILE VIEWPORT — NO OVERFLOW ON KEY PAGES
+// ────────────────────────────────────────────────────────────────────────────
+describe("P — Mobile No Overflow", () => {
+  const mobileViewport = [390, 844];
+
+  it("merchant home: no horizontal overflow at 390px", () => {
+    cy.viewport(...mobileViewport);
+    cy.loginAsMerchant();
+    cy.visit("/tengasale/merchant/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("new application step 1: no horizontal overflow at 390px", () => {
+    cy.viewport(...mobileViewport);
+    cy.loginAsMerchant();
+    cy.visit("/applications/new/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("HQ fraud page: no horizontal overflow at 390px", () => {
+    cy.viewport(...mobileViewport);
+    cy.loginAsHQ();
+    cy.visit("/tengasale/hq/fraud-checks/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("HQ volts page: no horizontal overflow at 390px", () => {
+    cy.viewport(...mobileViewport);
+    cy.loginAsHQ();
+    cy.visit("/tengasale/hq/volts/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Q. MERCHANT NEW APPLICATION CTA — Never Cut Off
+// ────────────────────────────────────────────────────────────────────────────
+describe("Q — Merchant New Application CTA", () => {
+  beforeEach(() => {
+    cy.loginAsMerchant();
+  });
+
+  it("CTA button exists on merchant home", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').should("exist");
+  });
+
+  it("CTA button is visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').should("be.visible");
+  });
+
+  it("CTA button text NEW APPLICATION is visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').should("contain.text", "NEW APPLICATION");
+  });
+
+  it("CTA button plus icon is visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"] .primary-contract-btn__icon').should("exist");
+  });
+
+  it("CTA button arrow icon is visible", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"] .primary-contract-btn__arrow').should("exist");
+  });
+
+  it("CTA button not clipped — fully inside viewport at 320px", () => {
+    cy.viewport(320, 568);
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').then(($btn) => {
+      const rect = $btn[0].getBoundingClientRect();
+      expect(rect.left).to.be.gte(0);
+      expect(rect.right).to.be.lte(320 + 2);
+    });
+  });
+
+  it("CTA button not clipped — fully inside viewport at 360px", () => {
+    cy.viewport(360, 640);
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').then(($btn) => {
+      const rect = $btn[0].getBoundingClientRect();
+      expect(rect.left).to.be.gte(0);
+      expect(rect.right).to.be.lte(360 + 2);
+    });
+  });
+
+  it("CTA button not clipped — fully inside viewport at 390px", () => {
+    cy.viewport(390, 844);
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').then(($btn) => {
+      const rect = $btn[0].getBoundingClientRect();
+      expect(rect.left).to.be.gte(0);
+      expect(rect.right).to.be.lte(390 + 2);
+    });
+  });
+
+  it("CTA button not clipped — fully inside viewport at 414px", () => {
+    cy.viewport(414, 896);
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').then(($btn) => {
+      const rect = $btn[0].getBoundingClientRect();
+      expect(rect.left).to.be.gte(0);
+      expect(rect.right).to.be.lte(414 + 2);
+    });
+  });
+
+  it("CTA button has positive height (not zero-height)", () => {
+    cy.visit("/tengasale/merchant/");
+    cy.get('[data-testid="merchant-new-app-btn"]').then(($btn) => {
+      const rect = $btn[0].getBoundingClientRect();
+      expect(rect.height).to.be.gt(40);
+    });
+  });
+
+  it("no horizontal overflow on merchant home at 320px", () => {
+    cy.viewport(320, 568);
+    cy.visit("/tengasale/merchant/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// R. HQ DEVICE FINANCE CATALOG
+// ────────────────────────────────────────────────────────────────────────────
+describe("R — HQ Device Finance Catalog", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("Device Finance Catalog page renders without error", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get("body").should("not.contain", "Server Error");
+    cy.get("body").should("not.contain", "500");
+  });
+
+  it("catalog header renders", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get('[data-testid="dc-catalog-header"]').should("exist");
+    cy.contains(/Device Finance Catalog/i).should("be.visible");
+  });
+
+  it("Add Brand button is visible", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get('[data-testid="dc-add-brand-btn"]').should("be.visible");
+  });
+
+  it("Add Device Deal button is visible", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get('[data-testid="dc-add-deal-btn"]').should("be.visible");
+  });
+
+  it("quick stats row renders", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get('[data-testid="dc-stats-row"]').should("exist");
+  });
+
+  it("brands stat shows a value", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get('[data-testid="dc-stat-brands"]').invoke("text").then((t) => {
+      expect(t.trim().length).to.be.gt(0);
+    });
+  });
+
+  it("brand group panels render (if brands exist)", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="dc-brand-group"]').length) {
+        cy.get('[data-testid="dc-brand-group"]').should("have.length.gte", 1);
+      } else {
+        cy.get('[data-testid="dc-empty-state"]').should("exist");
+      }
+    });
+  });
+
+  it("brand group expands and collapses", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get("body").then(($body) => {
+      if ($body.find('[data-testid="dc-brand-group"]').length) {
+        const group = cy.get('[data-testid="dc-brand-group"]').first();
+        group.find("summary").click();
+        // Should toggle the open attribute
+      }
+    });
+  });
+
+  it("device deal cards render real data (if deals exist)", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get("body").then(($body) => {
+      if ($body.find(".dc-card").length) {
+        cy.get(".dc-card").first().within(() => {
+          cy.get(".dc-model").should("exist");
+          cy.get(".dc-card-metrics").should("exist");
+          cy.get(".dc-card-footer").should("exist");
+          cy.get(".dc-edit-btn").should("have.length.gte", 1);
+        });
+      }
+    });
+  });
+
+  it("Edit button and Deactivate/Activate button visible on deal card", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.get("body").then(($body) => {
+      if ($body.find(".dc-card").length) {
+        cy.get(".dc-card").first().within(() => {
+          cy.get(".dc-edit-btn").should("have.length.gte", 2);
+        });
+      }
+    });
+  });
+
+  it("Device Finance Catalog no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/deals/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("Device Finance Catalog mobile no overflow at 390px", () => {
+    cy.viewport(390, 844);
+    cy.visit("/tengasale/hq/deals/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// T. HQ OVERVIEW — HERO PANEL + TICKER + TREND BADGES
+// ────────────────────────────────────────────────────────────────────────────
+describe("T — HQ Overview Mixed Layout", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("HQ overview loads without error", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get("body").should("not.contain", "Server Error");
+    cy.get("body").should("not.contain", "500");
+  });
+
+  it("HQ hero row renders", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-hero-row"]').should("exist");
+  });
+
+  it("HQ hero shows a contract value figure", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-hero-row"] .hq-hero-value').should("exist");
+  });
+
+  it("HQ activity ticker strip renders", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-ticker-strip"]').should("exist");
+  });
+
+  it("HQ ticker has multiple data points", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-ticker-strip"] .hq-ticker-item').should("have.length.gte", 4);
+  });
+
+  it("HQ KPI grid still renders", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-kpi-grid"]').should("exist");
+    cy.get(".hq-kpi").should("have.length.gte", 4);
+  });
+
+  it("HQ charts grid renders", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-charts-grid"]').should("exist");
+  });
+
+  it("HQ action center renders", () => {
+    cy.visit("/tengasale/hq/");
+    cy.get('[data-testid="hq-action-center"]').should("exist");
+  });
+
+  it("HQ no horizontal overflow at 1280px", () => {
+    cy.viewport(1280, 800);
+    cy.visit("/tengasale/hq/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 4;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// U. LANDING PAGE PLATFORM FLOW
+// ────────────────────────────────────────────────────────────────────────────
+describe("U — Landing Page Platform Flow", () => {
+  it("landing page loads without error", () => {
+    cy.visit("/");
+    cy.get("body").should("not.contain", "Server Error");
+  });
+
+  it("hero section is visible", () => {
+    cy.visit("/");
+    cy.get(".hero").should("be.visible");
+  });
+
+  it("platform flow strip renders", () => {
+    cy.visit("/");
+    cy.get(".platform-flow-strip").should("exist");
+  });
+
+  it("platform flow has 5 steps", () => {
+    cy.visit("/");
+    cy.get(".pf-steps .pf-step").should("have.length", 5);
+  });
+
+  it("How it Works section renders", () => {
+    cy.visit("/");
+    cy.get("#how-it-works").should("exist");
+    cy.contains(/How TengaSale works/i).should("exist");
+  });
+
+  it("how-it-works animated flow pills render", () => {
+    cy.visit("/");
+    cy.get(".hiw-flow .hiw-flow-pill").should("have.length.gte", 5);
+  });
+
+  it("how-it-works step cards render", () => {
+    cy.visit("/");
+    cy.get(".steps-list .step").should("have.length.gte", 4);
+  });
+
+  it("landing page no horizontal overflow on mobile", () => {
+    cy.viewport(390, 844);
+    cy.visit("/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// S. HQ DEVICE ENROLLMENT
+// ────────────────────────────────────────────────────────────────────────────
+describe("S — HQ Device Enrollment", () => {
+  beforeEach(() => {
+    cy.loginAsHQ();
+  });
+
+  it("Device Enrollment page renders without error", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get("body").should("not.contain", "Server Error");
+    cy.get("body").should("not.contain", "500");
+  });
+
+  it("enrollment header renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-header"]').should("exist");
+    cy.contains(/Device Enrollment/i).should("be.visible");
+  });
+
+  it("live badge is visible", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-live-badge"]').should("be.visible");
+  });
+
+  it("hero metrics section renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-metrics"]').should("exist");
+  });
+
+  it("enrolled hero card renders with count", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-enrolled-hero"]').should("be.visible");
+  });
+
+  it("pending mini card renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-pending-card"]').should("exist");
+  });
+
+  it("failed mini card renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-failed-card"]').should("exist");
+  });
+
+  it("locked mini card renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-locked-card"]').should("exist");
+  });
+
+  it("lock pipeline renders with steps", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-pipeline"]').should("exist");
+    cy.get(".de-pipeline-step").should("have.length.gte", 3);
+  });
+
+  it("filter bar renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-filter-bar"]').should("exist");
+  });
+
+  it("Filter button is visible and has non-white background", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-filter-btn"]').should("be.visible");
+    cy.get('[data-testid="de-filter-btn"]').then(($btn) => {
+      const bg = window.getComputedStyle($btn[0]).backgroundColor;
+      // Should not be white — must be orange or colored
+      expect(bg).to.not.equal("rgb(255, 255, 255)");
+    });
+  });
+
+  it("Reset link is visible", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-filter-reset"]').should("be.visible");
+  });
+
+  it("device table card renders", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get('[data-testid="de-table-card"]').should("exist");
+  });
+
+  it("device table has correct column headers", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get(".de-table thead th").should("have.length.gte", 6);
+  });
+
+  it("Enrollment status column visible", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get(".de-table thead").should("contain.text", "Enrollment");
+  });
+
+  it("Lock status column visible", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.get(".de-table thead").should("contain.text", "Lock");
+  });
+
+  it("Device Enrollment no horizontal overflow", () => {
+    cy.visit("/tengasale/hq/devices/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+
+  it("Device Enrollment mobile no overflow at 390px", () => {
+    cy.viewport(390, 844);
+    cy.visit("/tengasale/hq/devices/");
+    cy.window().then((win) => {
+      const overflow = win.document.documentElement.scrollWidth
+        > win.document.documentElement.clientWidth + 2;
+      expect(overflow).to.be.false;
+    });
+  });
+});

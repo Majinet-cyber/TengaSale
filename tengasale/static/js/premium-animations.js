@@ -230,10 +230,94 @@
     }
   }
 
+  // ── Stagger card entrance (IntersectionObserver) ─────────────────
+  function initStaggerEntrance() {
+    if (!global.IntersectionObserver) return;
+    if (prefersReducedMotion) {
+      // Make all stagger items immediately visible
+      document.querySelectorAll('.ts-stagger-item').forEach(function (el) {
+        el.style.opacity = '1';
+        el.style.animation = 'none';
+      });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          // Allow the CSS animation to fire (opacity starts 0, goes to 1)
+          entry.target.style.animationPlayState = 'running';
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.ts-stagger-item').forEach(function (el) {
+      // Pause animation until element is in viewport
+      el.style.animationPlayState = 'paused';
+      io.observe(el);
+    });
+  }
+
+  // ── KYC bar chart animate on scroll ──────────────────────────────
+  function initKycFunnelBars() {
+    if (!global.IntersectionObserver) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var fill = entry.target.querySelector('.kyc-funnel-row__fill');
+          if (fill && fill.getAttribute('data-width')) {
+            fill.style.width = fill.getAttribute('data-width');
+          }
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.kyc-funnel-row').forEach(function (row) {
+      var fill = row.querySelector('.kyc-funnel-row__fill');
+      if (fill) {
+        var w = fill.style.width || '0%';
+        fill.setAttribute('data-width', w);
+        if (!prefersReducedMotion) {
+          fill.style.width = '0%';
+        }
+        io.observe(row);
+      }
+    });
+  }
+
+  // ── Simulation bar chart animate on scroll ────────────────────────
+  function initSimBars() {
+    if (!global.IntersectionObserver) return;
+    if (prefersReducedMotion) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.sim-bar-fill').forEach(function (fill) {
+            var w = fill.style.width;
+            fill.style.width = '0';
+            fill.style.transition = 'width 0.8s cubic-bezier(0.16,1,0.3,1)';
+            requestAnimationFrame(function () {
+              setTimeout(function () { fill.style.width = w; }, 60);
+            });
+          });
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.sim-bars').forEach(function (el) {
+      io.observe(el);
+    });
+  }
+
   // ── Initialize ───────────────────────────────────────────────────
   function init() {
     initCountUps();
     initFadeInOnScroll();
+    initStaggerEntrance();
+    initKycFunnelBars();
+    initSimBars();
     applyPremiumChartDefaults();
   }
 

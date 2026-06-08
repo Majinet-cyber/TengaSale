@@ -1,386 +1,965 @@
 {% extends "base/base.html" %}
 {% load static %}
 
-{% block page_title %}Fraud Checks — TengaSale HQ{% endblock %}
+{% block page_title %}Fraud Investigation Console — TengaSale HQ{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
-.frd-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
-.frd-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
-.frd-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
-.frd-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
-.frd-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
-.frd-stat {
-  background:rgba(255,255,255,0.90);
-  backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.80);
-  border-radius:12px;
-  padding:14px 16px;
-  box-shadow:0 2px 8px rgba(15,23,42,0.06);
-  border-left:3px solid var(--frd-accent,#ff5a00);
+/* ── Investigation Console Shell ────────────────────────────────── */
+.frd-console {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+  box-sizing: border-box;
+  background: #f8fafc;
+  min-height: 100vh;
 }
-.frd-stat-val { font-size:1.4rem; font-weight:900; color:var(--frd-accent,#ff5a00); line-height:1; }
-.frd-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
-.frd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr)); gap:14px; margin-bottom:20px; }
-.frd-card {
-  background:rgba(255,255,255,0.90);
-  backdrop-filter:blur(10px);
-  border:1.5px solid rgba(255,255,255,0.78);
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:0 2px 8px rgba(15,23,42,0.06);
+html, body { overflow-x: hidden; }
+.app-shell { max-width: 100% !important; box-shadow: none !important; }
+.content    { padding: 0 !important; }
+.footer     { display: none !important; }
+
+/* Page header */
+.frd-console-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  border-bottom: 1.5px solid #e2e8f0;
 }
-.frd-card-hdr {
-  padding:12px 16px 10px;
-  background:linear-gradient(135deg,#fff8f0,#fff);
-  border-bottom:1.5px solid #f1f5f9;
-  display:flex;
-  align-items:center;
-  gap:10px;
+.frd-console-hdr-left { display: flex; align-items: flex-start; gap: 14px; }
+.frd-console-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg,#dc2626,#b91c1c);
+  border-radius: 14px;
+  display: grid; place-items: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(220,38,38,0.30);
 }
-.frd-card-hdr-icon {
-  width:28px; height:28px; border-radius:8px;
-  display:grid; place-items:center;
-  flex-shrink:0;
+.frd-console-icon svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+.frd-console-title { font-size: 1.5rem; font-weight: 900; margin: 0 0 3px; color: #0f172a; letter-spacing: -0.02em; }
+.frd-console-sub   { font-size: 0.80rem; color: #64748b; margin: 0; }
+
+/* Alert banner */
+.frd-alert {
+  padding: 11px 16px;
+  border-radius: 11px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 1.45;
 }
-.frd-card-hdr-icon svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
-.frd-card-title { font-size:0.82rem; font-weight:800; }
-.frd-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
-.frd-table th { text-align:left; padding:8px 16px; color:#64748b; font-size:0.68rem; font-weight:700; border-bottom:1.5px solid #e2e8f0; }
-.frd-table td { padding:8px 16px; border-bottom:1px solid #f1f5f9; }
-.frd-table tr:last-child td { border-bottom:none; }
-.frd-badge { padding:2px 9px; border-radius:99px; font-size:0.70rem; font-weight:700; }
-.frd-empty { text-align:center; padding:24px 16px; color:#94a3b8; font-size:0.82rem; }
-.frd-alert { padding:10px 16px; border-radius:10px; font-size:0.82rem; margin-bottom:14px; }
-.frd-alert--success { background:#f0fdf4; color:#16a34a; border:1px solid rgba(22,163,74,0.2); }
-.frd-alert--danger { background:#fef2f2; color:#dc2626; border:1px solid rgba(220,38,38,0.2); }
-.frd-alert--warning { background:#fffbeb; color:#d97706; border:1px solid rgba(217,119,6,0.2); }
-.frd-alert--info { background:#eff6ff; color:#2563eb; border:1px solid rgba(37,99,235,0.2); }
-@media (max-width:640px) { .frd-grid { grid-template-columns:1fr; } }
+.frd-alert--success { background:#f0fdf4;color:#16a34a;border:1px solid rgba(22,163,74,0.2); }
+.frd-alert--danger  { background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.2); }
+.frd-alert--warning { background:#fffbeb;color:#d97706;border:1px solid rgba(217,119,6,0.2); }
+.frd-alert--info    { background:#eff6ff;color:#2563eb;border:1px solid rgba(37,99,235,0.2); }
+
+/* Top row — risk gauge + summary stats */
+.frd-top-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+  align-items: start;
+}
+@media (max-width: 768px) { .frd-top-row { grid-template-columns: 1fr; } }
+
+.frd-risk-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06);
+  overflow: hidden;
+}
+.frd-risk-card__title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #94a3b8;
+  padding: 14px 16px 0;
+  margin: 0;
+}
+
+/* Semi-circular gauge (CSS-only) */
+.frd-gauge-svg-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px 16px;
+}
+.frd-gauge-svg {
+  width: 140px;
+  height: 76px;
+  overflow: visible;
+}
+.frd-gauge-track { fill: none; stroke: #e5e7eb; stroke-width: 12; stroke-linecap: round; }
+.frd-gauge-fill  {
+  fill: none;
+  stroke: #16a34a;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1),
+              stroke 0.5s ease;
+}
+.frd-gauge-score {
+  font-size: 28px;
+  font-weight: 950;
+  fill: #0f172a;
+}
+.frd-gauge-label {
+  font-size: 9px;
+  font-weight: 700;
+  fill: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.frd-risk-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 14px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.frd-risk-level--low      { background: #dcfce7; color: #15803d; }
+.frd-risk-level--medium   { background: #fef3c7; color: #d97706; }
+.frd-risk-level--high     { background: #fee2e2; color: #dc2626; }
+.frd-risk-level--critical { background: #fce7f3; color: #9d174d; }
+.frd-risk-desc { font-size: 11px; color: #64748b; text-align: center; line-height: 1.4; padding: 0 12px 12px; }
+
+/* Signal grid */
+.frd-signal-grid-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px,100%),1fr));
+  gap: 10px;
+}
+
+/* Section blocks */
+.frd-section { margin-bottom: 24px; }
+.frd-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.frd-section-title h2 {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.frd-section-title h2 .frd-section-icon {
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.frd-section-title h2 .frd-section-icon svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
+/* Panel cards */
+.frd-panel {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255,255,255,0.80);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06);
+}
+.frd-panel-head {
+  padding: 12px 16px 10px;
+  background: linear-gradient(135deg,#fff8f0,#fff);
+  border-bottom: 1.5px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.frd-panel-head-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.frd-panel-head-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.frd-panel-head-title { font-size: 13px; font-weight: 800; flex: 1; min-width: 0; }
+.frd-panel-head-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+/* Table */
+.frd-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.frd-table th {
+  text-align: left; padding: 8px 16px;
+  color: #64748b; font-size: 0.68rem; font-weight: 700;
+  border-bottom: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+.frd-table td { padding: 9px 16px; border-bottom: 1px solid #f1f5f9; }
+.frd-table tr:last-child td { border-bottom: none; }
+.frd-table tr:hover td { background: #fffbf8; }
+.frd-badge { padding: 3px 9px; border-radius: 99px; font-size: 0.70rem; font-weight: 700; }
+.frd-mono { font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 0.78rem; letter-spacing: 0.03em; }
+
+/* IMEI dark card */
+.frd-imei-cockpit {
+  background: linear-gradient(135deg,#0f172a,#1e293b);
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  margin-bottom: 20px;
+}
+.frd-imei-cockpit__hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.frd-imei-cockpit__hdr h2 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0;
+}
+.frd-imei-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.frd-imei-kpi {
+  background: rgba(255,255,255,0.07);
+  border-radius: 11px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.frd-imei-kpi__val { font-size: 24px; font-weight: 950; color: #fff; line-height: 1; margin-bottom: 4px; }
+.frd-imei-kpi__lbl { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.3; }
+.frd-imei-kpi--warn .frd-imei-kpi__val  { color: #fca5a5; }
+.frd-imei-kpi--ok   .frd-imei-kpi__val  { color: #86efac; }
+
+/* Duplicate panel grid */
+.frd-dup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px,100%),1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 640px) { .frd-dup-grid { grid-template-columns: 1fr; } }
+
+/* Empty state */
+.frd-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+.frd-empty-state__icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  display: grid; place-items: center;
+  margin-bottom: 4px;
+}
+.frd-empty-state__icon svg { width: 22px; height: 22px; fill: none; stroke: #cbd5e1; stroke-width: 1.8; stroke-linecap: round; }
+.frd-empty-state h4 { font-size: 13px; font-weight: 800; color: #475569; margin: 0 0 4px; }
+.frd-empty-state p  { font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.5; max-width: 260px; }
+.frd-empty-state .frd-scan-time { font-size: 10px; color: #cbd5e1; margin-top: 8px; }
+
+/* Action buttons */
+.frd-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+.frd-btn {
+  padding: 6px 13px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.12s;
+}
+.frd-btn:hover { background: #f1f5f9; }
+.frd-btn--danger  { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+.frd-btn--primary { background: #ff5a00; border-color: #ff5a00; color: #fff; }
+.frd-btn--primary:hover { background: #e64d00; }
+.frd-btn--green  { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+.frd-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
+/* Row status badges */
+.frd-status { padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.frd-status--mismatch  { background: #fee2e2; color: #dc2626; }
+.frd-status--possible  { background: #fef3c7; color: #d97706; }
+.frd-status--error     { background: #fff7ed; color: #ea580c; }
+.frd-status--blocked   { background: #fee2e2; color: #dc2626; }
+.frd-status--cleared   { background: #dcfce7; color: #16a34a; }
+
+@media (max-width: 640px) {
+  .frd-console { padding: 12px 10px 60px; }
+  .frd-table { font-size: 0.76rem; }
+  .frd-table th, .frd-table td { padding: 8px 10px; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="frd-wrap" data-testid="hq-dashboard">
+<div class="frd-console" data-testid="hq-dashboard">
 
-  <div class="frd-hdr">
-    <div>
-      <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
-      <h1 class="frd-title">Fraud Checks</h1>
-      <p class="frd-sub">Duplicate detection, risk flags, and fraud investigation tools.</p>
+  {# ── Page header ──────────────────────────────────────────────── #}
+  <div class="frd-console-hdr">
+    <div class="frd-console-hdr-left">
+      <div class="frd-console-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;">← HQ Command Center</a></div>
+        <h1 class="frd-console-title">Fraud Investigation Console</h1>
+        <p class="frd-console-sub">Duplicate detection · risk intelligence · IMEI forensics · device fraud</p>
+      </div>
     </div>
   </div>
 
+  {# ── Alert banner ─────────────────────────────────────────────── #}
   {% if msg %}
   <div class="frd-alert frd-alert--{% if msg_type == 'success' %}success{% elif msg_type == 'error' %}danger{% elif msg_type == 'warning' %}warning{% else %}info{% endif %}">
     {{ msg }}
   </div>
   {% endif %}
 
-  <div class="frd-stats">
-    <div class="frd-stat" style="--frd-accent:#dc2626;">
-      <div class="frd-stat-val">{{ dup_ids|length }}</div>
-      <div class="frd-stat-lbl">Duplicate NID flags</div>
-    </div>
-    <div class="frd-stat" style="--frd-accent:#d97706;">
-      <div class="frd-stat-val">{{ dup_phones|length }}</div>
-      <div class="frd-stat-lbl">Duplicate phone flags</div>
-    </div>
-    <div class="frd-stat" style="--frd-accent:#ff5a00;">
-      <div class="frd-stat-val">{{ dup_guarantors|length }}</div>
-      <div class="frd-stat-lbl">Repeated guarantors</div>
-    </div>
-    <div class="frd-stat" style="--frd-accent:#dc2626;">
-      <div class="frd-stat-val">{{ imei_mismatch_count }}</div>
-      <div class="frd-stat-lbl">Device mismatches</div>
-    </div>
-    <div class="frd-stat" style="--frd-accent:#d97706;">
-      <div class="frd-stat-val">{{ imei_possible_count }}</div>
-      <div class="frd-stat-lbl">IMEI possible matches</div>
-    </div>
-    <div class="frd-stat" style="--frd-accent:#64748b;">
-      <div class="frd-stat-val">{{ imei_error_count }}</div>
-      <div class="frd-stat-lbl">IMEI check errors</div>
-    </div>
-  </div>
+  {# ── Top row: Risk gauge + Signal grid ────────────────────────── #}
+  <div class="frd-top-row">
 
-  <div class="frd-grid">
+    {# Risk score gauge #}
+    <div class="frd-risk-card ts-stagger-item" data-testid="fraud-risk-meter">
+      <p class="frd-risk-card__title">Overall Risk Score</p>
+      <div class="frd-gauge-svg-wrap">
+        {% with total_flags=dup_ids|length|add:dup_phones|length|add:dup_guarantors|length|add:imei_mismatch_count %}
+        {% with risk_score=total_flags|default:0 %}
 
-    <div class="frd-card">
-      <div class="frd-card-hdr">
-        <div class="frd-card-hdr-icon" style="background:#fef2f2;color:#dc2626;">
+        <svg class="frd-gauge-svg" viewBox="0 0 140 76" aria-label="Fraud risk gauge">
+          {# Track arc — half circle #}
+          <path class="frd-gauge-track"
+                d="M 14 70 A 56 56 0 0 1 126 70"
+                stroke-linecap="round"/>
+          {# Fill arc #}
+          <path class="frd-gauge-fill"
+                id="frd-gauge-fill"
+                d="M 14 70 A 56 56 0 0 1 126 70"
+                stroke-linecap="round"
+                style="stroke: {% if risk_score == 0 %}#16a34a{% elif risk_score <= 3 %}#16a34a{% elif risk_score <= 7 %}#f59e0b{% elif risk_score <= 15 %}#dc2626{% else %}#9d174d{% endif %};"/>
+          <text class="frd-gauge-score" x="70" y="65" text-anchor="middle">{{ risk_score }}</text>
+          <text class="frd-gauge-label" x="70" y="78" text-anchor="middle">flags</text>
+        </svg>
+
+        <div class="frd-risk-level
+          {% if risk_score == 0 %}frd-risk-level--low
+          {% elif risk_score <= 3 %}frd-risk-level--low
+          {% elif risk_score <= 7 %}frd-risk-level--medium
+          {% elif risk_score <= 15 %}frd-risk-level--high
+          {% else %}frd-risk-level--critical{% endif %}"
+          data-testid="fraud-risk-level">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          {% if risk_score == 0 %}System Clear
+          {% elif risk_score <= 3 %}Low Risk
+          {% elif risk_score <= 7 %}Medium Risk
+          {% elif risk_score <= 15 %}High Risk
+          {% else %}Critical{% endif %}
+        </div>
+        {% endwith %}{% endwith %}
+
+        <p class="frd-risk-desc">
+          {% with total=dup_ids|length|add:dup_phones|length|add:dup_guarantors|length|add:imei_mismatch_count %}
+          {% if total == 0 %}No duplicate or mismatch flags detected across current applications.
+          {% else %}{{ total }} risk flag{{ total|pluralize }} detected. Review each category below.
+          {% endif %}
+          {% endwith %}
+        </p>
+      </div>
+    </div>
+
+    {# Signal grid #}
+    <div class="frd-signal-grid-wrap" data-testid="fraud-signal-grid">
+
+      <div class="frd-signal-card frd-signal-card--{% if dup_ids %}critical{% else %}ok{% endif %} ts-stagger-item"
+           data-testid="signal-dup-nid">
+        <div class="frd-signal-card__icon">
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
         </div>
-        <span class="frd-card-title" style="color:#dc2626;">Duplicate National IDs</span>
+        <div class="frd-signal-card__value" data-count-up="{{ dup_ids|length }}" data-count-duration="800">{{ dup_ids|length }}</div>
+        <div class="frd-signal-card__label">Duplicate NID flags</div>
+        {% if dup_ids %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ needs review</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% if dup_ids %}
-      <table class="frd-table">
-        <thead><tr><th>National ID</th><th style="text-align:right;">Count</th></tr></thead>
-        <tbody>
-          {% for item in dup_ids %}
-          <tr>
-            <td style="font-weight:700;font-family:monospace;">{{ item.national_id }}</td>
-            <td style="text-align:right;"><span class="frd-badge" style="background:#fef2f2;color:#dc2626;">{{ item.cnt }} apps</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="frd-empty">No duplicate national IDs found.</p>
-      {% endif %}
-    </div>
 
-    <div class="frd-card">
-      <div class="frd-card-hdr">
-        <div class="frd-card-hdr-icon" style="background:#fffbeb;color:#d97706;">
+      <div class="frd-signal-card frd-signal-card--{% if dup_phones %}high{% else %}ok{% endif %} ts-stagger-item"
+           data-testid="signal-dup-phone">
+        <div class="frd-signal-card__icon">
           <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         </div>
-        <span class="frd-card-title" style="color:#d97706;">Duplicate Phone Numbers</span>
+        <div class="frd-signal-card__value" data-count-up="{{ dup_phones|length }}" data-count-duration="900">{{ dup_phones|length }}</div>
+        <div class="frd-signal-card__label">Duplicate phone flags</div>
+        {% if dup_phones %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ needs review</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% if dup_phones %}
-      <table class="frd-table">
-        <thead><tr><th>Phone</th><th style="text-align:right;">Count</th></tr></thead>
-        <tbody>
-          {% for item in dup_phones %}
-          <tr>
-            <td style="font-weight:700;font-family:monospace;">{{ item.customer_phone }}</td>
-            <td style="text-align:right;"><span class="frd-badge" style="background:#fffbeb;color:#d97706;">{{ item.cnt }} apps</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="frd-empty">No duplicate phones found.</p>
-      {% endif %}
-    </div>
 
-    <div class="frd-card">
-      <div class="frd-card-hdr">
-        <div class="frd-card-hdr-icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
+      <div class="frd-signal-card frd-signal-card--{% if dup_guarantors %}high{% else %}ok{% endif %} ts-stagger-item">
+        <div class="frd-signal-card__icon">
           <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
         </div>
-        <span class="frd-card-title" style="color:#ff5a00;">Repeated Guarantor Phones</span>
+        <div class="frd-signal-card__value" data-count-up="{{ dup_guarantors|length }}" data-count-duration="1000">{{ dup_guarantors|length }}</div>
+        <div class="frd-signal-card__label">Repeated guarantors</div>
+        {% if dup_guarantors %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ needs review</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% if dup_guarantors %}
-      <table class="frd-table">
-        <thead><tr><th>Guarantor Phone</th><th style="text-align:right;">Used</th></tr></thead>
-        <tbody>
-          {% for item in dup_guarantors %}
-          <tr>
-            <td style="font-family:monospace;">{{ item.next_of_kin_1_phone }}</td>
-            <td style="text-align:right;font-weight:700;">{{ item.cnt }}×</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="frd-empty">No repeated guarantors found.</p>
-      {% endif %}
-    </div>
 
-    <div class="frd-card">
-      <div class="frd-card-hdr">
-        <div class="frd-card-hdr-icon" style="background:#fef2f2;color:#dc2626;">
-          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <div class="frd-signal-card frd-signal-card--{% if imei_mismatch_count %}critical{% else %}ok{% endif %} ts-stagger-item">
+        <div class="frd-signal-card__icon">
+          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
         </div>
-        <span class="frd-card-title" style="color:#dc2626;">Duplicate IMEI Numbers</span>
+        <div class="frd-signal-card__value" data-count-up="{{ imei_mismatch_count }}" data-count-duration="800">{{ imei_mismatch_count }}</div>
+        <div class="frd-signal-card__label">Device mismatches</div>
+        {% if imei_mismatch_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ critical</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% if dup_imei %}
-      <table class="frd-table">
-        <thead><tr><th>IMEI</th><th style="text-align:right;">Count</th></tr></thead>
-        <tbody>
-          {% for item in dup_imei %}
-          <tr>
-            <td style="font-family:monospace;font-size:0.78rem;">{{ item.imei_number }}</td>
-            <td style="text-align:right;font-weight:700;">{{ item.cnt }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+      <div class="frd-signal-card frd-signal-card--{% if imei_possible_count %}medium{% else %}ok{% endif %} ts-stagger-item">
+        <div class="frd-signal-card__icon">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="frd-signal-card__value" data-count-up="{{ imei_possible_count }}" data-count-duration="900">{{ imei_possible_count }}</div>
+        <div class="frd-signal-card__label">IMEI possible matches</div>
+        {% if imei_possible_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ review</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
+      </div>
+
+      <div class="frd-signal-card frd-signal-card--{% if imei_error_count %}high{% else %}ok{% endif %} ts-stagger-item">
+        <div class="frd-signal-card__icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="frd-signal-card__value" data-count-up="{{ imei_error_count }}" data-count-duration="800">{{ imei_error_count }}</div>
+        <div class="frd-signal-card__label">IMEI check errors</div>
+        {% if imei_error_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ errors</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
+      </div>
+
+      {% if third_party_flags %}
+      <div class="frd-signal-card frd-signal-card--high ts-stagger-item">
+        <div class="frd-signal-card__icon">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="frd-signal-card__value" data-count-up="{{ third_party_flags|length }}">{{ third_party_flags|length }}</div>
+        <div class="frd-signal-card__label">3rd-party phone flags</div>
+        <span class="frd-signal-card__trend frd-signal-card__trend--up">↑ review</span>
+      </div>
+      {% endif %}
+
+      {% if fraud_marked %}
+      <div class="frd-signal-card frd-signal-card--critical ts-stagger-item">
+        <div class="frd-signal-card__icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="frd-signal-card__value">{{ fraud_marked|length }}</div>
+        <div class="frd-signal-card__label">Fraud-marked apps</div>
+        <span class="frd-signal-card__trend frd-signal-card__trend--up">↑ blocked</span>
+      </div>
+      {% endif %}
+
+    </div>{# /frd-signal-grid-wrap #}
+  </div>{# /frd-top-row #}
+
+  {# ── IMEI Intelligence Cockpit ────────────────────────────────── #}
+  <div class="frd-imei-cockpit ts-stagger-item" data-testid="imei-intelligence">
+    <div class="frd-imei-cockpit__hdr">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <h2>IMEI Intelligence</h2>
+      <span style="font-size:10px;color:#475569;background:rgba(255,255,255,0.08);padding:2px 9px;border-radius:99px;font-weight:700;">15-digit validation active</span>
+    </div>
+    <div class="frd-imei-kpis">
+      <div class="frd-imei-kpi{% if imei_mismatch_count %} frd-imei-kpi--warn{% else %} frd-imei-kpi--ok{% endif %}">
+        <div class="frd-imei-kpi__val">{{ imei_mismatch_count }}</div>
+        <div class="frd-imei-kpi__lbl">Device mismatches</div>
+      </div>
+      <div class="frd-imei-kpi{% if imei_possible_count %} frd-imei-kpi--warn{% else %} frd-imei-kpi--ok{% endif %}">
+        <div class="frd-imei-kpi__val">{{ imei_possible_count }}</div>
+        <div class="frd-imei-kpi__lbl">Possible matches</div>
+      </div>
+      <div class="frd-imei-kpi{% if imei_error_count %} frd-imei-kpi--warn{% else %} frd-imei-kpi--ok{% endif %}">
+        <div class="frd-imei-kpi__val">{{ imei_error_count }}</div>
+        <div class="frd-imei-kpi__lbl">Check errors</div>
+      </div>
+      <div class="frd-imei-kpi">
+        <div class="frd-imei-kpi__val" style="color:#86efac;">15</div>
+        <div class="frd-imei-kpi__lbl">Required digits</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Duplicate Detection Panels ───────────────────────────────── #}
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fee2e2;color:#dc2626;">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="11"/><line x1="19" y1="8" x2="19" y2="14"/></svg>
+        </span>
+        Duplicate Detection
+      </h2>
+    </div>
+
+    <div class="frd-dup-grid">
+
+      {# Duplicate National IDs #}
+      <div class="frd-panel ts-stagger-item" data-testid="dup-nid-panel">
+        <div class="frd-panel-head">
+          <div class="frd-panel-head-icon" style="background:#fef2f2;color:#dc2626;">
+            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="20" y2="10"/><line x1="14" y1="14" x2="20" y2="14"/></svg>
+          </div>
+          <span class="frd-panel-head-title" style="color:#dc2626;">Duplicate National IDs</span>
+          {% if dup_ids %}
+            <span class="frd-panel-head-badge" style="background:#fef2f2;color:#dc2626;">{{ dup_ids|length }}</span>
+          {% else %}
+            <span class="frd-panel-head-badge" style="background:#dcfce7;color:#15803d;">Clear</span>
+          {% endif %}
+        </div>
+        {% if dup_ids %}
+        <div style="overflow-x:auto;">
+          <table class="frd-table">
+            <thead><tr><th>National ID</th><th style="text-align:right;">Applications</th></tr></thead>
+            <tbody>
+              {% for item in dup_ids %}
+              <tr>
+                <td class="frd-mono">{{ item.national_id }}</td>
+                <td style="text-align:right;"><span class="frd-badge" style="background:#fef2f2;color:#dc2626;">{{ item.cnt }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="frd-empty-state">
+          <div class="frd-empty-state__icon">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>No duplicate national IDs found</h4>
+          <p>System scanned all current applications and active contracts.</p>
+          <span class="frd-scan-time">Last scanned: this page load</span>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Duplicate Phone Numbers #}
+      <div class="frd-panel ts-stagger-item" data-testid="dup-phone-panel">
+        <div class="frd-panel-head">
+          <div class="frd-panel-head-icon" style="background:#fffbeb;color:#d97706;">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <span class="frd-panel-head-title" style="color:#d97706;">Duplicate Phone Numbers</span>
+          {% if dup_phones %}
+            <span class="frd-panel-head-badge" style="background:#fffbeb;color:#d97706;">{{ dup_phones|length }}</span>
+          {% else %}
+            <span class="frd-panel-head-badge" style="background:#dcfce7;color:#15803d;">Clear</span>
+          {% endif %}
+        </div>
+        {% if dup_phones %}
+        <div style="overflow-x:auto;">
+          <table class="frd-table">
+            <thead><tr><th>Phone Number</th><th style="text-align:right;">Applications</th></tr></thead>
+            <tbody>
+              {% for item in dup_phones %}
+              <tr>
+                <td class="frd-mono">{{ item.customer_phone }}</td>
+                <td style="text-align:right;"><span class="frd-badge" style="background:#fffbeb;color:#d97706;">{{ item.cnt }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="frd-empty-state">
+          <div class="frd-empty-state__icon">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>No duplicate phone numbers</h4>
+          <p>All customer phones are unique across applications.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Repeated Guarantors #}
+      <div class="frd-panel ts-stagger-item" data-testid="dup-guarantor-panel">
+        <div class="frd-panel-head">
+          <div class="frd-panel-head-icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          </div>
+          <span class="frd-panel-head-title" style="color:#ff5a00;">Repeated Guarantor Phones</span>
+          {% if dup_guarantors %}
+            <span class="frd-panel-head-badge" style="background:rgba(255,90,0,0.10);color:#ff5a00;">{{ dup_guarantors|length }}</span>
+          {% else %}
+            <span class="frd-panel-head-badge" style="background:#dcfce7;color:#15803d;">Clear</span>
+          {% endif %}
+        </div>
+        {% if dup_guarantors %}
+        <div style="overflow-x:auto;">
+          <table class="frd-table">
+            <thead><tr><th>Guarantor Phone</th><th style="text-align:right;">Used</th></tr></thead>
+            <tbody>
+              {% for item in dup_guarantors %}
+              <tr>
+                <td class="frd-mono">{{ item.next_of_kin_1_phone }}</td>
+                <td style="text-align:right;font-weight:700;color:#ff5a00;">{{ item.cnt }}×</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="frd-empty-state">
+          <div class="frd-empty-state__icon">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>No repeated guarantors</h4>
+          <p>Each guarantor phone appears in only one application.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Duplicate IMEIs #}
+      <div class="frd-panel ts-stagger-item" data-testid="dup-imei-panel">
+        <div class="frd-panel-head">
+          <div class="frd-panel-head-icon" style="background:#fef2f2;color:#dc2626;">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          </div>
+          <span class="frd-panel-head-title" style="color:#dc2626;">Duplicate IMEI Numbers</span>
+          {% if dup_imei %}
+            <span class="frd-panel-head-badge" style="background:#fef2f2;color:#dc2626;">{{ dup_imei|length }}</span>
+          {% else %}
+            <span class="frd-panel-head-badge" style="background:#dcfce7;color:#15803d;">Clear</span>
+          {% endif %}
+        </div>
+        {% if dup_imei %}
+        <div style="overflow-x:auto;">
+          <table class="frd-table">
+            <thead><tr><th>IMEI Number</th><th style="text-align:right;">Occurrences</th></tr></thead>
+            <tbody>
+              {% for item in dup_imei %}
+              <tr>
+                <td class="frd-mono">{{ item.imei_number }}</td>
+                <td style="text-align:right;font-weight:700;color:#dc2626;">{{ item.cnt }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="frd-empty-state">
+          <div class="frd-empty-state__icon">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>No duplicate IMEI numbers</h4>
+          <p>All device IMEIs are unique across the portfolio.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>{# /frd-dup-grid #}
+  </div>{# /frd-section duplicate detection #}
+
+  {# ── Third-party phone flags ──────────────────────────────────── #}
+  {% if third_party_flags %}
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fef3c7;color:#d97706;">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </span>
+        Third-Party Phone Risk Flags
+      </h2>
+      <span style="font-size:11px;font-weight:700;background:#fef3c7;color:#d97706;padding:3px 11px;border-radius:99px;">{{ third_party_flags|length }} flagged</span>
+    </div>
+    <div class="frd-panel ts-stagger-item">
+      <div style="overflow-x:auto;">
+        <table class="frd-table">
+          <thead>
+            <tr>
+              <th>Application</th>
+              <th>Customer</th>
+              <th>Merchant</th>
+              <th style="text-align:center;">Status</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in third_party_flags %}
+            <tr>
+              <td style="font-weight:700;font-size:0.80rem;">{{ app.application_number }}</td>
+              <td>{{ app.customer_name }}</td>
+              <td style="font-size:0.78rem;color:#64748b;">{% if app.created_by %}{{ app.created_by.get_full_name|default:app.created_by.username }}{% else %}—{% endif %}</td>
+              <td style="text-align:center;"><span class="frd-badge" style="background:#fef3c7;color:#d97706;">{{ app.status }}</span></td>
+              <td style="text-align:center;">
+                <form method="post" style="display:inline-flex;gap:6px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="app_id" value="{{ app.pk }}">
+                  <button name="action" value="mark_cleared" class="frd-btn frd-btn--green" type="submit">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Clear
+                  </button>
+                  <button name="action" value="mark_blocked" class="frd-btn frd-btn--danger" type="submit">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Block
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Device Mismatch Cases ─────────────────────────────────────── #}
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fef2f2;color:#dc2626;">
+          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+        </span>
+        Device Mismatch Cases
+      </h2>
+      <span style="font-size:11px;color:#64748b;font-weight:600;">IMEI does not match selected device — possible substitution fraud</span>
+    </div>
+    <div class="frd-panel ts-stagger-item" data-testid="device-mismatch-panel">
+      {% if imei_mismatches %}
+      <div style="overflow-x:auto;">
+        <table class="frd-table">
+          <thead>
+            <tr>
+              <th>Application</th>
+              <th>Merchant</th>
+              <th>Customer</th>
+              <th>Selected Device</th>
+              <th>IMEI</th>
+              <th>API Result</th>
+              <th style="text-align:center;">Match %</th>
+              <th style="text-align:center;">Status</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in imei_mismatches %}
+            <tr>
+              <td style="font-weight:700;font-size:0.80rem;">{{ app.application_number }}</td>
+              <td style="font-size:0.78rem;">{% if app.created_by %}{{ app.created_by.get_full_name|default:app.created_by.username }}{% else %}—{% endif %}</td>
+              <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
+              <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
+              <td class="frd-mono">{{ app.imei_number|default:"—" }}</td>
+              <td style="font-size:0.78rem;font-weight:600;">
+                {% if app.imei_api_brand or app.imei_api_model %}{{ app.imei_api_brand }} {{ app.imei_api_model }}{% else %}—{% endif %}
+              </td>
+              <td style="text-align:center;">
+                {% if app.imei_match_confidence is not None %}
+                  <span style="font-weight:800;color:#dc2626;">{{ app.imei_match_confidence }}%</span>
+                {% else %}—{% endif %}
+              </td>
+              <td style="text-align:center;"><span class="frd-status frd-status--mismatch">Mismatch</span></td>
+              <td style="text-align:center;">
+                <a href="{% url 'sales_final_review' app.id %}" class="frd-btn frd-btn--danger">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Review
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
-      <p class="frd-empty">No duplicate IMEIs found.</p>
+      <div class="frd-empty-state">
+        <div class="frd-empty-state__icon">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h4>No confirmed device mismatches</h4>
+        <p>All IMEI checks have passed or are pending. Device substitution fraud is not detected.</p>
+      </div>
       {% endif %}
     </div>
-
   </div>
 
-  {% if third_party_flags %}
-  <div class="frd-card" style="margin-bottom:16px;">
-    <div class="frd-card-hdr">
-      <div class="frd-card-hdr-icon" style="background:#fffbeb;color:#d97706;"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-      <span class="frd-card-title" style="color:#d97706;">Third-Party Phone User Risk Flags</span>
-    </div>
-    <div style="overflow-x:auto;">
-    <table class="frd-table">
-      <thead><tr><th>Application</th><th>Customer</th><th>Merchant</th><th style="text-align:center;">Status</th><th style="text-align:center;">Action</th></tr></thead>
-      <tbody>
-        {% for app in third_party_flags %}
-        <tr>
-          <td style="font-weight:600;">{{ app.application_number }}</td>
-          <td>{{ app.customer_name }}</td>
-          <td>{% if app.created_by %}{{ app.created_by.get_full_name|default:app.created_by.username }}{% else %}—{% endif %}</td>
-          <td style="text-align:center;"><span class="status-badge status-badge--pending">{{ app.status }}</span></td>
-          <td style="text-align:center;">
-            <form method="post" style="display:inline-flex;gap:4px;">
-              {% csrf_token %}
-              <input type="hidden" name="app_id" value="{{ app.pk }}">
-              <button name="action" value="mark_cleared" class="btn" style="font-size:0.72rem;padding:4px 10px;background:#f0fdf4;color:#16a34a;border:1px solid rgba(22,163,74,0.3);">Clear</button>
-              <button name="action" value="mark_blocked" class="btn" style="font-size:0.72rem;padding:4px 10px;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.3);">Block</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  </div>
-  {% endif %}
-
-
-  <div class="frd-card" style="margin-bottom:16px;">
-    <div class="frd-card-hdr">
-      <div class="frd-card-hdr-icon" style="background:#fef2f2;color:#dc2626;">
-        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
-      </div>
-      <div>
-        <span class="frd-card-title" style="color:#dc2626;">Device Mismatches</span>
-        <span style="font-size:0.68rem;color:#64748b;display:block;margin-top:2px;">IMEI does not match selected smartphone — possible device substitution fraud</span>
-      </div>
-    </div>
-    {% if imei_mismatches %}
-    <div style="overflow-x:auto;">
-    <table class="frd-table">
-      <thead>
-        <tr>
-          <th>Application</th>
-          <th>Merchant</th>
-          <th>Customer</th>
-          <th>Selected smartphone</th>
-          <th>IMEI</th>
-          <th>API result</th>
-          <th style="text-align:center;">Confidence</th>
-          <th style="text-align:center;">Status</th>
-          <th style="text-align:center;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for app in imei_mismatches %}
-        <tr>
-          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
-          <td style="font-size:0.78rem;">{% if app.created_by %}{{ app.created_by.get_full_name|default:app.created_by.username }}{% else %}—{% endif %}</td>
-          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
-          <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
-          <td style="font-family:monospace;font-size:0.72rem;">{{ app.imei_number|default:"—" }}</td>
-          <td style="font-size:0.78rem;">
-            {% if app.imei_api_brand or app.imei_api_model %}
-              <span style="font-weight:600;">{{ app.imei_api_brand }} {{ app.imei_api_model }}</span>
-            {% else %}—{% endif %}
-          </td>
-          <td style="text-align:center;">
-            {% if app.imei_match_confidence is not None %}
-              <span style="font-weight:700;color:#dc2626;">{{ app.imei_match_confidence }}%</span>
-            {% else %}—{% endif %}
-          </td>
-          <td style="text-align:center;">
-            <span class="frd-badge" style="background:#fef2f2;color:#dc2626;">Mismatch</span>
-          </td>
-          <td style="text-align:center;">
-            <a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    </div>
-    {% else %}
-    <p class="frd-empty">No confirmed device mismatches.</p>
-    {% endif %}
-  </div>
-
+  {# ── Possible IMEI matches ─────────────────────────────────────── #}
   {% if imei_possible %}
-  <div class="frd-card" style="margin-bottom:16px;">
-    <div class="frd-card-hdr">
-      <div class="frd-card-hdr-icon" style="background:#fffbeb;color:#d97706;">
-        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <span class="frd-card-title" style="color:#d97706;">Possible Matches — Needs Review</span>
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fef3c7;color:#d97706;">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </span>
+        Possible Matches — Needs Review
+      </h2>
+      <span style="font-size:11px;font-weight:700;background:#fef3c7;color:#d97706;padding:3px 11px;border-radius:99px;">{{ imei_possible|length }} pending</span>
     </div>
-    <div style="overflow-x:auto;">
-    <table class="frd-table">
-      <thead><tr><th>Application</th><th>Customer</th><th>Selected smartphone</th><th>API result</th><th style="text-align:center;">Confidence</th><th style="text-align:center;">Action</th></tr></thead>
-      <tbody>
-        {% for app in imei_possible %}
-        <tr>
-          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
-          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
-          <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
-          <td style="font-size:0.78rem;">{{ app.imei_api_brand }} {{ app.imei_api_model }}</td>
-          <td style="text-align:center;font-weight:700;color:#d97706;">{{ app.imei_match_confidence|default:"—" }}%</td>
-          <td style="text-align:center;"><a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fffbeb;color:#d97706;border:1px solid rgba(217,119,6,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="frd-panel ts-stagger-item">
+      <div style="overflow-x:auto;">
+        <table class="frd-table">
+          <thead>
+            <tr><th>Application</th><th>Customer</th><th>Selected Device</th><th>API Result</th><th style="text-align:center;">Match %</th><th style="text-align:center;">Action</th></tr>
+          </thead>
+          <tbody>
+            {% for app in imei_possible %}
+            <tr>
+              <td style="font-weight:700;font-size:0.80rem;">{{ app.application_number }}</td>
+              <td>{{ app.customer_name }}</td>
+              <td style="font-size:0.78rem;">{{ app.deal|default:"—" }}</td>
+              <td style="font-size:0.78rem;font-weight:600;">{{ app.imei_api_brand }} {{ app.imei_api_model }}</td>
+              <td style="text-align:center;font-weight:800;color:#d97706;">{{ app.imei_match_confidence|default:"—" }}%</td>
+              <td style="text-align:center;">
+                <a href="{% url 'sales_final_review' app.id %}" class="frd-btn" style="background:#fffbeb;border-color:#fde68a;color:#d97706;">
+                  Review
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
   {% endif %}
 
+  {# ── IMEI Check Errors ─────────────────────────────────────────── #}
   {% if imei_errors %}
-  <div class="frd-card" style="margin-bottom:16px;">
-    <div class="frd-card-hdr">
-      <div class="frd-card-hdr-icon" style="background:#fff7ed;color:#ea580c;">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fff7ed;color:#ea580c;">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+        IMEI Check Errors
+      </h2>
+    </div>
+    <div class="frd-panel ts-stagger-item">
+      <div style="overflow-x:auto;">
+        <table class="frd-table">
+          <thead><tr><th>Application</th><th>Customer</th><th>IMEI</th><th style="text-align:center;">Status</th><th style="text-align:center;">Action</th></tr></thead>
+          <tbody>
+            {% for app in imei_errors %}
+            <tr>
+              <td style="font-weight:700;font-size:0.80rem;">{{ app.application_number }}</td>
+              <td>{{ app.customer_name }}</td>
+              <td class="frd-mono">{{ app.imei_number|default:"—" }}</td>
+              <td style="text-align:center;">
+                <span class="frd-status frd-status--error">{{ app.get_imei_verification_status_display|default:app.imei_verification_status }}</span>
+              </td>
+              <td style="text-align:center;">
+                <a href="{% url 'sales_final_review' app.id %}" class="frd-btn" style="background:#fff7ed;border-color:#fed7aa;color:#ea580c;">Review</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <span class="frd-card-title" style="color:#ea580c;">IMEI Check Errors / Unknown</span>
-    </div>
-    <div style="overflow-x:auto;">
-    <table class="frd-table">
-      <thead><tr><th>Application</th><th>Customer</th><th>IMEI</th><th style="text-align:center;">Status</th><th style="text-align:center;">Action</th></tr></thead>
-      <tbody>
-        {% for app in imei_errors %}
-        <tr>
-          <td style="font-weight:700;font-size:0.78rem;">{{ app.application_number }}</td>
-          <td style="font-size:0.78rem;">{{ app.customer_name }}</td>
-          <td style="font-family:monospace;font-size:0.72rem;">{{ app.imei_number|default:"—" }}</td>
-          <td style="text-align:center;">
-            <span class="frd-badge" style="background:#fff7ed;color:#ea580c;">{{ app.get_imei_verification_status_display|default:app.imei_verification_status }}</span>
-          </td>
-          <td style="text-align:center;"><a href="{% url 'sales_final_review' app.id %}" style="font-size:0.72rem;padding:4px 10px;background:#fff7ed;color:#ea580c;border:1px solid rgba(234,88,12,0.3);border-radius:6px;text-decoration:none;font-weight:700;">Review</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
     </div>
   </div>
   {% endif %}
 
+  {# ── Fraud-Marked Applications ────────────────────────────────── #}
   {% if fraud_marked %}
-  <div class="frd-card" style="margin-bottom:16px;">
-    <div class="frd-card-hdr">
-      <div class="frd-card-hdr-icon" style="background:#fef2f2;color:#dc2626;"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-      <span class="frd-card-title" style="color:#dc2626;">Fraud-Marked Applications</span>
+  <div class="frd-section">
+    <div class="frd-section-title">
+      <h2>
+        <span class="frd-section-icon" style="background:#fef2f2;color:#dc2626;">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </span>
+        Fraud-Marked Applications
+      </h2>
+      <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#dc2626;padding:3px 11px;border-radius:99px;">{{ fraud_marked|length }} records</span>
     </div>
-    <div style="overflow-x:auto;">
-    <table class="frd-table">
-      <thead><tr><th>Application</th><th>Customer</th><th>Note</th><th style="text-align:center;">Status</th></tr></thead>
-      <tbody>
-        {% for app in fraud_marked %}
-        <tr>
-          <td style="font-weight:600;">{{ app.application_number }}</td>
-          <td>{{ app.customer_name }}</td>
-          <td style="font-size:0.75rem;color:#64748b;">{{ app.manager_comment|truncatechars:60 }}</td>
-          <td style="text-align:center;">
-            <span class="frd-badge {% if 'BLOCKED' in app.manager_comment %}status-badge--rejected{% else %}status-badge--approved{% endif %}" style="{% if 'BLOCKED' in app.manager_comment %}background:#fef2f2;color:#dc2626;{% else %}background:#f0fdf4;color:#16a34a;{% endif %}">
-              {% if 'BLOCKED' in app.manager_comment %}Blocked{% else %}Cleared{% endif %}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="frd-panel ts-stagger-item">
+      <div style="overflow-x:auto;">
+        <table class="frd-table">
+          <thead><tr><th>Application</th><th>Customer</th><th>Note</th><th style="text-align:center;">Decision</th></tr></thead>
+          <tbody>
+            {% for app in fraud_marked %}
+            <tr>
+              <td style="font-weight:700;">{{ app.application_number }}</td>
+              <td>{{ app.customer_name }}</td>
+              <td style="font-size:0.75rem;color:#64748b;max-width:220px;">{{ app.manager_comment|truncatechars:80 }}</td>
+              <td style="text-align:center;">
+                <span class="frd-status {% if 'BLOCKED' in app.manager_comment %}frd-status--blocked{% else %}frd-status--cleared{% endif %}">
+                  {% if 'BLOCKED' in app.manager_comment %}Blocked{% else %}Cleared{% endif %}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
   {% endif %}
 
-</div>
+</div>{# /frd-console #}
+
+<script>
+/* ── Gauge animation ──────────────────────────────────────────────── */
+(function () {
+  var fill  = document.getElementById('frd-gauge-fill');
+  if (!fill) return;
+  var scoreEl = fill.closest('svg') ? fill.closest('svg').querySelector('.frd-gauge-score') : null;
+  var score = scoreEl ? parseInt(scoreEl.textContent, 10) || 0 : 0;
+  /* Full arc circumference ≈ 220 (half circle at r=70) */
+  var maxDash = 220;
+  var pct = Math.min(score / 30, 1); /* 30 = max sane value */
+  var targetOffset = maxDash - (pct * maxDash);
+  setTimeout(function () {
+    fill.style.strokeDashoffset = targetOffset;
+  }, 200);
+})();
+
+/* ── Count-up for signal cards ────────────────────────────────────── */
+(function () {
+  var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+  document.querySelectorAll('[data-count-up]').forEach(function (el) {
+    var to = parseInt(el.getAttribute('data-count-up'), 10) || 0;
+    var dur = parseInt(el.getAttribute('data-count-duration') || '700', 10);
+    if (to === 0) return;
+    var start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(to * eased);
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = to;
+    }
+    requestAnimationFrame(step);
+  });
+})();
+</script>
 {% endblock %}

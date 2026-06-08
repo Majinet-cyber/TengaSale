@@ -135,32 +135,63 @@
   letter-spacing: -0.02em;
 }
 
+/* ── New Application CTA wrapper ───────────────────────────────── */
+.merchant-cta-wrap {
+  padding: 16px 16px 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 /* ── Big new application button ─────────────────────────────────── */
 .primary-big-action {
   display: flex !important;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 16px 16px 0;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
   padding: 0 20px;
-  min-height: 64px;
+  min-height: 72px;
   background: #ff5a00;
   color: #fff;
-  border-radius: 18px;
+  border-radius: 24px;
   font-size: 17px;
   font-weight: 900;
   text-decoration: none;
   letter-spacing: 0.02em;
   box-shadow: 0 6px 20px rgba(255,90,0,0.30);
   transition: background .15s, transform .1s, box-shadow .15s;
+  box-sizing: border-box;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .primary-big-action:hover { background: #e64d00; box-shadow: 0 8px 24px rgba(255,90,0,0.38); }
 .primary-big-action:active { transform: scale(.98); }
 
-.primary-contract-btn__icon { font-size: 22px; line-height: 1; }
-.primary-contract-btn__label { flex: 1; text-align: center; }
-.primary-contract-btn__arrow { font-size: 20px; opacity: .7; }
+.primary-contract-btn__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.22);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.primary-contract-btn__label {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.primary-contract-btn__arrow {
+  font-size: 20px;
+  opacity: .7;
+  flex-shrink: 0;
+}
 
 /* ── Section label ──────────────────────────────────────────────── */
 .section-title,
@@ -235,6 +266,11 @@
   font-size: 13px;
   font-weight: 700;
   color: #667085;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-row-chevron,
@@ -555,12 +591,20 @@
   {% endwith %}
 
   {# ── New Application — Big Action ─────────────────────────────── #}
-  <a href="{% url 'new_application' %}" class="primary-contract-btn primary-big-action" aria-label="Start a new application"
-     style="margin-top:16px;">
-    <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
-    <span class="primary-contract-btn__label">NEW APPLICATION</span>
-    <span class="primary-contract-btn__arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
-  </a>
+  <div class="merchant-cta-wrap">
+    <a href="{% url 'new_application' %}"
+       class="primary-contract-btn primary-big-action"
+       aria-label="Start a new application"
+       data-testid="merchant-new-app-btn">
+      <span class="primary-contract-btn__icon" aria-hidden="true">
+        <i class="bi bi-plus-lg"></i>
+      </span>
+      <span class="primary-contract-btn__label">NEW APPLICATION</span>
+      <span class="primary-contract-btn__arrow" aria-hidden="true">
+        <i class="bi bi-arrow-right"></i>
+      </span>
+    </a>
+  </div>
 
   {# ── Portfolio overview ───────────────────────────────────────── #}
   {% with stats=device_financing_stats %}
@@ -668,10 +712,10 @@
       <span class="action-row-value">Browse</span>
       <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
-    <a href="{% url 'earnings_home' %}" class="action-row simple-row">
+    <a href="{% url 'earnings_home' %}" class="action-row simple-row" data-testid="merchant-row-earnings">
       <span class="action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-gift"></i></span>
       <span class="action-row-label">My Earnings</span>
-      <span class="action-row-value">{{ earnings_total|mwk }}</span>
+      <span class="action-row-value" title="{{ earnings_total|mwk }}">{{ earnings_total|mwk }}</span>
       <span class="action-row-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
     </a>
     <a href="{% url 'payments_home' %}" class="action-row simple-row">

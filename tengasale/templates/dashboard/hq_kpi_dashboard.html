@@ -1,23 +1,215 @@
 {% extends "base/base.html" %}
-{% load ts_filters %}
+{% load static ts_filters %}
 
-{% block page_title %}KPI Scorecards - TengaSale{% endblock %}
+{% block page_title %}KPI Scorecards — TengaSale{% endblock %}
+
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
-.kpi-page{max-width:1260px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}.kpi-head{position:sticky;top:0;z-index:3;background:rgba(248,250,252,.92);backdrop-filter:blur(10px);padding:8px 0 14px}.kpi-kicker{font-size:11px;font-weight:900;text-transform:uppercase;color:#ff5a00;letter-spacing:.08em}.kpi-title{font-size:28px;margin:3px 0}.kpi-sub{margin:0;color:#667085;font-size:13px}.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin:0 0 14px}.kpi-card,.kpi-section{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px}.kpi-card span{display:block;font-size:11px;text-transform:uppercase;font-weight:850;color:#667085}.kpi-card strong{display:block;font-size:23px;margin-top:7px}.kpi-section{margin-bottom:14px}.kpi-section h2{margin:0 0 10px;font-size:15px;color:#344054;text-transform:uppercase;letter-spacing:.05em}.kpi-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:12px}.kpi-table{width:100%;min-width:880px;border-collapse:collapse}.kpi-table th,.kpi-table td{padding:9px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}.kpi-table th{background:#f8fafc;color:#667085;text-transform:uppercase;font-size:10px}.score{display:inline-flex;border-radius:999px;padding:4px 8px;background:#e8f7ee;color:#087443;font-weight:850}
+.kpi-page { max-width:1260px; margin:0 auto; padding:18px 14px 54px; background:#f8fafc; color:#101828; overflow-x:hidden; }
+.kpi-head { position:sticky; top:0; z-index:3; background:rgba(248,250,252,.92); backdrop-filter:blur(10px); padding:8px 0 14px; }
+.kpi-kicker { font-size:11px; font-weight:900; text-transform:uppercase; color:#ff5a00; letter-spacing:.08em; }
+.kpi-title { font-size:28px; margin:3px 0; }
+.kpi-sub { margin:0; color:#667085; font-size:13px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; margin:0 0 14px; }
+.kpi-card {
+  background:#fff; border:1px solid #e5e7eb; border-radius:14px;
+  box-shadow:0 8px 22px rgba(15,23,42,.06); padding:14px;
+  border-left:3px solid #ff5a00;
+}
+.kpi-card span { display:block; font-size:11px; text-transform:uppercase; font-weight:850; color:#667085; }
+.kpi-card strong { display:block; font-size:23px; margin-top:7px; font-weight:950; color:#0f172a; }
+.kpi-section { background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 8px 22px rgba(15,23,42,.06); padding:16px; margin-bottom:14px; }
+.kpi-section h2 { margin:0 0 12px; font-size:15px; color:#344054; text-transform:uppercase; letter-spacing:.05em; font-weight:900; }
+.kpi-wrap { overflow-x:auto; border:1px solid #e5e7eb; border-radius:12px; }
+.kpi-table { width:100%; min-width:640px; border-collapse:collapse; }
+.kpi-table th, .kpi-table td { padding:9px 12px; border-bottom:1px solid #eef2f7; text-align:left; font-size:12px; }
+.kpi-table th { background:#f8fafc; color:#667085; text-transform:uppercase; font-size:10px; font-weight:900; }
+.score { display:inline-flex; border-radius:999px; padding:4px 8px; background:#e8f7ee; color:#087443; font-weight:850; font-size:11px; }
+.kpi-charts-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media (max-width:640px) { .kpi-charts-row { grid-template-columns:1fr; } }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="kpi-page">
-  <header class="kpi-head"><div class="kpi-kicker">KPI Library</div><h1 class="kpi-title">Founder, staff and operational scorecards</h1><p class="kpi-sub">Quality, discipline and results scores come from measurable templates and reviewed results.</p></header>
+  <header class="kpi-head">
+    <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:600;">← HQ</a></div>
+    <div class="kpi-kicker">KPI Library</div>
+    <h1 class="kpi-title">Founder, staff and operational scorecards</h1>
+    <p class="kpi-sub">Quality, discipline and results scores come from measurable templates and reviewed results.</p>
+  </header>
+
   <section class="kpi-grid">
-    <div class="kpi-card"><span>Average Score</span><strong>{{ avg_score|floatformat:1 }}%</strong></div>
-    <div class="kpi-card"><span>Approved Results</span><strong>{{ approved_count|tsnum }}</strong></div>
-    <div class="kpi-card"><span>Draft Results</span><strong>{{ draft_count|tsnum }}</strong></div>
-    <div class="kpi-card"><span>Active Templates</span><strong>{{ templates|length|tsnum }}</strong></div>
+    <div class="kpi-card ts-stagger-item" style="border-left-color:#ff5a00;">
+      <span>Average Score</span>
+      <strong data-count-up="{{ avg_score|floatformat:0 }}" data-count-suffix="%" data-count-duration="900">{{ avg_score|floatformat:1 }}%</strong>
+    </div>
+    <div class="kpi-card ts-stagger-item" style="border-left-color:#16a34a;">
+      <span>Approved Results</span>
+      <strong data-count-up="{{ approved_count }}" data-count-duration="700">{{ approved_count|tsnum }}</strong>
+    </div>
+    <div class="kpi-card ts-stagger-item" style="border-left-color:#d97706;">
+      <span>Draft Results</span>
+      <strong data-count-up="{{ draft_count }}" data-count-duration="700">{{ draft_count|tsnum }}</strong>
+    </div>
+    <div class="kpi-card ts-stagger-item" style="border-left-color:#2563eb;">
+      <span>Active Templates</span>
+      <strong data-count-up="{{ templates|length }}" data-count-duration="700">{{ templates|length|tsnum }}</strong>
+    </div>
   </section>
-  <section class="kpi-section"><h2>Department Scores</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>Department</th><th>Average</th><th>Results</th></tr></thead><tbody>{% for row in department_scores %}<tr><td>{{ row.user__profile__department__name|default:"Unassigned" }}</td><td><span class="score">{{ row.avg|floatformat:1 }}%</span></td><td>{{ row.count|tsnum }}</td></tr>{% empty %}<tr><td colspan="3">No KPI results yet.</td></tr>{% endfor %}</tbody></table></div></section>
-  <section class="kpi-section"><h2>Recent KPI Results</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>Person</th><th>KPI</th><th>Period</th><th>Actual</th><th>Target</th><th>Score</th><th>Weighted</th><th>Status</th></tr></thead><tbody>{% for result in results %}<tr><td>{{ result.user.profile.display_name|default:result.user.username }}</td><td>{{ result.kpi_template.name }}</td><td>{{ result.period|date:"Y-m" }}</td><td>{{ result.actual_value }}</td><td>{{ result.target_value }}</td><td><span class="score">{{ result.score|floatformat:1 }}%</span></td><td>{{ result.weighted_score|floatformat:1 }}</td><td>{{ result.get_status_display }}</td></tr>{% empty %}<tr><td colspan="8">No KPI results yet.</td></tr>{% endfor %}</tbody></table></div></section>
-  <section class="kpi-section"><h2>Active Templates</h2><div class="kpi-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Role</th><th>Department</th><th>Target</th><th>Weight</th><th>Signals</th></tr></thead><tbody>{% for template in templates %}<tr><td>{{ template.name }}</td><td>{{ template.role.name|default:"-" }}</td><td>{{ template.department.name|default:"-" }}</td><td>{{ template.target_value }}</td><td>{{ template.weight }}</td><td>{% if template.affects_quality_score %}Quality {% endif %}{% if template.affects_discipline_score %}Discipline {% endif %}{% if template.affects_results_score %}Results{% endif %}</td></tr>{% empty %}<tr><td colspan="6">No KPI templates seeded.</td></tr>{% endfor %}</tbody></table></div></section>
+
+  {# ── Charts ──────────────────────────────────────────────────────── #}
+  <div class="kpi-charts-row" data-testid="kpi-charts-row">
+    <div class="kpi-section ts-stagger-item" data-testid="kpi-dept-chart">
+      <h2>Department scores</h2>
+      {% if department_scores %}
+        <div style="position:relative;height:220px;">
+          <canvas id="kpiDeptChart" aria-label="Department KPI scores bar chart"></canvas>
+        </div>
+      {% else %}
+        <p style="color:#94a3b8;font-size:12px;padding:24px 0;text-align:center;">No department score data yet.</p>
+      {% endif %}
+    </div>
+    <div class="kpi-section ts-stagger-item" data-testid="kpi-status-chart">
+      <h2>Result status breakdown</h2>
+      <div style="position:relative;height:200px;">
+        <canvas id="kpiStatusChart" aria-label="KPI result status donut"></canvas>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:0.7rem;font-weight:700;margin-top:10px;">
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>Approved ({{ approved_count }})</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#d97706;flex-shrink:0;"></span>Draft ({{ draft_count }})</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="kpi-section">
+    <h2>Department scores</h2>
+    <div class="kpi-wrap">
+      <table class="kpi-table">
+        <thead><tr><th>Department</th><th>Average</th><th>Results</th></tr></thead>
+        <tbody>
+          {% for row in department_scores %}
+          <tr><td>{{ row.user__profile__department__name|default:"Unassigned" }}</td><td><span class="score">{{ row.avg|floatformat:1 }}%</span></td><td>{{ row.count|tsnum }}</td></tr>
+          {% empty %}
+          <tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8;">No KPI results yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="kpi-section">
+    <h2>Recent KPI results</h2>
+    <div class="kpi-wrap">
+      <table class="kpi-table">
+        <thead><tr><th>Person</th><th>KPI</th><th>Period</th><th>Actual</th><th>Target</th><th>Score</th><th>Weighted</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for result in results %}
+          <tr>
+            <td>{{ result.user.profile.display_name|default:result.user.username }}</td>
+            <td>{{ result.kpi_template.name }}</td>
+            <td>{{ result.period|date:"Y-m" }}</td>
+            <td>{{ result.actual_value }}</td>
+            <td>{{ result.target_value }}</td>
+            <td><span class="score">{{ result.score|floatformat:1 }}%</span></td>
+            <td>{{ result.weighted_score|floatformat:1 }}</td>
+            <td>{{ result.get_status_display }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8;">No KPI results yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="kpi-section">
+    <h2>Active templates</h2>
+    <div class="kpi-wrap">
+      <table class="kpi-table">
+        <thead><tr><th>KPI</th><th>Role</th><th>Department</th><th>Target</th><th>Weight</th><th>Signals</th></tr></thead>
+        <tbody>
+          {% for template in templates %}
+          <tr>
+            <td style="font-weight:700;">{{ template.name }}</td>
+            <td>{{ template.role.name|default:"-" }}</td>
+            <td>{{ template.department.name|default:"-" }}</td>
+            <td>{{ template.target_value }}</td>
+            <td>{{ template.weight }}</td>
+            <td>{% if template.affects_quality_score %}<span class="score" style="background:#eff6ff;color:#1d4ed8;">Quality</span> {% endif %}{% if template.affects_discipline_score %}<span class="score" style="background:#fff7ed;color:#c2410c;">Discipline</span> {% endif %}{% if template.affects_results_score %}<span class="score" style="background:#f0fdf4;color:#166534;">Results</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8;">No KPI templates seeded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var animDur = reduced ? 0 : 900;
+
+  /* ── Department scores bar chart ───────────────── */
+  var deptLabels = [], deptAvg = [];
+  {% for row in department_scores %}
+  deptLabels.push("{{ row.user__profile__department__name|default:'Unassigned'|escapejs }}");
+  deptAvg.push({{ row.avg|default:0|floatformat:1 }});
+  {% endfor %}
+
+  var deptCtx = document.getElementById('kpiDeptChart');
+  if (deptCtx && deptLabels.length) {
+    new Chart(deptCtx, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [{
+          label: 'Avg Score (%)',
+          data: deptAvg,
+          backgroundColor: deptAvg.map(function(v){ return v >= 80 ? 'rgba(22,163,74,0.82)' : v >= 60 ? 'rgba(217,119,6,0.82)' : 'rgba(220,38,38,0.82)'; }),
+          borderRadius: 6, borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' ' + c.parsed.y + '%'; } } } },
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v){ return v + '%'; }, font: { size: 11 } }, grid: { color: '#f1f5f9' }, border: { display: false } },
+          x: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } }, border: { display: false } }
+        },
+        animation: { duration: animDur }
+      }
+    });
+  }
+
+  /* ── Status donut ───────────────────────────────── */
+  var statCtx = document.getElementById('kpiStatusChart');
+  var approved = {{ approved_count|default:0 }};
+  var drafts   = {{ draft_count|default:0 }};
+  if (statCtx && (approved + drafts) > 0) {
+    new Chart(statCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Approved', 'Draft'],
+        datasets: [{ data: [approved, drafts], backgroundColor: ['#16a34a','#d97706'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.parsed; } } } },
+        animation: { animateRotate: true, duration: animDur }
+      }
+    });
+  } else if (statCtx) {
+    statCtx.style.display = 'none';
+    statCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No results yet</p>');
+  }
+})();
+</script>
 {% endblock %}

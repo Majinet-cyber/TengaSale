@@ -4,6 +4,7 @@
 {% block page_title %}Payment Collections — TengaSale HQ{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
 .col-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
 .col-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
@@ -46,24 +47,93 @@
     </a>
   </div>
 
+  {# ── Live operations KPI strip ──────────────────────────────── #}
   <div class="col-stats">
-    <div class="col-stat" style="--col-accent:#16a34a;">
-      <div class="col-stat-val">{{ collections_today|mwk }}</div>
+    <div class="col-stat ts-stagger-item" style="--col-accent:#16a34a;">
+      <div class="col-stat-val" data-testid="collections-today">{{ collections_today|mwk }}</div>
       <div class="col-stat-lbl">Collections today</div>
     </div>
-    <div class="col-stat" style="--col-accent:#ff5a00;">
-      <div class="col-stat-val">{{ collections_month|mwk }}</div>
+    <div class="col-stat ts-stagger-item" style="--col-accent:#ff5a00;">
+      <div class="col-stat-val" data-testid="collections-month">{{ collections_month|mwk }}</div>
       <div class="col-stat-lbl">Collections this month</div>
     </div>
-    <div class="col-stat" style="--col-accent:#dc2626;">
-      <div class="col-stat-val">{{ failed_payments }}</div>
+    <div class="col-stat ts-stagger-item" style="--col-accent:#dc2626;">
+      <div class="col-stat-val" data-count-up="{{ failed_payments|default:0 }}" data-count-duration="700">{{ failed_payments }}</div>
       <div class="col-stat-lbl">Failed payments</div>
     </div>
-    <div class="col-stat" style="--col-accent:#d97706;">
-      <div class="col-stat-val">{{ pending_payments }}</div>
+    <div class="col-stat ts-stagger-item" style="--col-accent:#d97706;">
+      <div class="col-stat-val" data-count-up="{{ pending_payments|default:0 }}" data-count-duration="700">{{ pending_payments }}</div>
       <div class="col-stat-lbl">Pending processing</div>
     </div>
   </div>
+
+  {# ── Live payment feed ────────────────────────────────────────── #}
+  <div class="pay-live-feed ts-stagger-item" data-testid="pay-live-feed">
+    <div class="pay-live-feed__head">
+      <span class="pay-live-feed__title">Live Payment Feed</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="pay-live-dot" aria-label="Live"></span>
+        <span style="font-size:11px;font-weight:600;color:#64748b;">Latest {{ transactions|length }}</span>
+      </div>
+    </div>
+    {% for txn in transactions|slice:":8" %}
+    <div class="pay-feed-item">
+      <div class="pay-feed-item__icon pay-feed-item__icon--{% if txn.status == 'paid' %}success{% elif txn.status == 'failed' %}failed{% elif txn.status == 'pending' %}pending{% else %}info{% endif %}" aria-hidden="true">
+        {% if txn.status == 'paid' %}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        {% elif txn.status == 'failed' %}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        {% elif txn.status == 'pending' %}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        {% else %}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {% endif %}
+      </div>
+      <div class="pay-feed-item__text">
+        <div class="pay-feed-item__title">
+          {% if txn.payment_contract %}{{ txn.payment_contract.customer_name }}{% else %}Unknown customer{% endif %}
+        </div>
+        <div class="pay-feed-item__sub">
+          {{ txn.provider|default:"—" }}
+          {% if txn.payment_contract %} · {{ txn.payment_contract.contract_number }}{% endif %}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pay-feed-item__amount">{{ txn.amount|mwk }}</div>
+        <div class="pay-feed-item__time">
+          {% if txn.paid_at %}{{ txn.paid_at|date:"H:i" }}{% else %}{{ txn.created_at|date:"H:i" }}{% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:12px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" style="margin:0 auto 10px;display:block;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      No payment activity yet
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Charts row ──────────────────────────────────────────────── #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:20px;" data-testid="pay-charts-row">
+
+    <div class="glass-card ts-stagger-item" style="padding:16px;">
+      <p style="font-size:0.78rem;font-weight:800;margin:0 0 12px;color:#0f172a;">Provider Split</p>
+      <div style="position:relative;height:200px;max-height:220px;">
+        <canvas id="payProviderChart" aria-label="Provider split donut chart"></canvas>
+      </div>
+      <div id="payProviderLegend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center;font-size:0.7rem;"></div>
+    </div>
+
+    <div class="glass-card ts-stagger-item" style="padding:16px;">
+      <p style="font-size:0.78rem;font-weight:800;margin:0 0 12px;color:#0f172a;">Payment Status Breakdown</p>
+      <div style="position:relative;height:200px;max-height:220px;">
+        <canvas id="payStatusChart" aria-label="Payment status breakdown donut chart"></canvas>
+      </div>
+      <div id="payStatusLegend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center;font-size:0.7rem;"></div>
+    </div>
+
+  </div>
+
 
   <div class="glass-card" style="padding:16px;margin-bottom:20px;">
     <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
@@ -145,4 +215,94 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Provider split donut ──────────────────────────── */
+  var providerLabels = [];
+  var providerCounts = [];
+  {% regroup transactions by provider as txn_by_provider %}
+  {% for grp in txn_by_provider %}
+  providerLabels.push("{{ grp.grouper|default:'Other'|escapejs }}");
+  providerCounts.push({{ grp.list|length }});
+  {% endfor %}
+
+  var palette = ['#ff5a00','#16a34a','#3b82f6','#d97706','#8b5cf6','#ec4899','#06b6d4'];
+  var provCtx = document.getElementById('payProviderChart');
+  if (provCtx && providerLabels.length) {
+    new Chart(provCtx, {
+      type: 'doughnut',
+      data: {
+        labels: providerLabels,
+        datasets: [{ data: providerCounts, backgroundColor: palette, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.parsed + ' txns'; } } }
+        },
+        animation: { animateRotate: true, duration: 900 }
+      }
+    });
+    var leg = document.getElementById('payProviderLegend');
+    if (leg) {
+      providerLabels.forEach(function(l, i) {
+        var s = document.createElement('span');
+        s.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
+        s.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + (palette[i % palette.length]) + ';flex-shrink:0;"></span>' + l;
+        leg.appendChild(s);
+      });
+    }
+  } else if (provCtx) {
+    provCtx.closest('.glass-card').querySelector('p').insertAdjacentHTML('afterend',
+      '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No provider data</p>');
+    provCtx.style.display = 'none';
+  }
+
+  /* ── Payment status donut ──────────────────────────── */
+  var paid = 0, failed = 0, pending = 0;
+  {% for txn in transactions %}
+  {% if txn.status == 'paid' %}paid++;
+  {% elif txn.status == 'failed' or txn.status == 'cancelled' %}failed++;
+  {% else %}pending++;
+  {% endif %}
+  {% endfor %}
+  var statCtx = document.getElementById('payStatusChart');
+  if (statCtx && (paid + failed + pending) > 0) {
+    new Chart(statCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Paid', 'Failed', 'Pending'],
+        datasets: [{ data: [paid, failed, pending], backgroundColor: ['#16a34a','#dc2626','#d97706'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.parsed; } } }
+        },
+        animation: { animateRotate: true, duration: 900 }
+      }
+    });
+    var sleg = document.getElementById('payStatusLegend');
+    if (sleg) {
+      [['Paid','#16a34a'],['Failed','#dc2626'],['Pending','#d97706']].forEach(function(p) {
+        var s = document.createElement('span');
+        s.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
+        s.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + p[1] + ';flex-shrink:0;"></span>' + p[0];
+        sleg.appendChild(s);
+      });
+    }
+  } else if (statCtx) {
+    statCtx.style.display = 'none';
+    statCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No data yet</p>');
+  }
+})();
+</script>
 {% endblock %}

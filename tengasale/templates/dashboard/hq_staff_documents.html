@@ -254,7 +254,7 @@
   <!-- Staff grid -->
   <div class="sdc-grid">
     {% for profile in profiles %}
-    <div class="sdc-card" x-show="!query || matches('{{ profile.display_name|lower }}', '{{ profile.staff_role.name|default:profile.get_role_display|lower }}', '{{ profile.department.name|default:""|lower }}')">
+    <div class="sdc-card ts-stagger-item" x-show="!query || matches('{{ profile.display_name|lower }}', '{{ profile.staff_role.name|default:profile.get_role_display|lower }}', '{{ profile.department.name|default:""|lower }}')" data-testid="sdc-staff-card">
 
       <!-- Top: avatar + info -->
       <div class="sdc-card-top">
@@ -306,14 +306,39 @@
         </div>
       </div>
 
-      <!-- Actions -->
+      <!-- Document readiness -->
+      <div style="padding:8px 14px 4px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+        {% with doc_count=profile.user.staff_documents.count %}
+        {% if doc_count > 0 %}
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#dcfce7;color:#15803d;border-radius:99px;padding:3px 9px;">
+            <i class="bi bi-file-earmark-check"></i> {{ doc_count }} doc{{ doc_count|pluralize }}
+          </span>
+        {% else %}
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#f1f5f9;color:#94a3b8;border-radius:99px;padding:3px 9px;">
+            <i class="bi bi-file-earmark"></i> No docs yet
+          </span>
+        {% endif %}
+        {% endwith %}
+        {% if not active_signature %}
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#fff7ed;color:#c2410c;border-radius:99px;padding:3px 9px;">
+            <i class="bi bi-pen"></i> No sig
+          </span>
+        {% else %}
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#dbeafe;color:#1d4ed8;border-radius:99px;padding:3px 9px;" title="{{ active_signature.full_name }}">
+            <i class="bi bi-pen-fill"></i> Sig ready
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Actions — profile + open document file (overflow in sheet) -->
       <div class="sdc-actions">
         <a href="{% url 'hq_user_edit' profile.user.id %}" class="sdc-btn sdc-btn--view">
           <i class="bi bi-person"></i> Profile
         </a>
         <button type="button" class="sdc-btn sdc-btn--generate"
-          @click="openSheet({{ profile.user.id }}, '{{ profile.display_name|default:profile.user.username|escapejs }}')">
-          <i class="bi bi-file-earmark-text"></i> Documents
+          @click="openSheet({{ profile.user.id }}, '{{ profile.display_name|default:profile.user.username|escapejs }}')"
+          data-testid="sdc-docs-btn">
+          <i class="bi bi-file-earmark-text"></i> Open Doc File
         </button>
       </div>
     </div>

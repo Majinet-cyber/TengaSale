@@ -1509,6 +1509,357 @@ class UnderwriterApprovalOnceTests(TestCase):
         self.assertEqual(self.app.status, "approved")
 
 
+class ContractDepositPaymentTests(TestCase):
+    """Tests for the PayChangu deposit payment flow."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.merchant = User.objects.create_user(username="dep_merchant", password="test-pass-123")
+        assign_role(self.merchant, "merchant")
+        brand = DeviceBrand.objects.create(name="SamsungDep")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Galaxy A25",
+            specs="6+128",
+            min_cash_price=Decimal("250000.00"),
+            max_cash_price=Decimal("350000.00"),
+            default_cash_price=Decimal("300000.00"),
+            cash_price=Decimal("300000.00"),
+            deposit_percent=Decimal("15.00"),
+            loan_multiplier=Decimal("2.50"),
+            term_months=12,
+            total_12_month_price=Decimal("750000.00"),
+        )
+        app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            status="approved",
+            customer_name="Peter Phiri",
+            customer_phone="991112222",
+            national_id="ABCD1234",
+            deal=deal,
+            selected_cash_price=Decimal("300000.00"),
+            calculated_deposit_amount=Decimal("45000.00"),
+            calculated_total_loan=Decimal("750000.00"),
+            calculated_monthly_payment=Decimal("62500.00"),
+            calculated_daily_payment=Decimal("2083.00"),
+        )
+        self.contract = Contract.objects.create(
+            application=app,
+            merchant=self.merchant,
+            customer_name="Peter Phiri",
+            customer_phone="991112222",
+            cash_price=Decimal("300000.00"),
+            deposit_amount=Decimal("45000.00"),
+            total_loan=Decimal("750000.00"),
+            monthly_payment=Decimal("62500.00"),
+            daily_payment=Decimal("2083.00"),
+            phone_locked=True,
+            status=Contract.STATUS_LOCKED,
+        )
+        self.client.force_login(self.merchant)
+
+    def test_deposit_payment_page_renders(self):
+        url = reverse("contract_pay_deposit", args=[self.contract.id])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Pay Deposit")
+        self.assertContains(resp, "45")  # deposit amount
+
+    def test_deposit_payment_page_requires_locked_device(self):
+        self.contract.phone_locked = False
+        self.contract.status = Contract.STATUS_CONTRACT_CREATED
+        self.contract.save()
+        url = reverse("contract_pay_deposit", args=[self.contract.id])
+        resp = self.client.get(url)
+        self.assertRedirects(resp, reverse("contract_progress", args=[self.contract.id]))
+
+    def test_deposit_already_paid_redirects_to_complete(self):
+        self.contract.deposit_paid = True
+        self.contract.save()
+        url = reverse("contract_pay_deposit", args=[self.contract.id])
+        resp = self.client.get(url)
+        self.assertRedirects(resp, reverse("contract_complete", args=[self.contract.id]))
+
+    @patch("integrations.paychangu_client.initiate_payment")
+    def test_create_checkout_success(self, mock_initiate):
+        mock_initiate.return_value = {
+            "status": "success",
+            "checkout_url": "https://paychangu.test/checkout/abc123",
+            "tx_ref": "dep-TESTREF-12345678",
+            "message": "OK",
+        }
+        url = reverse("contract_pay_deposit", args=[self.contract.id])
+        resp = self.client.post(url, {"action": "create_checkout", "phone": "0991234567"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertIn("checkout_url", data)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.deposit_payment_status, Contract.DEPOSIT_STATUS_CHECKOUT_CREATED)
+
+    def test_phone_validation_required(self):
+        url = reverse("contract_pay_deposit", args=[self.contract.id])
+        resp = self.client.post(url, {"action": "create_checkout", "phone": ""})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data["ok"])
+
+    def test_webhook_marks_deposit_paid(self):
+        import json
+        self.contract.deposit_payment_tx_ref = "dep-TESTCONT-aabbccdd"
+        self.contract.deposit_payment_status = Contract.DEPOSIT_STATUS_CHECKOUT_CREATED
+        self.contract.save()
+
+        payload = json.dumps({
+            "tx_ref": "dep-TESTCONT-aabbccdd",
+            "status": "SUCCESSFUL",
+            "amount": "45000.00",
+        }).encode()
+
+        with self.settings(MOCK_PAYMENTS=True, PAYCHANGU_WEBHOOK_SECRET=""):
+            resp = self.client.post(
+                reverse("contract_deposit_webhook"),
+                data=payload,
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.contract.refresh_from_db()
+        self.assertTrue(self.contract.deposit_paid)
+        self.assertEqual(self.contract.deposit_payment_status, Contract.DEPOSIT_STATUS_PAID)
+        self.assertEqual(self.contract.status, Contract.STATUS_COMPLETE)
+
+    def test_webhook_duplicate_does_not_double_count(self):
+        import json
+        self.contract.deposit_paid = True
+        self.contract.deposit_payment_status = Contract.DEPOSIT_STATUS_PAID
+        self.contract.deposit_payment_tx_ref = "dep-DUPTEST-aabbccdd"
+        self.contract.save()
+
+        payload = json.dumps({
+            "tx_ref": "dep-DUPTEST-aabbccdd",
+            "status": "SUCCESSFUL",
+            "amount": "45000.00",
+        }).encode()
+
+        with self.settings(MOCK_PAYMENTS=True, PAYCHANGU_WEBHOOK_SECRET=""):
+            resp = self.client.post(
+                reverse("contract_deposit_webhook"),
+                data=payload,
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data.get("message"), "Already paid")
+
+    def test_failed_payment_webhook_does_not_mark_paid(self):
+        import json
+        self.contract.deposit_payment_tx_ref = "dep-FAILTEST-aabbccdd"
+        self.contract.deposit_payment_status = Contract.DEPOSIT_STATUS_CHECKOUT_CREATED
+        self.contract.save()
+
+        payload = json.dumps({
+            "tx_ref": "dep-FAILTEST-aabbccdd",
+            "status": "FAILED",
+            "amount": "45000.00",
+        }).encode()
+
+        with self.settings(MOCK_PAYMENTS=True, PAYCHANGU_WEBHOOK_SECRET=""):
+            resp = self.client.post(
+                reverse("contract_deposit_webhook"),
+                data=payload,
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.contract.refresh_from_db()
+        self.assertFalse(self.contract.deposit_paid)
+        self.assertEqual(self.contract.deposit_payment_status, Contract.DEPOSIT_STATUS_FAILED)
+
+    def test_amount_mismatch_flags_review(self):
+        import json
+        self.contract.deposit_payment_tx_ref = "dep-MISMATCH-aabbccdd"
+        self.contract.deposit_amount = Decimal("45000.00")
+        self.contract.deposit_payment_status = Contract.DEPOSIT_STATUS_CHECKOUT_CREATED
+        self.contract.save()
+
+        payload = json.dumps({
+            "tx_ref": "dep-MISMATCH-aabbccdd",
+            "status": "SUCCESSFUL",
+            "amount": "10000.00",  # wrong amount
+        }).encode()
+
+        with self.settings(MOCK_PAYMENTS=True, PAYCHANGU_WEBHOOK_SECRET=""):
+            resp = self.client.post(
+                reverse("contract_deposit_webhook"),
+                data=payload,
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.contract.refresh_from_db()
+        self.assertFalse(self.contract.deposit_paid)
+        self.assertEqual(self.contract.deposit_payment_status, Contract.DEPOSIT_STATUS_MISMATCH)
+
+    def test_deposit_status_endpoint(self):
+        url = reverse("contract_deposit_status", args=[self.contract.id])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("deposit_paid", data)
+        self.assertIn("status", data)
+
+
+class EmergencyPayoutTests(TestCase):
+    """Tests for the 20% emergency payout request system."""
+
+    def setUp(self):
+        User = get_user_model()
+        from accounts.utils import assign_role
+        self.underwriter = User.objects.create_user(username="uw_payout_test", password="test-pass-123")
+        assign_role(self.underwriter, "underwriter")
+        self.hq_user = User.objects.create_user(username="hq_payout_test", password="test-pass-123")
+        assign_role(self.hq_user, "hq")
+
+        from earnings.models import Wallet, WalletTransaction, EmergencyPayoutRequest
+        self.wallet, _ = Wallet.objects.get_or_create(user=self.underwriter)
+        # Credit MWK 100,000 commission for this month
+        WalletTransaction.objects.create(
+            wallet=self.wallet,
+            transaction_type="commission_credit",
+            amount=Decimal("100000.00"),
+            description="Test commission credit",
+        )
+        self.wallet.balance = Decimal("100000.00")
+        self.wallet.total_earned = Decimal("100000.00")
+        self.wallet.save()
+
+        self.EmergencyPayoutRequest = EmergencyPayoutRequest
+
+    def test_emergency_limit_calculated_as_20_percent(self):
+        from earnings.models import EmergencyPayoutRequest
+        info = EmergencyPayoutRequest.get_monthly_emergency_limit(self.wallet)
+        self.assertEqual(info["earned"], Decimal("100000.00"))
+        self.assertEqual(info["limit"], Decimal("20000.00"))
+        self.assertEqual(info["available"], Decimal("20000.00"))
+
+    def test_emergency_payout_page_renders(self):
+        self.client.force_login(self.underwriter)
+        url = reverse("sales_emergency_payout_request")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Emergency Payout")
+        self.assertContains(resp, "20%")
+
+    def test_request_within_limit_succeeds(self):
+        self.client.force_login(self.underwriter)
+        url = reverse("sales_emergency_payout_request")
+        resp = self.client.post(url, {
+            "amount": "15000",
+            "reason": "Medical emergency",
+            "payout_phone": "+265991234567",
+            "confirmed": "on",
+        })
+        self.assertRedirects(resp, url)
+        from earnings.models import EmergencyPayoutRequest
+        req = EmergencyPayoutRequest.objects.filter(wallet=self.wallet).first()
+        self.assertIsNotNone(req)
+        self.assertEqual(req.requested_amount, Decimal("15000.00"))
+        self.assertEqual(req.status, EmergencyPayoutRequest.STATUS_PENDING)
+
+    def test_request_exceeding_limit_is_rejected(self):
+        self.client.force_login(self.underwriter)
+        url = reverse("sales_emergency_payout_request")
+        resp = self.client.post(url, {
+            "amount": "25000",  # exceeds 20% = 20,000 limit
+            "reason": "Test",
+            "payout_phone": "+265991234567",
+            "confirmed": "on",
+        })
+        # Should NOT redirect (form error stays on page)
+        from earnings.models import EmergencyPayoutRequest
+        count = EmergencyPayoutRequest.objects.filter(wallet=self.wallet).count()
+        self.assertEqual(count, 0)
+
+    def test_hq_can_approve_request(self):
+        from earnings.models import EmergencyPayoutRequest
+        req = EmergencyPayoutRequest.objects.create(
+            wallet=self.wallet,
+            requested_amount=Decimal("10000.00"),
+            reason="Test",
+            confirmed=True,
+            earned_this_month_snapshot=Decimal("100000.00"),
+            emergency_limit_snapshot=Decimal("20000.00"),
+            already_requested_snapshot=Decimal("0.00"),
+        )
+        self.client.force_login(self.hq_user)
+        url = reverse("hq_emergency_payout_action", args=[req.id])
+        resp = self.client.post(url, {"action": "approve", "note": "Approved"})
+        self.assertRedirects(resp, reverse("hq_emergency_payouts"))
+        req.refresh_from_db()
+        self.assertEqual(req.status, EmergencyPayoutRequest.STATUS_APPROVED)
+
+    def test_underwriter_cannot_approve_own_payout(self):
+        from earnings.models import EmergencyPayoutRequest
+        req = EmergencyPayoutRequest.objects.create(
+            wallet=self.wallet,
+            requested_amount=Decimal("10000.00"),
+            reason="Test self-approval",
+            confirmed=True,
+            earned_this_month_snapshot=Decimal("100000.00"),
+            emergency_limit_snapshot=Decimal("20000.00"),
+            already_requested_snapshot=Decimal("0.00"),
+        )
+        # Login as the underwriter and attempt HQ approval (should be blocked by hq_required)
+        self.client.force_login(self.underwriter)
+        url = reverse("hq_emergency_payout_action", args=[req.id])
+        resp = self.client.post(url, {"action": "approve", "note": ""})
+        # hq_required raises PermissionDenied (403) for non-HQ users
+        self.assertIn(resp.status_code, [302, 403])
+        req.refresh_from_db()
+        self.assertNotEqual(req.status, EmergencyPayoutRequest.STATUS_APPROVED)
+
+    def test_hq_cannot_approve_exceeding_limit(self):
+        from earnings.models import EmergencyPayoutRequest
+        req = EmergencyPayoutRequest.objects.create(
+            wallet=self.wallet,
+            requested_amount=Decimal("25000.00"),  # over limit
+            reason="Test",
+            confirmed=True,
+            earned_this_month_snapshot=Decimal("100000.00"),
+            emergency_limit_snapshot=Decimal("20000.00"),
+            already_requested_snapshot=Decimal("0.00"),
+        )
+        self.client.force_login(self.hq_user)
+        url = reverse("hq_emergency_payout_action", args=[req.id])
+        resp = self.client.post(url, {"action": "approve", "note": ""})
+        req.refresh_from_db()
+        self.assertNotEqual(req.status, EmergencyPayoutRequest.STATUS_APPROVED)
+
+    def test_mark_paid_reduces_available_balance(self):
+        from earnings.models import EmergencyPayoutRequest
+        req = EmergencyPayoutRequest.objects.create(
+            wallet=self.wallet,
+            requested_amount=Decimal("10000.00"),
+            reason="Test",
+            confirmed=True,
+            status=EmergencyPayoutRequest.STATUS_APPROVED,
+            reviewed_by=self.hq_user,
+            earned_this_month_snapshot=Decimal("100000.00"),
+            emergency_limit_snapshot=Decimal("20000.00"),
+            already_requested_snapshot=Decimal("0.00"),
+        )
+        old_balance = self.wallet.balance
+        self.client.force_login(self.hq_user)
+        url = reverse("hq_emergency_payout_action", args=[req.id])
+        resp = self.client.post(url, {
+            "action": "mark_paid",
+            "payment_reference": "AIRTEL123456",
+            "payment_provider": "airtel",
+        })
+        req.refresh_from_db()
+        self.wallet.refresh_from_db()
+        self.assertEqual(req.status, EmergencyPayoutRequest.STATUS_PAID)
+        self.assertEqual(self.wallet.balance, old_balance - Decimal("10000.00"))
+
+
 class MalawiTimezoneTests(TestCase):
     """Dates in the app should be displayed in Malawi time (CAT / GMT+2)."""
 
