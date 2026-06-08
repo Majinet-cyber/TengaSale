@@ -11,8 +11,9 @@
 <p class="text-muted small mb-3" style="margin-top:-8px;margin-bottom:18px;">Step 1 — Customer identity &amp; demographics</p>
 
 {% if not is_business_hours %}
-{# ── Outside hours modal — shown once per page load, dismissed by OK ── #}
-<div id="outside-hours-modal" class="ts-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="ohm-title" data-testid="outside-hours-modal">
+{# ── Outside hours modal — hidden by default; JS opts-in to show it ── #}
+{# Rendered hidden so there is no blur flash on page paint.              #}
+<div id="outside-hours-modal" class="ts-modal-backdrop ts-modal--hidden" role="dialog" aria-modal="true" aria-labelledby="ohm-title" data-testid="outside-hours-modal">
   <div class="ts-modal-box">
     <div class="ts-modal-icon">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -46,27 +47,48 @@
   var modal = document.getElementById('outside-hours-modal');
   var chip  = document.getElementById('outside-hours-chip');
   var btn   = document.getElementById('ohm-continue');
-  var STORAGE_KEY = 'ts_ohm_dismissed_{{ app.id|default:"new" }}';
 
-  if (sessionStorage.getItem(STORAGE_KEY)) {
+  if (!modal) return;
+
+  // Always ensure body overflow is clean on page load — guards against
+  // stale overflow:hidden left by a previous navigation or SPA transition.
+  document.body.style.overflow = '';
+
+  var today = new Date().toISOString().slice(0, 10);
+  var STORAGE_KEY = 'ts_ohm_dismissed';
+
+  function dismissModal() {
     modal.classList.add('ts-modal--hidden');
+    // Unconditionally clear overflow so the form is always scrollable.
+    document.body.style.overflow = '';
+    document.body.classList.remove('overflow-hidden');
+    try { localStorage.setItem(STORAGE_KEY, today); } catch (e) {}
     if (chip) chip.style.display = 'inline-flex';
-    return;
   }
 
-  if (btn) {
-    btn.addEventListener('click', function () {
-      modal.classList.add('ts-modal--hidden');
-      sessionStorage.setItem(STORAGE_KEY, '1');
+  // Already dismissed today — stay hidden, show chip, done.
+  try {
+    if (localStorage.getItem(STORAGE_KEY) === today) {
       if (chip) chip.style.display = 'inline-flex';
-    });
-  }
-
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) {
-      btn && btn.click();
+      return;
     }
+  } catch (e) {}
+
+  // First visit today outside hours: reveal the modal and lock body scroll.
+  modal.classList.remove('ts-modal--hidden');
+  document.body.style.overflow = 'hidden';
+
+  if (btn) btn.addEventListener('click', dismissModal);
+
+  // Clicking the dim backdrop also dismisses.
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) dismissModal();
   });
+
+  // Escape key dismisses.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') dismissModal();
+  }, { once: true });
 })();
 </script>
 {% endif %}

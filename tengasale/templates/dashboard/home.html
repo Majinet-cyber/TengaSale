@@ -524,7 +524,7 @@
 <div class="merchant-shell">
 
   {# ── Header ──────────────────────────────────────────────────── #}
-  <header class="merchant-header" aria-label="TengaSale merchant header">
+  <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
     <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
       <span class="merchant-brand-icon" aria-hidden="true">
         <img src="{% static 'images/Tenga.png' %}" alt="" width="34" height="34"
@@ -532,6 +532,8 @@
       </span>
       <span class="merchant-brand-name">TengaSale</span>
     </a>
+
+    <span class="topbar-page-title">Home</span>
 
     <div class="merchant-header-actions" style="flex-shrink:0;flex-wrap:nowrap;display:flex;align-items:center;gap:4px;">
       <a class="merchant-header-btn"

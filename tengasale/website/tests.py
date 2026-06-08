@@ -289,16 +289,18 @@ class LandingPageUIRegressionTests(TestCase):
     # ── Section structure ─────────────────────────────────────────
 
     def test_landing_hero_headline_present(self):
-        """Hero headline must be present."""
+        """Hero headline must be present (reference commit: 729da8bd)."""
         response = self._get_landing()
-        self.assertContains(response, "Get a smartphone today")
-        self.assertContains(response, "Pay flexibly over time")
+        # Reference commit landing headline: "Finance Phones. Track Payments. Grow Faster."
+        self.assertContains(response, "Finance Phones")
+        self.assertContains(response, "Track Payments")
 
     def test_landing_how_it_works_section_present(self):
         """How it works section must be present."""
         response = self._get_landing()
         self.assertContains(response, "how-it-works")
-        self.assertContains(response, "Choose a phone")
+        # Reference commit step 1 title: "Choose a device"
+        self.assertContains(response, "Choose a device")
 
     def test_landing_no_internal_tooling_exposed(self):
         """Public landing must not expose internal systems."""
@@ -319,11 +321,11 @@ class LandingPageUIRegressionTests(TestCase):
         for term in forbidden:
             self.assertNotIn(term, content, f"Internal term '{term}' found on public landing")
 
-    def test_landing_start_application_links_to_new_application(self):
-        """Start Application CTA must route to the application start URL."""
+    def test_landing_primary_cta_present(self):
+        """Primary CTA links to login (reference commit: 729da8bd uses Get Started → login)."""
         response = self._get_landing()
-        self.assertContains(response, reverse("new_application"))
-        self.assertContains(response, "Start Application")
+        self.assertContains(response, reverse("login"))
+        self.assertContains(response, "Get Started")
 
     def test_anonymous_start_application_redirects_to_login(self):
         """Anonymous users clicking Start Application are sent to login with next URL."""
