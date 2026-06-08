@@ -1,17 +1,18 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block page_title %}Sales Analytics — TengaSale HQ{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
-.san-wrap { max-width:1100px; margin:0 auto; padding:24px 16px; overflow-x:hidden; box-sizing:border-box; }
+.san-wrap { max-width:1100px; margin:0 auto; padding:24px 16px 56px; overflow-x:hidden; box-sizing:border-box; }
 .san-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1.5px solid #e2e8f0; }
 .san-title { font-size:1.35rem; font-weight:900; margin:0; letter-spacing:-0.01em; color:#0f172a; }
 .san-sub { font-size:0.78rem; color:#64748b; margin:3px 0 0; }
 .san-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
 .san-stat {
-  background:rgba(255,255,255,0.90);
+  background:rgba(255,255,255,0.92);
   backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,0.80);
   border-radius:12px;
@@ -23,7 +24,7 @@
 .san-stat-val { font-size:1.6rem; font-weight:900; color:var(--san-accent,#ff5a00); line-height:1; }
 .san-stat-lbl { font-size:0.68rem; color:#64748b; font-weight:600; margin-top:4px; }
 .san-card {
-  background:rgba(255,255,255,0.90);
+  background:rgba(255,255,255,0.92);
   backdrop-filter:blur(10px);
   border:1.5px solid rgba(255,255,255,0.78);
   border-radius:14px;
@@ -35,10 +36,20 @@
   display:inline-flex; align-items:center; gap:6px;
   padding:7px 14px; background:#fff8f0; border:1.5px solid rgba(255,90,0,0.25);
   border-radius:8px; text-decoration:none; color:#ff5a00; font-size:0.78rem; font-weight:700;
-  transition:background 0.12s;
 }
-.san-export-btn:hover { background:#fff0e0; }
-@media (max-width:640px) { .san-grid { grid-template-columns:1fr !important; } }
+/* Funnel */
+.funnel-row { display:flex; flex-direction:column; gap:6px; }
+.funnel-item { display:flex; align-items:center; gap:10px; }
+.funnel-item__label { font-size:0.78rem; font-weight:700; color:#374151; min-width:110px; text-align:right; }
+.funnel-item__bar-track { flex:1; background:#f1f5f9; border-radius:4px; height:22px; overflow:hidden; }
+.funnel-item__bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; font-size:0.7rem; font-weight:800; color:#fff; transition:width 1.1s cubic-bezier(0.25,1,0.5,1); }
+.funnel-item__count { font-size:0.78rem; font-weight:800; color:#0f172a; min-width:36px; text-align:right; }
+.funnel-item__pct { font-size:0.7rem; color:#64748b; min-width:42px; text-align:right; }
+
+@media (max-width:640px) {
+  .san-grid-2 { grid-template-columns:1fr !important; }
+  .san-grid-3 { grid-template-columns:1fr 1fr !important; }
+}
 </style>
 {% endblock %}
 
@@ -57,164 +68,247 @@
     </a>
   </div>
 
+  {# ── KPI strip ───────────────────────────────────────────────── #}
   <div class="san-stats">
-    <div class="san-stat" style="--san-accent:#ff5a00;">
-      <div class="san-stat-val">{{ total_apps }}</div>
+    <div class="san-stat ts-stagger-item" style="--san-accent:#ff5a00;">
+      <div class="san-stat-val" data-count-up="{{ total_apps }}" data-count-duration="900">{{ total_apps }}</div>
       <div class="san-stat-lbl">Total applications</div>
     </div>
-    <div class="san-stat" style="--san-accent:#ff5a00;">
-      <div class="san-stat-val">{{ submitted }}</div>
+    <div class="san-stat ts-stagger-item" style="--san-accent:#2563eb;">
+      <div class="san-stat-val" data-count-up="{{ submitted }}" data-count-duration="700">{{ submitted }}</div>
       <div class="san-stat-lbl">Submitted</div>
     </div>
-    <div class="san-stat" style="--san-accent:#16a34a;">
-      <div class="san-stat-val">{{ approved }}</div>
+    <div class="san-stat ts-stagger-item" style="--san-accent:#16a34a;">
+      <div class="san-stat-val" data-count-up="{{ approved }}" data-count-duration="700">{{ approved }}</div>
       <div class="san-stat-lbl">Approved</div>
     </div>
-    <div class="san-stat" style="--san-accent:#16a34a;">
-      <div class="san-stat-val">{{ completed }}</div>
+    <div class="san-stat ts-stagger-item" style="--san-accent:#7c3aed;">
+      <div class="san-stat-val" data-count-up="{{ completed }}" data-count-duration="700">{{ completed }}</div>
       <div class="san-stat-lbl">Completed</div>
     </div>
   </div>
 
-  <div class="san-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+  {# ── Row 1: Daily trend + Conversion funnel ─────────────────── #}
+  <div class="san-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
 
-    <div class="san-card">
+    <div class="san-card ts-stagger-item" data-testid="san-daily-chart-card">
       <h2 class="san-card-title">Applications — Last 14 days</h2>
-      <canvas id="dailySalesChart" style="max-height:180px;"></canvas>
+      <div style="position:relative;height:220px;">
+        <canvas id="dailySalesChart" aria-label="Daily applications bar chart"></canvas>
+      </div>
     </div>
 
-    <div class="san-card">
-      <h2 class="san-card-title">Deposit band split</h2>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-        {% with total_dep=dep_15|add:dep_20|add:dep_30 %}
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px;">
-            <span style="font-weight:600;">15% Deposit</span>
-            <span style="font-weight:700;">{{ dep_15 }}</span>
-          </div>
-          <div style="background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden;">
-            {% if total_dep %}<div style="background:#ff5a00;height:100%;width:{% widthratio dep_15 total_dep 100 %}%;border-radius:4px;"></div>{% endif %}
-          </div>
+    <div class="san-card ts-stagger-item" data-testid="san-funnel-card">
+      <h2 class="san-card-title">Conversion funnel</h2>
+      <div class="funnel-row" id="sanFunnel">
+        {% with t=total_apps|default:1 %}
+        <div class="funnel-item" data-funnel-pct="100">
+          <span class="funnel-item__label">Total</span>
+          <div class="funnel-item__bar-track"><div class="funnel-item__bar-fill" style="width:0%;background:#ff5a00;" data-target-width="100">{{ total_apps }}</div></div>
+          <span class="funnel-item__count">{{ total_apps }}</span>
         </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px;">
-            <span style="font-weight:600;">20% Deposit</span>
-            <span style="font-weight:700;">{{ dep_20 }}</span>
-          </div>
-          <div style="background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden;">
-            {% if total_dep %}<div style="background:#2563eb;height:100%;width:{% widthratio dep_20 total_dep 100 %}%;border-radius:4px;"></div>{% endif %}
-          </div>
+        <div class="funnel-item">
+          <span class="funnel-item__label">Submitted</span>
+          <div class="funnel-item__bar-track"><div class="funnel-item__bar-fill" style="width:0%;background:#2563eb;" data-target-width="{% widthratio submitted t 100 %}">{{ submitted }}</div></div>
+          <span class="funnel-item__count">{{ submitted }}</span>
+          <span class="funnel-item__pct">{% if t %}{% widthratio submitted t 100 %}%{% endif %}</span>
         </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px;">
-            <span style="font-weight:600;">30%+ Deposit</span>
-            <span style="font-weight:700;">{{ dep_30 }}</span>
-          </div>
-          <div style="background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden;">
-            {% if total_dep %}<div style="background:#16a34a;height:100%;width:{% widthratio dep_30 total_dep 100 %}%;border-radius:4px;"></div>{% endif %}
-          </div>
+        <div class="funnel-item">
+          <span class="funnel-item__label">Approved</span>
+          <div class="funnel-item__bar-track"><div class="funnel-item__bar-fill" style="width:0%;background:#16a34a;" data-target-width="{% widthratio approved t 100 %}">{{ approved }}</div></div>
+          <span class="funnel-item__count">{{ approved }}</span>
+          <span class="funnel-item__pct">{% if t %}{% widthratio approved t 100 %}%{% endif %}</span>
+        </div>
+        <div class="funnel-item">
+          <span class="funnel-item__label">Completed</span>
+          <div class="funnel-item__bar-track"><div class="funnel-item__bar-fill" style="width:0%;background:#7c3aed;" data-target-width="{% widthratio completed t 100 %}">{{ completed }}</div></div>
+          <span class="funnel-item__count">{{ completed }}</span>
+          <span class="funnel-item__pct">{% if t %}{% widthratio completed t 100 %}%{% endif %}</span>
         </div>
         {% endwith %}
       </div>
+      <p style="font-size:0.7rem;color:#94a3b8;margin:14px 0 0;">Overall conversion: <strong style="color:#16a34a;">{% if total_apps %}{% widthratio completed total_apps 100 %}%{% else %}—{% endif %}</strong></p>
     </div>
 
   </div>
 
-  <div class="san-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+  {# ── Row 2: Deposit split + Demographics ────────────────────── #}
+  <div class="san-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
 
-    <div class="san-card">
-      <h2 class="san-card-title">Gender breakdown</h2>
-      {% for label, cnt in gender_counts.items %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
-        <span>{{ label }}</span>
-        <span style="font-weight:700;">{{ cnt }}</span>
+    <div class="san-card ts-stagger-item" data-testid="san-deposit-chart-card">
+      <h2 class="san-card-title">Deposit band split</h2>
+      <div style="position:relative;height:200px;">
+        <canvas id="depositDonutChart" aria-label="Deposit band donut chart"></canvas>
       </div>
-      {% empty %}
-      <p style="color:var(--muted);font-size:0.8rem;">No data yet.</p>
-      {% endfor %}
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:0.7rem;font-weight:700;margin-top:10px;">
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#ff5a00;flex-shrink:0;"></span>15% ({{ dep_15 }})</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#2563eb;flex-shrink:0;"></span>20% ({{ dep_20 }})</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>30%+ ({{ dep_30 }})</span>
+      </div>
     </div>
 
-    <div class="san-card">
-      <h2 class="san-card-title">Marital status</h2>
-      {% for label, cnt in marital_counts.items %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
-        <span>{{ label }}</span>
-        <span style="font-weight:700;">{{ cnt }}</span>
+    <div class="san-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="san-card ts-stagger-item" data-testid="san-gender-chart-card">
+        <h2 class="san-card-title">Gender</h2>
+        <div style="position:relative;height:140px;">
+          <canvas id="genderDonutChart" aria-label="Gender breakdown donut"></canvas>
+        </div>
       </div>
-      {% empty %}
-      <p style="color:var(--muted);font-size:0.8rem;">No data yet.</p>
-      {% endfor %}
-    </div>
-
-    <div class="san-card">
-      <h2 class="san-card-title">By device brand</h2>
-      {% for b in brand_counts %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
-        <span>{{ b.brand }}</span>
-        <span style="font-weight:700;">{{ b.count }}</span>
+      <div class="san-card ts-stagger-item" data-testid="san-marital-chart-card">
+        <h2 class="san-card-title">Marital status</h2>
+        <div style="position:relative;height:140px;">
+          <canvas id="maritalDonutChart" aria-label="Marital status donut"></canvas>
+        </div>
       </div>
-      {% empty %}
-      <p style="color:var(--muted);font-size:0.8rem;">No data yet.</p>
-      {% endfor %}
     </div>
 
   </div>
 
-  <div class="san-card" style="margin-bottom:20px;">
-    <h2 class="san-card-title">Top merchants by applications</h2>
-    <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
-      <thead>
-        <tr style="border-bottom:2px solid var(--border);">
-          <th style="text-align:left;padding:8px;">Merchant</th>
-          <th style="text-align:right;padding:8px;">Applications</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in by_merchant %}
-        <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:8px;">{{ m.created_by__username }}</td>
-          <td style="padding:8px;text-align:right;font-weight:700;">{{ m.cnt }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="2" style="padding:20px;text-align:center;color:var(--muted);">No data yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  {# ── Row 3: Brands + Top merchants ──────────────────────────── #}
+  <div class="san-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+    <div class="san-card ts-stagger-item" data-testid="san-brand-chart-card">
+      <h2 class="san-card-title">Applications by device brand</h2>
+      <div style="position:relative;height:240px;">
+        <canvas id="brandBarChart" aria-label="Device brand bar chart"></canvas>
+      </div>
+    </div>
+
+    <div class="san-card ts-stagger-item" data-testid="san-merchant-chart-card">
+      <h2 class="san-card-title">Top merchants by applications</h2>
+      <div style="position:relative;height:240px;">
+        <canvas id="merchantBarChart" aria-label="Top merchants horizontal bar chart"></canvas>
+      </div>
+    </div>
+
   </div>
 
 </div>
 {% endblock %}
 
-
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
-(function(){
-  var ctx = document.getElementById('dailySalesChart');
-  if (!ctx) return;
-  var labels = [{% for d in last_14 %}"{{ d.date|slice:'5:' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-  var data   = [{% for d in last_14 %}{{ d.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Applications',
-        data: data,
-        backgroundColor: '#ff5a00',
-        borderRadius: 5,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 }, color: '#94a3b8' }, grid: { color: '#f1f5f9' }, border: { display: false } },
-        x: { ticks: { font: { size: 9 }, color: '#64748b', maxRotation: 45 }, grid: { display: false }, border: { display: false } }
+(function () {
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var animDur = reduced ? 0 : 900;
+
+  /* ── Funnel bar reveal ──────────────────────────────── */
+  function revealFunnel() {
+    document.querySelectorAll('#sanFunnel .funnel-item__bar-fill').forEach(function(el) {
+      var tw = el.getAttribute('data-target-width') || '0';
+      el.style.width = tw + '%';
+    });
+  }
+  if (reduced) {
+    revealFunnel();
+  } else {
+    var funnelObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { revealFunnel(); funnelObs.disconnect(); } });
+    }, { threshold: 0.2 });
+    var funnelEl = document.getElementById('sanFunnel');
+    if (funnelEl) funnelObs.observe(funnelEl); else revealFunnel();
+  }
+
+  /* ── Daily sales bar chart ──────────────────────────── */
+  var dailyLabels = [{% for d in last_14 %}"{{ d.date|slice:"5:"|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+  var dailyData   = [{% for d in last_14 %}{{ d.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  var dailyCtx = document.getElementById('dailySalesChart');
+  if (dailyCtx) {
+    new Chart(dailyCtx, {
+      type: 'bar',
+      data: {
+        labels: dailyLabels,
+        datasets: [{
+          label: 'Applications',
+          data: dailyData,
+          backgroundColor: 'rgba(255,90,0,0.82)',
+          borderRadius: 5,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' ' + c.parsed.y + ' applications'; } } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 }, color: '#94a3b8' }, grid: { color: '#f1f5f9' }, border: { display: false } },
+          x: { ticks: { font: { size: 9 }, color: '#64748b', maxRotation: 45 }, grid: { display: false }, border: { display: false } }
+        },
+        animation: { duration: animDur }
       }
-    }
-  });
+    });
+  }
+
+  /* ── Deposit donut ──────────────────────────────────── */
+  var depCtx = document.getElementById('depositDonutChart');
+  var dep15 = {{ dep_15|default:0 }}, dep20 = {{ dep_20|default:0 }}, dep30 = {{ dep_30|default:0 }};
+  if (depCtx && (dep15 + dep20 + dep30) > 0) {
+    new Chart(depCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['15% Deposit', '20% Deposit', '30%+ Deposit'],
+        datasets: [{ data: [dep15, dep20, dep30], backgroundColor: ['#ff5a00','#2563eb','#16a34a'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.parsed; } } } },
+        animation: { animateRotate: true, duration: animDur }
+      }
+    });
+  } else if (depCtx) {
+    depCtx.style.display = 'none';
+    depCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No deposit data</p>');
+  }
+
+  /* ── Gender donut ───────────────────────────────────── */
+  var genderLabels = [], genderData = [];
+  {% for label, cnt in gender_counts.items %}
+  genderLabels.push("{{ label|escapejs }}"); genderData.push({{ cnt }});
+  {% endfor %}
+  var genCtx = document.getElementById('genderDonutChart');
+  if (genCtx && genderData.length) {
+    new Chart(genCtx, { type: 'doughnut', data: { labels: genderLabels, datasets: [{ data: genderData, backgroundColor: ['#3b82f6','#ec4899','#94a3b8'], borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } }, animation: { duration: animDur } } });
+  } else if (genCtx) { genCtx.style.display = 'none'; genCtx.insertAdjacentHTML('afterend','<p style="font-size:11px;color:#94a3b8;text-align:center;padding:20px 0;">No data</p>'); }
+
+  /* ── Marital status donut ────────────────────────────── */
+  var marLabels = [], marData = [];
+  {% for label, cnt in marital_counts.items %}
+  marLabels.push("{{ label|escapejs }}"); marData.push({{ cnt }});
+  {% endfor %}
+  var marCtx = document.getElementById('maritalDonutChart');
+  var marPalette = ['#ff5a00','#16a34a','#8b5cf6','#d97706','#06b6d4'];
+  if (marCtx && marData.length) {
+    new Chart(marCtx, { type: 'doughnut', data: { labels: marLabels, datasets: [{ data: marData, backgroundColor: marPalette, borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } }, animation: { duration: animDur } } });
+  } else if (marCtx) { marCtx.style.display = 'none'; marCtx.insertAdjacentHTML('afterend','<p style="font-size:11px;color:#94a3b8;text-align:center;padding:20px 0;">No data</p>'); }
+
+  /* ── Brand bar chart ────────────────────────────────── */
+  var brandLabels = [], brandData = [];
+  {% for b in brand_counts %}
+  brandLabels.push("{{ b.brand|default:'Unknown'|escapejs }}"); brandData.push({{ b.count }});
+  {% endfor %}
+  var brandCtx = document.getElementById('brandBarChart');
+  if (brandCtx && brandLabels.length) {
+    new Chart(brandCtx, {
+      type: 'bar',
+      data: { labels: brandLabels, datasets: [{ label: 'Applications', data: brandData, backgroundColor: 'rgba(139,92,246,0.82)', borderRadius: 5, borderSkipped: false }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, border: { display: false } }, x: { grid: { display: false }, ticks: { font: { size: 10 } }, border: { display: false } } }, animation: { duration: animDur } }
+    });
+  } else if (brandCtx) { brandCtx.style.display = 'none'; brandCtx.insertAdjacentHTML('afterend','<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No brand data</p>'); }
+
+  /* ── Merchant horizontal bar ─────────────────────────── */
+  var merLabels = [], merData = [];
+  {% for m in by_merchant %}
+  merLabels.push("{{ m.created_by__username|default:'Unknown'|escapejs }}"); merData.push({{ m.cnt }});
+  {% endfor %}
+  var merCtx = document.getElementById('merchantBarChart');
+  if (merCtx && merLabels.length) {
+    new Chart(merCtx, {
+      type: 'bar',
+      data: { labels: merLabels, datasets: [{ label: 'Applications', data: merData, backgroundColor: 'rgba(255,90,0,0.82)', borderRadius: 5, borderSkipped: false }] },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, border: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' } }, border: { display: false } } }, animation: { duration: animDur } }
+    });
+  } else if (merCtx) { merCtx.style.display = 'none'; merCtx.insertAdjacentHTML('afterend','<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No merchant data</p>'); }
 })();
 </script>
 {% endblock %}

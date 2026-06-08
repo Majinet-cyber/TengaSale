@@ -1,9 +1,10 @@
 {% extends "base/base.html" %}
-{% load ts_filters %}
+{% load static ts_filters %}
 
 {% block page_title %}Volts Engine - TengaSale{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
 .volts-cockpit{max-width:1320px;margin:0 auto;padding:20px 16px 56px;background:#f6f8fb;color:#0f172a}
 .volts-head{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:16px}
@@ -47,7 +48,7 @@
   </header>
 
   <section class="v-kpis" aria-label="Volts KPIs">
-    <article class="v-kpi"><span>Total volts this view</span><strong>{{ summary.total_volts|tsnum }}</strong><small>Approved and paid</small></article>
+    <article class="v-kpi ts-stagger-item"><span>Total volts this view</span><strong>{{ summary.total_volts|tsnum }}</strong><small>Approved and paid</small></article>
     <article class="v-kpi"><span>Approved volts</span><strong>{{ summary.approved_volts|tsnum }}</strong><small>{{ summary.approved_count|tsnum }} transaction(s)</small></article>
     <article class="v-kpi"><span>Pending volts</span><strong>{{ summary.pending_volts|tsnum }}</strong><small>{{ summary.pending_count|tsnum }} approval(s)</small></article>
     <article class="v-kpi"><span>Reversed volts</span><strong>{{ summary.reversed_volts|tsnum }}</strong><small>{{ summary.reversed_count|tsnum }} reversal(s)</small></article>
@@ -87,34 +88,114 @@
     {% endfor %}
   </section>
 
-  <section class="v-layout" aria-label="Volts charts">
-    <article class="v-panel">
+  {# ── Chart.js analytics ────────────────────────────────────────── #}
+  <section class="v-layout" aria-label="Volts analytics charts" data-testid="volts-charts-row">
+    <article class="v-panel" data-testid="volts-dept-chart-panel">
       <h2>Volts by department</h2>
-      <div class="bar-list">
-        {% for row in by_department %}
-          <div class="bar-row"><div class="bar-row__top"><span>{{ row.department__name|default:"Unassigned" }}</span><span>{{ row.total|tsnum }}</span></div><div class="bar-track"><span class="bar-fill" style="width:{% widthratio row.total summary.total_volts 100 %}%"></span></div></div>
-        {% empty %}
-          <div class="empty">No approved volts in this filter view.</div>
-        {% endfor %}
-      </div>
+      {% if by_department %}
+        <div style="position:relative;height:260px;">
+          <canvas id="voltsDeptChart" aria-label="Volts by department bar chart"></canvas>
+        </div>
+      {% else %}
+        <div class="empty" data-testid="volts-dept-empty">No approved volts in this filter view.</div>
+      {% endif %}
     </article>
-    <article class="v-panel">
-      <h2>Top users by volts</h2>
-      <div class="bar-list">
-        {% for row in by_user %}
-          <div class="bar-row"><div class="bar-row__top"><span>{{ row.user__first_name }} {{ row.user__last_name|default:row.user__username }}</span><span>{{ row.total|tsnum }} · {{ row.pay|mwk }}</span></div><div class="bar-track"><span class="bar-fill" style="width:{% widthratio row.total summary.total_volts 100 %}%"></span></div></div>
-        {% empty %}
-          <div class="empty">No approved user earnings in this filter view.</div>
-        {% endfor %}
+    <article class="v-panel" data-testid="volts-status-chart-panel">
+      <h2>Volts status overview</h2>
+      <div style="position:relative;height:220px;max-height:240px;margin-bottom:8px;">
+        <canvas id="voltsStatusChart" aria-label="Volts status donut chart"></canvas>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:11px;font-weight:700;">
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>Approved {{ summary.approved_count }}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#d97706;flex-shrink:0;"></span>Pending {{ summary.pending_count }}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#dc2626;flex-shrink:0;"></span>Reversed {{ summary.reversed_count }}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>Penalties {{ summary.penalties }}</span>
       </div>
     </article>
   </section>
 
-  <section class="formula" aria-label="Volts formula">
-    <strong>Explain calculation</strong>
-    <code>{{ formula }}</code>
-    <p>monthly_pay = base_salary + approved_volts_pay. Rank ceilings and payout approvals still apply before payroll is finalized.</p>
-  </section>
+  {# ── Top users chart (full width) ─────────────────────────────── #}
+  {% if by_user %}
+  <article class="v-panel" style="margin-bottom:14px;" data-testid="volts-user-chart-panel">
+    <h2>Top 10 earners by Volts payout</h2>
+    <div style="position:relative;height:280px;">
+      <canvas id="voltsUserChart" aria-label="Top earners horizontal bar chart"></canvas>
+    </div>
+  </article>
+  {% endif %}
+
+  {# ── Formula Visualizer ───────────────────────────────────────── #}
+  <div class="volts-formula-card" aria-label="Volts payroll formula" data-testid="volts-formula-card">
+    <p class="volts-formula-card__title">Payroll Calculation Formula</p>
+    <p class="volts-formula-expr">
+      approved_volts_pay = <strong style="color:#ffa07a;">approved_volts</strong> × <strong style="color:#86efac;">volt_rate</strong> × <strong style="color:#93c5fd;">rank_multiplier</strong> × <strong style="color:#fde68a;">quality_score</strong> × <strong style="color:#c4b5fd;">discipline_score</strong> × <strong style="color:#6ee7b7;">results_score</strong>
+    </p>
+    <div class="volts-factor-chips" aria-label="Formula factor chips">
+      <button type="button" class="volts-factor-chip" data-factor="approved_volts" aria-expanded="false" data-testid="volts-factor-chip-volts">
+        <span class="volts-factor-chip__icon" aria-hidden="true">⚡</span>
+        approved_volts
+      </button>
+      <button type="button" class="volts-factor-chip" data-factor="volt_rate" aria-expanded="false" data-testid="volts-factor-chip-rate">
+        <span class="volts-factor-chip__icon" aria-hidden="true">💰</span>
+        volt_rate
+      </button>
+      <button type="button" class="volts-factor-chip" data-factor="rank_multiplier" aria-expanded="false" data-testid="volts-factor-chip-rank">
+        <span class="volts-factor-chip__icon" aria-hidden="true">🏅</span>
+        rank_multiplier
+      </button>
+      <button type="button" class="volts-factor-chip" data-factor="quality_score" aria-expanded="false" data-testid="volts-factor-chip-quality">
+        <span class="volts-factor-chip__icon" aria-hidden="true">⭐</span>
+        quality_score
+      </button>
+      <button type="button" class="volts-factor-chip" data-factor="discipline_score" aria-expanded="false" data-testid="volts-factor-chip-discipline">
+        <span class="volts-factor-chip__icon" aria-hidden="true">🔒</span>
+        discipline_score
+      </button>
+      <button type="button" class="volts-factor-chip" data-factor="results_score" aria-expanded="false" data-testid="volts-factor-chip-results">
+        <span class="volts-factor-chip__icon" aria-hidden="true">📊</span>
+        results_score
+      </button>
+    </div>
+
+    <div class="volts-factor-popover" id="volts-popover" role="region" aria-live="polite">
+      <h4 id="volts-popover-title"></h4>
+      <p id="volts-popover-body"></p>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var factors = {
+      approved_volts:   { title: 'Approved Volts', body: 'The raw number of Volts earned by the staff member for work completed. Each Volt represents a unit of verified productive activity. They must be approved by a reviewer who is not the same person.' },
+      volt_rate:        { title: 'Volt Rate (MWK per Volt)', body: 'The MWK value of one Volt. This is set by HQ and may differ by staff level or role. Multiplying approved_volts by volt_rate gives the gross pay before any modifiers.' },
+      rank_multiplier:  { title: 'Rank Multiplier', body: 'A multiplier (e.g. 0.8–2.0) based on the staff member\'s current rank tier. Higher ranks earn more per Volt. This rewards tenure, performance, and promotion.' },
+      quality_score:    { title: 'Quality Score', body: 'A 0.0–1.0 multiplier derived from QC reviews, call quality assessments, and approval accuracy. Poor quality reduces take-home pay proportionally.' },
+      discipline_score: { title: 'Discipline Score', body: 'A 0.0–1.0 multiplier that reflects disciplinary standing. A warning or misconduct event lowers this score, reducing payout. A clean record keeps it at 1.0.' },
+      results_score:    { title: 'Results Score', body: 'A multiplier based on KPI achievement. Meeting targets keeps it at 1.0. Exceeding targets can push it above 1.0. Falling short reduces pay proportionally.' },
+    };
+    document.querySelectorAll('.volts-factor-chip').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var f = btn.getAttribute('data-factor');
+        var info = factors[f];
+        var popover = document.getElementById('volts-popover');
+        var isActive = btn.classList.contains('volts-factor-chip--active');
+        document.querySelectorAll('.volts-factor-chip').forEach(function(b) {
+          b.classList.remove('volts-factor-chip--active');
+          b.setAttribute('aria-expanded', 'false');
+        });
+        if (isActive) {
+          popover.classList.remove('active');
+        } else {
+          btn.classList.add('volts-factor-chip--active');
+          btn.setAttribute('aria-expanded', 'true');
+          document.getElementById('volts-popover-title').textContent = info.title;
+          document.getElementById('volts-popover-body').textContent = info.body;
+          popover.classList.add('active');
+        }
+      });
+    });
+  })();
+  </script>
 
   <div class="section-head">
     <div>
@@ -143,7 +224,11 @@
         </div>
       </article>
     {% empty %}
-      <div class="v-panel empty">No volts are waiting for approval.</div>
+      <div class="v-panel" style="padding:32px 20px;text-align:center;grid-column:1/-1;" data-testid="volts-pending-empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" style="margin:0 auto 12px;display:block;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <h3 style="font-size:14px;font-weight:800;color:#475569;margin:0 0 6px;">No pending approvals</h3>
+        <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.5;max-width:280px;margin-inline:auto;">All Volts transactions have been reviewed. Check back when new activity is recorded by staff.</p>
+      </div>
     {% endfor %}
   </section>
 
@@ -172,8 +257,118 @@
         </dl>
       </article>
     {% empty %}
-      <div class="v-panel empty">No volts transactions match these filters.</div>
+      <div class="v-panel" style="padding:32px 20px;text-align:center;grid-column:1/-1;" data-testid="volts-ledger-empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" style="margin:0 auto 12px;display:block;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <h3 style="font-size:14px;font-weight:800;color:#475569;margin:0 0 6px;">No Volts transactions match these filters</h3>
+        <p style="font-size:12px;color:#94a3b8;margin:0 0 12px;line-height:1.5;max-width:280px;margin-inline:auto;">Try adjusting the date range, department, role, or status filters. Or reset to view all records.</p>
+        <a href="{% url 'hq_volts_engine' %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#f1f5f9;border:1.5px solid #e5e7eb;border-radius:10px;font-size:12px;font-weight:700;color:#374151;text-decoration:none;">Reset filters</a>
+      </div>
     {% endfor %}
   </section>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var animDur = reduced ? 0 : 900;
+
+  /* ── Department bar chart ──────────────────────────── */
+  var deptLabels = [];
+  var deptTotals = [];
+  {% for row in by_department %}
+  deptLabels.push("{{ row.department__name|default:'Unassigned'|escapejs }}");
+  deptTotals.push({{ row.total|default:0 }});
+  {% endfor %}
+
+  var deptCtx = document.getElementById('voltsDeptChart');
+  if (deptCtx && deptLabels.length) {
+    new Chart(deptCtx, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [{
+          label: 'Total Volts',
+          data: deptTotals,
+          backgroundColor: 'rgba(255, 90, 0, 0.82)',
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' ' + Number(c.parsed.x).toLocaleString() + ' Volts'; } } } },
+        scales: {
+          x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' } } }
+        },
+        animation: { duration: animDur }
+      }
+    });
+  }
+
+  /* ── Status donut ─────────────────────────────────── */
+  var statCtx = document.getElementById('voltsStatusChart');
+  var approved  = {{ summary.approved_count|default:0 }};
+  var pending   = {{ summary.pending_count|default:0 }};
+  var reversed  = {{ summary.reversed_count|default:0 }};
+  var penalties = {{ summary.penalties|default:0 }};
+  if (statCtx && (approved + pending + reversed + penalties) > 0) {
+    new Chart(statCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Approved', 'Pending', 'Reversed', 'Penalties'],
+        datasets: [{ data: [approved, pending, reversed, penalties], backgroundColor: ['#16a34a','#d97706','#dc2626','#94a3b8'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return c.label + ': ' + c.parsed; } } } },
+        animation: { animateRotate: true, duration: animDur }
+      }
+    });
+  } else if (statCtx) {
+    statCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No transaction data</p>');
+    statCtx.style.display = 'none';
+  }
+
+  /* ── Top users horizontal bar ─────────────────────── */
+  var userLabels = [];
+  var userPay    = [];
+  {% for row in by_user|slice:":10" %}
+  userLabels.push("{{ row.user__first_name|default:''|escapejs }} {{ row.user__last_name|default:row.user__username|escapejs }}".trim());
+  userPay.push({{ row.pay|default:0 }});
+  {% endfor %}
+
+  var userCtx = document.getElementById('voltsUserChart');
+  if (userCtx && userLabels.length) {
+    new Chart(userCtx, {
+      type: 'bar',
+      data: {
+        labels: userLabels,
+        datasets: [{
+          label: 'Payout (MWK)',
+          data: userPay,
+          backgroundColor: 'rgba(22, 163, 74, 0.82)',
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return ' MWK ' + Number(c.parsed.x).toLocaleString(); } } } },
+        scales: {
+          x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: function(v){ return 'MWK ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v); } } },
+          y: { grid: { display: false }, ticks: { font: { size: 12, weight: '700' } } }
+        },
+        animation: { duration: animDur }
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

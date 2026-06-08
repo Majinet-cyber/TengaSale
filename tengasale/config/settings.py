@@ -181,9 +181,10 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# In development (DEBUG=True), serve source files directly — no collectstatic needed.
+# In development (DEBUG=True) or test runs, serve source files directly — no collectstatic needed.
 # In production, use whitenoise CompressedManifest for hashed, compressed assets.
-if DEBUG:
+_TESTING = "test" in sys.argv or "pytest" in sys.modules
+if DEBUG or _TESTING:
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -307,7 +308,7 @@ MAX_UPLOAD_SIZE_MB = int(os.environ.get("MAX_UPLOAD_SIZE_MB", "5"))
 MAX_CALL_RECORDING_SIZE_MB = int(os.environ.get("MAX_CALL_RECORDING_SIZE_MB", "20"))
 MAX_CALL_RECORDINGS_PER_APPLICATION = int(os.environ.get("MAX_CALL_RECORDINGS_PER_APPLICATION", "3"))
 REQUIRE_CALL_RECORDING_FOR_APPROVAL = os.environ.get(
-    "REQUIRE_CALL_RECORDING_FOR_APPROVAL", "true"
+    "REQUIRE_CALL_RECORDING_FOR_APPROVAL", "false"
 ).lower() in ("true", "1", "yes", "on")
 ALLOWED_KYC_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
 ALLOWED_AUDIO_MIME_TYPES = [

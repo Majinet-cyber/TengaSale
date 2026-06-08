@@ -1,11 +1,16 @@
 {% comment %}
-Application progress indicator.
+Premium Application Stepper.
 Usage: {% include "applications/partials/stepper.html" with current_step=1 %}
 Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
 {% endcomment %}
 
-<div class="application-progress" role="progressbar" aria-label="Application progress" aria-valuenow="{{ current_step }}" aria-valuemax="7">
+<div class="application-progress" role="progressbar"
+     aria-label="Application progress"
+     aria-valuenow="{{ current_step }}"
+     aria-valuemax="7"
+     data-testid="application-stepper">
 
+  {# ── Step meta ─────────────────────────────────────────────────── #}
   <div class="application-progress-meta">
     <span class="application-progress-meta-step">Step {{ current_step }} of 7</span>
     <span class="application-progress-meta-sep" aria-hidden="true">·</span>
@@ -21,38 +26,113 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
     </span>
   </div>
 
-  <div class="application-progress-bar">
+  {# ── Progress bar ──────────────────────────────────────────────── #}
+  <div class="application-progress-bar" aria-hidden="true">
     <div class="application-progress-fill" style="width: {% widthratio current_step 7 100 %}%"></div>
   </div>
 
-  <nav class="application-stepper" aria-hidden="true">
-    <span class="application-step {% if current_step == 1 %}application-step-active{% elif current_step > 1 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 1 %}✓ {% endif %}ID
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 2 %}application-step-active{% elif current_step > 2 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 2 %}✓ {% endif %}Deal
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 3 %}application-step-active{% elif current_step > 3 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 3 %}✓ {% endif %}KYC
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 4 %}application-step-active{% elif current_step > 4 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 4 %}✓ {% endif %}Location
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 5 %}application-step-active{% elif current_step > 5 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 5 %}✓ {% endif %}Income
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 6 %}application-step-active{% elif current_step > 6 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
-      {% if current_step > 6 %}✓ {% endif %}Review
-    </span>
-    <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 7 %}application-step-active{% else %}application-step-upcoming{% endif %}">
-      Sign
-    </span>
-  </nav>
+  {# ── Step chips — scrollable, no clipping ─────────────────────── #}
+  <div class="application-stepper-wrap" aria-hidden="true" data-testid="stepper-chips-wrap">
+    <nav class="application-stepper" data-testid="stepper-chips">
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 1 %}application-step-active
+        {% elif current_step > 1 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-1">
+        {% if current_step > 1 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        ID
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 2 %}application-step-active
+        {% elif current_step > 2 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-2">
+        {% if current_step > 2 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        Deal
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 3 %}application-step-active
+        {% elif current_step > 3 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-3">
+        {% if current_step > 3 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        KYC
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 4 %}application-step-active
+        {% elif current_step > 4 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-4">
+        {% if current_step > 4 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        Location
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 5 %}application-step-active
+        {% elif current_step > 5 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-5">
+        {% if current_step > 5 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        Income
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 6 %}application-step-active
+        {% elif current_step > 6 %}application-step-complete
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-6">
+        {% if current_step > 6 %}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        {% endif %}
+        Review
+      </span>
+      <span class="application-stepper-sep" aria-hidden="true"></span>
+
+      <span class="application-step ts-stagger-item
+        {% if current_step == 7 %}application-step-active
+        {% else %}application-step-upcoming{% endif %}"
+        data-testid="stepper-chip-7">
+        Sign
+      </span>
+
+    </nav>
+  </div>
 
 </div>
+
+{# ── Scroll active chip into view on mobile ────────────────────── #}
+<script>
+(function () {
+  var wrap = document.querySelector('[data-testid="stepper-chips-wrap"]');
+  var active = document.querySelector('.application-step-active');
+  if (wrap && active) {
+    setTimeout(function () {
+      var wrapLeft  = wrap.getBoundingClientRect().left;
+      var chipLeft  = active.getBoundingClientRect().left;
+      var chipWidth = active.offsetWidth;
+      var wrapWidth = wrap.offsetWidth;
+      var offset = chipLeft - wrapLeft - (wrapWidth / 2) + (chipWidth / 2);
+      wrap.scrollBy({ left: offset, behavior: 'smooth' });
+    }, 120);
+  }
+})();
+</script>

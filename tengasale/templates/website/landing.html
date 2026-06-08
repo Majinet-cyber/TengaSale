@@ -58,36 +58,38 @@ document.addEventListener('DOMContentLoaded', function () {
         Smartphone Financing for Malawi
       </span>
       <h1 class="hero__headline">
-        Finance Phones. Track Payments.<br>
-        <em>Grow Faster.</em>
+        Smartphone financing, underwriting, payments, and recovery —<br>
+        <em>in one Malawi-first platform.</em>
       </h1>
       <p class="hero__body">
-        TengaSale helps merchants, underwriters, and HQ teams manage financed smartphones,
-        applications, approvals, payments, commissions, and device status — in one clean platform.
+        TengaSale is the complete infrastructure for smartphone financing in Malawi —
+        merchant distribution, underwriter intelligence, PayChangu-powered deposits,
+        PAYG device locking, and HQ credit command — all in one platform.
       </p>
       <div class="hero__ctas">
-        <a href="{% url 'login' %}" class="btn-primary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Get Started
+        <a href="{% url 'merchant_dashboard' %}" class="btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Start Application
         </a>
+        <a href="{% url 'login' %}" class="btn-primary" style="background:rgba(255,255,255,.15);backdrop-filter:blur(4px);">Merchant Login</a>
         <a href="{% url 'portal_search' %}" class="btn-secondary">Make a Payment</a>
       </div>
       <div class="hero__trust">
         <span class="hero__trust-item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          KYC records
+          PayChangu deposits
         </span>
         <span class="hero__trust-item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Contract tracking
+          Device lock / PAYG
         </span>
         <span class="hero__trust-item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Mobile money payments
+          Airtel &amp; TNM Mpamba
         </span>
         <span class="hero__trust-item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          Merchant controls
+          Volts payout engine
         </span>
       </div>
 
@@ -210,6 +212,181 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
   </div>
 </section>
+
+<!-- ── Animated Platform Flow Strip ──────────────────────────── -->
+<section class="platform-flow-strip" aria-label="Platform process overview">
+  <div class="pf-inner">
+    <div class="pf-eyebrow">How TengaSale Works</div>
+    <div class="pf-steps">
+
+      <div class="pf-step">
+        <div class="pf-node pf-node--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="pf-step-label">1. Apply</div>
+        <div class="pf-step-sub">Merchant submits application</div>
+      </div>
+
+      <div class="pf-connector">
+        <div class="pf-connector-line"></div>
+        <div class="pf-connector-arrow">›</div>
+      </div>
+
+      <div class="pf-step">
+        <div class="pf-node pf-node--orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/></svg>
+        </div>
+        <div class="pf-step-label">2. KYC</div>
+        <div class="pf-step-sub">Identity & underwriting</div>
+      </div>
+
+      <div class="pf-connector">
+        <div class="pf-connector-line"></div>
+        <div class="pf-connector-arrow">›</div>
+      </div>
+
+      <div class="pf-step">
+        <div class="pf-node pf-node--green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="18" cy="14" r="1"/></svg>
+        </div>
+        <div class="pf-step-label">3. Pay Deposit</div>
+        <div class="pf-step-sub">PayChangu checkout</div>
+      </div>
+
+      <div class="pf-connector">
+        <div class="pf-connector-line"></div>
+        <div class="pf-connector-arrow">›</div>
+      </div>
+
+      <div class="pf-step">
+        <div class="pf-node pf-node--green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="pf-step-label">4. Approve &amp; Enroll</div>
+        <div class="pf-step-sub">Contract + device lock</div>
+      </div>
+
+      <div class="pf-connector">
+        <div class="pf-connector-line"></div>
+        <div class="pf-connector-arrow">›</div>
+      </div>
+
+      <div class="pf-step">
+        <div class="pf-node pf-node--blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="pf-step-label">5. Collect Payments</div>
+        <div class="pf-step-sub">Airtel · TNM · SMS reminders</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<style>
+/* ── Platform Flow Strip ─────────────────────────────────────────── */
+.platform-flow-strip {
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 28px 0;
+}
+.pf-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.pf-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  text-align: center;
+  margin-bottom: 18px;
+}
+.pf-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.pf-steps::-webkit-scrollbar { display: none; }
+.pf-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+.pf-node {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.pf-node:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+.pf-node--orange {
+  background: rgba(255,90,0,0.10);
+  color: #ff5a00;
+  border-color: rgba(255,90,0,0.25);
+}
+.pf-node--green {
+  background: rgba(22,163,74,0.10);
+  color: #16a34a;
+  border-color: rgba(22,163,74,0.25);
+}
+.pf-node--blue {
+  background: rgba(37,99,235,0.10);
+  color: #2563eb;
+  border-color: rgba(37,99,235,0.2);
+}
+.pf-step-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  white-space: nowrap;
+}
+.pf-step-sub {
+  font-size: 0.66rem;
+  color: #94a3b8;
+  text-align: center;
+  white-space: nowrap;
+}
+.pf-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 6px;
+  padding-top: 13px;
+  flex-shrink: 0;
+  gap: 2px;
+}
+.pf-connector-line {
+  width: 28px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,90,0,0.3), rgba(22,163,74,0.3));
+  border-radius: 1px;
+}
+.pf-connector-arrow {
+  font-size: 14px;
+  color: #cbd5e1;
+  font-weight: 700;
+  line-height: 1;
+}
+@media (max-width: 600px) {
+  .pf-step { min-width: 86px; }
+  .pf-step-sub { display: none; }
+  .pf-connector-line { width: 18px; }
+}
+</style>
 
 <!-- ── Three Audiences ────────────────────────────────────────── -->
 <section class="site-section site-section--audiences" id="audiences">
@@ -453,6 +630,44 @@ document.addEventListener('DOMContentLoaded', function () {
     <p class="section-sub">
       A straightforward six-step process from application to conditional device use, with ownership transferring only after full repayment.
     </p>
+
+    <!-- Visual quick-flow summary -->
+    <div class="hiw-flow" aria-hidden="true">
+      <div class="hiw-flow-pill hiw-flow-pill--orange">📋 Apply</div>
+      <div class="hiw-flow-arrow">›</div>
+      <div class="hiw-flow-pill hiw-flow-pill--orange">🪪 KYC</div>
+      <div class="hiw-flow-arrow">›</div>
+      <div class="hiw-flow-pill hiw-flow-pill--green">💳 Pay Deposit</div>
+      <div class="hiw-flow-arrow">›</div>
+      <div class="hiw-flow-pill hiw-flow-pill--green">✅ Approve</div>
+      <div class="hiw-flow-arrow">›</div>
+      <div class="hiw-flow-pill hiw-flow-pill--blue">📱 Enroll Device</div>
+      <div class="hiw-flow-arrow">›</div>
+      <div class="hiw-flow-pill hiw-flow-pill--blue">💰 Collect</div>
+    </div>
+    <style>
+    .hiw-flow {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 6px; margin: 0 0 32px;
+    }
+    .hiw-flow-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 99px;
+      font-size: 0.8rem; font-weight: 800; white-space: nowrap;
+      animation: pillFadeIn 0.5s ease both;
+    }
+    .hiw-flow-pill--orange { background: rgba(255,90,0,0.10); color: #c44400; border: 1px solid rgba(255,90,0,0.2); }
+    .hiw-flow-pill--green  { background: rgba(22,163,74,0.10); color: #166534; border: 1px solid rgba(22,163,74,0.2); }
+    .hiw-flow-pill--blue   { background: rgba(37,99,235,0.08); color: #1d4ed8; border: 1px solid rgba(37,99,235,0.15); }
+    .hiw-flow-arrow { font-size: 16px; color: #cbd5e1; font-weight: 700; }
+    @keyframes pillFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .hiw-flow-pill:nth-child(1) { animation-delay: 0.05s; }
+    .hiw-flow-pill:nth-child(3) { animation-delay: 0.10s; }
+    .hiw-flow-pill:nth-child(5) { animation-delay: 0.15s; }
+    .hiw-flow-pill:nth-child(7) { animation-delay: 0.20s; }
+    .hiw-flow-pill:nth-child(9) { animation-delay: 0.25s; }
+    .hiw-flow-pill:nth-child(11) { animation-delay: 0.30s; }
+    </style>
 
     <div class="steps-list">
 
@@ -1233,6 +1448,160 @@ document.addEventListener('DOMContentLoaded', function () {
         <p class="investor-item__body">Designed for Malawi first, built to scale across mobile-money–enabled markets in sub-Saharan Africa with minimal integration overhead.</p>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<!-- ── Payment Infrastructure Section ────────────────────────── -->
+<section class="site-section" style="background:#fff;" id="payments">
+  <div class="site-section__inner">
+    <div class="section-tag">Payments</div>
+    <h2 class="section-heading">PayChangu-Powered. Deposit to Activation.</h2>
+    <p class="section-sub">From deposit to monthly repayment — every transaction verified, recorded, and reconciled in real time.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:28px 0;">
+      <div class="pay-flow-step reveal" style="background:linear-gradient(135deg,#fff8f5,#fff);border:1.5px solid #fed7aa;border-radius:16px;padding:20px;">
+        <div style="font-size:28px;margin-bottom:10px;">💳</div>
+        <div style="font-size:14px;font-weight:800;color:#111;">Deposit Payment</div>
+        <p style="font-size:13px;color:#6b7280;margin-top:6px;line-height:1.5;">Merchant pays customer deposit via PayChangu mobile money. Contract activates only after server-verified payment.</p>
+      </div>
+      <div class="pay-flow-step reveal" style="background:linear-gradient(135deg,#fff8f5,#fff);border:1.5px solid #fed7aa;border-radius:16px;padding:20px;">
+        <div style="font-size:28px;margin-bottom:10px;">📱</div>
+        <div style="font-size:14px;font-weight:800;color:#111;">Airtel &amp; TNM Mpamba</div>
+        <p style="font-size:13px;color:#6b7280;margin-top:6px;line-height:1.5;">Customers repay via Airtel Money or TNM Mpamba. PIN confirmation on device. No cash handling required.</p>
+      </div>
+      <div class="pay-flow-step reveal" style="background:linear-gradient(135deg,#fff8f5,#fff);border:1.5px solid #fed7aa;border-radius:16px;padding:20px;">
+        <div style="font-size:28px;margin-bottom:10px;">🔔</div>
+        <div style="font-size:14px;font-weight:800;color:#111;">Webhook Verified</div>
+        <p style="font-size:13px;color:#6b7280;margin-top:6px;line-height:1.5;">Payments are never marked paid until PayChangu webhook confirms success. Amount mismatch triggers HQ review.</p>
+      </div>
+      <div class="pay-flow-step reveal" style="background:linear-gradient(135deg,#fff8f5,#fff);border:1.5px solid #fed7aa;border-radius:16px;padding:20px;">
+        <div style="font-size:28px;margin-bottom:10px;">🧾</div>
+        <div style="font-size:14px;font-weight:800;color:#111;">Receipt &amp; Audit Trail</div>
+        <p style="font-size:13px;color:#6b7280;margin-top:6px;line-height:1.5;">Every payment creates a receipt, transaction reference, and audit log entry. Full reconciliation for HQ and investors.</p>
+      </div>
+    </div>
+
+    <!-- Animated workflow steps -->
+    <div style="background:#f9fafb;border-radius:16px;padding:20px 24px;margin-top:12px;overflow-x:auto;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:16px;">Activation Workflow</div>
+      <div style="display:flex;align-items:center;gap:0;min-width:560px;">
+          {% for step in workflow_steps %}
+        <div style="display:flex;align-items:center;flex:1;min-width:0;">
+          <div style="text-align:center;flex:1;min-width:0;">
+            <div style="width:32px;height:32px;background:#ff5a00;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:12px;font-weight:800;color:#fff;">{{ forloop.counter }}</div>
+            <div style="font-size:11px;font-weight:700;color:#374151;line-height:1.3;">{{ step }}</div>
+          </div>
+          {% if not forloop.last %}
+          <div style="width:20px;height:2px;background:linear-gradient(90deg,#ff5a00,#fed7aa);flex-shrink:0;margin-bottom:18px;"></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HQ Command Center ───────────────────────────────────────── -->
+<section class="site-section" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);" id="hq">
+  <div class="site-section__inner">
+    <div class="section-tag" style="background:rgba(255,90,0,.2);color:#ff8c42;">HQ Intelligence</div>
+    <h2 class="section-heading" style="color:#fff;">HQ Credit Command Center</h2>
+    <p class="section-sub" style="color:rgba(255,255,255,.7);">Real-time portfolio intelligence, fraud signals, payment collections, and payout controls — for the team running the platform.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:28px 0;">
+      <div class="risk-card reveal" style="background:rgba(255,255,255,.05);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#ff8c42;margin-bottom:8px;">Portfolio Health</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">Live</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);">Active contracts, arrears rate, collection rate, device lock status</div>
+      </div>
+      <div class="risk-card reveal" style="background:rgba(255,255,255,.05);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#ff8c42;margin-bottom:8px;">Fraud Signals</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">AI-Assisted</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);">Identity matching, duplicate NID detection, risk scoring, external checks</div>
+      </div>
+      <div class="risk-card reveal" style="background:rgba(255,255,255,.05);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#ff8c42;margin-bottom:8px;">Payment Control</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">Full Audit</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);">Merchant payouts, underwriter salaries, spin rewards, emergency payouts</div>
+      </div>
+      <div class="risk-card reveal" style="background:rgba(255,255,255,.05);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#ff8c42;margin-bottom:8px;">Volts Engine</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">Incentive-Driven</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);">Commission ledger, WHT, performance rewards, payout approval chain</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Merchant & Underwriter Sections ────────────────────────── -->
+<section class="site-section" style="background:#fff;" id="roles">
+  <div class="site-section__inner">
+    <div class="section-tag">Platform Roles</div>
+    <h2 class="section-heading">Built for Every Role</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:28px;">
+
+      <!-- Merchant -->
+      <div class="role-card reveal" style="background:#fff8f5;border:1.5px solid #fed7aa;border-radius:18px;padding:22px;">
+        <div style="font-size:32px;margin-bottom:10px;">🏪</div>
+        <div style="font-size:16px;font-weight:800;color:#111;margin-bottom:8px;">Merchant</div>
+        <ul style="margin:0;padding:0 0 0 16px;font-size:13px;color:#6b7280;line-height:1.8;">
+          <li>Submit financing applications</li>
+          <li>Complete KYC &amp; digital signature</li>
+          <li>Pay customer deposit via PayChangu</li>
+          <li>Track contract status</li>
+          <li>Earn commissions + spin rewards</li>
+          <li>View merchant leaderboard</li>
+        </ul>
+      </div>
+
+      <!-- Underwriter -->
+      <div class="role-card reveal" style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:18px;padding:22px;">
+        <div style="font-size:32px;margin-bottom:10px;">🔍</div>
+        <div style="font-size:16px;font-weight:800;color:#111;margin-bottom:8px;">Underwriter</div>
+        <ul style="margin:0;padding:0 0 0 16px;font-size:13px;color:#6b7280;line-height:1.8;">
+          <li>Review application queue</li>
+          <li>Verify KYC, income, location</li>
+          <li>Conduct customer call checks</li>
+          <li>Upload call recordings</li>
+          <li>Approve or reject applications</li>
+          <li>Request emergency payouts (20%)</li>
+        </ul>
+      </div>
+
+      <!-- HQ -->
+      <div class="role-card reveal" style="background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:18px;padding:22px;">
+        <div style="font-size:32px;margin-bottom:10px;">🏛</div>
+        <div style="font-size:16px;font-weight:800;color:#111;margin-bottom:8px;">HQ / Finance</div>
+        <ul style="margin:0;padding:0 0 0 16px;font-size:13px;color:#6b7280;line-height:1.8;">
+          <li>Monitor portfolio &amp; risk</li>
+          <li>Approve emergency payouts</li>
+          <li>Process monthly salaries</li>
+          <li>Review fraud signals</li>
+          <li>Configure commission rules</li>
+          <li>Full audit trail access</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Malawi Identity Section ────────────────────────────────── -->
+<section class="site-section" style="background:#fffaf5;" id="malawi">
+  <div class="site-section__inner" style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🇲🇼</div>
+    <div class="section-tag">Malawi-First</div>
+    <h2 class="section-heading">Built for Malawi. Ready to Scale.</h2>
+    <p class="section-sub" style="max-width:600px;margin:0 auto 28px;">Local currency MWK. Airtel Money and TNM Mpamba. Chichewa/English SMS readiness. Africa/Blantyre timezone. National ID validation.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">🇲🇼 MWK Currency</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">📱 Airtel Money</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">💚 TNM Mpamba</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">💬 SMS Reminders</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">🔒 Device Locking</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">🆔 NID Verification</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">📋 Audit Logs</span>
+      <span style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:13px;font-weight:700;color:#374151;">✍️ Digital Signatures</span>
     </div>
   </div>
 </section>

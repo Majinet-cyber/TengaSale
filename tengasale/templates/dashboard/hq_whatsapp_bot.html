@@ -1,0 +1,430 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}WhatsApp Bot Operations — TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<style>
+/* WhatsApp Bot Operations Dashboard */
+.wa-bot-page { max-width: 1040px; margin: 0 auto; padding: 0 16px 60px; }
+
+.wa-bot-hero {
+  background: linear-gradient(135deg, #0A5C36 0%, #128C7E 100%);
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin-bottom: 20px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.wa-bot-hero::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+
+.wa-bot-hero__title {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0 0 4px;
+}
+
+.wa-bot-hero__sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+}
+
+.wa-bot-hero__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wa-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #25D366;
+  box-shadow: 0 0 0 3px rgba(37,211,102,0.3);
+}
+
+.wa-status-dot--offline { background: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.3); }
+.wa-status-dot--mock    { background: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.3); }
+
+.wa-stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 600px) { .wa-stat-row { grid-template-columns: repeat(4, 1fr); } }
+
+.wa-stat-card {
+  background: #fff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wa-stat-card__val {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.wa-stat-card__lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-top: 4px;
+}
+
+.wa-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: #25D366;
+  border-radius: 14px 14px 0 0;
+}
+
+.wa-stat-card--failed::after { background: #EF4444; }
+.wa-stat-card--queued::after { background: #F59E0B; }
+.wa-stat-card--conv::after   { background: #2563EB; }
+
+.ts-panel {
+  background: #fff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.ts-panel__header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ts-panel__title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ts-panel__body { padding: 0; }
+
+.wa-template-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #F8FAFC;
+}
+
+.wa-template-item:last-child { border-bottom: none; }
+
+.wa-template-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #DCFCE7;
+  color: #16A34A;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.wa-template-icon--disabled { background: #F1F5F9; color: #94A3B8; }
+
+.wa-template-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.wa-template-cat {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 1px;
+}
+
+.wa-template-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.wa-template-badge--on  { background: #DCFCE7; color: #166534; }
+.wa-template-badge--off { background: #F1F5F9; color: #6B7280; }
+
+.wa-auto-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #F8FAFC;
+}
+
+.wa-auto-item:last-child { border-bottom: none; }
+
+.wa-auto-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #25D366;
+  flex-shrink: 0;
+}
+
+.wa-auto-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  flex: 1;
+}
+
+.wa-auto-trigger {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.wa-webhook-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid #F8FAFC;
+  font-size: 13px;
+}
+
+.wa-webhook-row:last-child { border-bottom: none; }
+.wa-webhook-row__label { color: #64748B; font-weight: 600; }
+.wa-webhook-row__val   { color: #0F172A; font-weight: 700; font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; text-align: right; max-width: 60%; }
+
+.wa-test-form {
+  padding: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wa-test-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+.wa-test-input:focus { border-color: #25D366; }
+
+.wa-test-btn {
+  padding: 10px 18px;
+  background: #25D366;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.wa-test-btn:hover { background: #128C7E; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wa-bot-page ts-fade-in">
+
+  {# ── Hero ─────────────────────────────────────────────────────── #}
+  <div class="wa-bot-hero">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex-shrink:0;">
+        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
+      </svg>
+      <div>
+        <h1 class="wa-bot-hero__title">WhatsApp Bot Operations</h1>
+        <p class="wa-bot-hero__sub">Channel health · Templates · Automations · Analytics</p>
+      </div>
+    </div>
+    <div class="wa-bot-hero__status" data-testid="wa-bot-status">
+      {% if channel_healthy %}
+        <span class="wa-status-dot"></span>
+        Bot Online · {{ messaging_provider|title }}
+      {% elif messaging_provider == "mock" %}
+        <span class="wa-status-dot wa-status-dot--mock"></span>
+        Simulation Mode (Mock)
+      {% else %}
+        <span class="wa-status-dot wa-status-dot--offline"></span>
+        Configuration Required
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Stat cards ───────────────────────────────────────────────── #}
+  <div class="wa-stat-row">
+    <div class="wa-stat-card">
+      <div class="wa-stat-card__val">{{ wa_sent_today }}</div>
+      <div class="wa-stat-card__lbl">Sent Today</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--failed">
+      <div class="wa-stat-card__val">{{ wa_failed_today }}</div>
+      <div class="wa-stat-card__lbl">Failed Today</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--queued">
+      <div class="wa-stat-card__val">{{ wa_queued }}</div>
+      <div class="wa-stat-card__lbl">Queued</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--conv">
+      <div class="wa-stat-card__val">{{ open_conversations }}</div>
+      <div class="wa-stat-card__lbl">Open Conversations</div>
+    </div>
+  </div>
+
+  {# ── Delivery rate ────────────────────────────────────────────── #}
+  {% if delivery_rate is not None %}
+  <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <span style="font-size:13px;font-weight:700;color:#0F172A;">Delivery Rate Today</span>
+    <span style="font-size:20px;font-weight:900;color:{% if delivery_rate >= 90 %}#16A34A{% elif delivery_rate >= 70 %}#D97706{% else %}#DC2626{% endif %};">{{ delivery_rate }}%</span>
+  </div>
+  {% endif %}
+
+  {# ── Webhook & Channel Config ──────────────────────────────────── #}
+  <div class="ts-panel">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Webhook &amp; Channel Config
+      </span>
+    </div>
+    <div class="ts-panel__body">
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider</span><span class="wa-webhook-row__val">{{ messaging_provider|title }}</span></div>
+      {% if twilio_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Twilio WA Number</span><span class="wa-webhook-row__val">{{ twilio_wa_number }}</span></div>{% endif %}
+      {% if meta_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Meta WA Number ID</span><span class="wa-webhook-row__val">{{ meta_wa_number }}</span></div>{% endif %}
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Webhook URL</span><span class="wa-webhook-row__val">{% if webhook_url %}{{ webhook_url }}{% else %}/tengasale/support/whatsapp/webhook/{% endif %}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Simulate Endpoint</span><span class="wa-webhook-row__val">/tengasale/support/whatsapp/simulate/</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Conversations</span><span class="wa-webhook-row__val">{{ conversation_count }} total · {{ open_conversations }} open</span></div>
+    </div>
+  </div>
+
+  {# ── Last Messages ─────────────────────────────────────────────── #}
+  <div class="ts-panel">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Recent Activity
+      </span>
+      <a href="{% url 'conversation_list' %}" style="font-size:12px;font-weight:800;color:#FF4D00;text-decoration:none;">View all →</a>
+    </div>
+    <div class="ts-panel__body">
+      <div class="wa-webhook-row">
+        <span class="wa-webhook-row__label">Last Inbound</span>
+        <span class="wa-webhook-row__val">{% if last_inbound %}{{ last_inbound.created_at|date:"d M Y H:i" }}{% else %}No messages yet{% endif %}</span>
+      </div>
+      <div class="wa-webhook-row">
+        <span class="wa-webhook-row__label">Last Outbound</span>
+        <span class="wa-webhook-row__val">{% if last_outbound %}{{ last_outbound.created_at|date:"d M Y H:i" }}{% else %}No messages yet{% endif %}</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Test Message ──────────────────────────────────────────────── #}
+  <div class="ts-panel">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        Test Message
+      </span>
+    </div>
+    <form method="get" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-test-form">
+      <input
+        type="tel"
+        name="phone"
+        placeholder="Phone: 265998XXXXXX"
+        class="wa-test-input"
+        pattern="[0-9]{12,14}"
+        data-testid="wa-test-phone"
+      >
+      <button type="submit" class="wa-test-btn" data-testid="wa-test-submit">Send Test</button>
+    </form>
+    <p style="padding:0 16px 12px;font-size:12px;color:#94A3B8;">
+      Sends a simulated WhatsApp message via the simulation endpoint. Only available in development/staging.
+    </p>
+  </div>
+
+  {# ── Message Templates ─────────────────────────────────────────── #}
+  <div class="ts-panel" data-testid="wa-templates">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Message Templates ({{ templates|length }})
+      </span>
+    </div>
+    <div class="ts-panel__body">
+      {% for t in templates %}
+      <div class="wa-template-item">
+        <div class="wa-template-icon {% if not t.enabled %}wa-template-icon--disabled{% endif %}" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="wa-template-name">{{ t.name }}</div>
+          <div class="wa-template-cat">{{ t.category }}</div>
+        </div>
+        <span class="wa-template-badge {% if t.enabled %}wa-template-badge--on{% else %}wa-template-badge--off{% endif %}">
+          {% if t.enabled %}Active{% else %}Disabled{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Automation Flows ──────────────────────────────────────────── #}
+  <div class="ts-panel" data-testid="wa-automations">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Automation Flows ({{ automations|length }})
+      </span>
+    </div>
+    <div class="ts-panel__body">
+      {% for a in automations %}
+      <div class="wa-auto-item">
+        <span class="wa-auto-dot{% if not a.active %}" style="background:#E5E7EB;{% endif %}"></span>
+        <span class="wa-auto-name">{{ a.name }}</span>
+        <span class="wa-auto-trigger">{{ a.trigger }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

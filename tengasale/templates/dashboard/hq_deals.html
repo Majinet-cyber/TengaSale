@@ -179,11 +179,60 @@
   grid-column:1/-1; background:#fff; border:2px dashed #e2e8f0; border-radius:16px;
   padding:56px 32px; text-align:center; color:#94a3b8;
 }
+.dc-empty svg { margin: 0 auto 10px; display: block; }
+.dc-empty-title { font-size:1rem;font-weight:800;color:#475569;margin-bottom:6px; }
+.dc-empty-sub   { font-size:0.82rem; }
+
+/* ── Quick stats panel ── */
+.dc-stats-row {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:10px;
+  margin-bottom:20px;
+}
+.dc-stat-card {
+  background:#fff;
+  border:1.5px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px 16px;
+  box-shadow:0 1px 4px rgba(15,23,42,0.04);
+}
+.dc-stat-label { font-size:0.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em; }
+.dc-stat-value { font-size:1.5rem;font-weight:900;color:#0f172a;line-height:1;margin-top:4px; }
+.dc-stat-sub   { font-size:0.7rem;color:#64748b;margin-top:2px; }
+
+/* ── Mobile filter toggle ── */
+.dc-filter-toggle {
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:8px 16px;
+  background:#fff;
+  border:1.5px solid #e2e8f0;
+  border-radius:10px;
+  font-size:0.83rem;
+  font-weight:700;
+  cursor:pointer;
+  color:#475569;
+  margin-bottom:10px;
+}
+.dc-filter-collapsible { display:contents; }
+
 @media (max-width:720px) {
   .dc-actions { width:100%; justify-content:flex-start; flex-wrap:wrap; }
   .dc-brand-summary { align-items:flex-start; }
   .dc-brand-actions { width:100%; justify-content:space-between; margin-left:0; }
   .dc-brand-summary-main { width:100%; }
+  .dc-filter-toggle { display:flex; }
+  .dc-filter-collapsible {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .dc-filter-collapsible.dc-collapsed { display: none; }
+  .dc-filter-bar { flex-direction:column; align-items:stretch; }
+  .dc-filter-bar input, .dc-filter-bar select { min-width:0; width:100%; }
 }
 </style>
 {% endblock %}
@@ -191,17 +240,26 @@
 {% block content %}
 <div class="dc-wrap">
 
-  <div class="dc-header">
+  {# ── Page header ──────────────────────────────────────────────── #}
+  <div class="dc-header" data-testid="dc-catalog-header">
     <div class="dc-header-left">
-      <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;">← HQ</a>
+      <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;flex-shrink:0;">← HQ</a>
       <div>
         <h1 class="dc-title">Device Finance Catalog</h1>
         <p class="dc-sub">Manage devices, pricing, deposit options, lock readiness, and availability.</p>
       </div>
     </div>
     <div class="dc-actions">
-      <button class="dc-btn-ghost" onclick="document.getElementById('add-brand-modal').style.display='flex'">+ Brand</button>
-      <button class="dc-btn-primary add-device-btn btn-add-device" onclick="openAddDealModal()">+ Add Device Deal</button>
+      <button class="dc-btn-ghost"
+              data-testid="dc-add-brand-btn"
+              onclick="document.getElementById('add-brand-modal').style.display='flex'">
+        + Add Brand
+      </button>
+      <button class="dc-btn-primary add-device-btn btn-add-device"
+              data-testid="dc-add-deal-btn"
+              onclick="openAddDealModal()">
+        + Add Device Deal
+      </button>
     </div>
   </div>
 
@@ -209,7 +267,73 @@
   <div class="alert alert-{% if msg_type == 'success' %}success{% elif msg_type == 'error' %}danger{% else %}info{% endif %} mb-3" role="alert">{{ msg }}</div>
   {% endif %}
 
-  <form method="get" class="dc-filter-bar">
+  {# ── Quick stats ──────────────────────────────────────────────── #}
+  <div class="dc-stats-row" data-testid="dc-stats-row">
+    <div class="dc-stat-card">
+      <div class="dc-stat-label">Active Models</div>
+      <div class="dc-stat-value" data-testid="dc-stat-active-models">{{ total_active_models|default:"—" }}</div>
+      <div class="dc-stat-sub">Currently live</div>
+    </div>
+    <div class="dc-stat-card">
+      <div class="dc-stat-label">Brands</div>
+      <div class="dc-stat-value" data-testid="dc-stat-brands">{{ brands|length }}</div>
+      <div class="dc-stat-sub">Supported brands</div>
+    </div>
+    <div class="dc-stat-card">
+      <div class="dc-stat-label">Avg Deposit</div>
+      <div class="dc-stat-value" data-testid="dc-stat-avg-deposit">
+        {{ avg_deposit_pct|default:"—" }}{% if avg_deposit_pct %}%{% endif %}
+      </div>
+      <div class="dc-stat-sub">Across all models</div>
+    </div>
+    <div class="dc-stat-card">
+      <div class="dc-stat-label">In Stock</div>
+      <div class="dc-stat-value" data-testid="dc-stat-in-stock">
+        {{ total_in_stock|default:"—" }}
+      </div>
+      <div class="dc-stat-sub">Available now</div>
+    </div>
+  </div>
+
+  {# ── Compact filters ──────────────────────────────────────────── #}
+  <button class="dc-filter-toggle" type="button" onclick="toggleDCFilters()" aria-expanded="false" id="dc-filter-toggle">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    Filter &amp; Search
+  </button>
+
+  <form method="get" class="dc-filter-bar" id="dc-filter-form">
+    <div class="dc-filter-collapsible dc-collapsed" id="dc-filter-inner">
+      <input type="text" name="search" placeholder="Search brand, model, specs..." value="{{ search }}" style="flex:1;min-width:180px;">
+      <select name="brand">
+        <option value="">All Brands</option>
+        {% for b in brands %}<option value="{{ b.pk }}" {% if brand_filter == b.pk|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select>
+      <select name="status">
+        <option value="">All Status</option>
+        <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <button type="submit" style="background:#ff5a00;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem;white-space:nowrap;">Filter</button>
+      <a href="{% url 'hq_deals' %}" style="color:#64748b;font-size:0.82rem;text-decoration:none;align-self:center;white-space:nowrap;">Reset</a>
+    </div>
+    {# On desktop the inner filters are always visible #}
+    <noscript>
+      <input type="text" name="search" placeholder="Search brand, model, specs..." value="{{ search }}" style="flex:1;min-width:180px;">
+      <select name="brand">
+        <option value="">All Brands</option>
+        {% for b in brands %}<option value="{{ b.pk }}" {% if brand_filter == b.pk|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select>
+      <select name="status">
+        <option value="">All Status</option>
+        <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <button type="submit" style="background:#ff5a00;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;">Filter</button>
+    </noscript>
+  </form>
+
+  {# Desktop always-visible filter bar (hidden on mobile, shown by JS) #}
+  <form method="get" class="dc-filter-bar" id="dc-filter-desktop" style="display:flex;">
     <input type="text" name="search" placeholder="Search brand, model, specs..." value="{{ search }}" style="flex:1;min-width:180px;">
     <select name="brand">
       <option value="">All Brands</option>
@@ -217,16 +341,20 @@
     </select>
     <select name="status">
       <option value="">All Status</option>
-      <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+      <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
       <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
     </select>
-    <button type="submit" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem;">Filter</button>
-    <a href="{% url 'hq_deals' %}" style="color:var(--muted);font-size:0.82rem;text-decoration:none;align-self:center;">Reset</a>
+    <button type="submit" style="background:#ff5a00;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.82rem;white-space:nowrap;" data-testid="dc-filter-btn">Filter</button>
+    <a href="{% url 'hq_deals' %}" style="color:#64748b;font-size:0.82rem;text-decoration:none;align-self:center;white-space:nowrap;">Reset</a>
   </form>
 
-  <div class="dc-brand-groups">
+  {# ── Brand groups ─────────────────────────────────────────────── #}
+  <div class="dc-brand-groups" data-testid="dc-brand-groups">
     {% for group in brand_groups %}
-      <details class="dc-brand-group" {% if forloop.first %}open{% endif %}>
+      <details class="dc-brand-group"
+               data-testid="dc-brand-group"
+               data-brand="{{ group.name }}"
+               {% if forloop.first %}open{% endif %}>
         <summary class="dc-brand-summary">
           <div class="dc-brand-summary-main">
             <span class="dc-brand-name">{{ group.name }}</span>
@@ -238,24 +366,35 @@
           </div>
           <div class="dc-brand-actions">
             {% if group.brand_id %}
-              <button type="button" class="dc-brand-add" onclick="event.preventDefault(); event.stopPropagation(); openAddDealModal('{{ group.brand_id }}');">Add device to this brand</button>
+              <button type="button" class="dc-brand-add"
+                      data-testid="dc-brand-add-{{ group.brand_id }}"
+                      onclick="event.preventDefault(); event.stopPropagation(); openAddDealModal('{{ group.brand_id }}');">
+                Add device
+              </button>
             {% endif %}
-            <span class="dc-brand-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+            <span class="dc-brand-chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
           </div>
         </summary>
         <div class="dc-brand-panel">
-          <div class="dc-cards">
+          <div class="dc-cards" data-testid="dc-brand-cards-{{ group.name|lower }}">
             {% for deal in group.deals %}
               {% include "dashboard/partials/device_deal_card.html" with deal=deal %}
             {% endfor %}
+            {% if not group.deals %}
+              <div class="dc-empty" style="padding:28px 16px;">
+                <div style="font-size:0.88rem;font-weight:700;color:#94a3b8;">No models for this brand yet.</div>
+              </div>
+            {% endif %}
           </div>
         </div>
       </details>
     {% empty %}
-      <div class="dc-empty">
-        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        <div style="font-size:1rem;font-weight:800;color:#475569;margin-bottom:6px;">No devices found</div>
-        <div style="font-size:0.82rem;">Add a device deal or adjust your filters.</div>
+      <div class="dc-empty" data-testid="dc-empty-state">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <div class="dc-empty-title">No devices found</div>
+        <div class="dc-empty-sub">Add a device deal or adjust your filters.</div>
       </div>
     {% endfor %}
   </div>
@@ -439,6 +578,39 @@
 
 {% block extra_scripts %}
 <script>
+/* Mobile filter toggle */
+function toggleDCFilters() {
+  var inner = document.getElementById('dc-filter-inner');
+  var toggle = document.getElementById('dc-filter-toggle');
+  if (!inner) return;
+  var collapsed = inner.classList.contains('dc-collapsed');
+  inner.classList.toggle('dc-collapsed', !collapsed);
+  if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+}
+
+/* On mobile hide desktop filter bar; on desktop hide toggle + mobile form */
+(function() {
+  var mq = window.matchMedia('(max-width: 720px)');
+  function applyLayout(e) {
+    var desktop = document.getElementById('dc-filter-desktop');
+    var mobileToggle = document.querySelector('.dc-filter-toggle');
+    var mobileForm = document.getElementById('dc-filter-form');
+    if (e.matches) {
+      /* Mobile */
+      if (desktop) desktop.style.display = 'none';
+      if (mobileToggle) mobileToggle.style.display = 'flex';
+      if (mobileForm) mobileForm.style.display = 'block';
+    } else {
+      /* Desktop */
+      if (desktop) desktop.style.display = 'flex';
+      if (mobileToggle) mobileToggle.style.display = 'none';
+      if (mobileForm) mobileForm.style.display = 'none';
+    }
+  }
+  mq.addListener(applyLayout);
+  applyLayout(mq);
+})();
+
 function openAddDealModal(brandId) {
   var modal = document.getElementById('add-deal-modal');
   var brandSelect = document.getElementById('add-deal-brand-id');

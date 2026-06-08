@@ -1,4 +1,6 @@
+import json
 import logging
+import uuid
 from decimal import Decimal
 
 from django.conf import settings as dj_settings
@@ -7,6 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required
@@ -817,6 +820,352 @@ def hq_regen_completed_pdf(request, contract_id):
         })
         return JsonResponse({"ok": True, "msg": "Completed PDF regenerated."})
     return JsonResponse({"ok": False, "error": "PDF regeneration failed. Check server logs."}, status=500)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deposit Payment Flow
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _normalize_mw_phone(phone: str) -> str:
+    """Normalize a Malawi phone number to +265XXXXXXXXX format."""
+    digits = "".join(c for c in phone if c.isdigit())
+    if digits.startswith("265") and len(digits) == 12:
+        return f"+{digits}"
+    if digits.startswith("0") and len(digits) == 10:
+        return f"+265{digits[1:]}"
+    if len(digits) == 9:
+        return f"+265{digits}"
+    return f"+265{digits}"
+
+
+def _detect_mw_operator(phone: str) -> str:
+    """Detect Airtel Money or TNM Mpamba from normalized Malawi phone."""
+    digits = "".join(c for c in phone if c.isdigit())
+    if digits.startswith("265"):
+        digits = digits[3:]
+    if digits.startswith("0"):
+        digits = digits[1:]
+    if digits.startswith("88") or digits.startswith("99") or digits.startswith("98"):
+        return "airtel"
+    if digits.startswith("08") or digits.startswith("38"):
+        return "tnm"
+    return ""
+
+
+@merchant_required
+def contract_pay_deposit(request, contract_id):
+    """Premium deposit payment page — creates PayChangu checkout and tracks payment."""
+    contract = get_object_or_404(
+        Contract.objects.select_related("application", "merchant"),
+        id=contract_id,
+    )
+    application = contract.application
+
+    if not can_access_contract_flow(request.user, application):
+        raise PermissionDenied
+
+    if contract.deposit_paid:
+        messages.success(request, "Deposit has already been paid for this contract.")
+        return redirect("contract_complete", contract_id=contract.id)
+
+    if not contract.phone_locked:
+        messages.warning(request, "Please lock the device before proceeding to deposit payment.")
+        return redirect("contract_progress", contract_id=contract.id)
+
+    deposit_amount = contract.deposit_amount
+    if deposit_amount <= 0:
+        try:
+            pc = application.payment_contract
+            deposit_amount = pc.deposit_required if pc.deposit_required > 0 else deposit_amount
+        except Exception:
+            pass
+
+    # Fetch existing portal PaymentContract if available for deposit info
+    portal_pc = None
+    try:
+        portal_pc = application.payment_contract
+    except Exception:
+        pass
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+
+        if action == "create_checkout":
+            phone = request.POST.get("phone", "").strip()
+            if not phone:
+                return JsonResponse({"ok": False, "error": "Phone number is required."}, status=400)
+
+            try:
+                normalized_phone = _normalize_mw_phone(phone)
+            except Exception:
+                return JsonResponse({"ok": False, "error": "Invalid phone number format."}, status=400)
+
+            if contract.deposit_payment_status == Contract.DEPOSIT_STATUS_PAID:
+                return JsonResponse({"ok": False, "error": "Deposit already paid."}, status=400)
+
+            # Check for existing pending checkout (idempotency)
+            if contract.deposit_payment_status == Contract.DEPOSIT_STATUS_CHECKOUT_CREATED and contract.deposit_payment_tx_ref:
+                return JsonResponse({
+                    "ok": True,
+                    "status": contract.deposit_payment_status,
+                    "tx_ref": contract.deposit_payment_tx_ref,
+                    "message": "Checkout already created. Waiting for payment.",
+                })
+
+            from integrations.paychangu_client import initiate_payment
+            tx_ref = f"dep-{contract.contract_number}-{uuid.uuid4().hex[:8]}"
+
+            return_url = request.build_absolute_uri(f"/contracts/{contract.id}/pay-deposit/")
+            callback_url = request.build_absolute_uri("/contracts/webhooks/deposit/")
+
+            result = initiate_payment(
+                amount=deposit_amount,
+                currency="MWK",
+                tx_ref=tx_ref,
+                return_url=return_url,
+                callback_url=callback_url,
+                customer_name=contract.customer_name,
+                customer_phone=normalized_phone,
+                description=f"Deposit for contract {contract.contract_number}",
+                meta={
+                    "contract_id": contract.id,
+                    "contract_number": contract.contract_number,
+                    "payment_type": "deposit",
+                },
+            )
+
+            if result.get("status") == "success":
+                contract.deposit_payment_status = Contract.DEPOSIT_STATUS_CHECKOUT_CREATED
+                contract.deposit_payment_tx_ref = tx_ref
+                contract.deposit_payer_phone = normalized_phone
+                contract.save(update_fields=[
+                    "deposit_payment_status", "deposit_payment_tx_ref",
+                    "deposit_payer_phone", "updated_at",
+                ])
+                _audit(request.user, "deposit_checkout_created", "Contract", str(contract.id), {
+                    "contract_number": contract.contract_number,
+                    "tx_ref": tx_ref,
+                    "amount": str(deposit_amount),
+                    "phone": normalized_phone,
+                })
+                return JsonResponse({
+                    "ok": True,
+                    "checkout_url": result["checkout_url"],
+                    "tx_ref": tx_ref,
+                    "status": Contract.DEPOSIT_STATUS_CHECKOUT_CREATED,
+                    "message": "Checkout created. Redirecting to payment...",
+                })
+            else:
+                return JsonResponse({
+                    "ok": False,
+                    "error": result.get("message", "Could not create payment checkout. Please try again."),
+                }, status=400)
+
+    # Build payment state context
+    payment_status = contract.deposit_payment_status or Contract.DEPOSIT_STATUS_NOT_STARTED
+    payment_states = [
+        {"key": "not_started", "label": "Deposit Required", "done": payment_status not in (Contract.DEPOSIT_STATUS_NOT_STARTED,)},
+        {"key": "checkout_created", "label": "Checkout Started", "done": payment_status in (
+            Contract.DEPOSIT_STATUS_AWAITING, Contract.DEPOSIT_STATUS_PROCESSING,
+            Contract.DEPOSIT_STATUS_PAID,
+        )},
+        {"key": "awaiting_confirmation", "label": "Customer Confirming", "done": payment_status in (
+            Contract.DEPOSIT_STATUS_PROCESSING, Contract.DEPOSIT_STATUS_PAID,
+        )},
+        {"key": "processing", "label": "PayChangu Verifying", "done": payment_status == Contract.DEPOSIT_STATUS_PAID},
+        {"key": "paid", "label": "Contract Activated", "done": payment_status == Contract.DEPOSIT_STATUS_PAID},
+    ]
+
+    amount_after_deposit = max(Decimal("0"), (contract.total_loan or Decimal("0")) - deposit_amount)
+
+    return render(request, "contracts/pay_deposit.html", {
+        "contract": contract,
+        "application": application,
+        "portal_pc": portal_pc,
+        "deposit_amount": deposit_amount,
+        "amount_after_deposit": amount_after_deposit,
+        "payment_status": payment_status,
+        "payment_states": payment_states,
+        "is_paid": contract.deposit_paid,
+        "is_failed": payment_status == Contract.DEPOSIT_STATUS_FAILED,
+        "is_pending": payment_status in (
+            Contract.DEPOSIT_STATUS_CHECKOUT_CREATED,
+            Contract.DEPOSIT_STATUS_AWAITING,
+            Contract.DEPOSIT_STATUS_PROCESSING,
+        ),
+        "mock_mode": getattr(dj_settings, "MOCK_PAYMENTS", "true").lower() == "true"
+            if isinstance(getattr(dj_settings, "MOCK_PAYMENTS", "true"), str)
+            else bool(getattr(dj_settings, "MOCK_PAYMENTS", True)),
+    })
+
+
+@merchant_required
+def contract_deposit_status(request, contract_id):
+    """JSON endpoint — frontend polls to refresh deposit payment status."""
+    contract = get_object_or_404(Contract, id=contract_id)
+    if not can_access_contract_flow(request.user, contract.application):
+        raise PermissionDenied
+
+    # Optionally verify with PayChangu if still pending
+    status = contract.deposit_payment_status or Contract.DEPOSIT_STATUS_NOT_STARTED
+    if status in (Contract.DEPOSIT_STATUS_CHECKOUT_CREATED, Contract.DEPOSIT_STATUS_AWAITING) and contract.deposit_payment_tx_ref:
+        try:
+            from integrations.paychangu_client import verify_transaction
+            result = verify_transaction(contract.deposit_payment_tx_ref)
+            if result.get("status") == "SUCCESS":
+                _apply_deposit_paid(contract, result)
+                status = Contract.DEPOSIT_STATUS_PAID
+            elif result.get("status") == "FAILED":
+                contract.deposit_payment_status = Contract.DEPOSIT_STATUS_FAILED
+                contract.save(update_fields=["deposit_payment_status", "updated_at"])
+                status = Contract.DEPOSIT_STATUS_FAILED
+        except Exception:
+            logger.exception("Deposit status check failed for contract %s", contract.pk)
+
+    return JsonResponse({
+        "status": status,
+        "deposit_paid": contract.deposit_paid,
+        "tx_ref": contract.deposit_payment_tx_ref,
+        "redirect_url": f"/contracts/{contract.id}/complete/" if contract.deposit_paid else None,
+    })
+
+
+@csrf_exempt
+def contract_deposit_webhook(request):
+    """
+    PayChangu webhook receiver for deposit payments.
+    Verifies signature, confirms payment, marks deposit paid — idempotently.
+    """
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    raw_body = request.body
+    signature = request.headers.get("X-Paychangu-Signature", "") or request.META.get("HTTP_X_PAYCHANGU_SIGNATURE", "")
+
+    # Verify webhook signature
+    from integrations.paychangu_client import verify_webhook_signature, is_mock_mode
+    if not is_mock_mode():
+        if not verify_webhook_signature(raw_body, signature):
+            logger.warning("Deposit webhook: invalid signature")
+            return JsonResponse({"error": "Invalid signature"}, status=400)
+
+    try:
+        data = json.loads(raw_body)
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    # Extract key fields
+    tx_ref = (
+        data.get("tx_ref")
+        or data.get("data", {}).get("tx_ref")
+        or data.get("txRef", "")
+    )
+    raw_status = (
+        data.get("status")
+        or data.get("data", {}).get("status")
+        or ""
+    ).upper()
+    amount_received = Decimal(str(
+        data.get("amount")
+        or data.get("data", {}).get("amount")
+        or 0
+    ))
+
+    if not tx_ref:
+        logger.warning("Deposit webhook: missing tx_ref in payload")
+        return JsonResponse({"error": "Missing tx_ref"}, status=400)
+
+    # Find the contract by tx_ref (deposit payments use prefix dep-)
+    if not tx_ref.startswith("dep-"):
+        return JsonResponse({"ok": True, "message": "Not a deposit payment"})
+
+    contract = Contract.objects.filter(deposit_payment_tx_ref=tx_ref).first()
+    if not contract:
+        logger.warning("Deposit webhook: no contract found for tx_ref=%s", tx_ref)
+        return JsonResponse({"error": "Contract not found"}, status=404)
+
+    # Idempotency — already paid, skip
+    if contract.deposit_paid:
+        return JsonResponse({"ok": True, "message": "Already paid"})
+
+    if raw_status in ("SUCCESSFUL", "SUCCESS", "COMPLETED"):
+        # Validate amount
+        expected = contract.deposit_amount
+        if amount_received > 0 and abs(amount_received - expected) > Decimal("1"):
+            logger.warning(
+                "Deposit webhook: amount mismatch contract=%s expected=%s received=%s",
+                contract.contract_number, expected, amount_received,
+            )
+            contract.deposit_payment_status = Contract.DEPOSIT_STATUS_MISMATCH
+            contract.save(update_fields=["deposit_payment_status", "updated_at"])
+            _audit(None, "deposit_amount_mismatch", "Contract", str(contract.id), {
+                "tx_ref": tx_ref,
+                "expected": str(expected),
+                "received": str(amount_received),
+            })
+            return JsonResponse({"ok": True, "message": "Amount mismatch flagged for review"})
+
+        _apply_deposit_paid(contract, {"tx_ref": tx_ref, "raw_response": data})
+
+    elif raw_status in ("FAILED", "CANCELLED", "CANCELED"):
+        contract.deposit_payment_status = Contract.DEPOSIT_STATUS_FAILED
+        contract.save(update_fields=["deposit_payment_status", "updated_at"])
+        _audit(None, "deposit_payment_failed", "Contract", str(contract.id), {"tx_ref": tx_ref})
+
+    return JsonResponse({"ok": True})
+
+
+def _apply_deposit_paid(contract, result):
+    """Mark contract deposit as paid after verified PayChangu callback. Idempotent."""
+    if contract.deposit_paid:
+        return
+
+    now = timezone.now()
+    tx_ref = result.get("tx_ref", contract.deposit_payment_tx_ref)
+
+    contract.deposit_paid = True
+    contract.deposit_paid_at = now
+    contract.deposit_payment_status = Contract.DEPOSIT_STATUS_PAID
+    contract.deposit_payment_reference = tx_ref
+    contract.status = Contract.STATUS_COMPLETE
+    contract.save(update_fields=[
+        "deposit_paid", "deposit_paid_at", "deposit_payment_status",
+        "deposit_payment_reference", "status", "updated_at",
+    ])
+
+    application = contract.application
+    application.status = "contract_complete"
+    application.save(update_fields=["status"])
+
+    # Run contract completion workflow
+    try:
+        from commissions.services import process_contract_completion
+        process_contract_completion(application)
+    except Exception:
+        logger.exception("Commission processing failed after deposit paid for contract %s", contract.pk)
+
+    # Create in-app notification for merchant
+    try:
+        from notifications.models import Notification
+        Notification.send(
+            recipient=contract.merchant,
+            notification_type=Notification.TYPE_DEPOSIT_PAID,
+            title="Deposit Paid",
+            body=f"Deposit of MWK {contract.deposit_amount:,.0f} paid for contract {contract.contract_number}.",
+            link=f"/contracts/{contract.id}/complete/",
+            level=Notification.LEVEL_SUCCESS,
+        )
+    except Exception:
+        logger.exception("Notification creation failed for deposit payment contract %s", contract.pk)
+
+    _audit(None, "deposit_payment_confirmed", "Contract", str(contract.id), {
+        "contract_number": contract.contract_number,
+        "tx_ref": tx_ref,
+        "amount": str(contract.deposit_amount),
+        "customer": contract.customer_name,
+    })
+
+    logger.info("Deposit marked PAID for contract %s tx_ref=%s", contract.contract_number, tx_ref)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

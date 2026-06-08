@@ -1,0 +1,50 @@
+{# ── Editable Review Field (Yellow-style) ─────────────────────────
+   Variables:
+   - label     : field label text
+   - value     : field current value
+   - status    : ok | flagged | corrected | missing (default: ok)
+   - note      : correction note text
+   - edit_url  : if provided, user-pencil icon links here (or triggers JS)
+   - no_edit   : if truthy, hide edit icon
+──────────────────────────────────────────────────────────────────── #}
+<div class="ts-editable-field ts-editable-field--{{ status|default:'ok' }}" data-field="{{ label|lower|slugify }}">
+  <div class="ts-editable-field__body">
+    <div class="ts-editable-field__label">{{ label }}</div>
+    <div class="ts-editable-field__value">{{ value|default:"Not captured" }}</div>
+    {% if status == "flagged" and note %}
+      <div class="ts-editable-field__note">⚑ {{ note }}</div>
+    {% elif status == "corrected" %}
+      <div class="ts-editable-field__corrected-note">✓ Corrected</div>
+    {% elif status == "missing" %}
+      <div class="ts-editable-field__note">Missing — required</div>
+    {% endif %}
+  </div>
+
+  {% if status != "ok" or not no_edit %}
+    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+      {% if status == "flagged" or status == "corrected" %}
+        <span class="ts-field-status ts-field-status--{{ status }}">
+          {% if status == "flagged" %}Flagged{% elif status == "corrected" %}Fixed{% endif %}
+        </span>
+      {% elif status == "missing" %}
+        <span class="ts-field-status ts-field-status--missing">Missing</span>
+      {% endif %}
+
+      {% if not no_edit %}
+        {% if edit_url %}
+          <a href="{{ edit_url }}" class="ts-edit-icon-btn" aria-label="Edit {{ label }}">
+        {% else %}
+          <button type="button" class="ts-edit-icon-btn" aria-label="Edit {{ label }}" data-edit-field="{{ label|lower|slugify }}">
+        {% endif %}
+          {% if status == "flagged" %}
+            {# Return/undo arrow for flagged field #}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h10a8 8 0 0 1 8 8v2M3 10l5-5m-5 5 5 5"/></svg>
+          {% else %}
+            {# User-pencil edit icon #}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+          {% endif %}
+        {% if edit_url %}</a>{% else %}</button>{% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

@@ -476,9 +476,9 @@
     };
 
     var reviewKeyMap = {
-        0: 'review-selfie',
-        1: 'review-id-front',
-        2: 'review-id-back'
+        0: 'kyc-img-selfie',
+        1: 'kyc-img-id_front',
+        2: 'kyc-img-id_back'
     };
 
     function serverPhotoReady(stepNum) {
@@ -1028,7 +1028,7 @@
         refreshSubmitState();
     })();
 
-    ['review-selfie', 'review-id-front', 'review-id-back'].forEach(function (id) {
+    ['kyc-img-selfie', 'kyc-img-id_front', 'kyc-img-id_back'].forEach(function (id) {
         var el = document.getElementById(id);
         if (el && el.getAttribute('src')) bindReviewImageLoad(el);
     });

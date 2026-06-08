@@ -1,0 +1,174 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Emergency Payout Approvals — HQ{% endblock %}
+
+{% block content %}
+<h1 class="greeting">Emergency Payout Approvals</h1>
+<p style="font-size:13px;color:#9ca3af;margin:-4px 0 20px;">Review and process underwriter emergency payout requests (20% rule)</p>
+
+<!-- ── Pending requests ────────────────────────────────────── -->
+{% if pending %}
+<div class="card ts-slide-up" style="margin-bottom:16px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <h2 style="font-size:15px;font-weight:700;margin:0;color:#111;">Pending Approval</h2>
+    <span style="font-size:12px;font-weight:800;padding:3px 10px;background:#fef3c7;color:#d97706;border-radius:20px;">{{ pending.count }} pending</span>
+  </div>
+  {% for req in pending %}
+  <div style="background:#f9fafb;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #f0f0f0;">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#ff5a00;">{{ req.requested_amount|mwk }}</div>
+        <div style="font-size:13px;color:#374151;font-weight:600;">{{ req.wallet.user.get_full_name|default:req.wallet.user.username }}</div>
+        <div style="font-size:12px;color:#9ca3af;">Requested {{ req.created_at|timesince }} ago</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#6b7280;">Earned this month</div>
+        <div style="font-size:14px;font-weight:700;">{{ req.earned_this_month_snapshot|mwk }}</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;">Emergency limit</div>
+        <div style="font-size:13px;font-weight:700;color:#d97706;">{{ req.emergency_limit_snapshot|mwk }}</div>
+      </div>
+    </div>
+
+    {% if req.reason %}
+    <div style="font-size:12px;color:#374151;background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:10px;border:1px solid #e5e7eb;">
+      <strong>Reason:</strong> {{ req.reason }}
+    </div>
+    {% endif %}
+
+    {% if req.payout_phone %}
+    <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+      Payout phone: <strong>{{ req.payout_phone }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- Approve form -->
+    <div x-data="{ showApprove: false, showReject: false, showPay: false }">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button @click="showApprove = !showApprove; showReject = false" class="btn-primary" style="padding:7px 14px;font-size:12px;border-radius:8px;">
+          ✓ Approve
+        </button>
+        <button @click="showReject = !showReject; showApprove = false" style="padding:7px 14px;font-size:12px;border-radius:8px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;font-weight:700;cursor:pointer;">
+          ✗ Reject
+        </button>
+      </div>
+
+      <!-- Approve form panel -->
+      <div x-show="showApprove" x-transition style="margin-top:10px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;">
+        <form method="post" action="{% url 'hq_emergency_payout_action' req.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <div class="form-field" style="margin-bottom:8px;">
+            <label class="form-label" style="font-size:11px;">Note (optional)</label>
+            <input type="text" name="note" class="form-input" style="font-size:12px;" placeholder="Approval note...">
+          </div>
+          <button type="submit" class="btn-primary" style="padding:7px 14px;font-size:12px;border-radius:8px;">Confirm Approve</button>
+        </form>
+      </div>
+
+      <!-- Reject form panel -->
+      <div x-show="showReject" x-transition style="margin-top:10px;padding:12px;background:#fef2f2;border-radius:10px;border:1px solid #fca5a5;">
+        <form method="post" action="{% url 'hq_emergency_payout_action' req.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <div class="form-field" style="margin-bottom:8px;">
+            <label class="form-label" style="font-size:11px;">Rejection Reason</label>
+            <input type="text" name="note" class="form-input" style="font-size:12px;" placeholder="Reason for rejection..." required>
+          </div>
+          <button type="submit" style="padding:7px 14px;font-size:12px;border-radius:8px;background:#dc2626;color:#fff;border:none;font-weight:700;cursor:pointer;">Confirm Reject</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card ts-slide-up" style="text-align:center;padding:32px 20px;color:#9ca3af;margin-bottom:16px;">
+  <div style="font-size:32px;margin-bottom:8px;">✓</div>
+  <div style="font-size:15px;font-weight:600;">No pending emergency payout requests</div>
+</div>
+{% endif %}
+
+<!-- ── Approved (awaiting payment) ────────────────────────── -->
+{% if approved %}
+<div class="card ts-slide-up" style="margin-bottom:16px;animation-delay:.05s;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <h2 style="font-size:15px;font-weight:700;margin:0;color:#111;">Approved — Mark as Paid</h2>
+    <span style="font-size:12px;font-weight:800;padding:3px 10px;background:#dbeafe;color:#1d4ed8;border-radius:20px;">{{ approved.count }} approved</span>
+  </div>
+  {% for req in approved %}
+  <div style="background:#f9fafb;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #f0f0f0;" x-data="{ showPay: false }">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#1d4ed8;">{{ req.requested_amount|mwk }}</div>
+        <div style="font-size:13px;color:#374151;font-weight:600;">{{ req.wallet.user.get_full_name|default:req.wallet.user.username }}</div>
+        <div style="font-size:12px;color:#9ca3af;">Approved by {{ req.reviewed_by.username }} · {{ req.reviewed_at|timesince }} ago</div>
+      </div>
+      {% if req.payout_phone %}
+      <div style="font-size:12px;color:#6b7280;">Phone: <strong>{{ req.payout_phone }}</strong></div>
+      {% endif %}
+    </div>
+    <button @click="showPay = !showPay" class="btn-primary" style="padding:7px 14px;font-size:12px;border-radius:8px;">
+      Mark as Paid
+    </button>
+    <div x-show="showPay" x-transition style="margin-top:10px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;">
+      <form method="post" action="{% url 'hq_emergency_payout_action' req.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="mark_paid">
+        <div class="form-field" style="margin-bottom:8px;">
+          <label class="form-label" style="font-size:11px;">Payment Reference *</label>
+          <input type="text" name="payment_reference" class="form-input" style="font-size:12px;" placeholder="Mobile money transaction ref..." required>
+        </div>
+        <div class="form-field" style="margin-bottom:8px;">
+          <label class="form-label" style="font-size:11px;">Payment Provider</label>
+          <input type="text" name="payment_provider" class="form-input" style="font-size:12px;" placeholder="airtel / tnm / bank / manual">
+        </div>
+        <button type="submit" class="btn-primary" style="padding:7px 14px;font-size:12px;border-radius:8px;">Confirm Payment</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Recently paid ──────────────────────────────────────── -->
+{% if paid_recent %}
+<div class="card ts-slide-up" style="animation-delay:.1s;margin-bottom:16px;">
+  <h2 style="font-size:14px;font-weight:700;margin:0 0 12px;color:#374151;">Recently Paid</h2>
+  {% for req in paid_recent %}
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;gap:8px;">
+    <div>
+      <span style="font-size:13px;font-weight:700;color:#059669;">{{ req.requested_amount|mwk }}</span>
+      <span style="font-size:12px;color:#6b7280;margin-left:8px;">{{ req.wallet.user.get_full_name|default:req.wallet.user.username }}</span>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:#9ca3af;">{{ req.paid_at|date:"d M Y H:i" }}</div>
+      {% if req.payment_reference %}
+      <div style="font-size:11px;color:#6b7280;font-family:monospace;">{{ req.payment_reference }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Rejected ───────────────────────────────────────────── -->
+{% if rejected_recent %}
+<div class="card ts-slide-up" style="animation-delay:.15s;">
+  <h2 style="font-size:14px;font-weight:700;margin:0 0 12px;color:#374151;">Recently Rejected</h2>
+  {% for req in rejected_recent %}
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;gap:8px;">
+    <div>
+      <span style="font-size:13px;font-weight:700;color:#dc2626;">{{ req.requested_amount|mwk }}</span>
+      <span style="font-size:12px;color:#6b7280;margin-left:8px;">{{ req.wallet.user.get_full_name|default:req.wallet.user.username }}</span>
+      {% if req.review_note %}
+      <div style="font-size:11px;color:#9ca3af;">{{ req.review_note }}</div>
+      {% endif %}
+    </div>
+    <div style="font-size:11px;color:#9ca3af;">{{ req.reviewed_at|date:"d M Y" }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -105,7 +105,39 @@ class Contract(models.Model):
     contract_bundle_pdf = models.FileField(upload_to="contract_pdfs/bundle/", blank=True, null=True)
     completed_bundle_pdf = models.FileField(upload_to="contract_pdfs/bundle_completed/", blank=True, null=True)
 
-    # Activation
+    # ── Deposit payment tracking ─────────────────────────────────────────────
+    DEPOSIT_STATUS_NOT_STARTED = "not_started"
+    DEPOSIT_STATUS_CHECKOUT_CREATED = "checkout_created"
+    DEPOSIT_STATUS_AWAITING = "awaiting_confirmation"
+    DEPOSIT_STATUS_PROCESSING = "processing"
+    DEPOSIT_STATUS_PAID = "paid"
+    DEPOSIT_STATUS_FAILED = "failed"
+    DEPOSIT_STATUS_EXPIRED = "expired"
+    DEPOSIT_STATUS_MISMATCH = "amount_mismatch"
+
+    DEPOSIT_PAYMENT_STATUS_CHOICES = [
+        (DEPOSIT_STATUS_NOT_STARTED, "Not Started"),
+        (DEPOSIT_STATUS_CHECKOUT_CREATED, "Checkout Created"),
+        (DEPOSIT_STATUS_AWAITING, "Awaiting Customer Confirmation"),
+        (DEPOSIT_STATUS_PROCESSING, "Processing"),
+        (DEPOSIT_STATUS_PAID, "Paid"),
+        (DEPOSIT_STATUS_FAILED, "Failed"),
+        (DEPOSIT_STATUS_EXPIRED, "Expired"),
+        (DEPOSIT_STATUS_MISMATCH, "Amount Mismatch — Needs Review"),
+    ]
+
+    deposit_payment_status = models.CharField(
+        max_length=30,
+        choices=DEPOSIT_PAYMENT_STATUS_CHOICES,
+        default=DEPOSIT_STATUS_NOT_STARTED,
+        blank=True,
+    )
+    deposit_payment_tx_ref = models.CharField(max_length=100, blank=True)
+    deposit_payment_reference = models.CharField(max_length=200, blank=True)
+    deposit_paid_at = models.DateTimeField(null=True, blank=True)
+    deposit_payer_phone = models.CharField(max_length=20, blank=True)
+
+    # ── Activation ───────────────────────────────────────────────────────────
     active_at = models.DateTimeField(null=True, blank=True)
 
     # Completion

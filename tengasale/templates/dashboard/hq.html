@@ -4,6 +4,7 @@
 {% block page_title %}HQ Command Center — TengaSale{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
 <style>
 /* ═══════════════════════════════════════════════════════════════════
    HQ COMMAND CENTER  ·  Premium Dashboard
@@ -1120,6 +1121,131 @@ body {
   .hq-icon-btn { width: 34px; height: 34px; border-radius: 9px; }
 }
 
+/* ── HQ Hero Portfolio Row ──────────────────────────────────────── */
+.hq-hero-row {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+@media (max-width: 860px) {
+  .hq-hero-row { grid-template-columns: 1fr; }
+  .hq-hero-aside { flex-direction: row; flex-wrap: wrap; }
+}
+.hq-hero-main {
+  background: linear-gradient(135deg, #ff5a00 0%, #c44400 100%);
+  border-radius: 18px;
+  padding: 26px 28px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(255,90,0,0.28);
+}
+.hq-hero-main::after {
+  content: '';
+  position: absolute;
+  top: -28px; right: -28px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  pointer-events: none;
+}
+.hq-hero-eyebrow {
+  font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; opacity: 0.75; margin-bottom: 6px;
+}
+.hq-hero-value {
+  font-size: 2.6rem; font-weight: 900; line-height: 1; margin: 0 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+.hq-hero-sub { font-size: 0.8rem; opacity: 0.8; margin-bottom: 14px; }
+.hq-hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.hq-hero-badge {
+  font-size: 0.72rem; font-weight: 800;
+  padding: 4px 11px; border-radius: 99px;
+}
+.hq-hero-badge--light { background: rgba(255,255,255,0.20); color: #fff; }
+.hq-hero-badge--success { background: rgba(22,163,74,0.30); color: #bbf7d0; }
+.hq-hero-badge--danger  { background: rgba(220,38,38,0.30);  color: #fecaca; }
+.hq-hero-badge--warn    { background: rgba(245,158,11,0.30); color: #fde68a; }
+
+.hq-hero-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hq-hero-aside-stat {
+  background: #fff;
+  border: 1.5px solid var(--hq-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  flex: 1;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hq-hero-aside-val {
+  font-size: 1.3rem; font-weight: 900; color: var(--hq-ink);
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.hq-hero-aside-lbl {
+  font-size: 0.68rem; font-weight: 700; color: var(--hq-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* ── KPI trend arrows ───────────────────────────────────────────── */
+.hq-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 99px;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+.hq-kpi-trend--up   { background: rgba(22,163,74,0.12); color: #15803d; }
+.hq-kpi-trend--down { background: rgba(220,38,38,0.10); color: #dc2626; }
+.hq-kpi-trend--warn { background: rgba(245,158,11,0.10); color: #d97706; }
+
+/* ── Activity ticker strip ──────────────────────────────────────── */
+.hq-ticker-strip {
+  background: #fff;
+  border: 1.5px solid var(--hq-border);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+  flex-wrap: nowrap;
+}
+.hq-ticker-strip::-webkit-scrollbar { display: none; }
+.hq-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+.hq-ticker-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.hq-ticker-dot--green  { background: #16a34a; }
+.hq-ticker-dot--orange { background: #ff5a00; }
+.hq-ticker-dot--red    { background: #dc2626; }
+.hq-ticker-dot--amber  { background: #f59e0b; }
+.hq-ticker-val { font-weight: 800; color: var(--hq-ink); }
+.hq-ticker-lbl { color: var(--hq-muted); }
+.hq-ticker-divider {
+  width: 1px; height: 20px; background: var(--hq-border); flex-shrink: 0;
+}
+
 /* ── HQ Layout with fixed sidebar ──────────────────────────────── */
 .hq-layout {
   display: flex;
@@ -1480,6 +1606,10 @@ body {
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       SMS / Messaging
     </a>
+    <a href="{% url 'hq_whatsapp_bot' %}" class="hq-sidebar-link" data-testid="sidebar-whatsapp-bot">
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none;"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Zm.01 18.16h-.01a8.22 8.22 0 0 1-4.19-1.15l-.3-.18-3.11.82.83-3.03-.2-.31a8.18 8.18 0 0 1-1.25-4.39c0-4.53 3.69-8.22 8.23-8.22a8.18 8.18 0 0 1 5.81 2.41 8.17 8.17 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.22 8.23Z"/></svg>
+      WhatsApp Bot
+    </a>
     <a href="{% url 'hq_fraud_checks' %}?type=kyc" class="hq-sidebar-link">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5z"/><path d="M9 12l2 2 4-5"/></svg>
       KYC / Identity
@@ -1596,78 +1726,156 @@ body {
     <span class="hq-ph-time" id="hq-clock" aria-live="polite"></span>
   </div>
 
+  {# ── Portfolio Hero Row ────────────────────────────────────────── #}
+  <div class="hq-hero-row" data-testid="hq-hero-row">
+    <div class="hq-hero-main">
+      <div class="hq-hero-eyebrow">Total Contract Portfolio Value</div>
+      <div class="hq-hero-value">{{ total_portfolio_value|mwk }}</div>
+      <div class="hq-hero-sub">
+        {{ active_contracts_count }} active contract{{ active_contracts_count|pluralize }}
+        &nbsp;·&nbsp; {{ approval_rate }}% approval rate
+      </div>
+      <div class="hq-hero-badges">
+        <span class="hq-hero-badge hq-hero-badge--light">{{ total_payments_collected|mwk }} collected</span>
+        {% if overdue_contracts_count %}
+          <span class="hq-hero-badge hq-hero-badge--danger">⚠ {{ overdue_contracts_count }} overdue</span>
+        {% else %}
+          <span class="hq-hero-badge hq-hero-badge--success">✓ No overdue contracts</span>
+        {% endif %}
+        {% if waiting_count %}
+          <span class="hq-hero-badge hq-hero-badge--warn">{{ waiting_count }} pending review</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="hq-hero-aside">
+      <div class="hq-hero-aside-stat">
+        <div class="hq-hero-aside-val">{{ sales_today }}</div>
+        <div class="hq-hero-aside-lbl">Applications Today</div>
+      </div>
+      <div class="hq-hero-aside-stat">
+        <div class="hq-hero-aside-val">{{ collections_today|mwk }}</div>
+        <div class="hq-hero-aside-lbl">Collected Today</div>
+      </div>
+      <div class="hq-hero-aside-stat">
+        <div class="hq-hero-aside-val">{{ lock_locked_count|default:"0" }}</div>
+        <div class="hq-hero-aside-lbl">Locked Devices</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Activity Ticker ───────────────────────────────────────────── #}
+  <div class="hq-ticker-strip" data-testid="hq-ticker-strip" aria-label="Live activity ticker">
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--green"></span>
+      <span class="hq-ticker-val">{{ active_contracts_count }}</span>
+      <span class="hq-ticker-lbl">Active contracts</span>
+    </div>
+    <div class="hq-ticker-divider"></div>
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--orange"></span>
+      <span class="hq-ticker-val">{{ pending_review_count }}</span>
+      <span class="hq-ticker-lbl">Pending review</span>
+    </div>
+    <div class="hq-ticker-divider"></div>
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--{% if overdue_contracts_count %}red{% else %}green{% endif %}"></span>
+      <span class="hq-ticker-val">{{ overdue_contracts_count }}</span>
+      <span class="hq-ticker-lbl">Overdue</span>
+    </div>
+    <div class="hq-ticker-divider"></div>
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--green"></span>
+      <span class="hq-ticker-val">{{ approval_rate }}%</span>
+      <span class="hq-ticker-lbl">Approval rate</span>
+    </div>
+    <div class="hq-ticker-divider"></div>
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--orange"></span>
+      <span class="hq-ticker-val">{{ paid_today|mwk }}</span>
+      <span class="hq-ticker-lbl">Paid today</span>
+    </div>
+    <div class="hq-ticker-divider"></div>
+    <div class="hq-ticker-item">
+      <span class="hq-ticker-dot hq-ticker-dot--amber"></span>
+      <span class="hq-ticker-val">{{ open_tickets_count }}</span>
+      <span class="hq-ticker-lbl">Open tickets</span>
+    </div>
+  </div>
+
   <p class="hq-sl">Key Metrics</p>
   <div class="hq-kpi-grid" data-testid="hq-kpi-grid">
 
-    <div class="hq-kpi kpi-orange">
+    <div class="hq-kpi kpi-orange ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ total_merchants }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ total_merchants }}" data-count-duration="700">{{ total_merchants }}</div>
       <div class="hq-kpi__label">Total Merchants</div>
     </div>
 
-    <div class="hq-kpi kpi-blue">
+    <div class="hq-kpi kpi-blue ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ total_underwriters }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ total_underwriters }}" data-count-duration="700">{{ total_underwriters }}</div>
       <div class="hq-kpi__label">Underwriters</div>
     </div>
 
-    <div class="hq-kpi kpi-amber">
+    <div class="hq-kpi kpi-amber ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ pending_review_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ pending_review_count }}" data-count-duration="700">{{ pending_review_count }}</div>
       <div class="hq-kpi__label">Pending Review</div>
     </div>
 
-    <div class="hq-kpi kpi-blue">
+    <div class="hq-kpi kpi-blue ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ under_review_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ under_review_count }}" data-count-duration="700">{{ under_review_count }}</div>
       <div class="hq-kpi__label">Under Review</div>
     </div>
 
-    <div class="hq-kpi kpi-green">
+    <div class="hq-kpi kpi-green ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ approved_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ approved_count }}" data-count-duration="700">{{ approved_count }}</div>
       <div class="hq-kpi__label">Approved</div>
+      {% if approved_count %}<span class="hq-kpi-trend hq-kpi-trend--up">▲ {{ approval_rate }}%</span>{% endif %}
     </div>
 
-    <div class="hq-kpi kpi-red">
+    <div class="hq-kpi kpi-red ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ rejected_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ rejected_count }}" data-count-duration="700">{{ rejected_count }}</div>
       <div class="hq-kpi__label">Rejected</div>
+      {% if rejected_count %}<span class="hq-kpi-trend hq-kpi-trend--down">▼ Review needed</span>{% endif %}
     </div>
 
-    <div class="hq-kpi kpi-green">
+    <div class="hq-kpi kpi-green ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ completed_contracts_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ completed_contracts_count }}" data-count-duration="700">{{ completed_contracts_count }}</div>
       <div class="hq-kpi__label">Completed</div>
     </div>
 
-    <div class="hq-kpi kpi-orange">
+    <div class="hq-kpi kpi-orange ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ active_contracts_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ active_contracts_count }}" data-count-duration="700">{{ active_contracts_count }}</div>
       <div class="hq-kpi__label">Active Contracts</div>
     </div>
 
-    <div class="hq-kpi kpi-red">
+    <div class="hq-kpi kpi-red ts-stagger-item">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
-      <div class="hq-kpi__val">{{ overdue_contracts_count }}</div>
+      <div class="hq-kpi__val" data-count-up="{{ overdue_contracts_count }}" data-count-duration="700">{{ overdue_contracts_count }}</div>
       <div class="hq-kpi__label">Overdue</div>
     </div>
 
@@ -1677,6 +1885,7 @@ body {
       </div>
       <div class="hq-kpi__val hq-kpi__val--sm">{{ paid_today|mwk }}</div>
       <div class="hq-kpi__label">Paid Today</div>
+      <span class="hq-kpi-trend hq-kpi-trend--up">▲ Daily collection</span>
     </div>
 
   </div>
@@ -1691,6 +1900,7 @@ body {
       </div>
       <div class="hq-kpi__val hq-kpi__val--sm">{{ total_portfolio_value|mwk }}</div>
       <div class="hq-kpi__label">Total Contract Value</div>
+      <span class="hq-kpi-trend hq-kpi-trend--up">▲ Portfolio</span>
     </div>
 
     <div class="hq-kpi kpi-green" style="border-top:3px solid #16a34a;">
@@ -1699,6 +1909,7 @@ body {
       </div>
       <div class="hq-kpi__val hq-kpi__val--sm">{{ total_payments_collected|mwk }}</div>
       <div class="hq-kpi__label">Payments Collected</div>
+      <span class="hq-kpi-trend hq-kpi-trend--up">▲ Inbound</span>
     </div>
 
     <div class="hq-kpi kpi-amber" style="border-top:3px solid #f59e0b;">

@@ -1,0 +1,187 @@
+{% extends "sales/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Emergency Payout Request{% endblock %}
+
+{% block content %}
+<div class="sales-main">
+<div class="ts-back-row">
+  <a href="{% url 'sales_wallet' %}" class="ts-back-btn">
+    <svg viewBox="0 0 24 24" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Wallet
+  </a>
+</div>
+
+<h1 class="greeting">Emergency Payout</h1>
+<p style="font-size:13px;color:#9ca3af;margin:-4px 0 18px;">Request up to 20% of your current month's earned commission</p>
+
+<!-- ── Earnings overview card ──────────────────────────────── -->
+<div class="wallet-balance-card" style="margin-bottom:14px;">
+  <div class="wallet-balance-card__label">Available Emergency Payout</div>
+  <div class="wallet-balance-card__amount">
+    <strong class="wallet-amount">{{ emergency_info.available|mwk }}</strong>
+  </div>
+  <div class="wallet-balance-card__stats">
+    <div class="wallet-stat">
+      <span class="wallet-stat__label">Earned This Month (Gross)</span>
+      <span class="wallet-stat__value text-green">{{ emergency_info.earned|mwk }}</span>
+    </div>
+    <div class="wallet-stat">
+      <span class="wallet-stat__label">Emergency Limit (20%)</span>
+      <span class="wallet-stat__value">{{ emergency_info.limit|mwk }}</span>
+    </div>
+    <div class="wallet-stat">
+      <span class="wallet-stat__label">Already Requested</span>
+      <span class="wallet-stat__value text-red">{{ emergency_info.already_requested|mwk }}</span>
+    </div>
+    <div class="wallet-stat">
+      <span class="wallet-stat__label">Remaining for Month-End Salary</span>
+      <span class="wallet-stat__value">{{ emergency_info.remaining_for_salary|mwk }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Info notice ─────────────────────────────────────────── -->
+<div class="card" style="background:#fff8f0;border:1.5px solid #fed7aa;padding:14px 16px;margin-bottom:14px;">
+  <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
+    <strong>Emergency payout rule:</strong> You may request up to <strong>20% of your current-month earned commission</strong> before your normal month-end payout.
+    The remaining 80% will be included in your month-end salary. This request requires HQ approval.
+  </p>
+</div>
+
+{% if emergency_info.available <= 0 %}
+<div class="card" style="background:#f0fdf4;border:1px solid #86efac;padding:14px 16px;margin-bottom:14px;">
+  <p style="margin:0;font-size:13px;color:#16a34a;">
+    {% if emergency_info.earned <= 0 %}
+      You have not earned any commission this month yet. Emergency payouts become available once commissions are credited.
+    {% else %}
+      You have already used your full 20% emergency payout limit for this month.
+    {% endif %}
+  </p>
+</div>
+{% else %}
+
+<!-- ── Request form ────────────────────────────────────────── -->
+<form method="post" x-data="emergencyPayoutForm()">
+  {% csrf_token %}
+  <div class="card" style="margin-bottom:12px;">
+    <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:14px;">Request Emergency Payout</div>
+
+    <!-- Amount field -->
+    <div class="form-field">
+      <label class="form-label">Amount (MWK)</label>
+      <input
+        type="number"
+        name="amount"
+        class="form-input"
+        placeholder="0.00"
+        min="1"
+        max="{{ emergency_info.available|floatformat:0 }}"
+        step="100"
+        x-model="amount"
+        required
+      />
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+        Max available: <strong>{{ emergency_info.available|mwk }}</strong>
+      </div>
+      <template x-if="amount > {{ emergency_info.available|floatformat:0 }}">
+        <p style="color:#dc2626;font-size:12px;margin-top:4px;">Amount exceeds your emergency payout limit.</p>
+      </template>
+    </div>
+
+    <!-- Reason field -->
+    <div class="form-field" style="margin-top:12px;">
+      <label class="form-label">Reason for Emergency Payout</label>
+      <textarea
+        name="reason"
+        class="form-input"
+        rows="3"
+        placeholder="Briefly explain why you need this emergency payout..."
+        required
+        style="resize:vertical;"
+      ></textarea>
+    </div>
+
+    <!-- Payout phone -->
+    <div class="form-field" style="margin-top:12px;">
+      <label class="form-label">Payout Phone / Account Number</label>
+      <input
+        type="tel"
+        name="payout_phone"
+        class="form-input"
+        placeholder="+265 88 XXX XXXX"
+      />
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+        The mobile money number to receive the payout. Leave blank to use your profile number.
+      </div>
+    </div>
+
+    <!-- Confirmation checkbox -->
+    <div style="background:#f9fafb;border-radius:10px;padding:12px;margin-top:14px;border:1px solid #e5e7eb;">
+      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+        <input type="checkbox" name="confirmed" required style="margin-top:2px;flex-shrink:0;" />
+        <span style="font-size:13px;color:#374151;line-height:1.5;">
+          I understand this emergency payout is limited to 20% of my current-month earned amount
+          and will reduce my month-end payout accordingly. I confirm this amount does not exceed
+          my available emergency payout limit.
+        </span>
+      </label>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="action-btn-large primary" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      Submit Payout Request
+    </button>
+  </div>
+</form>
+{% endif %}
+
+<!-- ── Pending requests ────────────────────────────────────── -->
+{% if pending_requests %}
+<div class="card" style="margin-bottom:12px;">
+  <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Pending Requests</div>
+  {% for req in pending_requests %}
+  <div style="padding:10px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#ff5a00;">{{ req.requested_amount|mwk }}</div>
+      <div style="font-size:12px;color:#6b7280;">{{ req.created_at|date:"d M Y H:i" }} · {{ req.reason|truncatewords:10 }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:11px;font-weight:700;padding:3px 8px;background:#fef3c7;color:#d97706;border-radius:20px;">Pending</span>
+      <form method="post" action="{% url 'sales_emergency_payout_cancel' req.id %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" style="font-size:11px;color:#dc2626;background:none;border:none;cursor:pointer;padding:0;font-weight:600;">Cancel</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Paid requests ───────────────────────────────────────── -->
+{% if paid_requests %}
+<div class="card">
+  <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Recent Paid Payouts</div>
+  {% for req in paid_requests %}
+  <div style="padding:10px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#10b981;">{{ req.requested_amount|mwk }}</div>
+      <div style="font-size:12px;color:#6b7280;">{{ req.paid_at|date:"d M Y" }}{% if req.payment_reference %} · Ref: {{ req.payment_reference }}{% endif %}</div>
+    </div>
+    <span style="font-size:11px;font-weight:700;padding:3px 8px;background:#d1fae5;color:#059669;border-radius:20px;">✓ Paid</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+</div>
+
+<script>
+function emergencyPayoutForm() {
+  return {
+    amount: '',
+  };
+}
+</script>
+{% endblock %}

@@ -1448,6 +1448,13 @@ def hq_deals(request):
         if key in brand_groups and brand_groups[key]["count"] > 0
     ]
 
+    # Catalog intelligence stats
+    all_deals = deals_qs
+    total_active_models = all_deals.filter(is_active=True).count()
+    total_in_stock = all_deals.filter(stock_status=DeviceDeal.STOCK_IN).count()
+    deposit_pcts = list(all_deals.values_list("deposit_percent", flat=True))
+    avg_deposit_pct = round(sum(deposit_pcts) / len(deposit_pcts), 1) if deposit_pcts else None
+
     return render(request, "dashboard/hq_deals.html", {
         "deals": deals_qs,
         "brand_groups": brand_groups,
@@ -1457,6 +1464,9 @@ def hq_deals(request):
         "status_filter": status_filter,
         "msg": msg,
         "msg_type": msg_type,
+        "total_active_models": total_active_models,
+        "total_in_stock": total_in_stock,
+        "avg_deposit_pct": avg_deposit_pct,
     })
 
 
@@ -3919,3 +3929,250 @@ def hq_agreement_pdf(request, agreement_id):
     except FileNotFoundError:
         messages.error(request, "PDF file not found.")
         return redirect("hq_merchant_agreements")
+
+
+# ── HQ WhatsApp Bot Operations Dashboard ────────────────────────────────────
+
+@hq_required
+def hq_whatsapp_bot(request):
+    """WhatsApp Bot Operations Dashboard — channel health, templates, analytics."""
+    from communications.models import SMSLog
+    from django.utils import timezone as tz
+
+    today = tz.now().date()
+    yesterday = today - timedelta(days=1)
+
+    # Message stats from SMS/WhatsApp logs
+    try:
+        wa_sent_today = SMSLog.objects.filter(
+            created_at__date=today,
+            provider__icontains="whatsapp"
+        ).count()
+        wa_failed_today = SMSLog.objects.filter(
+            created_at__date=today,
+            provider__icontains="whatsapp",
+            status="failed"
+        ).count()
+        wa_queued = SMSLog.objects.filter(
+            provider__icontains="whatsapp",
+            status="queued"
+        ).count()
+        wa_sent_yesterday = SMSLog.objects.filter(
+            created_at__date=yesterday,
+            provider__icontains="whatsapp"
+        ).count()
+        # Last inbound/outbound from support
+        from support.models import SupportConversation, SupportMessage
+        last_inbound = SupportMessage.objects.filter(
+            direction="inbound"
+        ).select_related("conversation").order_by("-created_at").first()
+        last_outbound = SupportMessage.objects.filter(
+            direction="outbound"
+        ).select_related("conversation").order_by("-created_at").first()
+        conversation_count = SupportConversation.objects.count()
+        open_conversations = SupportConversation.objects.filter(status="open").count()
+    except Exception:
+        wa_sent_today = wa_failed_today = wa_queued = wa_sent_yesterday = 0
+        last_inbound = last_outbound = None
+        conversation_count = open_conversations = 0
+
+    # Webhook config
+    webhook_url = getattr(settings, "WHATSAPP_WEBHOOK_URL", "")
+    messaging_provider = getattr(settings, "MESSAGING_PROVIDER", "mock")
+    twilio_wa_number = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
+    meta_wa_number = getattr(settings, "META_WHATSAPP_PHONE_NUMBER_ID", "")
+
+    channel_healthy = messaging_provider != "mock" and (twilio_wa_number or meta_wa_number)
+
+    delivery_rate = None
+    if wa_sent_today > 0:
+        delivery_rate = round((wa_sent_today - wa_failed_today) / wa_sent_today * 100, 1)
+
+    # WhatsApp templates
+    templates = [
+        {"name": "OTP Verification",         "key": "otp",                  "enabled": True,  "category": "Authentication"},
+        {"name": "Application Submitted",     "key": "app_submitted",        "enabled": True,  "category": "Transactional"},
+        {"name": "Application Approved",      "key": "app_approved",         "enabled": True,  "category": "Transactional"},
+        {"name": "IMEI Required",             "key": "imei_required",        "enabled": True,  "category": "Action Required"},
+        {"name": "Payment Received",          "key": "payment_received",     "enabled": True,  "category": "Transactional"},
+        {"name": "Payment Due in 2 Days",     "key": "due_2_days",           "enabled": True,  "category": "Reminder"},
+        {"name": "Payment Due Today",         "key": "due_today",            "enabled": True,  "category": "Reminder"},
+        {"name": "Payment Overdue",           "key": "overdue",              "enabled": True,  "category": "Collections"},
+        {"name": "Device Lock Warning",       "key": "lock_warning",         "enabled": True,  "category": "Collections"},
+        {"name": "Correction Required",       "key": "correction_required",  "enabled": True,  "category": "Action Required"},
+        {"name": "Support Reply",             "key": "support_reply",        "enabled": True,  "category": "Support"},
+        {"name": "Merchant Onboarding",       "key": "merchant_onboarding",  "enabled": True,  "category": "Onboarding"},
+        {"name": "Payout Approved",           "key": "payout_approved",      "enabled": True,  "category": "Financial"},
+        {"name": "Application Rejected",      "key": "app_rejected",         "enabled": False, "category": "Transactional"},
+    ]
+
+    # Automation flows
+    automations = [
+        {"name": "OTP Verification",      "trigger": "New Application",   "active": True},
+        {"name": "Repayment Reminders",   "trigger": "Daily (8am)",        "active": True},
+        {"name": "Arrears Escalation",    "trigger": "3 days overdue",     "active": True},
+        {"name": "Correction Request",    "trigger": "Underwriter flags",  "active": True},
+        {"name": "IMEI Required",         "trigger": "Post-approval",      "active": True},
+        {"name": "Approval Notification", "trigger": "Application approved","active": True},
+        {"name": "Payment Confirmation",  "trigger": "Payment received",   "active": True},
+        {"name": "Support Ticket Created","trigger": "WhatsApp inbound",   "active": True},
+    ]
+
+    return render(request, "dashboard/hq_whatsapp_bot.html", {
+        "page_title": "WhatsApp Bot Operations",
+        "messaging_provider": messaging_provider,
+        "channel_healthy": channel_healthy,
+        "twilio_wa_number": twilio_wa_number,
+        "meta_wa_number": meta_wa_number,
+        "webhook_url": webhook_url,
+        "wa_sent_today": wa_sent_today,
+        "wa_failed_today": wa_failed_today,
+        "wa_queued": wa_queued,
+        "wa_sent_yesterday": wa_sent_yesterday,
+        "delivery_rate": delivery_rate,
+        "last_inbound": last_inbound,
+        "last_outbound": last_outbound,
+        "conversation_count": conversation_count,
+        "open_conversations": open_conversations,
+        "templates": templates,
+        "automations": automations,
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HQ Emergency Payout Approvals
+# ─────────────────────────────────────────────────────────────────────────────
+
+@hq_required
+def hq_emergency_payouts(request):
+    """HQ view: list and process emergency payout requests from underwriters."""
+    from earnings.models import EmergencyPayoutRequest
+
+    pending = EmergencyPayoutRequest.objects.filter(
+        status=EmergencyPayoutRequest.STATUS_PENDING,
+    ).select_related("wallet__user").order_by("-created_at")
+
+    approved = EmergencyPayoutRequest.objects.filter(
+        status=EmergencyPayoutRequest.STATUS_APPROVED,
+    ).select_related("wallet__user", "reviewed_by").order_by("-reviewed_at")[:20]
+
+    paid_recent = EmergencyPayoutRequest.objects.filter(
+        status=EmergencyPayoutRequest.STATUS_PAID,
+    ).select_related("wallet__user", "reviewed_by").order_by("-paid_at")[:20]
+
+    rejected_recent = EmergencyPayoutRequest.objects.filter(
+        status=EmergencyPayoutRequest.STATUS_REJECTED,
+    ).select_related("wallet__user", "reviewed_by").order_by("-reviewed_at")[:10]
+
+    return render(request, "dashboard/hq_emergency_payouts.html", {
+        "page_title": "Emergency Payout Approvals",
+        "pending": pending,
+        "approved": approved,
+        "paid_recent": paid_recent,
+        "rejected_recent": rejected_recent,
+    })
+
+
+@hq_required
+@require_POST
+def hq_emergency_payout_action(request, payout_id):
+    """Approve, reject, or mark as paid an emergency payout request."""
+    from earnings.models import EmergencyPayoutRequest
+
+    payout = get_object_or_404(EmergencyPayoutRequest, id=payout_id)
+    action = request.POST.get("action", "")
+    note = request.POST.get("note", "").strip()
+    payment_reference = request.POST.get("payment_reference", "").strip()
+    payment_provider = request.POST.get("payment_provider", "").strip()
+
+    # Prevent self-approval
+    if payout.wallet.user == request.user:
+        messages.error(request, "You cannot approve your own payout request.")
+        return redirect("hq_emergency_payouts")
+
+    now = timezone.now()
+
+    if action == "approve":
+        if payout.status != EmergencyPayoutRequest.STATUS_PENDING:
+            messages.error(request, "Only pending requests can be approved.")
+            return redirect("hq_emergency_payouts")
+        # Enforce 20% limit
+        emergency_info = EmergencyPayoutRequest.get_monthly_emergency_limit(payout.wallet)
+        if payout.requested_amount > emergency_info["limit"]:
+            messages.error(request, f"Request exceeds 20% emergency limit of {emergency_info['limit']:,.0f} MWK.")
+            return redirect("hq_emergency_payouts")
+        payout.status = EmergencyPayoutRequest.STATUS_APPROVED
+        payout.reviewed_by = request.user
+        payout.reviewed_at = now
+        payout.review_note = note
+        payout.save(update_fields=["status", "reviewed_by", "reviewed_at", "review_note", "updated_at"])
+        messages.success(request, f"Emergency payout for {payout.wallet.user.get_full_name() or payout.wallet.user.username} approved.")
+
+    elif action == "reject":
+        if payout.status not in (EmergencyPayoutRequest.STATUS_PENDING, EmergencyPayoutRequest.STATUS_APPROVED):
+            messages.error(request, "Cannot reject this request in its current state.")
+            return redirect("hq_emergency_payouts")
+        payout.status = EmergencyPayoutRequest.STATUS_REJECTED
+        payout.reviewed_by = request.user
+        payout.reviewed_at = now
+        payout.review_note = note
+        payout.save(update_fields=["status", "reviewed_by", "reviewed_at", "review_note", "updated_at"])
+        messages.success(request, "Emergency payout request rejected.")
+
+    elif action == "mark_paid":
+        if payout.status != EmergencyPayoutRequest.STATUS_APPROVED:
+            messages.error(request, "Only approved requests can be marked as paid.")
+            return redirect("hq_emergency_payouts")
+        if not payment_reference:
+            messages.error(request, "A payment reference is required to mark as paid.")
+            return redirect("hq_emergency_payouts")
+        payout.status = EmergencyPayoutRequest.STATUS_PAID
+        payout.payment_reference = payment_reference
+        payout.payment_provider = payment_provider or "manual"
+        payout.paid_at = now
+        payout.reviewed_by = request.user
+        payout.save(update_fields=[
+            "status", "payment_reference", "payment_provider",
+            "paid_at", "reviewed_by", "updated_at",
+        ])
+        # Debit wallet balance
+        try:
+            wallet = payout.wallet
+            from earnings.models import WalletTransaction
+            WalletTransaction.objects.create(
+                wallet=wallet,
+                transaction_type="payout_debit",
+                amount=-payout.requested_amount,
+                description=f"Emergency payout — ref {payment_reference}",
+            )
+            from django.db.models import F
+            wallet.balance = max(
+                Decimal("0"),
+                (wallet.balance or Decimal("0")) - payout.requested_amount,
+            )
+            wallet.total_paid = (wallet.total_paid or Decimal("0")) + payout.requested_amount
+            wallet.save(update_fields=["balance", "total_paid"])
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Wallet debit failed for emergency payout %s", payout.pk)
+
+        # Notify underwriter
+        try:
+            from notifications.models import Notification
+            Notification.send(
+                recipient=payout.wallet.user,
+                notification_type=Notification.TYPE_PAYMENT_RECEIVED,
+                title="Emergency Payout Paid",
+                body=f"Your emergency payout of MWK {payout.requested_amount:,.0f} has been paid. Ref: {payment_reference}.",
+                link="/sales/emergency-payout/",
+                level=Notification.LEVEL_SUCCESS,
+            )
+        except Exception:
+            pass
+
+        messages.success(request, f"Emergency payout of MWK {payout.requested_amount:,.0f} marked as paid.")
+
+    else:
+        messages.error(request, "Invalid action.")
+
+    return redirect("hq_emergency_payouts")
