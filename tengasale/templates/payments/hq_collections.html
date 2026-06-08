@@ -1,0 +1,115 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Customer Collections</h1>
+    <p>Incoming payments from customers — deposits, repayments, settlements.</p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="font-size:13px;color:var(--pay-muted);">Total paid: <strong style="color:var(--pay-green);">MWK {{ total_paid|intcomma }}</strong></span>
+    <span style="font-size:13px;color:var(--pay-muted);">Failed: <strong style="color:var(--pay-red);">{{ total_failed }}</strong></span>
+  </div>
+</div>
+
+{# Filter bar #}
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Search</label>
+    <input type="text" name="q" value="{{ filter_search }}" placeholder="Customer / Contract / Reference…">
+  </div>
+  <div>
+    <label>Status</label>
+    <select name="status">
+      <option value="">All statuses</option>
+      <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="failed" {% if filter_status == 'failed' %}selected{% endif %}>Failed</option>
+      <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+      <option value="reversed" {% if filter_status == 'reversed' %}selected{% endif %}>Reversed</option>
+    </select>
+  </div>
+  <div>
+    <label>Provider</label>
+    <select name="provider">
+      <option value="">All providers</option>
+      <option value="paychangu" {% if filter_provider == 'paychangu' %}selected{% endif %}>PayChangu</option>
+      <option value="airtel_money" {% if filter_provider == 'airtel_money' %}selected{% endif %}>Airtel Money</option>
+      <option value="tnm_mpamba" {% if filter_provider == 'tnm_mpamba' %}selected{% endif %}>TNM Mpamba</option>
+      <option value="mock" {% if filter_provider == 'mock' %}selected{% endif %}>Mock</option>
+    </select>
+  </div>
+  <div>
+    <label>From</label>
+    <input type="date" name="date_from" value="{{ filter_date_from }}">
+  </div>
+  <div>
+    <label>To</label>
+    <input type="date" name="date_to" value="{{ filter_date_to }}">
+  </div>
+  <div>
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-orange">Filter</button>
+  </div>
+  {% if filter_status or filter_provider or filter_search or filter_date_from or filter_date_to %}
+  <div>
+    <label>&nbsp;</label>
+    <a href="{% url 'payments:collections' %}" class="btn btn-ghost">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header">
+    <h3>Transactions ({{ page_obj.paginator.count }})</h3>
+  </div>
+  {% if page_obj %}
+  <table class="pay-table">
+    <thead>
+      <tr>
+        <th>Reference</th>
+        <th>Contract</th>
+        <th>Customer</th>
+        <th>Amount</th>
+        <th>Type</th>
+        <th>Provider</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for txn in page_obj %}
+      <tr>
+        <td><a href="{% url 'payments:transaction_detail' ref=txn.internal_reference %}" style="color:var(--pay-orange);font-family:monospace;font-size:12px;">{{ txn.internal_reference }}</a></td>
+        <td style="font-size:12px;font-family:monospace;">{{ txn.payment_contract.contract_number|default:"—" }}</td>
+        <td>{{ txn.payment_contract.customer_name|default:"—" }}</td>
+        <td style="font-weight:700;white-space:nowrap;">MWK {{ txn.amount|intcomma }}</td>
+        <td>{{ txn.get_payment_type_display }}</td>
+        <td>{{ txn.get_provider_display }}</td>
+        <td><span class="badge {{ txn.status }}">{{ txn.get_status_display }}</span></td>
+        <td style="font-size:12px;color:var(--pay-muted);white-space:nowrap;">{{ txn.created_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ filter_search }}&status={{ filter_status }}&provider={{ filter_provider }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">&laquo; Prev</a>
+    {% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ filter_search }}&status={{ filter_status }}&provider={{ filter_provider }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">Next &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/></svg>
+    <p>No transactions found.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

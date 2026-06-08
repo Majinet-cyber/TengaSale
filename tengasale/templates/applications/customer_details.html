@@ -5,23 +5,19 @@
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
 <div class="application-flow-page">
-<a href="{% url 'merchant_dashboard' %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
 
 {% include "applications/partials/stepper.html" with current_step=1 %}
 <h1 class="greeting">Customer Details</h1>
-<p class="text-muted small mb-3" style="margin-top:-8px;">Step 1 — Identity &amp; Demographics</p>
+<p class="text-muted small mb-3" style="margin-top:-8px;margin-bottom:18px;">Step 1 — Customer identity &amp; demographics</p>
 
 {% if not is_business_hours %}
-<div style="background:#fff8ed;border:1.5px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;">
+<div style="background:#fff8ed;border:1.5px solid #f59e0b;border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
   <div>
     <div style="font-size:0.85rem;font-weight:800;color:#92400e;margin-bottom:3px;">Outside business hours</div>
     <div style="font-size:0.80rem;color:#78350f;line-height:1.5;">
       We are currently outside business hours ({{ business_hours_label }}).
-      Your application can still be submitted, but approval may take longer unless a team member is available.
+      Your application can still be submitted, but approval may take longer.
     </div>
   </div>
 </div>
@@ -32,7 +28,7 @@
     <div class="section-lock-header">
       <span class="section-lock-label">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Customer Details — saved
+        Customer details — saved
       </span>
       <button type="button" class="section-edit-btn" data-section-edit-btn aria-label="Edit customer details">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -50,7 +46,7 @@
     </div>
 
     <div class="form-group{% if 'national_id' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.national_id.id_for_label }}">National ID <span class="required-star">*</span></label>
+        <label for="{{ form.national_id.id_for_label }}">National ID number <span class="required-star">*</span></label>
         {{ form.national_id }}
         <p class="field-help">8 letters or numbers, e.g. RQXFVZC9</p>
         {% for error in form.national_id.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -63,9 +59,9 @@
             {{ form.customer_phone }}
         </div>
         <div class="phone-otp-mini">
-            <span>Phone OTP:</span>
-            <strong class="phone-otp-badge phone-otp-badge--{{ app.phone_verification_status }}">
-                {% if app.phone_verified %}Verified{% elif app.phone_verification_status == "sent" %}Sent{% elif app.phone_verification_status == "skipped" %}Skipped{% elif app.phone_verification_status == "failed" %}Failed{% else %}Not Verified{% endif %}
+            <span>OTP status:</span>
+            <strong class="phone-otp-badge phone-otp-badge--{{ app.phone_verification_status|default:'not_verified' }}">
+                {% if app.phone_verified %}Verified{% elif app.phone_verification_status == "sent" %}Sent{% elif app.phone_verification_status == "skipped" %}Skipped{% elif app.phone_verification_status == "failed" %}Failed{% else %}Not verified{% endif %}
             </strong>
         </div>
         {% for error in form.customer_phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -97,24 +93,29 @@
     </div>
 
     <div class="form-group{% if 'phone_user' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.phone_user.id_for_label }}">Who will mainly use this phone? <span class="required-star">*</span></label>
+        <label for="{{ form.phone_user.id_for_label }}">Who will mainly use this phone?</label>
         {{ form.phone_user }}
         {% for error in form.phone_user.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group" id="phone-user-other-group" hidden>
-        <label for="{{ form.phone_user_other.id_for_label }}">Specify who</label>
+        <label for="{{ form.phone_user_other.id_for_label }}">Specify who will use it</label>
         {{ form.phone_user_other }}
         {% for error in form.phone_user_other.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="alert alert-warning" id="third-party-warning" style="display:none;margin-top:8px;font-size:0.9rem;">
+    <div id="third-party-warning" class="alert-warning" style="display:none;margin-top:8px;">
         ⚠️ Phones financed under a customer's ID should normally be used by the applicant.
         Third-party use may require additional review.
     </div>
 
+    {# ── Income section divider ──────────────────────────────────── #}
+    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Income &amp; Occupation</p>
+    </div>
+
     <div class="form-group{% if 'occupation' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.occupation.id_for_label }}">Occupation <span class="required-star">*</span></label>
+        <label for="{{ form.occupation.id_for_label }}">How does the customer earn money? <span class="required-star">*</span></label>
         {{ form.occupation }}
         {% for error in form.occupation.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
@@ -126,20 +127,20 @@
     </div>
 
     <div class="form-group{% if 'income_band' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.income_band.id_for_label }}">Income band <span class="required-star">*</span></label>
+        <label for="{{ form.income_band.id_for_label }}">Monthly income band <span class="required-star">*</span></label>
         {{ form.income_band }}
         {% for error in form.income_band.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group{% if 'exact_monthly_income' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.exact_monthly_income.id_for_label }}">Exact monthly income <span class="required-star">*</span></label>
+        <label for="{{ form.exact_monthly_income.id_for_label }}">Exact monthly income (MWK) <span class="required-star">*</span></label>
         {{ form.exact_monthly_income }}
         {% for error in form.exact_monthly_income.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-actions">
-        <a href="{% url 'merchant_dashboard' %}" class="btn btn-outline ts-button-outline">Back</a>
-        <button type="submit" class="btn ts-button-primary">CONTINUE TO DEALS</button>
+        <a href="{% url 'merchant_dashboard' %}" class="btn btn-outline ts-button-outline">← Back</a>
+        <button type="submit" class="btn ts-button-primary">Continue →</button>
     </div>
 </form>
 
@@ -147,26 +148,28 @@
 <div class="card phone-otp-card">
     <div class="phone-otp-card__head">
         <div>
-            <h2>Phone OTP</h2>
+            <h2>Phone OTP Verification</h2>
             <p>Send or verify the customer phone number. This does not block the application.</p>
         </div>
-        <span class="phone-otp-badge phone-otp-badge--{{ app.phone_verification_status }}">
-            {% if app.phone_verified %}Verified{% elif app.phone_verification_status == "sent" %}Sent{% elif app.phone_verification_status == "skipped" %}Skipped{% elif app.phone_verification_status == "failed" %}Failed{% else %}Not Verified{% endif %}
+        <span class="phone-otp-badge phone-otp-badge--{{ app.phone_verification_status|default:'not_verified' }}">
+            {% if app.phone_verified %}Verified{% elif app.phone_verification_status == "sent" %}Sent{% elif app.phone_verification_status == "skipped" %}Skipped{% elif app.phone_verification_status == "failed" %}Failed{% else %}Not verified{% endif %}
         </span>
     </div>
     <div class="phone-otp-actions">
         <form method="post" action="{% url 'send_phone_otp' app.id %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-outline">Send OTP</button>
+            <button type="submit" class="btn btn-outline" style="min-height:44px;padding:0 16px;font-size:13px;">Send OTP</button>
         </form>
         <form method="post" action="{% url 'verify_phone_otp' app.id %}" class="phone-otp-verify">
             {% csrf_token %}
-            <input type="text" name="otp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Enter OTP">
-            <button type="submit" class="btn">Verify</button>
+            <input type="text" name="otp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" aria-label="Enter OTP code">
+            <button type="submit" class="btn ts-button-primary" style="min-height:44px;padding:0 16px;font-size:13px;">Verify</button>
         </form>
     </div>
 </div>
 {% endif %}
+
+</div>{# /application-flow-page #}
 
 <script>
 (function () {
@@ -186,7 +189,7 @@
     const nationalId = document.querySelector("[data-national-id-input]");
     if (nationalId) {
         nationalId.addEventListener("input", function () { nationalId.value = nationalId.value.toUpperCase(); });
-        nationalId.addEventListener("paste", function () { nationalId.value = nationalId.value.toUpperCase(); });
+        nationalId.addEventListener("paste", function () { setTimeout(function(){ nationalId.value = nationalId.value.toUpperCase(); }, 0); });
     }
     clampInput(document.querySelector("[data-phone-input]"), /[^0-9]/g, 9);
 })();
@@ -214,6 +217,5 @@
     syncPhoneUser();
 })();
 </script>
-</div>
 
 {% endblock %}

@@ -1,0 +1,70 @@
+{% extends "portal/base_portal.html" %}
+{% load ts_filters %}
+
+{% block page_title %}WhatsApp Conversations — TengaSale Support{% endblock %}
+
+{% block content %}
+{% include "support/_topbar.html" %}
+<div style="max-width:900px;margin:0 auto;padding:20px 16px 80px;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <a href="{% url 'support_dashboard' %}" style="color:#667085;text-decoration:none;">← Support</a>
+    <h1 style="font-size:20px;font-weight:700;color:#101828;margin:0;flex:1;">WhatsApp Conversations</h1>
+    <span style="background:#dcfce7;color:#15803d;border-radius:100px;padding:4px 12px;font-size:12px;font-weight:700;">
+      {{ conversations|length }} conversations
+    </span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    {% for conv in conversations %}
+    <div style="background:#fff;border-radius:14px;border:1px solid #f0f0f0;box-shadow:0 2px 6px rgba(0,0,0,.05);padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;">
+          {{ conv.whatsapp_name|default:conv.phone_number|slice:"-2:" }}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#101828;">
+            {{ conv.whatsapp_name|default:"Unknown" }}
+          </div>
+          <div style="font-size:12px;color:#667085;">{{ conv.phone_number }}</div>
+        </div>
+        <div style="text-align:right;">
+          <span style="background:
+            {% if conv.current_state == 'ticket_done' %}#f0fdf4{% elif conv.current_state == 'human' %}#fef3c7{% else %}#f3f4f6{% endif %};
+            color:
+            {% if conv.current_state == 'ticket_done' %}#15803d{% elif conv.current_state == 'human' %}#92400e{% else %}#374151{% endif %};
+            border-radius:100px;padding:3px 10px;font-size:11px;font-weight:600;">
+            {{ conv.get_current_state_display }}
+          </span>
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ conv.last_message_at|timesince }} ago</div>
+        </div>
+      </div>
+
+      {% if conv.active_ticket %}
+      <div style="margin-top:10px;background:#f9fafb;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+        <i class="bi bi-ticket" style="color:#ff5a00;"></i>
+        <span style="font-size:12px;font-weight:600;color:#374151;">Ticket:</span>
+        <a href="{% url 'ticket_detail' conv.active_ticket.id %}" style="font-size:12px;color:#1d4ed8;font-weight:600;">
+          {{ conv.active_ticket.ticket_number }}
+        </a>
+        <span style="margin-left:auto;font-size:11px;color:#667085;">{{ conv.active_ticket.get_status_display }}</span>
+      </div>
+      {% endif %}
+
+      <div style="margin-top:8px;font-size:11px;color:#9ca3af;display:flex;gap:12px;">
+        <span><i class="bi bi-chat-dots"></i> {{ conv.messages.count }} messages</span>
+        <span><i class="bi bi-person"></i> {{ conv.get_user_type_display }}</span>
+        <span><i class="bi bi-calendar3"></i> Started {{ conv.created_at|date:"M j" }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px 24px;color:#9ca3af;">
+      <div style="font-size:40px;margin-bottom:12px;">💬</div>
+      <div style="font-size:16px;font-weight:600;color:#374151;margin-bottom:6px;">No conversations yet</div>
+      <div style="font-size:13px;">WhatsApp conversations will appear here when users message the support number.</div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

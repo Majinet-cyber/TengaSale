@@ -4,56 +4,59 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'work_details' app.id %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
+<div class="application-flow-page">
 
 {% include "applications/partials/stepper.html" with current_step=6 %}
-<h1 class="greeting">Review</h1>
+<h1 class="greeting">Review &amp; Submit</h1>
+<p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 6 — Confirm all details before submitting</p>
 
 {% if not app.signature_image %}
-<div class="card ts-slide-up" id="review-form">
-    <div class="summary-card">
-        <span>Customer</span>
-        <strong>{{ app.customer_name|default:"Not captured" }}</strong>
-        <span>Deal</span>
-        <strong>{% if app.customer_phone %}+265 {{ app.customer_phone }}{% else %}Not captured{% endif %}</strong>
-        <span>Phone</span>
-        <strong>{{ app.deal|default:"Not selected" }}</strong>
-        <span>Total loan</span>
-        <strong>{{ app.calculated_total_loan|mwk }}</strong>
-        <span>Deposit</span>
-        <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
-        <span>Daily</span>
-        <strong>{{ app.calculated_daily_payment|mwk }}</strong>
+<div class="card ts-slide-up" id="review-form" style="padding:20px;">
+    {# ── Summary card ──────────────────────────────────────────── #}
+    <div style="margin-bottom:16px;">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 10px;">Application Summary</p>
+      <div class="summary-card">
+          <span>Customer</span>
+          <strong>{{ app.customer_name|default:"Not captured" }}</strong>
+          <span>Phone number</span>
+          <strong>{% if app.customer_phone %}+265 {{ app.customer_phone }}{% else %}Not captured{% endif %}</strong>
+          <span>Device</span>
+          <strong>{{ app.deal|default:"Not selected" }}</strong>
+          <span>Total loan</span>
+          <strong style="color:#ff5a00;">{{ app.calculated_total_loan|mwk }}</strong>
+          <span>Deposit</span>
+          <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
+          <span>Daily payment</span>
+          <strong>{{ app.calculated_daily_payment|mwk }}</strong>
+      </div>
     </div>
     <div class="form-actions">
-        <a href="{% url 'work_details' app.id %}" class="btn btn-outline">Back</a>
-        <a href="{% url 'signature' app.id %}" class="btn primary-button">CONTINUE TO SIGNATURE</a>
+        <a href="{% url 'work_details' app.id %}" class="btn btn-outline ts-button-outline">← Back</a>
+        <a href="{% url 'signature' app.id %}" class="btn ts-button-primary">Continue to Signature →</a>
     </div>
 </div>
 {% else %}
-<form method="post" class="card ts-slide-up" id="review-form">
+<form method="post" class="card ts-slide-up" id="review-form" style="padding:20px;">
     {% csrf_token %}
     {{ form.non_field_errors }}
 
+    {# ── Signature preview ─────────────────────────────────────── #}
     <div class="form-group{% if 'customer_signature' in app.correction_fields %} has-correction{% endif %}">
         <label>Customer Signature</label>
-
         <div class="sig-preview-card visible" id="sig-preview-card">
             <img
                 src="{{ app.signature_image.url }}"
                 alt="Customer signature"
                 id="sig-preview-img"
                 data-skip-img-fallback="1"
+                style="max-width:100%;border-radius:10px;border:1px solid #e5e7eb;"
             >
-            <div class="sig-preview-meta">
-                <span class="section-saved-badge">
+            <div class="sig-preview-meta" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                <span class="section-lock-label" style="background:none;padding:0;margin:0;">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                     Signature saved
                 </span>
-                <a href="{% url 'signature' app.id %}?redo=1" class="sig-redo-btn" id="sig-redo-btn" title="Redo signature">
+                <a href="{% url 'signature' app.id %}?redo=1" class="section-edit-btn" title="Redo signature">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Redo
                 </a>
@@ -61,34 +64,51 @@
         </div>
     </div>
 
-    <label class="check-row{% if 'agreed_to_terms' in app.correction_fields %} has-correction{% endif %}" for="{{ form.agreed_to_terms.id_for_label }}">
-        {{ form.agreed_to_terms }}
-        <span>Customer confirms and agrees to the TengaSale contract terms.</span>
-    </label>
-    {{ form.agreed_to_terms.errors }}
-
-    <div class="summary-card">
-        <span>Total loan</span>
-        <strong>{{ app.calculated_total_loan|mwk }}</strong>
-        <span>Deposit</span>
-        <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
-        <span>Deposit unlock</span>
-        <strong style="color:#ff5a00;">7 days access</strong>
-        <span>Daily rate</span>
-        <strong>{{ app.calculated_daily_payment|mwk }}</strong>
-        <span>Weekly (7 days)</span>
-        <strong>{{ app.calculated_weekly_payment|mwk }}</strong>
-        <span>Monthly (30 days)</span>
-        <strong>{{ app.calculated_monthly_payment|mwk }}</strong>
+    {# ── Financial summary ─────────────────────────────────────── #}
+    <div style="margin-bottom:16px;">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 10px;">Financing Summary</p>
+      <div class="summary-card">
+          <span>Customer</span>
+          <strong>{{ app.customer_name|default:"—" }}</strong>
+          <span>Device</span>
+          <strong>{{ app.deal|default:"—" }}</strong>
+          <span>Total loan</span>
+          <strong style="color:#ff5a00;">{{ app.calculated_total_loan|mwk }}</strong>
+          <span>Deposit</span>
+          <strong>{{ app.calculated_deposit_amount|mwk }}</strong>
+          <span>7-day access</span>
+          <strong style="color:#16a34a;">After deposit paid</strong>
+          <span>Daily rate</span>
+          <strong>{{ app.calculated_daily_payment|mwk }}</strong>
+          <span>Weekly (7 days)</span>
+          <strong>{{ app.calculated_weekly_payment|mwk }}</strong>
+          <span>Monthly (30 days)</span>
+          <strong>{{ app.calculated_monthly_payment|mwk }}</strong>
+      </div>
+      <p style="font-size:12px;color:#667085;margin:8px 0 0;padding:0 4px;line-height:1.5;">
+        Deposit unlocks the device for 7 days. Ongoing payments extend access based on the amount paid.
+      </p>
     </div>
-    <p style="font-size:12px;color:#667085;margin:6px 0 0;padding:0 4px;">Deposit unlocks the device for 7 days. After that, payments extend access based on the amount paid.</p>
+
+    {# ── Consent checkbox ──────────────────────────────────────── #}
+    <label class="check-row{% if 'agreed_to_terms' in app.correction_fields %} has-correction{% endif %}"
+           for="{{ form.agreed_to_terms.id_for_label }}"
+           style="display:flex;align-items:flex-start;gap:12px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;cursor:pointer;margin-bottom:4px;">
+        {{ form.agreed_to_terms }}
+        <span style="font-size:13px;color:#374151;line-height:1.5;">
+          Customer confirms and agrees to the TengaSale contract terms and conditions.
+        </span>
+    </label>
+    {% for error in form.agreed_to_terms.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
 
     <div class="form-actions">
-        <a href="{% url 'signature' app.id %}?redo=1" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn primary-button" id="review-submit">SUBMIT TO UNDERWRITER</button>
+        <a href="{% url 'signature' app.id %}?redo=1" class="btn btn-outline ts-button-outline">← Back</a>
+        <button type="submit" class="btn ts-button-primary" id="review-submit">Submit to Underwriter →</button>
     </div>
 </form>
 {% endif %}
+
+</div>{# /application-flow-page #}
 
 <script>
 (function () {
@@ -112,14 +132,13 @@
             var card = document.getElementById('sig-preview-card');
             if (card) {
                 var err = document.createElement('p');
-                err.className = 'sig-load-error';
+                err.className = 'sig-load-error field-error';
                 err.setAttribute('role', 'alert');
                 err.textContent = 'Signature could not load. Please sign again.';
-                err.style.cssText = 'color:#b42318;font-size:13px;margin:8px 0;';
+                err.style.marginTop = '8px';
                 if (!card.querySelector('.sig-load-error')) card.appendChild(err);
             }
             sigImg.style.display = 'none';
-            if (typeof window.showError === 'function') window.showError('Signature could not load. Please sign again.');
         });
     }
 })();

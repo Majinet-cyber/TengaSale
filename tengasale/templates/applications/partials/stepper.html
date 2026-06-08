@@ -8,8 +8,17 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
 
   <div class="application-progress-meta">
     <span class="application-progress-meta-step">Step {{ current_step }} of 7</span>
-    <span class="application-progress-meta-sep" aria-hidden="true">.</span>
-    <span class="application-progress-meta-name">{% if current_step == 1 %}Customer details{% elif current_step == 2 %}Phone deal{% elif current_step == 3 %}KYC{% elif current_step == 4 %}Location{% elif current_step == 5 %}Work details{% elif current_step == 6 %}Review{% elif current_step == 7 %}Signature{% endif %}</span>
+    <span class="application-progress-meta-sep" aria-hidden="true">·</span>
+    <span class="application-progress-meta-name">
+      {% if current_step == 1 %}Customer details
+      {% elif current_step == 2 %}Phone deal
+      {% elif current_step == 3 %}KYC &amp; documents
+      {% elif current_step == 4 %}Location
+      {% elif current_step == 5 %}Income &amp; work
+      {% elif current_step == 6 %}Review &amp; submit
+      {% elif current_step == 7 %}Signature
+      {% endif %}
+    </span>
   </div>
 
   <div class="application-progress-bar">
@@ -17,19 +26,33 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
   </div>
 
   <nav class="application-stepper" aria-hidden="true">
-    <span class="application-step {% if current_step == 1 %}application-step-active{% elif current_step > 1 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 1 %}OK {% endif %}Customer</span>
+    <span class="application-step {% if current_step == 1 %}application-step-active{% elif current_step > 1 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 1 %}✓ {% endif %}ID
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 2 %}application-step-active{% elif current_step > 2 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 2 %}OK {% endif %}Deal</span>
+    <span class="application-step {% if current_step == 2 %}application-step-active{% elif current_step > 2 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 2 %}✓ {% endif %}Deal
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 3 %}application-step-active{% elif current_step > 3 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 3 %}OK {% endif %}KYC</span>
+    <span class="application-step {% if current_step == 3 %}application-step-active{% elif current_step > 3 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 3 %}✓ {% endif %}KYC
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 4 %}application-step-active{% elif current_step > 4 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 4 %}OK {% endif %}Location</span>
+    <span class="application-step {% if current_step == 4 %}application-step-active{% elif current_step > 4 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 4 %}✓ {% endif %}Location
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 5 %}application-step-active{% elif current_step > 5 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 5 %}OK {% endif %}Work</span>
+    <span class="application-step {% if current_step == 5 %}application-step-active{% elif current_step > 5 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 5 %}✓ {% endif %}Income
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 6 %}application-step-active{% elif current_step > 6 %}application-step-complete{% else %}application-step-upcoming{% endif %}">{% if current_step > 6 %}OK {% endif %}Review</span>
+    <span class="application-step {% if current_step == 6 %}application-step-active{% elif current_step > 6 %}application-step-complete{% else %}application-step-upcoming{% endif %}">
+      {% if current_step > 6 %}✓ {% endif %}Review
+    </span>
     <span class="application-stepper-sep"></span>
-    <span class="application-step {% if current_step == 7 %}application-step-active{% else %}application-step-upcoming{% endif %}">Sign</span>
+    <span class="application-step {% if current_step == 7 %}application-step-active{% else %}application-step-upcoming{% endif %}">
+      Sign
+    </span>
   </nav>
 
 </div>

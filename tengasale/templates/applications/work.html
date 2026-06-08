@@ -4,20 +4,18 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<a href="{% url 'location_details' app.id %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
+<div class="application-flow-page">
 
 {% include "applications/partials/stepper.html" with current_step=5 %}
-<h1 class="greeting">Work Details</h1>
+<h1 class="greeting">Income &amp; Work Details</h1>
+<p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 5 — Income proof &amp; guarantors</p>
 
-<form method="post" enctype="multipart/form-data" class="card{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
+<form method="post" enctype="multipart/form-data" class="form-card card{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
     {% if app.work_description %}
     <div class="section-lock-header">
       <span class="section-lock-label">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Work Details — saved
+        Income details — saved
       </span>
       <button type="button" class="section-edit-btn" data-section-edit-btn aria-label="Edit work details">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -29,79 +27,93 @@
     {{ form.non_field_errors }}
 
     <div class="form-group{% if 'work_description' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.work_description.id_for_label }}">{{ form.work_description.label }}</label>
+        <label for="{{ form.work_description.id_for_label }}">Work / income description <span class="required-star">*</span></label>
         {{ form.work_description }}
-        {{ form.work_description.errors }}
+        <p class="field-help">Describe what the customer does to earn money. Be specific.</p>
+        {% for error in form.work_description.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group{% if 'next_of_kin_2_name' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_2_name.id_for_label }}">{{ form.next_of_kin_2_name.label }}</label>
-        {{ form.next_of_kin_2_name }}
-        {{ form.next_of_kin_2_name.errors }}
-    </div>
-
-    <div class="form-group{% if 'next_of_kin_2_phone' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_2_phone.id_for_label }}">{{ form.next_of_kin_2_phone.label }}</label>
-        <div class="phone-input">
-            <span>+265</span>
-            {{ form.next_of_kin_2_phone }}
-        </div>
-        {{ form.next_of_kin_2_phone.errors }}
-    </div>
-
-    <div class="form-group{% if 'next_of_kin_2_relationship' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.next_of_kin_2_relationship.id_for_label }}">{{ form.next_of_kin_2_relationship.label }}</label>
-        {{ form.next_of_kin_2_relationship }}
-        {{ form.next_of_kin_2_relationship.errors }}
+    {# ── Proof of income ──────────────────────────────────────────── #}
+    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Proof of Income</p>
     </div>
 
     <div class="form-group{% if 'proof_of_income_type' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.proof_of_income_type.id_for_label }}">{{ form.proof_of_income_type.label }}</label>
+        <label for="{{ form.proof_of_income_type.id_for_label }}">Proof type <span class="required-star">*</span></label>
         {{ form.proof_of_income_type }}
-        {{ form.proof_of_income_type.errors }}
+        {% for error in form.proof_of_income_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group{% if 'proof_contact_name' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.proof_contact_name.id_for_label }}">{{ form.proof_contact_name.label }}</label>
+        <label for="{{ form.proof_contact_name.id_for_label }}">Proof contact name <span class="required-star">*</span></label>
         {{ form.proof_contact_name }}
-        {{ form.proof_contact_name.errors }}
+        {% for error in form.proof_contact_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group{% if 'proof_contact_phone' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.proof_contact_phone.id_for_label }}">{{ form.proof_contact_phone.label }}</label>
-        <div class="phone-input">
-            <span>+265</span>
+        <label for="{{ form.proof_contact_phone.id_for_label }}">Proof contact phone <span class="required-star">*</span></label>
+        <div class="input-prefix-group">
+            <span class="input-prefix">+265</span>
             {{ form.proof_contact_phone }}
         </div>
-        {{ form.proof_contact_phone.errors }}
+        {% for error in form.proof_contact_phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group{% if 'proof_notes' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.proof_notes.id_for_label }}">Proof notes</label>
+        <label for="{{ form.proof_notes.id_for_label }}">Additional proof notes (optional)</label>
         {{ form.proof_notes }}
-        {{ form.proof_notes.errors }}
+        {% for error in form.proof_notes.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-group{% if 'proof_income_file' in app.correction_fields %} has-correction{% endif %}">
-        <label for="{{ form.proof_income_file.id_for_label }}">Proof income file optional</label>
+        <label for="{{ form.proof_income_file.id_for_label }}">Income proof document (optional)</label>
         {{ form.proof_income_file }}
-        {{ form.proof_income_file.errors }}
+        <p class="field-help">Upload payslip, bank statement, or business letter if available.</p>
+        {% for error in form.proof_income_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    {# ── Guarantor 2 ─────────────────────────────────────────────── #}
+    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Second Guarantor</p>
+    </div>
+
+    <div class="form-group{% if 'next_of_kin_2_name' in app.correction_fields %} has-correction{% endif %}">
+        <label for="{{ form.next_of_kin_2_name.id_for_label }}">Guarantor full name <span class="required-star">*</span></label>
+        {{ form.next_of_kin_2_name }}
+        {% for error in form.next_of_kin_2_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <div class="form-group{% if 'next_of_kin_2_phone' in app.correction_fields %} has-correction{% endif %}">
+        <label for="{{ form.next_of_kin_2_phone.id_for_label }}">Guarantor phone number <span class="required-star">*</span></label>
+        <div class="input-prefix-group">
+            <span class="input-prefix">+265</span>
+            {{ form.next_of_kin_2_phone }}
+        </div>
+        {% for error in form.next_of_kin_2_phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <div class="form-group{% if 'next_of_kin_2_relationship' in app.correction_fields %} has-correction{% endif %}">
+        <label for="{{ form.next_of_kin_2_relationship.id_for_label }}">Relationship to customer <span class="required-star">*</span></label>
+        {{ form.next_of_kin_2_relationship }}
+        {% for error in form.next_of_kin_2_relationship.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
     <div class="form-actions">
-        <a href="{% url 'location_details' app.id %}" class="btn btn-outline">Back</a>
-        <button type="submit" class="btn">REVIEW APPLICATION</button>
+        <a href="{% url 'location_details' app.id %}" class="btn btn-outline ts-button-outline">← Back</a>
+        <button type="submit" class="btn ts-button-primary">Continue to Review →</button>
     </div>
 </form>
 
+</div>{# /application-flow-page #}
+
 <script>
-    (function () {
-        document.querySelectorAll("[data-phone-input]").forEach(function (input) {
-            input.addEventListener("input", function () {
-                input.value = input.value.replace(/\D/g, "").slice(0, 9);
-            });
+(function () {
+    document.querySelectorAll("[data-phone-input]").forEach(function (input) {
+        input.addEventListener("input", function () {
+            input.value = input.value.replace(/\D/g, "").slice(0, 9);
         });
-    })();
+    });
+})();
 </script>
 
 {% endblock %}

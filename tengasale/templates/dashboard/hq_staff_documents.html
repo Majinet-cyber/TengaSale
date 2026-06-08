@@ -1,29 +1,488 @@
 {% extends "base/base.html" %}
 {% load ts_filters %}
+{% load static %}
 
-{% block page_title %}Staff Documents - TengaSale{% endblock %}
+{% block page_title %}Staff Document Center — TengaSale HQ{% endblock %}
+
 {% block extra_head %}
 <style>
-.doc-page{max-width:1260px;margin:0 auto;padding:18px 14px 54px;background:#f8fafc;color:#101828}.doc-kicker{font-size:11px;font-weight:900;text-transform:uppercase;color:#ff5a00;letter-spacing:.08em}.doc-title{font-size:28px;margin:3px 0}.doc-sub{margin:0 0 14px;color:#667085;font-size:13px}.doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}.doc-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px}.doc-card h2{font-size:16px;margin:0 0 5px}.doc-meta{color:#667085;font-size:12px;margin-bottom:10px}.doc-actions{display:flex;gap:7px;flex-wrap:wrap}.doc-actions a{display:inline-flex;align-items:center;min-height:32px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;padding:5px 8px;text-decoration:none;color:#344054;font-size:11px;font-weight:850}.doc-actions a:first-child{background:#ff5a00;color:#fff;border-color:#ff5a00}
+/* ── Staff Document Center ─────────────────────────────────────────────── */
+.sdc-page { padding: 0 0 100px; background: #f8f9fc; min-height: 100vh; }
+.sdc-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 16px 16px;
+  position: sticky; top: 0; z-index: 40;
+}
+.sdc-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.sdc-header-back {
+  background: none; border: none; cursor: pointer;
+  color: #667085; padding: 6px; border-radius: 8px;
+}
+.sdc-header-title { font-size: 17px; font-weight: 700; color: #101828; flex: 1; }
+.sdc-sig-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;
+  border-radius: 100px; padding: 4px 10px; font-size: 11px; font-weight: 600;
+}
+.sdc-sig-badge--none {
+  background: #fff7ed; color: #c2410c; border-color: #fed7aa;
+}
+.sdc-header-sub { font-size: 13px; color: #667085; }
+.sdc-search-row {
+  padding: 12px 16px 8px;
+  display: flex; gap: 8px;
+}
+.sdc-search {
+  flex: 1; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  padding: 10px 14px; font-size: 14px; background: #fff;
+  outline: none;
+}
+.sdc-search:focus { border-color: #ff5a00; }
+
+/* ── Staff grid ────────────────────────────────────────────────────────── */
+.sdc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  padding: 4px 16px 16px;
+}
+@media (max-width: 640px) {
+  .sdc-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Staff card ───────────────────────────────────────────────────────── */
+.sdc-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.sdc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.10); }
+
+.sdc-card-top {
+  padding: 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  border-bottom: 1px solid #f9f9f9;
+}
+.sdc-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff5a00, #ff8c42);
+  color: #fff; font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sdc-info { flex: 1; min-width: 0; }
+.sdc-name { font-size: 15px; font-weight: 700; color: #101828; margin: 0 0 5px; }
+.sdc-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.sdc-badge {
+  display: inline-block; border-radius: 100px;
+  padding: 2px 8px; font-size: 10px; font-weight: 600;
+}
+.sdc-badge--role   { background: rgba(37,99,235,.10); color: #1d4ed8; }
+.sdc-badge--dept   { background: rgba(107,114,128,.10); color: #374151; }
+.sdc-badge--rank   { background: rgba(255,90,0,.10); color: #c2410c; }
+.sdc-badge--active { background: #f0fdf4; color: #15803d; }
+.sdc-badge--probation { background: #fefce8; color: #a16207; }
+.sdc-badge--suspended { background: #fff7ed; color: #c2410c; }
+.sdc-badge--terminated { background: #fef2f2; color: #b91c1c; }
+.sdc-badge--inactive   { background: #f3f4f6; color: #6b7280; }
+
+/* ── Metrics row ──────────────────────────────────────────────────────── */
+.sdc-metrics {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1px; background: #f4f4f5;
+}
+.sdc-metric {
+  background: #fff; padding: 10px 14px;
+}
+.sdc-metric-label { font-size: 10px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+.sdc-metric-value { font-size: 14px; font-weight: 700; color: #101828; }
+.sdc-metric-value--orange { color: #ff5a00; }
+.sdc-metric-value--green  { color: #15803d; }
+
+/* ── Action buttons ───────────────────────────────────────────────────── */
+.sdc-actions {
+  padding: 12px 14px;
+  display: flex; gap: 8px;
+}
+.sdc-btn {
+  flex: 1; text-align: center;
+  padding: 10px 8px; border-radius: 10px;
+  font-size: 12px; font-weight: 600;
+  border: none; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  transition: background .15s, transform .1s;
+}
+.sdc-btn:active { transform: scale(.97); }
+.sdc-btn--view { background: #f3f4f6; color: #374151; }
+.sdc-btn--view:hover { background: #e5e7eb; }
+.sdc-btn--generate { background: #ff5a00; color: #fff; }
+.sdc-btn--generate:hover { background: #e04e00; }
+.sdc-btn--more { background: #f3f4f6; color: #374151; flex: 0 0 auto; width: 40px; }
+
+/* ── Document modal overlay ──────────────────────────────────────────── */
+.sdc-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+  display: flex; align-items: flex-end;
+  animation: sdc-fade-in .18s ease;
+}
+.sdc-sheet {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 540px;
+  margin: 0 auto;
+  max-height: 88vh;
+  overflow-y: auto;
+  animation: sdc-slide-up .22s ease;
+}
+@keyframes sdc-fade-in  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes sdc-slide-up { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+.sdc-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: #e5e7eb; margin: 12px auto 0;
+}
+.sdc-sheet-header {
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; gap: 10px;
+}
+.sdc-sheet-title { font-size: 16px; font-weight: 700; color: #101828; flex: 1; }
+.sdc-sheet-close {
+  background: #f3f4f6; border: none; border-radius: 50%;
+  width: 30px; height: 30px; cursor: pointer; color: #667085;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+.sdc-sheet-body { padding: 8px 20px 24px; }
+
+/* ── Document group ───────────────────────────────────────────────────── */
+.sdc-doc-group { margin-top: 18px; }
+.sdc-doc-group-title {
+  font-size: 10px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 8px; padding-left: 2px;
+}
+.sdc-doc-list { display: flex; flex-direction: column; gap: 2px; }
+.sdc-doc-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  text-decoration: none; color: inherit;
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  transition: background .15s, border-color .15s;
+}
+.sdc-doc-item:hover { background: #fff7f3; border-color: #ffd6bd; }
+.sdc-doc-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.sdc-doc-icon--employment { background: #dbeafe; }
+.sdc-doc-icon--monthly    { background: #dcfce7; }
+.sdc-doc-icon--hr         { background: #fef3c7; }
+.sdc-doc-icon--executive  { background: #fce7f3; }
+.sdc-doc-label { font-size: 14px; font-weight: 500; color: #374151; flex: 1; }
+.sdc-doc-arrow { color: #d1d5db; font-size: 12px; }
+
+/* ── Signature banner ─────────────────────────────────────────────────── */
+.sdc-sig-banner {
+  margin: 12px 16px;
+  background: #fff7ed; border: 1px solid #fed7aa;
+  border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
+}
+.sdc-sig-banner a { color: #c2410c; font-weight: 600; }
+
+/* ── Empty state ──────────────────────────────────────────────────────── */
+.sdc-empty {
+  text-align: center; padding: 60px 24px;
+  color: #9ca3af;
+}
+.sdc-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.sdc-empty-title { font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.sdc-empty-sub { font-size: 14px; }
 </style>
 {% endblock %}
+
 {% block content %}
-<div class="doc-page">
-  <div class="doc-kicker">Staff Documents</div><h1 class="doc-title">Live database PDF generation</h1><p class="doc-sub">Employment, compensation, KPI, Volts, discipline, rank review, warning and termination documents.</p>
-  <section class="doc-grid">
+<div class="sdc-page" x-data="staffDocCenter()" x-cloak>
+
+  <!-- Header -->
+  <div class="sdc-header">
+    <div class="sdc-header-top">
+      <a href="{% url 'hq_dashboard' %}" class="sdc-header-back" title="Back to HQ">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <span class="sdc-header-title">Staff Document Center</span>
+      {% if active_signature %}
+        <span class="sdc-sig-badge">
+          <i class="bi bi-pen-fill"></i> CEO Sig Active
+        </span>
+      {% else %}
+        <span class="sdc-sig-badge sdc-sig-badge--none">
+          <i class="bi bi-pen"></i> No Sig
+        </span>
+      {% endif %}
+    </div>
+    <div class="sdc-header-sub">
+      {{ profiles|length }} staff member{{ profiles|length|pluralize }} &bull;
+      Generate, track and manage official documents
+    </div>
+  </div>
+
+  <!-- Signature warning if no CEO signature uploaded -->
+  {% if not active_signature %}
+  <div class="sdc-sig-banner">
+    <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;font-size:18px;"></i>
+    <span>
+      No active CEO signature. Documents will include a blank signature line.
+      <a href="{% url 'hq_executive_signatures' %}">Upload signature →</a>
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- Search -->
+  <div class="sdc-search-row">
+    <input type="text" class="sdc-search" placeholder="Search staff by name, role or department…"
+      x-model="query" @input="filter()">
+  </div>
+
+  <!-- Staff grid -->
+  <div class="sdc-grid">
     {% for profile in profiles %}
-    <article class="doc-card">
-      <h2>{{ profile.display_name }}</h2>
-      <div class="doc-meta">{{ profile.staff_role.name|default:profile.get_role_display }} | {{ profile.department.name|default:"Unassigned" }} | {{ profile.rank.code|default:"Unranked" }}</div>
-      <div class="doc-actions">
-      {% for code,label in document_types %}
-        <a href="{% url 'staff_document_pdf' profile.user.id code %}" target="_blank">{{ label }}</a>
-      {% endfor %}
+    <div class="sdc-card" x-show="!query || matches('{{ profile.display_name|lower }}', '{{ profile.staff_role.name|default:profile.get_role_display|lower }}', '{{ profile.department.name|default:""|lower }}')">
+
+      <!-- Top: avatar + info -->
+      <div class="sdc-card-top">
+        <div class="sdc-avatar">{{ profile.initials|default:profile.user.username|slice:":2"|upper }}</div>
+        <div class="sdc-info">
+          <div class="sdc-name">{{ profile.display_name|default:profile.user.username }}</div>
+          <div class="sdc-badges">
+            <span class="sdc-badge sdc-badge--role">{{ profile.staff_role.name|default:profile.get_role_display }}</span>
+            {% if profile.department %}
+            <span class="sdc-badge sdc-badge--dept">{{ profile.department.name }}</span>
+            {% endif %}
+            {% if profile.rank %}
+            <span class="sdc-badge sdc-badge--rank">{{ profile.rank.code }}</span>
+            {% endif %}
+            {% if profile.status == "active" %}
+            <span class="sdc-badge sdc-badge--active">Active</span>
+            {% elif profile.status == "probation" %}
+            <span class="sdc-badge sdc-badge--probation">Probation</span>
+            {% elif profile.status == "suspended" %}
+            <span class="sdc-badge sdc-badge--suspended">Suspended</span>
+            {% elif profile.status == "terminated" %}
+            <span class="sdc-badge sdc-badge--terminated">Terminated</span>
+            {% else %}
+            <span class="sdc-badge sdc-badge--inactive">{{ profile.get_status_display }}</span>
+            {% endif %}
+          </div>
+        </div>
       </div>
-    </article>
+
+      <!-- Metrics -->
+      <div class="sdc-metrics">
+        <div class="sdc-metric">
+          <div class="sdc-metric-label">Rank</div>
+          <div class="sdc-metric-value">{{ profile.rank.code|default:"—" }}</div>
+        </div>
+        <div class="sdc-metric">
+          <div class="sdc-metric-label">Base Pay</div>
+          <div class="sdc-metric-value sdc-metric-value--orange">{{ profile.effective_base_salary_mwk|mwk }}</div>
+        </div>
+        <div class="sdc-metric">
+          <div class="sdc-metric-label">Volt Rate</div>
+          <div class="sdc-metric-value">{{ profile.effective_volt_rate_mwk|mwk }}</div>
+        </div>
+        <div class="sdc-metric">
+          <div class="sdc-metric-label">Documents</div>
+          <div class="sdc-metric-value sdc-metric-value--green">
+            {{ profile.user.staff_documents.count }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="sdc-actions">
+        <a href="{% url 'hq_user_edit' profile.user.id %}" class="sdc-btn sdc-btn--view">
+          <i class="bi bi-person"></i> Profile
+        </a>
+        <button type="button" class="sdc-btn sdc-btn--generate"
+          @click="openSheet({{ profile.user.id }}, '{{ profile.display_name|default:profile.user.username|escapejs }}')">
+          <i class="bi bi-file-earmark-text"></i> Documents
+        </button>
+      </div>
+    </div>
     {% empty %}
-    <article class="doc-card"><h2>No profiles found.</h2></article>
+    <div class="sdc-empty" style="grid-column:1/-1;">
+      <div class="sdc-empty-icon">👤</div>
+      <div class="sdc-empty-title">No staff members found</div>
+      <div class="sdc-empty-sub">Create staff accounts in <a href="{% url 'hq_users' %}">Users & Roles</a>.</div>
+    </div>
     {% endfor %}
-  </section>
+  </div>
+
+  <!-- Document sheet modal -->
+  <div class="sdc-overlay" x-show="sheetOpen" x-transition:enter="sdc-fade-in"
+       @click.self="sheetOpen = false" style="display:none;">
+    <div class="sdc-sheet">
+      <div class="sdc-sheet-handle"></div>
+      <div class="sdc-sheet-header">
+        <div>
+          <div class="sdc-sheet-title" x-text="sheetName"></div>
+          <div style="font-size:12px;color:#9ca3af;">Select a document to generate PDF</div>
+        </div>
+        <button class="sdc-sheet-close" @click="sheetOpen = false">✕</button>
+      </div>
+      <div class="sdc-sheet-body">
+
+        <!-- A. Employment Documents -->
+        <div class="sdc-doc-group">
+          <div class="sdc-doc-group-title">📄 Employment Documents</div>
+          <div class="sdc-doc-list">
+            <a class="sdc-doc-item" :href="docUrl('employment_agreement')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--employment">📋</div>
+              <div class="sdc-doc-label">Employment Agreement</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('compensation_annexure_a')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--employment">💰</div>
+              <div class="sdc-doc-label">Compensation Annexure A</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('kpi_volts_annexure_b')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--employment">⚡</div>
+              <div class="sdc-doc-label">KPI &amp; Volts Annexure B</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('role_responsibility_schedule')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--employment">📌</div>
+              <div class="sdc-doc-label">Role Responsibility Schedule</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('confidentiality_agreement')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--employment">🔒</div>
+              <div class="sdc-doc-label">Confidentiality &amp; Data Protection Agreement</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- B. Monthly Documents -->
+        <div class="sdc-doc-group">
+          <div class="sdc-doc-group-title">📅 Monthly Documents</div>
+          <div class="sdc-doc-list">
+            <a class="sdc-doc-item" :href="docUrl('monthly_volts_statement')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--monthly">⚡</div>
+              <div class="sdc-doc-label">Monthly Volts Statement</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('monthly_performance_review')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--monthly">📊</div>
+              <div class="sdc-doc-label">Monthly Performance Review</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('discipline_score_report')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--monthly">📉</div>
+              <div class="sdc-doc-label">Discipline Score Report</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- C. HR Actions -->
+        <div class="sdc-doc-group">
+          <div class="sdc-doc-group-title">⚠️ HR Actions</div>
+          <div class="sdc-doc-list">
+            <a class="sdc-doc-item" :href="docUrl('warning_letter')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--hr">⚠️</div>
+              <div class="sdc-doc-label">Warning Letter</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('suspension_letter')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--hr">⏸️</div>
+              <div class="sdc-doc-label">Suspension Letter</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('promotion_rank_review')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--hr">🏆</div>
+              <div class="sdc-doc-label">Promotion / Rank Review</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+            <a class="sdc-doc-item" :href="docUrl('termination_letter')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--hr">🚫</div>
+              <div class="sdc-doc-label">Termination Letter</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- D. Executive / Appointment Documents -->
+        <div class="sdc-doc-group">
+          <div class="sdc-doc-group-title">🎖 Executive &amp; Appointment Letters</div>
+          <div class="sdc-doc-list">
+            <a class="sdc-doc-item" :href="docUrl('appointment_letter')" target="_blank">
+              <div class="sdc-doc-icon sdc-doc-icon--executive">🎖</div>
+              <div class="sdc-doc-label">Appointment Letter</div>
+              <div class="sdc-doc-arrow"><i class="bi bi-download"></i></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Signature note -->
+        {% if active_signature %}
+        <div style="margin-top:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;font-size:12px;color:#15803d;display:flex;align-items:center;gap:8px;">
+          <i class="bi bi-pen-fill"></i>
+          Documents will include CEO signature from <strong>{{ active_signature.full_name }}</strong>.
+        </div>
+        {% else %}
+        <div style="margin-top:20px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:12px;color:#c2410c;display:flex;align-items:center;gap:8px;">
+          <i class="bi bi-pen"></i>
+          No CEO signature uploaded. Documents will show a blank signature line.
+          <a href="{% url 'hq_executive_signatures' %}" style="font-weight:600;color:#c2410c;">Upload →</a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function staffDocCenter() {
+  return {
+    query: '',
+    sheetOpen: false,
+    sheetUserId: null,
+    sheetName: '',
+
+    filter() {
+      // Alpine x-show handles filtering via matches()
+    },
+
+    matches(name, role, dept) {
+      const q = this.query.toLowerCase();
+      return name.includes(q) || role.includes(q) || dept.includes(q);
+    },
+
+    openSheet(userId, name) {
+      this.sheetUserId = userId;
+      this.sheetName = name;
+      this.sheetOpen = true;
+    },
+
+    docUrl(docType) {
+      if (!this.sheetUserId) return '#';
+      return `/tengasale/hq/staff-documents/${this.sheetUserId}/${docType}.pdf`;
+    },
+  };
+}
+</script>
 {% endblock %}

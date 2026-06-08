@@ -350,8 +350,8 @@ class DemographicFieldTests(TestCase):
             "gender": "male",
             "marital_status": "single",
             "phone_user": "spouse",
-            "occupation": "Trade and Commerce",
-            "income_band": "0-100,000",
+            "occupation": "Business Owner",
+            "income_band": "less_than_100k",
             "exact_monthly_income": "50000",
         }
         form = CustomerDetailsForm(data=data)
@@ -368,8 +368,8 @@ class DemographicFieldTests(TestCase):
             "gender": "female",
             "marital_status": "single",
             "phone_user": "customer_self",
-            "occupation": "Trade and Commerce",
-            "income_band": "0-100,000",
+            "occupation": "Business Owner",
+            "income_band": "less_than_100k",
             "exact_monthly_income": "50000",
         }
         form = CustomerDetailsForm(data=data)

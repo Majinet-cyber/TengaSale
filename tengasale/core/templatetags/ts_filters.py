@@ -35,10 +35,10 @@ def _to_decimal(value):
 def format_mwk(value, arg=None):
     """Format a number as MWK currency with commas. E.g. 1250000 → MWK 1,250,000"""
     decimals = str(arg or "").lower() in {"1", "true", "yes", "decimals"}
+    if value is None or value == "":
+        return "—"
     d = _to_decimal(value)
-    if d <= 0 and value in (None, "", 0, "0", "0.00", Decimal("0")):
-        return "Pending setup"
-    return _format_mwk(d, decimals=decimals) or "Pending setup"
+    return _format_mwk(d, decimals=decimals) or "MWK 0"
 
 
 @register.filter(name="mwk_plain")

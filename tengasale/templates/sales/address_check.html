@@ -1,7 +1,7 @@
 {% extends "sales/base.html" %}
 {% load static %}
 
-{% block page_title %}Address Check - {{ app.application_number }}{% endblock %}
+{% block page_title %}Address Check — {{ app.application_number }}{% endblock %}
 
 {% block content %}
 {% include "sales/_sticky_summary.html" %}
@@ -9,60 +9,84 @@
 
   {% include "sales/_step_bar.html" with step=step total_steps=total_steps %}
 
-  <p class="ts-section-desc">Verify the customer's address and confirm it is traceable.</p>
+  <p class="ts-section-desc">Verify the customer's address and confirm it is traceable by calling the neighbour or guarantor.</p>
 
+  {# ── Customer Location Card ───────────────────────────────────── #}
   <div class="ts-review-card ts-mb-8">
-    <div class="ts-review-card__title">Customer Location</div>
+    <div class="ts-review-card__title">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Customer Location
+    </div>
     <div class="ts-review-row"><span>Customer</span><strong>{{ app.customer_name }}</strong></div>
     <div class="ts-review-row"><span>District</span><strong>{{ app.district|default:"Not captured" }}</strong></div>
-    <div class="ts-review-row"><span>Village/Area</span><strong>{{ app.village|default:"Not captured" }}</strong></div>
+    <div class="ts-review-row"><span>Village / Area</span><strong>{{ app.village|default:"Not captured" }}</strong></div>
     <div class="ts-review-row"><span>Traditional Authority</span><strong>{{ app.traditional_authority|default:"Not captured" }}</strong></div>
-    {% if app.precise_location %}<div class="ts-review-row"><span>Precise Location</span><strong>{{ app.precise_location }}</strong></div>{% endif %}
+    {% if app.precise_location %}
+    <div class="ts-review-row"><span>Precise Location</span><strong>{{ app.precise_location }}</strong></div>
+    {% endif %}
     {% if app.gps_coordinates %}
-      <div class="ts-review-row"><span>GPS</span><strong>{{ app.gps_coordinates }}</strong></div>
-      <a href="https://www.google.com/maps/search/?api=1&query={{ app.gps_coordinates|urlencode }}" class="ts-btn-secondary ts-btn-full ts-mt-8" target="_blank" rel="noopener">Open Customer Map</a>
+    <div class="ts-review-row"><span>GPS</span><strong style="font-family:monospace;font-size:12px;">{{ app.gps_coordinates }}</strong></div>
     {% endif %}
   </div>
 
-  {% if app.next_of_kin_1_phone %}
-  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-    <a href="tel:+265{{ app.next_of_kin_1_phone }}" class="action-btn-large primary">
-      <span class="btn-label">CALL NEIGHBOUR / GUARANTOR - {{ app.next_of_kin_1_name|default:"Contact" }} - +265 {{ app.next_of_kin_1_phone }}</span>
-    </a>
+  {# ── Address Confidence ──────────────────────────────────────── #}
+  <div class="ts-review-card ts-mb-8">
+    <div class="ts-review-card__title">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Address Confidence
+    </div>
+    <div class="ts-address-confidence-hints">
+      <div class="ts-confidence-item {% if app.district %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
+        <span>District</span>
+        <strong>{{ app.district|default:"Missing" }}</strong>
+      </div>
+      <div class="ts-confidence-item {% if app.village %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
+        <span>Village / Area</span>
+        <strong>{{ app.village|default:"Missing" }}</strong>
+      </div>
+      <div class="ts-confidence-item {% if app.precise_location %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
+        <span>Precise Location</span>
+        <strong>{{ app.precise_location|default:"Not provided" }}</strong>
+      </div>
+      <div class="ts-confidence-item {% if app.gps_coordinates %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
+        <span>GPS Coordinates</span>
+        <strong>{% if app.gps_coordinates %}Captured{% else %}Not captured{% endif %}</strong>
+      </div>
+    </div>
+    <p class="ts-meta-small ts-mt-8">If address confidence is weak, add notes on the final review and send back or reject where appropriate.</p>
   </div>
-  {% endif %}
+
+  {# ── Call / Map Actions ──────────────────────────────────────── #}
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+    {% if app.next_of_kin_1_phone %}
+    <a href="tel:+265{{ app.next_of_kin_1_phone }}" class="action-btn-large primary">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/>
+      </svg>
+      <span class="btn-label">Call Neighbour — {{ app.next_of_kin_1_name|default:"Contact" }} &middot; +265 {{ app.next_of_kin_1_phone }}</span>
+    </a>
+    {% endif %}
+    {% if app.gps_coordinates %}
+    <a href="https://www.google.com/maps/search/?api=1&query={{ app.gps_coordinates|urlencode }}" class="action-btn-large" style="background:#1d4ed8;color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.25);" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="btn-label">View Customer Location on Map</span>
+    </a>
+    {% endif %}
+  </div>
 
   <form method="post">
     {% csrf_token %}
+
+    {# ── Verification Questions ────────────────────────────────── #}
     <div class="ts-review-card">
-      <div class="ts-review-card__title">Address Verification</div>
+      <div class="ts-review-card__title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Address Verification
+      </div>
       {% include "sales/_yes_no.html" with field_name="location_neighbour_spoken" label="Did you speak to a neighbour or local contact to confirm the address?" current_value=review.location_neighbour_spoken %}
       {% include "sales/_yes_no.html" with field_name="location_confirmed" label="Did the neighbour or contact confirm the customer lives at this address?" current_value=review.location_confirmed %}
       {% include "sales/_yes_no.html" with field_name="location_traceable" label="Would you be able to locate the customer if they defaulted?" current_value=review.location_traceable %}
-      {% include "sales/_yes_no.html" with field_name="location_address_clear" label="Is the location description clear?" current_value=review.location_address_clear %}
-    </div>
-
-    <div class="ts-review-card ts-mb-8">
-      <div class="ts-review-card__title">Address Confidence</div>
-      <div class="ts-address-confidence-hints">
-        <div class="ts-confidence-item {% if app.district %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
-          <span>District captured</span>
-          <strong>{{ app.district|default:"Missing" }}</strong>
-        </div>
-        <div class="ts-confidence-item {% if app.village %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
-          <span>Village / area</span>
-          <strong>{{ app.village|default:"Missing" }}</strong>
-        </div>
-        <div class="ts-confidence-item {% if app.precise_location %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
-          <span>Precise location</span>
-          <strong>{{ app.precise_location|default:"Missing" }}</strong>
-        </div>
-        <div class="ts-confidence-item {% if app.gps_coordinates %}ts-confidence-item--ok{% else %}ts-confidence-item--missing{% endif %}">
-          <span>GPS captured</span>
-          <strong>{{ app.gps_coordinates|default:"Not captured" }}</strong>
-        </div>
-      </div>
-      <p class="ts-meta-small ts-mt-8">If address confidence is weak, add notes on the final review and send back or reject where appropriate.</p>
+      {% include "sales/_yes_no.html" with field_name="location_address_clear" label="Is the location description clear enough to find the customer?" current_value=review.location_address_clear %}
     </div>
 
     {% url 'sales_identity_check' app.id as back_url %}

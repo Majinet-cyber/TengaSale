@@ -48,9 +48,9 @@ def valid_customer_data(**overrides):
         "customer_name": "Jane Banda",
         "national_id": "RQXFVZC9",
         "customer_phone": "990870616",
-        "occupation": "Trade and Commerce",
-        "income_band": "100,001-300,000",
-        "exact_monthly_income": "250000",
+        "occupation": "Employed",
+        "income_band": "200k_250k",
+        "exact_monthly_income": "220000",
     }
     data.update(overrides)
     return data
@@ -197,8 +197,9 @@ class CustomerValidationTests(TestCase):
         form = CustomerDetailsForm()
 
         values = [value for value, _label in form.fields["occupation"].choices]
-        self.assertIn("Self Employed", values)
-        self.assertIn("Trade and Commerce", values)
+        self.assertIn("Employed", values)
+        self.assertIn("Business Owner", values)
+        self.assertIn("Farming", values)
         self.assertIn("Other", values)
 
     def test_other_occupation_requires_detail(self):
@@ -568,10 +569,12 @@ class ApplicationListTests(ApplicationTestCase):
         for url in urls:
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            # Verify back navigation exists (either as soft-back or icon-button in topbar)
+            # Verify back navigation exists (back is in form-actions or icon-button in topbar)
             self.assertTrue(
                 b'class="soft-back"' in response.content or
-                b'class="icon-button"' in response.content,
+                b'class="icon-button"' in response.content or
+                b'btn-outline' in response.content or
+                b'ts-button-outline' in response.content,
                 f"No back button found in {url}",
             )
 
@@ -671,7 +674,7 @@ class ApplicationFlowTests(ApplicationTestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Choose your new phone")
+        self.assertContains(response, "Select a Phone Deal")
         self.assertEqual(response.resolver_match.url_name, "choose_device")
 
     def test_invalid_national_id_does_not_proceed(self):
@@ -1063,7 +1066,6 @@ class KYCCaptureTests(ApplicationTestCase):
         self.assertContains(response, "Take ID Front Photo")
         self.assertContains(response, "Take ID Back Photo")
         self.assertNotContains(response, "Capture Customer Phone")
-        self.assertContains(response, 'class="soft-back"')
         self.assertContains(response, 'capture="user"')
         self.assertContains(response, 'capture="environment"', count=2)
         self.assertContains(response, 'class="kyc-file-input"')
@@ -1883,7 +1885,7 @@ class ApplicationPageLoadTests(TestCase):
         url = reverse("choose_device", args=[self.app.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Choose your new phone")
+        self.assertContains(response, "Select a Phone Deal")
 
     def test_hq_dashboard_loads_for_hq_user(self):
         self._login(self.hq)

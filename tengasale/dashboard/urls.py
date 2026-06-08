@@ -38,6 +38,7 @@ urlpatterns = [
     path("tengasale/hq/payout-approvals/", views.hq_payout_approvals, name="hq_payout_approvals"),
     path("tengasale/hq/staff-documents/", views.hq_staff_documents, name="hq_staff_documents"),
     path("tengasale/hq/staff-documents/<int:user_id>/<str:document_type>.pdf", views.staff_document_pdf, name="staff_document_pdf"),
+    path("tengasale/hq/executive-signatures/", views.hq_executive_signatures, name="hq_executive_signatures"),
     path("tengasale/hq/discipline/<int:period_id>/acknowledge/", views.staff_discipline_acknowledge, name="staff_discipline_acknowledge"),
     path("tengasale/hq/discipline/<int:period_id>/dispute/", views.staff_discipline_dispute, name="staff_discipline_dispute"),
     path("tengasale/hq/simulations/", views.hq_simulations, name="hq_simulations"),

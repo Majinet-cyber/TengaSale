@@ -5,217 +5,568 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
+<style>
+/* ── Underwriter Home — Premium Operational Cockpit ─────────────── */
+
+.uw-home {
+  padding: 0 16px 96px;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Greeting ───────────────────────────────────────────────────── */
+.uw-greeting {
+  padding: 20px 0 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.uw-greeting__copy { min-width: 0; }
+.uw-greeting__hello {
+  font-size: 24px;
+  font-weight: 900;
+  color: #101828;
+  line-height: 1.1;
+  margin: 0;
+}
+.uw-greeting__sub {
+  font-size: 14px;
+  color: #667085;
+  margin: 3px 0 0;
+}
+.uw-greeting__pills {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.uw-report-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #667085;
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+.uw-report-pill:hover { border-color: #ff5a00; color: #ff5a00; }
+
+/* ── Queue Card ─────────────────────────────────────────────────── */
+.uw-queue-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(15,23,42,.06);
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.uw-queue-card--empty {
+  border-style: dashed;
+  background: #fafafa;
+}
+.uw-queue-card__body {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.uw-queue-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255,90,0,.09);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  color: #ff5a00;
+  flex-shrink: 0;
+}
+.uw-queue-card--empty .uw-queue-card__icon {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+.uw-queue-card__text { flex: 1; min-width: 0; }
+.uw-queue-card__label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #667085;
+  margin: 0 0 3px;
+}
+.uw-queue-card__title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #101828;
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.uw-queue-card__sub {
+  font-size: 13px;
+  color: #667085;
+  margin: 0;
+  line-height: 1.4;
+}
+.uw-queue-card__action {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+.uw-claim-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #ff5a00;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, transform .1s;
+  box-shadow: 0 4px 14px rgba(255,90,0,.28);
+}
+.uw-claim-btn:hover { background: #e64d00; }
+.uw-claim-btn:active { transform: scale(.98); }
+.uw-claim-btn .bi { font-size: 18px; }
+.uw-queue-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(255,90,0,.10);
+  color: #ff5a00;
+  flex-shrink: 0;
+}
+.uw-queue-badge--none {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* ── Urgent alert ───────────────────────────────────────────────── */
+.uw-urgent-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(245,158,11,.08);
+  border: 1.5px solid rgba(245,158,11,.25);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #92400e;
+}
+.uw-urgent-banner i { font-size: 18px; color: #f59e0b; flex-shrink: 0; }
+.uw-urgent-banner strong { font-weight: 900; display: block; margin-bottom: 1px; }
+.uw-urgent-banner p { margin: 0; font-size: 12px; color: #b45309; }
+
+/* ── My Active Card ─────────────────────────────────────────────── */
+.uw-active-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #1d4ed8;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(29,78,216,.25);
+  transition: background .15s, box-shadow .15s, transform .1s;
+}
+.uw-active-card:hover { background: #1e40af; box-shadow: 0 6px 24px rgba(29,78,216,.35); }
+.uw-active-card:active { transform: scale(.98); }
+.uw-active-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255,255,255,.15);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.uw-active-card__body { flex: 1; min-width: 0; }
+.uw-active-card__label {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .75;
+  margin: 0 0 2px;
+}
+.uw-active-card__title {
+  font-size: 15px;
+  font-weight: 900;
+  margin: 0 0 1px;
+  line-height: 1.2;
+}
+.uw-active-card__sub {
+  font-size: 12px;
+  opacity: .75;
+  margin: 0;
+}
+.uw-active-card__count {
+  font-size: 22px;
+  font-weight: 900;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.uw-active-card__arrow { opacity: .6; font-size: 18px; flex-shrink: 0; }
+
+/* ── Section label ──────────────────────────────────────────────── */
+.uw-section-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #94a3b8;
+  padding: 10px 0 8px;
+}
+
+/* ── List card ──────────────────────────────────────────────────── */
+.uw-list-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(15,23,42,.05);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.uw-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: #101828;
+  border-bottom: 1px solid #f0f4f8;
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.uw-list-row:last-child { border-bottom: none; }
+.uw-list-row:hover { background: #f8fafc; }
+.uw-list-row:active { background: #f0f4f8; }
+.uw-list-row__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.uw-list-row__icon--active   { background: rgba(29,78,216,.10); color: #1d4ed8; }
+.uw-list-row__icon--pending  { background: rgba(245,158,11,.10); color: #d97706; }
+.uw-list-row__icon--done     { background: rgba(22,163,74,.10);  color: #16a34a; }
+.uw-list-row__icon--archived { background: rgba(107,114,128,.10);color: #6b7280; }
+.uw-list-row__icon--earnings { background: rgba(255,90,0,.10);   color: #ff5a00; }
+.uw-list-row__icon--payments { background: rgba(16,185,129,.10); color: #059669; }
+.uw-list-row__icon--rules    { background: rgba(99,102,241,.10); color: #6366f1; }
+.uw-list-row__icon--spin     { background: rgba(245,158,11,.10); color: #d97706; }
+.uw-list-row__icon--help     { background: rgba(107,114,128,.10);color: #6b7280; }
+.uw-list-row__icon--calls    { background: rgba(20,184,166,.10); color: #0d9488; }
+.uw-list-row__body { flex: 1; min-width: 0; }
+.uw-list-row__title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #101828;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uw-list-row__sub {
+  font-size: 12px;
+  color: #667085;
+  margin-top: 1px;
+}
+.uw-list-row__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.uw-list-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 900;
+}
+.uw-list-badge--blue   { background: rgba(29,78,216,.10); color: #1d4ed8; }
+.uw-list-badge--amber  { background: rgba(245,158,11,.10); color: #d97706; }
+.uw-list-badge--green  { background: rgba(22,163,74,.10);  color: #16a34a; }
+.uw-list-badge--gray   { background: #f1f5f9; color: #64748b; }
+.uw-list-badge--orange { background: rgba(255,90,0,.10); color: #ff5a00; }
+.uw-list-row__chevron { color: #94a3b8; font-size: 18px; }
+
+/* ── Muted value text ───────────────────────────────────────────── */
+.uw-list-row__value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #667085;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="sales-main uw-home-simple uw-home-premium mobile-shell ts-motion-page">
-  <section class="uw-hero-panel ts-motion-slide" aria-labelledby="uw-home-title">
-    <div class="uw-hero-panel__copy">
-      <p class="ts-greeting">Hi, {{ request.user.first_name|default:request.user.username }}</p>
-      <h1 id="uw-home-title">Underwriter Queue</h1>
-      <p>Review, claim, and verify customer applications.</p>
-      <span class="uw-live-status"><span class="ts-live-dot" aria-hidden="true"></span> Live queue updated recently</span>
+<div class="uw-home ts-motion-page">
+
+  {# ── Greeting ──────────────────────────────────────────────────── #}
+  <div class="uw-greeting ts-motion-slide">
+    <div class="uw-greeting__copy">
+      <h1 class="uw-greeting__hello">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p class="uw-greeting__sub">Welcome back</p>
     </div>
-    <div class="uw-hero-panel__actions">
+    <div class="uw-greeting__pills">
       {% include "includes/flag_pill.html" %}
-      <button type="button" class="uw-sound-toggle ts-motion-tap" data-ts-sound-toggle aria-pressed="false">
-        <i class="bi bi-volume-mute" aria-hidden="true"></i>
-        <span>Sound off</span>
-      </button>
+      <a href="{% url 'ticket_create' %}" class="uw-report-pill">
+        <i class="bi bi-flag" aria-hidden="true"></i>
+        Report Issue
+      </a>
     </div>
-  </section>
+  </div>
 
-  <section class="uw-kpi-grid ts-motion-stagger" aria-label="Today's queue summary">
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--neutral"><i class="bi bi-inboxes" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Available</span>
-      <strong data-counter>{{ pending_count }}</strong>
-      <small>Ready to claim</small>
-    </article>
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--active"><i class="bi bi-person-check" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Claimed by You</span>
-      <strong>{{ active_count }} / {{ max_active }}</strong>
-      <small>Active reviews</small>
-    </article>
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--success"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Approved Today</span>
-      <strong data-counter>{{ approved_today }}</strong>
-      <small>Completed approvals</small>
-    </article>
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--warning"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Needs Review</span>
-      <strong data-counter>{{ urgent_count }}</strong>
-      <small>Waiting over 30m</small>
-    </article>
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--danger"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Rejected Today</span>
-      <strong data-counter>{{ rejected_today }}</strong>
-      <small>Declined applications</small>
-    </article>
-    <article class="uw-kpi-card ts-motion-item ts-motion-card">
-      <span class="uw-kpi-card__icon uw-kpi-card__icon--processing"><i class="bi bi-stopwatch" aria-hidden="true"></i></span>
-      <span class="uw-kpi-card__label">Average Review Time</span>
-      <strong>{{ average_review_time_label }}</strong>
-      <small>Last 50 reviews</small>
-    </article>
-  </section>
-
-  <section class="uw-claim-panel ts-motion-slide {% if not pending_count %}uw-claim-panel--empty{% endif %}" aria-label="Claim next application">
-    <span class="ts-sr-only">{% if can_claim %}CLAIM NEXT{% elif pending_count %}MAX ACTIVE{% else %}NO APPLICATIONS IN QUEUE{% endif %}</span>
-    <div class="uw-claim-panel__status">
-      <span class="ts-status-badge ts-status-badge--pending">{% if pending_count %}{{ pending_count }} pending{% else %}Queue clear{% endif %}</span>
-      <strong>{% if can_claim %}Claim Next Application{% elif pending_count %}Active limit or cooldown{% else %}No Applications{% endif %}</strong>
-      <p>
-        {% if can_claim %}
-          Oldest unclaimed application will be assigned to you.
-        {% elif pending_count %}
-          Finish an active review or wait for cooldown before claiming.
+  {# ── Queue Card ────────────────────────────────────────────────── #}
+  <div class="uw-queue-card {% if not pending_count %}uw-queue-card--empty{% endif %} ts-motion-slide">
+    <div class="uw-queue-card__body">
+      <div class="uw-queue-card__icon">
+        <i class="bi {% if pending_count %}bi-inbox-fill{% else %}bi-inbox{% endif %}" aria-hidden="true"></i>
+      </div>
+      <div class="uw-queue-card__text">
+        <p class="uw-queue-card__label">Application Queue</p>
+        {% if pending_count %}
+          <h2 class="uw-queue-card__title">{{ pending_count }} Application{{ pending_count|pluralize }} Waiting</h2>
+          <p class="uw-queue-card__sub">{% if can_claim %}Ready to claim. Oldest will be assigned to you.{% else %}Finish your active review or wait for cooldown.{% endif %}</p>
         {% else %}
-          You are clear for now. New applications will appear here automatically.
+          <h2 class="uw-queue-card__title">No Applications in Queue</h2>
+          <p class="uw-queue-card__sub">New applications will appear here when available.</p>
         {% endif %}
-      </p>
+      </div>
+      {% if pending_count %}
+        <span class="uw-queue-badge">{{ pending_count }}</span>
+      {% else %}
+        <span class="uw-queue-badge uw-queue-badge--none">Clear</span>
+      {% endif %}
     </div>
     {% if can_claim %}
-      <form method="post" action="{% url 'sales_claim_next' %}" class="uw-primary-form uw-claim-form" data-claim-next-form>
+    <div class="uw-queue-card__action">
+      <form method="post" action="{% url 'sales_claim_next' %}" data-claim-next-form>
         {% csrf_token %}
-        <button type="submit" class="uw-primary-action uw-primary-action--queue uw-claim-button ts-motion-tap" data-ts-sound="claim">
-          <span class="uw-claim-button__fill" aria-hidden="true"></span>
-          <span class="uw-claim-button__label">
-            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
-            <span data-claim-label>Claim Next</span>
-          </span>
-          <strong data-claim-sub>{{ pending_count }} waiting</strong>
+        <button type="submit" class="uw-claim-btn ts-motion-tap" data-ts-sound="claim">
+          <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+          <span data-claim-label>Claim Next Application</span>
           <span class="ts-spinner sm uw-claim-button__spinner" aria-hidden="true"></span>
         </button>
       </form>
-    {% else %}
-      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-primary-action uw-primary-action--queue-empty uw-claim-button uw-claim-button--disabled ts-motion-tap">
-        <span class="uw-claim-button__label">
-          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-          {% if pending_count %}View Queue{% else %}Refresh Queue{% endif %}
-        </span>
-        <strong>{% if pending_count %}{{ pending_count }} pending{% else %}No Applications{% endif %}</strong>
+    </div>
+    {% elif pending_count %}
+    <div class="uw-queue-card__action">
+      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-claim-btn" style="background:#1d4ed8;box-shadow:0 4px 14px rgba(29,78,216,.25);">
+        <i class="bi bi-eye" aria-hidden="true"></i>
+        View Queue
       </a>
+    </div>
     {% endif %}
-  </section>
+  </div>
 
+  {# ── Urgent alert ──────────────────────────────────────────────── #}
   {% if urgent_count %}
-    <section class="uw-queue-alert ts-motion-slide" role="status">
-      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-      <div>
-        <strong>{{ urgent_count }} application{{ urgent_count|pluralize }} need attention</strong>
-        <p>Some pending applications have waited longer than 30 minutes. Claiming still follows queue rules.</p>
-      </div>
-    </section>
+  <div class="uw-urgent-banner ts-motion-slide" role="status">
+    <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+    <div>
+      <strong>{{ urgent_count }} application{{ urgent_count|pluralize }} need attention</strong>
+      <p>Pending over 30 minutes. Claiming still follows queue rules.</p>
+    </div>
+  </div>
   {% endif %}
 
-  <section class="uw-review-section active-reviews-card" aria-labelledby="uw-active-title">
-    <span class="ts-sr-only">MY ACTIVE</span>
-    <div class="uw-section-head">
-      <div>
-        <span class="ts-section-label simple-section">Applications</span>
-        <h2 id="uw-active-title">My Active Reviews</h2>
-      </div>
-      <a href="{% url 'sales_applications' %}?tab=active" class="uw-section-link">View all</a>
+  {# ── My Active Card ────────────────────────────────────────────── #}
+  <a href="{% url 'sales_applications' %}?tab=active" class="uw-active-card ts-motion-slide ts-motion-tap">
+    <div class="uw-active-card__icon">
+      <i class="bi bi-file-earmark-check-fill" aria-hidden="true"></i>
     </div>
-
-    {% if active_app_cards %}
-      <div class="uw-application-grid ts-motion-stagger">
-        {% for card in active_app_cards %}
-          <article class="uw-application-card ts-motion-item ts-motion-card">
-            <div class="uw-application-card__top">
-              <span class="uw-application-card__icon" aria-hidden="true"><i class="bi bi-file-earmark-check"></i></span>
-              <div>
-                <h3>{{ card.app.customer_name|default:"Unnamed customer" }}</h3>
-                <p>{{ card.app.application_number }}</p>
-              </div>
-              <span class="ts-status-badge ts-status-badge--active ts-status-badge--pulse">Under Review</span>
-            </div>
-            <dl class="uw-application-facts">
-              <div>
-                <dt>Merchant</dt>
-                <dd>{{ card.merchant_name }}</dd>
-              </div>
-              <div>
-                <dt>Device</dt>
-                <dd>{{ card.device_label }}</dd>
-              </div>
-              <div>
-                <dt>Deposit</dt>
-                <dd>{{ card.app.calculated_deposit_amount|mwk }}</dd>
-              </div>
-              <div>
-                <dt>Total Loan</dt>
-                <dd>{{ card.app.calculated_total_loan|mwk }}</dd>
-              </div>
-              <div>
-                <dt>Location</dt>
-                <dd>{{ card.location }}</dd>
-              </div>
-              <div>
-                <dt>Claimed</dt>
-                <dd>{% if card.app.claimed_at %}{{ card.app.claimed_at|timesince }} ago{% else %}Recently{% endif %}</dd>
-              </div>
-            </dl>
-            <div class="uw-application-card__footer">
-              <span class="uw-risk-badge uw-risk-badge--{{ card.risk_class }}">
-                {{ card.risk_label }}{% if card.risk_score_display %} &middot; {{ card.risk_score_display }}{% endif %}
-              </span>
-              <a href="{% url 'sales_review_summary' card.app.id %}" class="uw-review-button ts-motion-tap" data-ts-sound="notification">
-                Review
-                <i class="bi bi-arrow-right" aria-hidden="true"></i>
-              </a>
-            </div>
-          </article>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="uw-empty-state ts-motion-slide">
-        <span class="uw-empty-state__icon" aria-hidden="true"><i class="bi bi-check2-circle"></i></span>
-        <h3>No applications waiting</h3>
-        <p>You are clear for now. New applications will appear here automatically.</p>
-        <a href="{% url 'sales_applications' %}?tab=queue" class="uw-empty-state__button ts-motion-tap" data-ts-sound="notification">
-          Refresh Queue
-        </a>
-      </div>
-    {% endif %}
-
-    <div class="uw-skeleton-strip" data-claim-skeleton hidden aria-hidden="true">
-      <div class="ts-skeleton ts-skeleton-card"></div>
-      <div class="ts-skeleton ts-skeleton-card"></div>
+    <div class="uw-active-card__body">
+      <p class="uw-active-card__label">My Active</p>
+      <p class="uw-active-card__title">Active Reviews</p>
+      <p class="uw-active-card__sub">Tap to view and continue</p>
     </div>
-  </section>
+    <span class="uw-active-card__count">{{ active_count }}/{{ max_active }}</span>
+    <i class="bi bi-chevron-right uw-active-card__arrow" aria-hidden="true"></i>
+  </a>
 
-  <div class="ts-section-label simple-section">More<span class="ts-sr-only"> Tools</span></div>
-  <div class="ts-menu-section action-card ts-motion-stagger">
-    <a href="{% url 'sales_applications' %}?tab=completed" class="ts-menu-row simple-row action-row">
-      <span class="ts-menu-row__icon action-row-icon action-row-icon--completed" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
-      <span class="ts-menu-row__label action-row-label">Completed Reviews</span>
-      {% if completed_count %}<span class="ts-menu-badge ts-badge-success action-row-value">{{ completed_count }}</span>{% else %}<span class="action-row-value">&mdash;</span>{% endif %}
-      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
+  {# ── Applications ─────────────────────────────────────────────── #}
+  <div class="uw-section-label">Applications</div>
+  <nav class="uw-list-card ts-motion-slide" aria-label="Applications">
+    <a href="{% url 'sales_applications' %}?tab=active" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--active" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">My Active</div>
+        <div class="uw-list-row__sub">Under review</div>
+      </div>
+      <div class="uw-list-row__right">
+        {% if active_count %}<span class="uw-list-badge uw-list-badge--blue">{{ active_count }}</span>{% else %}<span class="uw-list-row__value">—</span>{% endif %}
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
     </a>
-    <a href="{% url 'sales_wallet' %}" class="ts-menu-row simple-row action-row">
-      <span class="ts-menu-row__icon action-row-icon action-row-icon--earnings" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
-      <span class="ts-menu-row__label action-row-label">Earnings</span>
-      {% if wallet.balance %}<span class="ts-menu-row__sub action-row-value">{{ wallet.balance|mwk }}</span>{% else %}<span class="action-row-value">&mdash;</span>{% endif %}
-      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
+    <a href="{% url 'sales_applications' %}?tab=queue" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--pending" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Pending Queue</div>
+        <div class="uw-list-row__sub">Awaiting claim</div>
+      </div>
+      <div class="uw-list-row__right">
+        {% if pending_count %}<span class="uw-list-badge uw-list-badge--amber">{{ pending_count }}</span>{% else %}<span class="uw-list-row__value">—</span>{% endif %}
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
     </a>
-    <a href="{% url 'sales_applications' %}?tab=queue" class="ts-menu-row simple-row action-row">
-      <span class="ts-menu-row__icon action-row-icon action-row-icon--rules" aria-hidden="true"><i class="bi bi-gear"></i></span>
-      <span class="ts-menu-row__label action-row-label">Queue Rules</span>
-      <span class="action-row-value">Rules</span>
-      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
+    <a href="{% url 'sales_applications' %}?tab=completed" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--done" aria-hidden="true"><i class="bi bi-check-circle"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Completed</div>
+        <div class="uw-list-row__sub">Approved &amp; processed</div>
+      </div>
+      <div class="uw-list-row__right">
+        {% if completed_count %}<span class="uw-list-badge uw-list-badge--green">{{ completed_count }}</span>{% else %}<span class="uw-list-row__value">—</span>{% endif %}
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
     </a>
-    <a href="{% url 'sales_spin' %}" class="ts-menu-row simple-row action-row">
-      <span class="ts-menu-row__icon action-row-icon action-row-icon--spin" aria-hidden="true"><i class="bi bi-stars"></i></span>
-      <span class="ts-menu-row__label action-row-label">Spin &amp; Win</span>
-      <span class="action-row-value">Play</span>
-      <span class="row-arrow action-row-chevron" aria-hidden="true">&rsaquo;</span>
+    <a href="{% url 'sales_applications' %}?tab=rejected" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--archived" aria-hidden="true"><i class="bi bi-archive"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Archived / Rejected</div>
+        <div class="uw-list-row__sub">Declined or expired</div>
+      </div>
+      <div class="uw-list-row__right">
+        <span class="uw-list-row__value">View</span>
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
     </a>
+  </nav>
+
+  {# ── Quick Stats (compact, 2×2) ───────────────────────────────── #}
+  <div class="uw-section-label">Today</div>
+  <div class="uw-stats-mini ts-motion-stagger">
+    <div class="uw-stat-mini ts-motion-item">
+      <span class="uw-stat-mini__val" data-counter>{{ approved_today }}</span>
+      <span class="uw-stat-mini__lbl">Approved</span>
+    </div>
+    <div class="uw-stat-mini ts-motion-item">
+      <span class="uw-stat-mini__val" data-counter>{{ rejected_today }}</span>
+      <span class="uw-stat-mini__lbl">Rejected</span>
+    </div>
+    <div class="uw-stat-mini ts-motion-item">
+      <span class="uw-stat-mini__val" data-counter>{{ urgent_count }}</span>
+      <span class="uw-stat-mini__lbl">Overdue queue</span>
+    </div>
+    <div class="uw-stat-mini ts-motion-item">
+      <span class="uw-stat-mini__val">{{ average_review_time_label }}</span>
+      <span class="uw-stat-mini__lbl">Avg review time</span>
+    </div>
   </div>
+
+  {# ── Tools ────────────────────────────────────────────────────── #}
+  <div class="uw-section-label">Tools</div>
+  <nav class="uw-list-card ts-motion-slide" aria-label="Tools">
+    <a href="{% url 'sales_wallet' %}" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--earnings" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Earnings &amp; Wallet</div>
+        {% if wallet.balance %}<div class="uw-list-row__sub">Balance: {{ wallet.balance|mwk }}</div>{% else %}<div class="uw-list-row__sub">View your earnings</div>{% endif %}
+      </div>
+      <div class="uw-list-row__right">
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
+    </a>
+    <a href="{% url 'sales_applications' %}?tab=queue" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--rules" aria-hidden="true"><i class="bi bi-sliders"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Queue Rules</div>
+        <div class="uw-list-row__sub">View claim settings</div>
+      </div>
+      <div class="uw-list-row__right">
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
+    </a>
+    <a href="{% url 'payments_home' %}" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--payments" aria-hidden="true"><i class="bi bi-credit-card"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Payments</div>
+        <div class="uw-list-row__sub">Check payment status</div>
+      </div>
+      <div class="uw-list-row__right">
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
+    </a>
+    <a href="{% url 'sales_spin' %}" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--spin" aria-hidden="true"><i class="bi bi-stars"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Spin &amp; Win</div>
+        <div class="uw-list-row__sub">Rewards &amp; bonuses</div>
+      </div>
+      <div class="uw-list-row__right">
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
+    </a>
+    <a href="{% url 'ticket_create' %}" class="uw-list-row">
+      <span class="uw-list-row__icon uw-list-row__icon--help" aria-hidden="true"><i class="bi bi-life-preserver"></i></span>
+      <div class="uw-list-row__body">
+        <div class="uw-list-row__title">Help / Report Issue</div>
+        <div class="uw-list-row__sub">Get support</div>
+      </div>
+      <div class="uw-list-row__right">
+        <i class="bi bi-chevron-right uw-list-row__chevron" aria-hidden="true"></i>
+      </div>
+    </a>
+  </nav>
 </div>
+
+<style>
+/* ── Compact stats grid ─────────────────────────────────────────── */
+.uw-stats-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.uw-stat-mini {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 6px rgba(15,23,42,.04);
+}
+.uw-stat-mini__val {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #101828;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.uw-stat-mini__lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+</style>
 {% endblock %}

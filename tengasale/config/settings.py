@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "device_lock.apps.DeviceLockConfig",
     "notifications.apps.NotificationsConfig",
     "communications.apps.CommunicationsConfig",
+    "payments.apps.PaymentsConfig",
 ]
 
 MIDDLEWARE = [
@@ -232,15 +233,46 @@ PAYMENT_PROVIDER_API_URL = os.environ.get("PAYMENT_PROVIDER_API_URL", "")
 SMS_PROVIDER_API_KEY = os.environ.get("SMS_PROVIDER_API_KEY", "")
 SMS_PROVIDER_API_URL = os.environ.get("SMS_PROVIDER_API_URL", "")
 
-# Payment providers
+# ── Payment Providers ─────────────────────────────────────────────────────────
 MOCK_PAYMENTS = os.environ.get("MOCK_PAYMENTS", "true").lower() == "true"
+
+# PayChangu Mobile Money (Airtel / TNM Mpamba)
 PAYCHANGU_PUBLIC_KEY = os.environ.get("PAYCHANGU_PUBLIC_KEY", "")
 PAYCHANGU_SECRET_KEY = os.environ.get("PAYCHANGU_SECRET_KEY", "")
 PAYCHANGU_WEBHOOK_SECRET = os.environ.get("PAYCHANGU_WEBHOOK_SECRET", "")
+PAYCHANGU_API_BASE = os.environ.get("PAYCHANGU_API_BASE", "https://api.paychangu.com")
+PAYCHANGU_CALLBACK_URL = os.environ.get("PAYCHANGU_CALLBACK_URL", "")
+PAYCHANGU_WEBHOOK_URL = os.environ.get("PAYCHANGU_WEBHOOK_URL", "")
+PAYCHANGU_ENVIRONMENT = os.environ.get("PAYCHANGU_ENVIRONMENT", "sandbox")
+PAYCHANGU_DEFAULT_CURRENCY = os.environ.get("PAYCHANGU_DEFAULT_CURRENCY", "MWK")
+PAYCHANGU_WEBHOOK_DEBUG = os.environ.get("PAYCHANGU_WEBHOOK_DEBUG", "False").lower() in ("true", "1", "yes")
+
+# Operator ref_id overrides (optional; auto-resolved from API if not set)
+PAYCHANGU_AIRTEL_REF_ID = os.environ.get("PAYCHANGU_AIRTEL_REF_ID", "")
+PAYCHANGU_TNM_REF_ID = os.environ.get("PAYCHANGU_TNM_REF_ID", "")
+
+# Payment mode: "sandbox" | "live"
+PAYMENTS_MODE = os.environ.get("PAYMENTS_MODE", "sandbox").lower()
+
+# Safety flags — must be explicitly enabled for real money movement
+PAYMENTS_ALLOW_LIVE_CHARGES = os.environ.get("PAYMENTS_ALLOW_LIVE_CHARGES", "false").lower() == "true"
+PAYOUTS_ALLOW_LIVE_DISBURSEMENTS = os.environ.get("PAYOUTS_ALLOW_LIVE_DISBURSEMENTS", "false").lower() == "true"
+
+# Direct provider credentials (alternatives to PayChangu)
 AIRTEL_MONEY_CLIENT_ID = os.environ.get("AIRTEL_MONEY_CLIENT_ID", "")
 AIRTEL_MONEY_CLIENT_SECRET = os.environ.get("AIRTEL_MONEY_CLIENT_SECRET", "")
 TNM_MPAMBA_API_KEY = os.environ.get("TNM_MPAMBA_API_KEY", "")
 PAYTRIGGER_API_KEY = os.environ.get("PAYTRIGGER_API_KEY", "")
+
+# Production safety guard: if DEBUG=False and live charges are on, keys must exist
+if not DEBUG and PAYMENTS_ALLOW_LIVE_CHARGES:
+    if not PAYCHANGU_PUBLIC_KEY or not PAYCHANGU_SECRET_KEY:
+        import warnings
+        warnings.warn(
+            "PAYMENTS_ALLOW_LIVE_CHARGES=true but PayChangu keys are missing. "
+            "Real charges will fail. Set PAYCHANGU_PUBLIC_KEY and PAYCHANGU_SECRET_KEY.",
+            RuntimeWarning,
+        )
 
 # Device locking integration flags
 MOCK_DEVICE_LOCKING = os.environ.get("MOCK_DEVICE_LOCKING", "true").lower() == "true"
@@ -290,9 +322,6 @@ ALLOWED_AUDIO_MIME_TYPES = [
 
 # Customer correction token expiry (hours)
 CORRECTION_TOKEN_EXPIRY_HOURS = int(os.environ.get("CORRECTION_TOKEN_EXPIRY_HOURS", "72"))
-
-# PayChangu callback URL
-PAYCHANGU_CALLBACK_URL = os.environ.get("PAYCHANGU_CALLBACK_URL", "")
 
 APP_VERSION = "1.0.0"
 

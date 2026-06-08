@@ -795,12 +795,67 @@ class StaffDocument(models.Model):
         (DOC_TERMINATION_LETTER, "Termination Letter"),
     ]
 
+    # ── extended document types ─────────────────────────────────────────────
+    DOC_SUSPENSION_LETTER = "suspension_letter"
+    DOC_APPOINTMENT_LETTER = "appointment_letter"
+    DOC_CONFIDENTIALITY_AGREEMENT = "confidentiality_agreement"
+    DOC_ROLE_RESPONSIBILITY = "role_responsibility_schedule"
+
+    # Add new choices while keeping old ones intact
+    DOC_CHOICES = [
+        (DOC_EMPLOYMENT_AGREEMENT, "Employment Agreement"),
+        (DOC_COMPENSATION_ANNEXURE, "Compensation Annexure A"),
+        (DOC_KPI_VOLTS_ANNEXURE, "KPI & Volts Annexure B"),
+        (DOC_MONTHLY_VOLTS, "Monthly Volts Statement"),
+        (DOC_MONTHLY_REVIEW, "Monthly Performance Review"),
+        (DOC_DISCIPLINE_REPORT, "Discipline Score Report"),
+        (DOC_PROMOTION_REVIEW, "Promotion/Rank Review"),
+        (DOC_WARNING_LETTER, "Warning Letter"),
+        (DOC_TERMINATION_LETTER, "Termination Letter"),
+        (DOC_SUSPENSION_LETTER, "Suspension Letter"),
+        (DOC_APPOINTMENT_LETTER, "Appointment Letter"),
+        (DOC_CONFIDENTIALITY_AGREEMENT, "Confidentiality & Data Protection Agreement"),
+        (DOC_ROLE_RESPONSIBILITY, "Role Responsibility Schedule"),
+    ]
+
+    # ── document status workflow ────────────────────────────────────────────
+    STATUS_DRAFT    = "draft"
+    STATUS_PENDING  = "pending_signature"
+    STATUS_SIGNED   = "signed"
+    STATUS_ISSUED   = "issued"
+    STATUS_REVOKED  = "revoked"
+    STATUS_ARCHIVED = "archived"
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT,   "Draft"),
+        (STATUS_PENDING, "Pending CEO Signature"),
+        (STATUS_SIGNED,  "Signed"),
+        (STATUS_ISSUED,  "Issued"),
+        (STATUS_REVOKED, "Revoked"),
+        (STATUS_ARCHIVED,"Archived"),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="staff_documents")
-    document_type = models.CharField(max_length=40, choices=DOC_CHOICES)
+    document_type = models.CharField(max_length=50, choices=DOC_CHOICES)
     document_number = models.CharField(max_length=80, unique=True)
     version = models.CharField(max_length=20, default="1.0")
-    prepared_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="prepared_staff_documents")
+    prepared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="prepared_staff_documents",
+    )
+    signed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="signed_staff_documents",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    # Executive signature snapshot embedded at generation time
+    used_signature = models.ForeignKey(
+        "ExecutiveSignature", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="used_in_documents",
+    )
     generated_at = models.DateTimeField(auto_now_add=True)
+    signed_at    = models.DateTimeField(null=True, blank=True)
+    issued_at    = models.DateTimeField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -865,3 +920,59 @@ class CompanyShareStructure(models.Model):
 
     def __str__(self):
         return f"{self.total_authorized_shares:,} authorized shares"
+
+
+class ExecutiveSignature(models.Model):
+    """
+    Stores an authorized executive (CEO/director) signature image for embedding
+    in official staff documents.  Only CEO or superadmin can upload/manage.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="executive_signatures",
+        help_text="The executive whose signature this is.",
+    )
+    full_name = models.CharField(max_length=200)
+    position  = models.CharField(max_length=200, default="Chief Executive Officer")
+    # Stored in a private location; never expose URL publicly without auth
+    signature_image = models.ImageField(
+        upload_to="signatures/executive/",
+        help_text="PNG/JPG of the handwritten or digital signature.",
+    )
+    is_active  = models.BooleanField(
+        default=True,
+        help_text="Only one active signature should exist at a time per position.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="signature_uploads",
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="signature_revocations",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Executive Signature"
+        verbose_name_plural = "Executive Signatures"
+
+    def __str__(self):
+        status = "ACTIVE" if self.is_active else "REVOKED"
+        return f"[{status}] {self.full_name} — {self.position}"
+
+    @classmethod
+    def get_active(cls):
+        """Return the currently active CEO/executive signature, or None."""
+        return cls.objects.filter(is_active=True).first()

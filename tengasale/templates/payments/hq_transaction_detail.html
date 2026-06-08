@@ -1,0 +1,64 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Transaction {{ txn.internal_reference }}</h1>
+    <p><a href="{% url 'payments:collections' %}" style="color:var(--pay-orange);">← Collections</a></p>
+  </div>
+  <span class="badge {{ txn.status }}" style="font-size:14px;padding:6px 16px;">{{ txn.get_status_display }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+
+  <div class="pay-table-card" style="padding:24px;">
+    <h3 style="font-size:15px;font-weight:700;color:var(--pay-ink);margin:0 0 16px;">Transaction Details</h3>
+    <table style="width:100%;font-size:13px;">
+      <tr><td style="color:var(--pay-muted);padding:6px 0;width:40%;">Reference</td><td style="font-family:monospace;font-weight:700;">{{ txn.internal_reference }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Amount</td><td style="font-weight:800;font-size:18px;color:var(--pay-green);">MWK {{ txn.amount|intcomma }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Type</td><td>{{ txn.get_payment_type_display }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Provider</td><td>{{ txn.get_provider_display }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Network</td><td>{{ txn.get_network_display|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Phone</td><td>{{ txn.phone|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Provider Ref</td><td style="font-family:monospace;font-size:12px;">{{ txn.provider_reference|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Charge ID</td><td style="font-family:monospace;font-size:12px;">{{ txn.charge_id|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Currency</td><td>{{ txn.currency }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Created</td><td>{{ txn.created_at|date:"d M Y H:i:s" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Paid At</td><td>{{ txn.paid_at|date:"d M Y H:i:s"|default:"—" }}</td></tr>
+    </table>
+  </div>
+
+  <div class="pay-table-card" style="padding:24px;">
+    <h3 style="font-size:15px;font-weight:700;color:var(--pay-ink);margin:0 0 16px;">Contract / Customer</h3>
+    {% with c=txn.payment_contract %}
+    <table style="width:100%;font-size:13px;">
+      <tr><td style="color:var(--pay-muted);padding:6px 0;width:40%;">Contract</td><td style="font-family:monospace;font-weight:700;">{{ c.contract_number }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">PayG #</td><td style="font-family:monospace;">{{ c.payg_number|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Customer</td><td style="font-weight:600;">{{ c.customer_name }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Phone</td><td>{{ c.customer_phone }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Device</td><td>{{ c.device_model|default:"—" }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Total Amount</td><td>MWK {{ c.total_amount|intcomma }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Amount Paid</td><td>MWK {{ c.amount_paid|intcomma }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Balance</td><td style="font-weight:700;color:var(--pay-ink);">MWK {{ c.remaining_amount|intcomma }}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Balance Before Txn</td><td>{% if txn.balance_before is not None %}MWK {{ txn.balance_before|intcomma }}{% else %}—{% endif %}</td></tr>
+      <tr><td style="color:var(--pay-muted);padding:6px 0;">Balance After Txn</td><td>{% if txn.balance_after is not None %}MWK {{ txn.balance_after|intcomma }}{% else %}—{% endif %}</td></tr>
+    </table>
+    {% endwith %}
+  </div>
+</div>
+
+{% if txn.webhook_payload %}
+<div class="pay-table-card" style="padding:24px;margin-bottom:20px;">
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Webhook Payload</h3>
+  <pre style="background:#f8fafc;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;max-height:300px;border:1px solid var(--pay-border);">{{ txn.webhook_payload|pprint }}</pre>
+</div>
+{% endif %}
+
+{% if txn.raw_response %}
+<div class="pay-table-card" style="padding:24px;">
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Provider Response</h3>
+  <pre style="background:#f8fafc;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;max-height:300px;border:1px solid var(--pay-border);">{{ txn.raw_response|pprint }}</pre>
+</div>
+{% endif %}
+{% endblock %}

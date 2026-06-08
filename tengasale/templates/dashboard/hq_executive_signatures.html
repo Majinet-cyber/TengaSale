@@ -1,0 +1,232 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+{% load static %}
+
+{% block page_title %}Executive Signatures — TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<style>
+.sig-page { padding: 0 0 80px; background: #f8f9fc; min-height: 100vh; }
+.sig-header {
+  background: #fff; border-bottom: 1px solid #f0f0f0;
+  padding: 20px 16px 16px; position: sticky; top: 0; z-index: 40;
+}
+.sig-header-row { display: flex; align-items: center; gap: 12px; }
+.sig-back { background: none; border: none; color: #667085; cursor: pointer; padding: 6px; }
+.sig-header-title { font-size: 17px; font-weight: 700; color: #101828; flex: 1; }
+.sig-sub { font-size: 13px; color: #667085; margin-top: 4px; }
+
+.sig-section { padding: 20px 16px; }
+.sig-section-title {
+  font-size: 11px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: .7px; margin-bottom: 14px;
+}
+
+/* Upload form */
+.sig-upload-card {
+  background: #fff; border-radius: 16px;
+  border: 1.5px dashed #e5e7eb;
+  padding: 24px; margin-bottom: 20px;
+}
+.sig-upload-title { font-size: 15px; font-weight: 700; color: #101828; margin-bottom: 4px; }
+.sig-upload-sub { font-size: 13px; color: #667085; margin-bottom: 18px; }
+.sig-field { margin-bottom: 14px; }
+.sig-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
+.sig-input {
+  width: 100%; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  padding: 10px 14px; font-size: 14px; background: #fff;
+  outline: none; box-sizing: border-box;
+}
+.sig-input:focus { border-color: #ff5a00; }
+.sig-submit {
+  background: #ff5a00; color: #fff; border: none;
+  padding: 12px 24px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;
+}
+.sig-submit:hover { background: #e04e00; }
+
+/* Signature cards */
+.sig-card {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  padding: 16px; margin-bottom: 12px;
+}
+.sig-card--active { border-color: #bbf7d0; background: #f0fdf4; }
+.sig-card--revoked { opacity: .7; }
+.sig-card-top { display: flex; gap: 14px; align-items: flex-start; }
+.sig-preview {
+  width: 80px; height: 48px; border-radius: 8px;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+.sig-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sig-info { flex: 1; }
+.sig-name { font-size: 15px; font-weight: 700; color: #101828; margin-bottom: 3px; }
+.sig-pos { font-size: 12px; color: #667085; }
+.sig-meta { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+.sig-status {
+  display: inline-block; border-radius: 100px;
+  padding: 3px 10px; font-size: 10px; font-weight: 700;
+}
+.sig-status--active   { background: #f0fdf4; color: #15803d; }
+.sig-status--revoked  { background: #fef2f2; color: #b91c1c; }
+.sig-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.sig-btn {
+  padding: 8px 14px; border-radius: 8px; font-size: 12px;
+  font-weight: 600; cursor: pointer; border: none;
+}
+.sig-btn--revoke { background: #fef2f2; color: #b91c1c; }
+.sig-btn--activate { background: #f0fdf4; color: #15803d; }
+.sig-btn--revoke:hover { background: #fee2e2; }
+.sig-btn--activate:hover { background: #dcfce7; }
+
+/* Security notice */
+.sig-notice {
+  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #92400e;
+}
+.sig-notice strong { display: block; margin-bottom: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sig-page">
+
+  <!-- Header -->
+  <div class="sig-header">
+    <div class="sig-header-row">
+      <a href="{% url 'hq_staff_documents' %}" class="sig-back" title="Back">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <span class="sig-header-title">Executive Signatures</span>
+      {% if active_signature %}
+      <span style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:700;">
+        <i class="bi bi-shield-check-fill"></i> Active
+      </span>
+      {% endif %}
+    </div>
+    <div class="sig-sub">Manage CEO and executive signatures used in official staff documents.</div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div style="padding:10px 16px;">
+    {% for msg in messages %}
+    <div style="background:{% if msg.tags == 'success' %}#f0fdf4{% elif msg.tags == 'error' %}#fef2f2{% else %}#fff7ed{% endif %};border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:{% if msg.tags == 'success' %}#15803d{% elif msg.tags == 'error' %}#b91c1c{% else %}#92400e{% endif %};">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Security notice -->
+  <div class="sig-section">
+    <div class="sig-notice">
+      <strong><i class="bi bi-shield-lock-fill"></i> Security Notice</strong>
+      Only HQ administrators and Super Admins can upload or revoke executive signatures.
+      All signature actions are logged in the audit trail.
+      Signature images are stored securely and never exposed publicly.
+    </div>
+
+    <!-- Upload form -->
+    <div class="sig-upload-card">
+      <div class="sig-upload-title">Upload New CEO Signature</div>
+      <div class="sig-upload-sub">
+        Upload a clean PNG or JPG signature image. This will be embedded in all
+        official staff documents going forward. Uploading a new signature will
+        deactivate the previous one.
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload">
+
+        <div class="sig-field">
+          <label class="sig-label">Authorised Signatory Full Name *</label>
+          <input type="text" name="full_name" class="sig-input"
+            placeholder="e.g. John Banda" required>
+        </div>
+
+        <div class="sig-field">
+          <label class="sig-label">Position / Title</label>
+          <input type="text" name="position" class="sig-input"
+            value="Chief Executive Officer" required>
+        </div>
+
+        <div class="sig-field">
+          <label class="sig-label">Signature Image (PNG or JPG) *</label>
+          <input type="file" name="signature_image" class="sig-input"
+            accept="image/png,image/jpeg,image/jpg" required>
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+            Recommended: white background, transparent, max 800×300px.
+          </div>
+        </div>
+
+        <button type="submit" class="sig-submit">
+          <i class="bi bi-upload"></i> Upload &amp; Activate Signature
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signature history -->
+  <div class="sig-section" style="padding-top: 0;">
+    <div class="sig-section-title">Signature History</div>
+
+    {% for sig in signatures %}
+    <div class="sig-card {% if sig.is_active %}sig-card--active{% elif sig.revoked_at %}sig-card--revoked{% endif %}">
+      <div class="sig-card-top">
+        <div class="sig-preview">
+          <img src="{{ sig.signature_image.url }}" alt="Signature of {{ sig.full_name }}" loading="lazy">
+        </div>
+        <div class="sig-info">
+          <div class="sig-name">{{ sig.full_name }}</div>
+          <div class="sig-pos">{{ sig.position }}</div>
+          <div class="sig-meta">
+            {% if sig.is_active %}
+              <span class="sig-status sig-status--active"><i class="bi bi-circle-fill" style="font-size:8px;"></i> Active</span>
+            {% elif sig.revoked_at %}
+              <span class="sig-status sig-status--revoked">Revoked {{ sig.revoked_at|date:"M j, Y" }}</span>
+            {% endif %}
+            &bull; Uploaded {{ sig.created_at|date:"M j, Y" }}
+            {% if sig.created_by %} by {{ sig.created_by.get_full_name|default:sig.created_by.username }}{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="sig-actions">
+        {% if sig.is_active %}
+        <form method="post" style="display:inline;"
+          onsubmit="return confirm('Revoke this signature? Documents will use a blank line until a new one is uploaded.');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="revoke">
+          <input type="hidden" name="signature_id" value="{{ sig.id }}">
+          <button type="submit" class="sig-btn sig-btn--revoke">
+            <i class="bi bi-x-circle"></i> Revoke Signature
+          </button>
+        </form>
+        {% elif not sig.revoked_at %}
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="set_active">
+          <input type="hidden" name="signature_id" value="{{ sig.id }}">
+          <button type="submit" class="sig-btn sig-btn--activate">
+            <i class="bi bi-check-circle"></i> Set as Active
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:40px;color:#9ca3af;">
+      <div style="font-size:36px;margin-bottom:12px;">✍️</div>
+      <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:6px;">No signatures uploaded yet</div>
+      <div style="font-size:13px;">Upload a CEO signature above to embed it in official documents.</div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

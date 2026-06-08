@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .whatsapp_webhook import whatsapp_webhook, whatsapp_simulate
 
 urlpatterns = [
     path("",                                  views.support_dashboard,  name="support_dashboard"),
@@ -17,4 +18,11 @@ urlpatterns = [
     path("bugs/<int:bug_id>/resolve/",        views.bug_resolve,        name="bug_resolve"),
     path("bugs/<int:bug_id>/ignore/",         views.bug_ignore,          name="bug_ignore"),
     path("bugs/<int:bug_id>/to-ticket/",      views.bug_to_ticket,      name="bug_to_ticket"),
+
+    # WhatsApp / chatbot webhook
+    path("whatsapp/webhook/", whatsapp_webhook,  name="whatsapp_webhook"),
+    path("whatsapp/simulate/", whatsapp_simulate, name="whatsapp_simulate"),
+
+    # Conversation list for HQ
+    path("conversations/", views.conversation_list, name="conversation_list"),
 ]

@@ -1,0 +1,60 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Underwriter Payouts</h1>
+    <p>Monthly commission payouts for underwriters (20% WHT applied).</p>
+  </div>
+  <span style="font-size:13px;color:var(--pay-muted);">Pending: <strong style="color:var(--pay-purple);">MWK {{ total_payable|intcomma }}</strong></span>
+</div>
+
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Status</label>
+    <select name="status">
+      <option value="">All</option>
+      <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="processing" {% if filter_status == 'processing' %}selected{% endif %}>Processing</option>
+      <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="failed" {% if filter_status == 'failed' %}selected{% endif %}>Failed</option>
+    </select>
+  </div>
+  <div><label>&nbsp;</label><button type="submit" class="btn btn-orange">Filter</button></div>
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Monthly Payouts ({{ page_obj.paginator.count }})</h3></div>
+  {% if page_obj %}
+  <table class="pay-table">
+    <thead>
+      <tr><th>Underwriter</th><th>Period</th><th>Gross</th><th>WHT (20%)</th><th>Net Pay</th><th>Phone</th><th>Status</th><th>Date</th></tr>
+    </thead>
+    <tbody>
+      {% for p in page_obj %}
+      <tr>
+        <td style="font-weight:600;">{{ p.user.get_full_name|default:p.user.username }}</td>
+        <td style="font-size:12px;">{{ p.period_start|date:"d M" }} – {{ p.period_end|date:"d M Y" }}</td>
+        <td>MWK {{ p.gross_commission|intcomma }}</td>
+        <td style="color:var(--pay-red);">- MWK {{ p.wht_amount|intcomma }}</td>
+        <td style="font-weight:800;color:var(--pay-green);">MWK {{ p.net_amount|intcomma }}</td>
+        <td>{{ p.destination_phone|default:"—" }}</td>
+        <td><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ p.created_at|date:"d M Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&status={{ filter_status }}">&laquo; Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&status={{ filter_status }}">Next &raquo;</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><p>No underwriter payouts yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

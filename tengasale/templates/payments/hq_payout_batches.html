@@ -1,0 +1,106 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Payout Batches</h1>
+    <p>Manage outgoing payments to merchants, underwriters, staff, and reward winners.</p>
+  </div>
+  <button onclick="document.getElementById('new-batch-modal').style.display='flex'" class="btn btn-orange">
+    + New Batch
+  </button>
+</div>
+
+{# Filter #}
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Type</label>
+    <select name="type">
+      <option value="">All types</option>
+      {% for val,label in payout_types %}<option value="{{ val }}" {% if filter_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Status</label>
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for val,label in statuses %}<option value="{{ val }}" {% if filter_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label>&nbsp;</label><button type="submit" class="btn btn-orange">Filter</button></div>
+  {% if filter_type or filter_status %}<div><label>&nbsp;</label><a href="{% url 'payments:payout_batches' %}" class="btn btn-ghost">Clear</a></div>{% endif %}
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header">
+    <h3>Batches ({{ page_obj.paginator.count }})</h3>
+  </div>
+  {% if page_obj %}
+  <table class="pay-table">
+    <thead>
+      <tr>
+        <th>Batch Number</th><th>Type</th><th>Total Amount</th><th>Recipients</th><th>Status</th><th>Created</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for batch in page_obj %}
+      <tr>
+        <td><a href="{% url 'payments:payout_batch_detail' batch_number=batch.batch_number %}" style="color:var(--pay-orange);font-family:monospace;font-size:12px;">{{ batch.batch_number }}</a></td>
+        <td>{{ batch.get_payout_type_display }}</td>
+        <td style="font-weight:700;">MWK {{ batch.total_amount|intcomma }}</td>
+        <td>{{ batch.total_recipients }}</td>
+        <td><span class="badge {{ batch.status }}">{{ batch.get_status_display }}</span></td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ batch.created_at|date:"d M Y" }}</td>
+        <td>
+          <a href="{% url 'payments:payout_batch_detail' batch_number=batch.batch_number %}" class="btn btn-ghost btn-sm">View</a>
+          {% if batch.status == 'pending_approval' %}
+          <form method="post" action="{% url 'payments:payout_batch_approve' batch_number=batch.batch_number %}" style="display:inline;">{% csrf_token %}
+            <button type="submit" class="btn btn-green btn-sm">Approve</button>
+          </form>
+          {% elif batch.status == 'approved' %}
+          <form method="post" action="{% url 'payments:payout_batch_process' batch_number=batch.batch_number %}" style="display:inline;">{% csrf_token %}
+            <button type="submit" class="btn btn-orange btn-sm">Process</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&type={{ filter_type }}&status={{ filter_status }}">&laquo; Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&type={{ filter_type }}&status={{ filter_status }}">Next &raquo;</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><p>No batches yet. Create one to get started.</p></div>
+  {% endif %}
+</div>
+
+{# Create Batch Modal #}
+<div id="new-batch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:420px;max-width:90vw;">
+    <h3 style="margin:0 0 20px;font-size:18px;font-weight:800;">Create Payout Batch</h3>
+    <form method="post" action="{% url 'payments:create_batch' %}">
+      {% csrf_token %}
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);display:block;margin-bottom:6px;">Payout Type</label>
+        <select name="payout_type" style="width:100%;padding:10px;border:1px solid var(--pay-border);border-radius:8px;font-size:14px;">
+          {% for val,label in payout_types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--pay-muted);display:block;margin-bottom:6px;">Notes (optional)</label>
+        <textarea name="notes" style="width:100%;padding:10px;border:1px solid var(--pay-border);border-radius:8px;font-size:14px;resize:vertical;" rows="3"></textarea>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-orange" style="flex:1;">Create Batch</button>
+        <button type="button" onclick="document.getElementById('new-batch-modal').style.display='none'" class="btn btn-ghost" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

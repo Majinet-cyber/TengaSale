@@ -1,0 +1,50 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Payment Audit Log</h1>
+    <p>Complete history of all payment system actions.</p>
+  </div>
+</div>
+
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Action</label>
+    <input type="text" name="action" value="{{ filter_action }}" placeholder="e.g. payout_batch_approved">
+  </div>
+  <div><label>&nbsp;</label><button type="submit" class="btn btn-orange">Search</button></div>
+  {% if filter_action %}<div><label>&nbsp;</label><a href="{% url 'payments:audit_log' %}" class="btn btn-ghost">Clear</a></div>{% endif %}
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Audit Log ({{ page_obj.paginator.count }} entries)</h3></div>
+  {% if page_obj %}
+  <table class="pay-table">
+    <thead><tr><th>Action</th><th>User</th><th>Batch</th><th>Transaction Ref</th><th>Notes</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for log in page_obj %}
+      <tr>
+        <td style="font-family:monospace;font-size:12px;font-weight:700;">{{ log.action }}</td>
+        <td>{{ log.user|default:"System" }}</td>
+        <td>{% if log.batch %}<span style="font-family:monospace;font-size:12px;">{{ log.batch.batch_number }}</span>{% else %}—{% endif %}</td>
+        <td>{% if log.transaction_ref %}<span style="font-family:monospace;font-size:12px;">{{ log.transaction_ref }}</span>{% else %}—{% endif %}</td>
+        <td style="font-size:12px;color:var(--pay-muted);">{{ log.notes|truncatechars:80 }}</td>
+        <td style="font-size:12px;color:var(--pay-muted);white-space:nowrap;">{{ log.created_at|date:"d M Y H:i:s" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&action={{ filter_action }}">&laquo; Prev</a>{% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&action={{ filter_action }}">Next &raquo;</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state"><p>No audit events match your search.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

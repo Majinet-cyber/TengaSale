@@ -1,93 +1,902 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <style>
-    @page { size: A4; margin: 28px; }
-    body { font-family: Helvetica, Arial, sans-serif; color: #101828; font-size: 11px; line-height: 1.45; }
-    h1 { color: #ff5a00; font-size: 22px; margin: 0 0 6px; }
-    h2 { font-size: 13px; margin: 18px 0 8px; color: #344054; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
-    th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; vertical-align: top; }
-    th { background: #f8fafc; color: #475467; }
-    .brand { border-bottom: 3px solid #ff5a00; padding-bottom: 10px; margin-bottom: 16px; }
-    .muted { color: #667085; }
-    .notice { background: #fff3eb; border: 1px solid #ffd6bd; padding: 9px; margin: 10px 0; }
-    .sig td { height: 56px; vertical-align: bottom; }
-  </style>
+<meta charset="utf-8">
+<title>{{ document_title }} — TengaSale</title>
+<style>
+/* ── Page setup ──────────────────────────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 24mm 20mm 24mm 20mm;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  color: #101828;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+/* ── Header / letterhead ─────────────────────────────────────────────── */
+.letterhead {
+  border-bottom: 3px solid #ff5a00;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: table;
+  width: 100%;
+}
+.letterhead-left  { display: table-cell; vertical-align: top; width: 60%; }
+.letterhead-right { display: table-cell; vertical-align: top; width: 40%; text-align: right; }
+.brand-name { font-size: 26px; font-weight: 900; color: #ff5a00; letter-spacing: -1px; }
+.brand-tagline { font-size: 9px; color: #9ca3af; margin-top: 1px; }
+.doc-meta { font-size: 9px; color: #667085; line-height: 1.7; }
+.doc-title-block { margin-top: 4px; }
+.doc-type-label {
+  font-size: 8px; font-weight: 700; color: #ff5a00;
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.doc-title-main { font-size: 16px; font-weight: 900; color: #101828; margin: 2px 0; }
+.doc-number { font-size: 9px; color: #667085; }
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+h2 {
+  font-size: 10px;
+  font-weight: 800;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 18px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #f3f4f6;
+}
+h3 { font-size: 10.5px; font-weight: 700; color: #374151; margin: 14px 0 6px; }
+
+p { margin-bottom: 8px; }
+.muted { color: #667085; }
+.orange { color: #ff5a00; }
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; }
+th, td {
+  border: 1px solid #e5e7eb;
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 10px;
+}
+th {
+  background: #f9fafb;
+  color: #667085;
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.table-highlight td { background: #fff7ed; }
+.table-total td, .table-total th {
+  background: #101828; color: #fff; font-weight: 700;
+}
+.col-label { width: 38%; }
+.col-value { width: 62%; font-weight: 600; }
+
+/* ── Intro box ────────────────────────────────────────────────────────── */
+.intro-box {
+  background: #f9fafb;
+  border-left: 3px solid #ff5a00;
+  border-radius: 0 6px 6px 0;
+  padding: 12px 14px;
+  margin: 12px 0 16px;
+  font-size: 10.5px;
+  color: #374151;
+}
+
+/* ── Notice boxes ─────────────────────────────────────────────────────── */
+.notice-warning {
+  background: #fef3c7; border: 1px solid #fcd34d;
+  border-radius: 6px; padding: 10px 12px; margin: 10px 0;
+  font-size: 10px; color: #92400e;
+}
+.notice-danger {
+  background: #fef2f2; border: 1px solid #fca5a5;
+  border-radius: 6px; padding: 10px 12px; margin: 10px 0;
+  font-size: 10px; color: #b91c1c;
+}
+.notice-info {
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: 6px; padding: 10px 12px; margin: 10px 0;
+  font-size: 10px; color: #1e40af;
+}
+
+/* ── Signature section ────────────────────────────────────────────────── */
+.sig-section { margin-top: 30px; page-break-inside: avoid; }
+.sig-grid { display: table; width: 100%; }
+.sig-cell {
+  display: table-cell;
+  width: 48%;
+  vertical-align: bottom;
+  padding: 0 10px 0 0;
+}
+.sig-cell:last-child { padding: 0; }
+.sig-line-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  background: #f9fafb;
+}
+.sig-label { font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
+.sig-image-area { height: 52px; display: flex; align-items: center; }
+.sig-image-area img { max-height: 48px; max-width: 160px; }
+.sig-blank-line { border-bottom: 1.5px solid #374151; height: 40px; }
+.sig-name-row { font-size: 10px; font-weight: 700; color: #101828; margin-top: 6px; }
+.sig-pos-row  { font-size: 9px; color: #667085; }
+.sig-date-row { font-size: 9px; color: #9ca3af; margin-top: 2px; }
+
+/* ── Footer confidentiality ───────────────────────────────────────────── */
+.footer-notice {
+  margin-top: 30px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 8px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* ── Page break ───────────────────────────────────────────────────────── */
+.page-break { page-break-after: always; }
+</style>
 </head>
 <body>
-  <div class="brand">
-    <h1>TengaSale</h1>
-    <div><strong>{{ document_title }}</strong></div>
-    <div class="muted">Document No: {{ document_number }} | Version {{ version }} | Generated {{ generated_at|date:"Y-m-d H:i" }}</div>
-    <div class="muted">Prepared by: {% if prepared_by %}{{ prepared_by.get_full_name|default:prepared_by.username }}{% else %}System{% endif %}</div>
+
+<!-- ── LETTERHEAD ──────────────────────────────────────────────────────── -->
+<div class="letterhead">
+  <div class="letterhead-left">
+    <div class="brand-name">TengaSale</div>
+    <div class="brand-tagline">Smartphone Financing Platform · Malawi</div>
+    <div class="doc-title-block" style="margin-top:12px;">
+      <div class="doc-type-label">Official HR Document</div>
+      <div class="doc-title-main">{{ document_title }}</div>
+    </div>
   </div>
+  <div class="letterhead-right">
+    <div class="doc-meta">
+      <div><strong>Document No:</strong> {{ document_number }}</div>
+      <div><strong>Version:</strong> {{ version }}</div>
+      <div><strong>Date:</strong> {{ generated_at|date:"d F Y" }}</div>
+      <div style="margin-top:4px;"><strong>Prepared by:</strong>
+        {% if prepared_by %}{{ prepared_by.get_full_name|default:prepared_by.username }}{% else %}TengaSale System{% endif %}
+      </div>
+      <div><strong>Status:</strong> Official Document</div>
+    </div>
+  </div>
+</div>
 
-  <h2>Staff Identity</h2>
-  <table>
-    <tr><th>Name</th><td>{{ profile.display_name|default:user.username }}</td><th>Email</th><td>{{ profile.public_email|default:user.email }}</td></tr>
-    <tr><th>Role</th><td>{{ staff_role.name|default:profile.get_role_display }}</td><th>Department</th><td>{{ department.name|default:"-" }}</td></tr>
-    <tr><th>Rank</th><td>{{ rank.code|default:"-" }} {{ rank.title }}</td><th>Status</th><td>{{ profile.get_status_display|default:"-" }}</td></tr>
-    <tr><th>Joined</th><td>{{ profile.date_joined_company|default:"-" }}</td><th>Next Review</th><td>{{ profile.next_review_date|default:"-" }}</td></tr>
-  </table>
+<!-- ── STAFF IDENTITY ──────────────────────────────────────────────────── -->
+<h2>Staff Information</h2>
+<table>
+  <tr>
+    <th class="col-label">Full Name</th>
+    <td class="col-value">{{ profile.display_name|default:user.username }}</td>
+    <th class="col-label">Email Address</th>
+    <td class="col-value">{{ profile.public_email|default:user.email|default:"—" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Role / Position</th>
+    <td class="col-value">{{ staff_role.name|default:profile.get_role_display }}</td>
+    <th class="col-label">Department</th>
+    <td class="col-value">{{ department.name|default:"—" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Rank / Level</th>
+    <td class="col-value">{{ rank.code|default:"—" }}{% if rank %} — {{ rank.title }}{% endif %}</td>
+    <th class="col-label">Employment Status</th>
+    <td class="col-value">{{ profile.get_status_display|default:"Active" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Date Joined</th>
+    <td class="col-value">{{ profile.date_joined_company|date:"d F Y"|default:"—" }}</td>
+    <th class="col-label">Next Review Date</th>
+    <td class="col-value">{{ profile.next_review_date|date:"d F Y"|default:"—" }}</td>
+  </tr>
+</table>
 
-  {% if document_type == "employment_agreement" %}
-  <h2>Employment Agreement Terms</h2>
-  <p>This agreement records the live company, staff, role, department and rank details above. Duties include lawful execution of assigned TengaSale workflows, accurate customer and device data handling, responsible task completion, confidentiality, fraud prevention, and compliance with Malawi law.</p>
-  <p>Performance-based compensation is governed by the current Compensation Annexure A and KPI & Volts Annexure B. Fraud, collusion, misconduct, customer data abuse, device information misuse, or deliberate negligence may trigger discipline, payout lock, suspension, or termination according to company policy and governing law Malawi.</p>
+
+{% if document_type == "employment_agreement" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     EMPLOYMENT AGREEMENT
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Employment Agreement</h2>
+
+<div class="intro-box">
+  This Employment Agreement is entered into between <strong>TengaSale</strong> ("the Company")
+  and the staff member identified above ("the Employee"). It records the current company, role,
+  department and rank details and governs the terms of employment effective from the date stated.
+</div>
+
+<h3>1. Duties and Responsibilities</h3>
+<p>
+  The Employee agrees to faithfully and diligently perform all duties assigned by the Company
+  in accordance with their designated role and department. Duties include but are not limited to
+  lawful execution of assigned TengaSale workflows, accurate customer and device data handling,
+  responsible task completion, confidentiality maintenance, fraud prevention, and full compliance
+  with the laws of Malawi.
+</p>
+
+<h3>2. Compensation</h3>
+<p>
+  Performance-based compensation is governed by the current
+  <strong>Compensation Annexure A</strong> and <strong>KPI &amp; Volts Annexure B</strong>.
+  Compensation details, volt earnings, and performance bonuses are set out in the accompanying
+  annexures and may be updated from time to time. The compensation cycle runs from the
+  <strong>25th of each calendar month</strong> to the <strong>24th of the following month</strong>.
+</p>
+
+<h3>3. Conduct and Discipline</h3>
+<p>
+  Fraud, collusion, misconduct, customer data abuse, device information misuse, or deliberate
+  negligence may trigger formal discipline proceedings, payout lock, suspension, demotion or
+  termination in accordance with Company policy and the applicable laws of Malawi.
+  The Employee has the right to respond, dispute and appeal any disciplinary decision.
+</p>
+
+<h3>4. Confidentiality</h3>
+<p>
+  The Employee agrees to keep all customer data, financial information, device IMEI details,
+  pricing structures, business processes and Company information strictly confidential during
+  and after the employment period. Breach of confidentiality may result in immediate termination
+  and/or legal action.
+</p>
+
+<h3>5. Termination</h3>
+<p>
+  Either party may terminate this agreement by providing written notice as required by the
+  Malawi Employment Act. The Company reserves the right to summarily dismiss for gross misconduct.
+  On termination, the Employee must return all Company property, devices, and credentials.
+</p>
+
+<h3>6. Governing Law</h3>
+<p>This agreement is governed by the laws of the Republic of Malawi.</p>
+{% endif %}
+
+
+{% if document_type == "compensation_annexure_a" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COMPENSATION ANNEXURE A
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Annexure A — Compensation</h2>
+
+<div class="intro-box">
+  The schedule below indicates the remuneration applicable to the staff member identified above,
+  which may be updated from time to time by the Company. This schedule supersedes any previous
+  compensation schedules issued to the same staff member.
+</div>
+
+<h3>Base Compensation</h3>
+<table>
+  <tr>
+    <th class="col-label">Gross Base Salary</th>
+    <td class="col-value">MWK {{ profile.effective_base_salary_mwk|floatformat:0|default:"—" }}</td>
+    <th class="col-label">Volt Rate (per volt)</th>
+    <td class="col-value">MWK {{ profile.effective_volt_rate_mwk|floatformat:2|default:"—" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Rank Multiplier</th>
+    <td class="col-value">× {{ rank.rank_multiplier|default:"1.00" }}</td>
+    <th class="col-label">Monthly Ceiling</th>
+    <td class="col-value">
+      {% if profile.effective_monthly_ceiling_mwk %}
+        MWK {{ profile.effective_monthly_ceiling_mwk|floatformat:0 }}
+      {% else %}Board controlled{% endif %}
+    </td>
+  </tr>
+</table>
+
+<h3>Monthly Volt Performance</h3>
+<table>
+  <tr>
+    <th class="col-label">Approved Volts This Month</th>
+    <td class="col-value">{{ volts.approved_volts|default:"0" }}</td>
+    <th class="col-label">Pending Volts</th>
+    <td class="col-value">{{ volts.pending_volts|default:"0" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Gross Performance Bonus</th>
+    <td class="col-value">MWK {{ volts.estimated_pay|floatformat:0|default:"0" }}</td>
+    <th class="col-label">Ceiling Adjustment</th>
+    <td class="col-value">MWK {{ volts.ceiling_adjustment|floatformat:0|default:"0" }}</td>
+  </tr>
+  <tr class="table-highlight">
+    <th class="col-label">Expected Gross Compensation</th>
+    <td class="col-value" style="font-weight:700;font-size:11px;">
+      MWK {{ volts.final_monthly_pay|floatformat:0|default:"—" }}
+    </td>
+    <th class="col-label">Compensation Cycle</th>
+    <td class="col-value">25th to 24th of each month</td>
+  </tr>
+</table>
+
+<h3>Benefits</h3>
+<table>
+  <tr>
+    <th class="col-label">Medical Aid Contribution</th>
+    <td class="col-value">As per Company Benefits Policy</td>
+    <th class="col-label">Pension (Employer)</th>
+    <td class="col-value">As per Company Benefits Policy</td>
+  </tr>
+  <tr>
+    <th class="col-label">Pension (Employee)</th>
+    <td class="col-value">As per Company Benefits Policy</td>
+    <th class="col-label">Airtime / Data Allowance</th>
+    <td class="col-value">As per Role Entitlement</td>
+  </tr>
+  <tr>
+    <th class="col-label">Transport Allowance</th>
+    <td class="col-value">As per Role Entitlement</td>
+    <th class="col-label">Other Allowances</th>
+    <td class="col-value">As per Company Policy</td>
+  </tr>
+</table>
+
+<h3>Leave Entitlement</h3>
+<table>
+  <tr>
+    <th class="col-label">Annual Leave</th>
+    <td>As per Malawi Employment Act &amp; Company Policy</td>
+  </tr>
+  <tr>
+    <th class="col-label">Sick Leave</th>
+    <td>As per Malawi Employment Act &amp; Company Policy</td>
+  </tr>
+  <tr>
+    <th class="col-label">Maternity / Paternity Leave</th>
+    <td>As per Malawi Employment Act &amp; Company Policy</td>
+  </tr>
+  <tr>
+    <th class="col-label">Public Holidays</th>
+    <td>Recognised public holidays as declared in Malawi</td>
+  </tr>
+</table>
+
+<div class="notice-info">
+  <strong>Note:</strong> The Compensation Formula is: Monthly Pay = Base Salary + (Approved Volts × Volt Rate × Rank Multiplier × Quality Score). Monthly ceilings are applied before payout approval.
+</div>
+{% endif %}
+
+
+{% if document_type == "kpi_volts_annexure_b" or document_type == "monthly_performance_review" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     KPI & VOLTS ANNEXURE B / MONTHLY PERFORMANCE REVIEW
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>{% if document_type == "kpi_volts_annexure_b" %}Annexure B — KPI &amp; Volts Framework{% else %}Monthly Performance Review{% endif %}</h2>
+
+<div class="intro-box">
+  This annexure defines the key performance indicators, volt-earning activities and quality
+  measurement criteria applicable to the staff member's role. KPI scores directly impact volt
+  approvals, rank eligibility and monthly compensation.
+</div>
+
+<h3>KPI Targets &amp; Volt Allocation</h3>
+<table>
+  <tr>
+    <th style="width:30%;">KPI / Activity</th>
+    <th style="width:15%;">Target</th>
+    <th style="width:12%;">Volts</th>
+    <th style="width:18%;">Score Type</th>
+    <th style="width:25%;">Measurement</th>
+  </tr>
+  {% for kpi in kpis %}
+  <tr>
+    <td>{{ kpi.name }}</td>
+    <td>{{ kpi.target_value }}</td>
+    <td>{{ kpi.weight }}</td>
+    <td>
+      {% if kpi.affects_quality_score %}Quality {% endif %}
+      {% if kpi.affects_discipline_score %}Discipline {% endif %}
+      {% if kpi.affects_results_score %}Results{% endif %}
+    </td>
+    <td>{{ kpi.measurement_unit|default:"System tracked" }}</td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px;">
+    No active KPI templates assigned for this role.
+  </td></tr>
+  {% endfor %}
+</table>
+
+<h3>Quality Control Conditions</h3>
+<p>
+  Volts are awarded based on system evidence and supervisor sign-off. Any quality control
+  failure, customer complaint or compliance breach may result in volt deductions as defined
+  by Company policy. Staff have the right to view evidence, acknowledge scores, submit a
+  written response and dispute within the system's configured response window.
+</p>
+
+<h3>Promotion &amp; Rank Eligibility</h3>
+<p>
+  Promotion to a higher rank requires sustained performance above the threshold for a
+  minimum of three consecutive months, a discipline score above 75, and supervisor
+  recommendation. Final promotion decisions are made by HQ.
+</p>
+{% endif %}
+
+
+{% if document_type == "monthly_volts_statement" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MONTHLY VOLTS STATEMENT
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Monthly Volts Statement</h2>
+
+<div class="intro-box">
+  This statement records the volt earnings, deductions, approvals and resulting compensation
+  for the month indicated. Figures are system-generated based on approved activity records.
+</div>
+
+<table>
+  <tr>
+    <th class="col-label">Statement Month</th>
+    <td class="col-value">{{ generated_at|date:"F Y" }}</td>
+    <th class="col-label">Opening Rank</th>
+    <td class="col-value">{{ rank.code|default:"—" }} — {{ rank.title|default:"" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Approved Volts</th>
+    <td class="col-value">{{ volts.approved_volts|default:"0" }}</td>
+    <th class="col-label">Pending Volts</th>
+    <td class="col-value">{{ volts.pending_volts|default:"0" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Volt Rate</th>
+    <td class="col-value">MWK {{ profile.effective_volt_rate_mwk|floatformat:2|default:"—" }}</td>
+    <th class="col-label">Rank Multiplier</th>
+    <td class="col-value">× {{ rank.rank_multiplier|default:"1.00" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Base Salary</th>
+    <td class="col-value">MWK {{ profile.effective_base_salary_mwk|floatformat:0|default:"—" }}</td>
+    <th class="col-label">Performance Bonus</th>
+    <td class="col-value">MWK {{ volts.estimated_pay|floatformat:0|default:"0" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Ceiling Adjustment</th>
+    <td class="col-value">MWK {{ volts.ceiling_adjustment|floatformat:0|default:"0" }}</td>
+    <th class="col-label">Final Payable Volts</th>
+    <td class="col-value">{{ volts.approved_volts|default:"0" }}</td>
+  </tr>
+  <tr class="table-total">
+    <th>Expected Gross Compensation</th>
+    <td colspan="3" style="font-size:13px;font-weight:900;">
+      MWK {{ volts.final_monthly_pay|floatformat:0|default:"—" }}
+    </td>
+  </tr>
+</table>
+
+<div class="notice-info">
+  <strong>Note:</strong> Final payment amounts are subject to payout approval, deduction of any
+  disciplinary penalties, and monthly ceiling limits. Payout date: 25th of each month.
+</div>
+{% endif %}
+
+
+{% if document_type == "discipline_score_report" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     DISCIPLINE SCORE REPORT
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Discipline Score Report</h2>
+
+{% if discipline %}
+<table>
+  <tr>
+    <th class="col-label">Score Period</th>
+    <td class="col-value">{{ discipline.month }}</td>
+    <th class="col-label">Opening Score</th>
+    <td class="col-value">{{ discipline.opening_score }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Automatic Penalties</th>
+    <td class="col-value" style="color:#b91c1c;">{{ discipline.automatic_penalties_total }}</td>
+    <th class="col-label">Manual Adjustments</th>
+    <td class="col-value">{{ discipline.manual_adjustments_total }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Bonus Points</th>
+    <td class="col-value" style="color:#15803d;">{{ discipline.bonus_points_total }}</td>
+    <th class="col-label">Final Score</th>
+    <td class="col-value" style="font-weight:700;">{{ discipline.final_score }} — {{ discipline.band_label }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Status</th>
+    <td class="col-value">{{ discipline.get_status_display }}</td>
+    <th class="col-label">Dispute Status</th>
+    <td class="col-value">{{ discipline.get_dispute_status_display }}</td>
+  </tr>
+  {% if discipline.user_response_text %}
+  <tr>
+    <th class="col-label">Staff Response</th>
+    <td colspan="3">{{ discipline.user_response_text }}</td>
+  </tr>
   {% endif %}
+</table>
+{% else %}
+<p class="muted">No discipline score period is recorded for this staff member for the current period.</p>
+{% endif %}
+{% endif %}
 
-  {% if document_type == "compensation_annexure_a" or document_type == "monthly_volts_statement" %}
-  <h2>Compensation</h2>
-  <table>
-    <tr><th>Base salary / retainer</th><td>MWK {{ profile.effective_base_salary_mwk|floatformat:2 }}</td><th>Volt rate</th><td>MWK {{ profile.effective_volt_rate_mwk|floatformat:2 }}</td></tr>
-    <tr><th>Rank multiplier</th><td>{{ rank.rank_multiplier|default:"1.00" }}</td><th>Monthly ceiling</th><td>{% if profile.effective_monthly_ceiling_mwk %}MWK {{ profile.effective_monthly_ceiling_mwk|floatformat:2 }}{% else %}Board controlled{% endif %}</td></tr>
-    <tr><th>Approved volts</th><td>{{ volts.approved_volts|floatformat:2 }}</td><th>Pending volts</th><td>{{ volts.pending_volts|floatformat:2 }}</td></tr>
-    <tr><th>Gross volts pay</th><td>MWK {{ volts.estimated_pay|floatformat:2 }}</td><th>Final estimated pay</th><td>MWK {{ volts.final_monthly_pay|floatformat:2 }}</td></tr>
-    <tr><th>Ceiling adjustment</th><td colspan="3">MWK {{ volts.ceiling_adjustment|floatformat:2 }}</td></tr>
-  </table>
-  <p>Compensation cycle: 25th to 24th. Formula: monthly_pay = base_salary + approved_volts_pay. Approved volts pay uses approved volts, rank multiplier, quality score, discipline score and results score. Monthly ceilings are applied before payout approval.</p>
-  {% endif %}
 
-  {% if document_type == "kpi_volts_annexure_b" or document_type == "monthly_performance_review" %}
-  <h2>KPI & Volts Annexure</h2>
-  <table>
-    <tr><th>KPI</th><th>Target</th><th>Weight</th><th>Score Type</th></tr>
-    {% for kpi in kpis %}
-    <tr><td>{{ kpi.name }}</td><td>{{ kpi.target_value }}</td><td>{{ kpi.weight }}</td><td>{% if kpi.affects_quality_score %}Quality {% endif %}{% if kpi.affects_discipline_score %}Discipline {% endif %}{% if kpi.affects_results_score %}Results{% endif %}</td></tr>
-    {% empty %}
-    <tr><td colspan="4">No active KPI templates assigned.</td></tr>
-    {% endfor %}
-  </table>
-  <p>Staff have the right to view evidence, acknowledge scores, submit a response, and dispute within the configured response window. Promotion, demotion, discipline and payout decisions must use system evidence and approvals.</p>
-  {% endif %}
+{% if document_type == "warning_letter" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     WARNING LETTER
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Formal Warning Letter</h2>
 
-  {% if document_type == "discipline_score_report" or document_type == "warning_letter" or document_type == "termination_letter" %}
-  <h2>Discipline Score</h2>
-  {% if discipline %}
-  <table>
-    <tr><th>Month</th><td>{{ discipline.month }}</td><th>Opening score</th><td>{{ discipline.opening_score }}</td></tr>
-    <tr><th>Automatic penalties</th><td>{{ discipline.automatic_penalties_total }}</td><th>Manual adjustments</th><td>{{ discipline.manual_adjustments_total }}</td></tr>
-    <tr><th>Bonuses</th><td>{{ discipline.bonus_points_total }}</td><th>Final score</th><td>{{ discipline.final_score }} - {{ discipline.band_label }}</td></tr>
-    <tr><th>Status</th><td>{{ discipline.get_status_display }}</td><th>Dispute</th><td>{{ discipline.get_dispute_status_display }}</td></tr>
-    <tr><th>User response</th><td colspan="3">{{ discipline.user_response_text|default:"No response recorded." }}</td></tr>
-  </table>
-  {% else %}
-  <p>No discipline score period is recorded for this staff member.</p>
-  {% endif %}
-  {% endif %}
+<div class="notice-warning">
+  <strong>⚠ Formal Written Warning</strong> — This letter constitutes a formal written warning
+  issued to the staff member named above. It is recorded on the staff member's employment file.
+</div>
 
-  {% if equity %}
-  <h2>Founder Equity Note</h2>
-  <div class="notice">Equity belongs to builders. App records support operational tracking, but signed legal documents govern actual ownership.</div>
-  <table><tr><th>Allocated shares</th><td>{{ equity.allocated_shares }}</td><th>Vested shares</th><td>{{ equity.vested_shares }}</td></tr></table>
-  {% endif %}
+<p><strong>Date of Warning:</strong> {{ generated_at|date:"d F Y" }}</p>
+<p>Dear <strong>{{ profile.display_name|default:user.username }}</strong>,</p>
 
-  <h2>Signature Blocks</h2>
-  <table class="sig">
-    <tr><th>Employee / Founder</th><th>Company Representative</th><th>Witness / Reviewer</th></tr>
-    <tr><td>Signature:<br>Date:</td><td>Signature:<br>Date:</td><td>Signature:<br>Date:</td></tr>
-  </table>
+<p>
+  This letter serves as a formal written warning regarding conduct that falls below the
+  standards expected of all TengaSale staff members.
+</p>
+
+<h3>Nature of the Concern</h3>
+<p>
+  Management has identified conduct and/or performance issues that require formal attention.
+  The specific details and evidence have been reviewed by your supervisor and recorded in the
+  Company's discipline management system.
+</p>
+
+<h3>Company Policy Violated</h3>
+<p>
+  Your conduct is in breach of TengaSale's Code of Conduct and/or Performance Standards.
+  Employees are expected to maintain a discipline score above the acceptable threshold at all times.
+</p>
+
+<h3>Corrective Action Required</h3>
+<p>
+  You are required to take immediate corrective action. Failure to improve within
+  <strong>30 calendar days</strong> from the date of this warning may result in further
+  disciplinary action, including suspension or termination of employment.
+</p>
+
+<h3>Right of Response</h3>
+<p>
+  You have the right to respond to this warning through the TengaSale staff portal within
+  the configured dispute window. Your response will be reviewed by your supervisor and HQ.
+</p>
+
+<div class="notice-danger">
+  <strong>Note:</strong> Repeated warnings or failure to improve may result in further
+  disciplinary action up to and including termination of employment.
+</div>
+{% endif %}
+
+
+{% if document_type == "suspension_letter" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SUSPENSION LETTER
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Suspension Notice</h2>
+
+<div class="notice-danger">
+  <strong>🚫 Notice of Suspension</strong> — This letter constitutes a formal notice of suspension
+  pending investigation. The staff member is suspended from duty with immediate effect.
+</div>
+
+<p>Dear <strong>{{ profile.display_name|default:user.username }}</strong>,</p>
+
+<p>
+  This letter serves as formal notice that you are suspended from your duties as
+  <strong>{{ staff_role.name|default:profile.get_role_display }}</strong> effective
+  <strong>{{ generated_at|date:"d F Y" }}</strong>, pending the outcome of a formal investigation.
+</p>
+
+<h3>During Suspension</h3>
+<p>You are required to:</p>
+<p>1. Immediately cease all access to TengaSale systems and platforms.</p>
+<p>2. Return all Company property, access cards, and devices within 24 hours.</p>
+<p>3. Remain contactable and available for any investigation proceedings.</p>
+<p>4. Not communicate with customers, merchants, or colleagues about the matter.</p>
+
+<h3>Investigation Process</h3>
+<p>
+  An investigation will be conducted in accordance with Company policy and Malawi law.
+  You will be notified of the outcome in writing. The investigation will be completed
+  within a reasonable timeframe.
+</p>
+{% endif %}
+
+
+{% if document_type == "termination_letter" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TERMINATION LETTER
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Notice of Termination of Employment</h2>
+
+<div class="notice-danger">
+  <strong>🚫 Notice of Termination</strong> — This letter constitutes formal written notice
+  of termination of the employment relationship between the staff member and TengaSale.
+</div>
+
+<p>Dear <strong>{{ profile.display_name|default:user.username }}</strong>,</p>
+
+<p>
+  We write to formally notify you that your employment with TengaSale is terminated effective
+  <strong>{{ generated_at|date:"d F Y" }}</strong>.
+</p>
+
+<h3>Reason for Termination</h3>
+<p>Your employment is being terminated on grounds recorded and documented in the Company's HR system. You have been afforded an opportunity to be heard in accordance with Company policy and Malawi law.</p>
+
+<h3>Final Compensation</h3>
+<p>Your final compensation, including any outstanding salary and leave days, will be calculated and processed in accordance with your compensation schedule and the Malawi Employment Act. Payment will be made to your registered account within the standard payroll cycle.</p>
+
+<h3>Return of Company Property</h3>
+<p>You are required to return all Company property, access credentials, devices and materials within 48 hours of the effective termination date. Failure to return Company property may result in deductions from your final pay or legal action.</p>
+
+<h3>Confidentiality Reminder</h3>
+<p>Your confidentiality obligations under your Employment Agreement and the Confidentiality &amp; Data Protection Agreement remain in full force after the termination date. Any breach may result in legal proceedings.</p>
+
+<h3>Appeal Process</h3>
+<p>If you believe this termination is unfair, you may submit a written appeal to TengaSale HQ within 14 calendar days of the date of this letter. Appeals must be in writing and state the grounds for appeal.</p>
+{% endif %}
+
+
+{% if document_type == "appointment_letter" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     APPOINTMENT LETTER
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Letter of Appointment</h2>
+
+<div class="intro-box">
+  This letter confirms the appointment of the above-named individual to the position specified
+  within TengaSale's organisational structure.
+</div>
+
+<p>Dear <strong>{{ profile.display_name|default:user.username }}</strong>,</p>
+
+<p>
+  On behalf of TengaSale, it is with great pleasure that we confirm your appointment to the
+  position of <strong>{{ staff_role.name|default:profile.get_role_display }}</strong>
+  within the <strong>{{ department.name|default:"TengaSale" }}</strong> department,
+  effective <strong>{{ generated_at|date:"d F Y" }}</strong>.
+</p>
+
+<h3>Your Role</h3>
+<p>
+  In your capacity as {{ staff_role.name|default:profile.get_role_display }}, you will be
+  responsible for the duties and responsibilities set out in the Role Responsibility Schedule
+  attached to this letter. You will report to your designated supervisor as configured in
+  the TengaSale staff system.
+</p>
+
+<h3>Compensation</h3>
+<p>
+  Your compensation, benefits and performance framework are detailed in the
+  Compensation Annexure A and KPI &amp; Volts Annexure B accompanying this appointment.
+</p>
+
+<h3>Conditions</h3>
+<p>
+  This appointment is conditional on the satisfactory completion of all onboarding requirements,
+  background checks where applicable, and the signing of all required agreements.
+  You agree to comply with TengaSale's Code of Conduct, data protection requirements,
+  and all applicable policies.
+</p>
+
+<p>
+  We look forward to your valuable contribution to TengaSale and the communities we serve.
+</p>
+{% endif %}
+
+
+{% if document_type == "promotion_rank_review" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     PROMOTION / RANK REVIEW
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Promotion / Rank Review Notice</h2>
+
+<p>This document records the promotion or rank review outcome for the staff member identified above.</p>
+
+<table>
+  <tr>
+    <th class="col-label">Current Rank</th>
+    <td class="col-value">{{ rank.code|default:"—" }} — {{ rank.title|default:"" }}</td>
+    <th class="col-label">Review Date</th>
+    <td class="col-value">{{ generated_at|date:"d F Y" }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Recommendation</th>
+    <td colspan="3">Pending HQ approval. Details recorded in the TengaSale discipline and KPI system.</td>
+  </tr>
+</table>
+{% endif %}
+
+
+{% if document_type == "confidentiality_agreement" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CONFIDENTIALITY & DATA PROTECTION AGREEMENT
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Confidentiality &amp; Data Protection Agreement</h2>
+
+<div class="intro-box">
+  This Agreement is entered into between <strong>TengaSale</strong> and the staff member
+  identified above and forms part of the employment relationship.
+</div>
+
+<h3>1. Scope of Confidential Information</h3>
+<p>
+  "Confidential Information" includes all customer data, device IMEI numbers, financial records,
+  pricing structures, business processes, system designs, software, source code, strategic plans,
+  staff records, merchant data, contract details, credit assessments, and any other information
+  the Employee accesses in the course of their duties.
+</p>
+
+<h3>2. Obligations</h3>
+<p>The Employee agrees to:</p>
+<p>(a) Keep all Confidential Information strictly private and not disclose it to any unauthorised person;</p>
+<p>(b) Use Confidential Information solely for authorised Company purposes;</p>
+<p>(c) Report any suspected breach or unauthorised access to management immediately;</p>
+<p>(d) Comply with all applicable data protection laws, including Malawi's Electronic Transactions and Cyber Security Act.</p>
+
+<h3>3. Duration</h3>
+<p>
+  This obligation applies during the employment relationship and continues indefinitely after
+  its termination, regardless of the reason for termination.
+</p>
+
+<h3>4. Breach</h3>
+<p>
+  Breach of this Agreement may result in immediate termination, disciplinary proceedings,
+  civil claims for damages, and/or criminal prosecution under applicable Malawi law.
+</p>
+
+<h3>5. Return of Information</h3>
+<p>
+  On termination of employment, the Employee must immediately return or permanently delete all
+  Confidential Information in their possession and certify in writing that they have done so.
+</p>
+{% endif %}
+
+
+{% if document_type == "role_responsibility_schedule" %}
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ROLE RESPONSIBILITY SCHEDULE
+════════════════════════════════════════════════════════════════════════════ -->
+<h2>Role Responsibility Schedule</h2>
+
+<div class="intro-box">
+  This schedule defines the responsibilities, authorities and reporting lines for the
+  staff member's current role. It is reviewed when roles or ranks are updated.
+</div>
+
+<h3>Designated Role</h3>
+<p><strong>{{ staff_role.name|default:profile.get_role_display }}</strong> — {{ department.name|default:"TengaSale" }}</p>
+
+<h3>Core Responsibilities</h3>
+<p>
+  Responsibilities are as assigned by management and recorded in the TengaSale staff system.
+  Standard responsibilities for this role include faithful execution of assigned workflows,
+  customer/merchant interaction as authorised, compliance with KPI targets, and adherence
+  to all Company policies.
+</p>
+
+<h3>Authority &amp; Approval Limits</h3>
+<table>
+  <tr>
+    <th style="width:40%;">Authority</th>
+    <th>Level / Limit</th>
+  </tr>
+  <tr>
+    <td>Application Approval</td>
+    <td>As per rank {{ rank.code|default:"—" }} authority matrix</td>
+  </tr>
+  <tr>
+    <td>Volt Approval</td>
+    <td>{% if profile.can_approve_volts %}Authorised{% else %}Not authorised{% endif %}</td>
+  </tr>
+  <tr>
+    <td>Discipline Approval</td>
+    <td>{% if profile.can_approve_discipline %}Authorised{% else %}Not authorised{% endif %}</td>
+  </tr>
+  <tr>
+    <td>Payout Approval</td>
+    <td>{% if profile.can_approve_payouts %}Authorised{% else %}Not authorised{% endif %}</td>
+  </tr>
+</table>
+{% endif %}
+
+
+<!-- ── FOUNDER EQUITY NOTE ──────────────────────────────────────────────── -->
+{% if equity %}
+<h2>Founder Equity Note</h2>
+<div class="notice-info">
+  <strong>Important:</strong> Equity ownership is governed by the signed legal agreements and
+  TengaSale's official Share Register. The figures below are tracking references only.
+</div>
+<table>
+  <tr>
+    <th class="col-label">Allocated Shares</th>
+    <td class="col-value">{{ equity.allocated_shares }}</td>
+    <th class="col-label">Vested Shares</th>
+    <td class="col-value">{{ equity.vested_shares }}</td>
+  </tr>
+  <tr>
+    <th class="col-label">Unvested Shares</th>
+    <td class="col-value">{{ equity.unvested_shares }}</td>
+    <th class="col-label">Equity Status</th>
+    <td class="col-value">{{ equity.get_status_display }}</td>
+  </tr>
+</table>
+{% endif %}
+
+
+<!-- ── SIGNATURE SECTION ───────────────────────────────────────────────── -->
+<div class="sig-section">
+  <h2>Signatures</h2>
+  <p style="margin-bottom:14px;font-size:10px;color:#667085;">
+    By signing below, both parties confirm their understanding and acceptance of the terms
+    contained in this document.
+  </p>
+
+  <div class="sig-grid">
+    <!-- Employee signature -->
+    <div class="sig-cell">
+      <div class="sig-line-block">
+        <div class="sig-label">Employee / Staff Member</div>
+        <div class="sig-image-area">
+          <div class="sig-blank-line" style="width:100%;"></div>
+        </div>
+        <div class="sig-name-row">{{ profile.display_name|default:user.username }}</div>
+        <div class="sig-pos-row">{{ staff_role.name|default:profile.get_role_display }}</div>
+        <div class="sig-date-row">Date: ____________________</div>
+      </div>
+    </div>
+
+    <!-- CEO / Authorised signatory -->
+    <div class="sig-cell">
+      <div class="sig-line-block">
+        <div class="sig-label">Authorised Signatory — TengaSale</div>
+        <div class="sig-image-area">
+          {% if active_signature and active_signature.signature_image %}
+            <img src="{{ active_signature.signature_image.url }}"
+                 alt="Authorised Signature" style="max-height:48px;max-width:180px;">
+          {% else %}
+            <div class="sig-blank-line" style="width:100%;"></div>
+          {% endif %}
+        </div>
+        {% if active_signature %}
+          <div class="sig-name-row">{{ active_signature.full_name }}</div>
+          <div class="sig-pos-row">{{ active_signature.position }}</div>
+        {% else %}
+          <div class="sig-name-row">____________________________</div>
+          <div class="sig-pos-row">Chief Executive Officer</div>
+        {% endif %}
+        <div class="sig-date-row">
+          {% if active_signature %}
+            Date: {{ generated_at|date:"d F Y" }}
+          {% else %}
+            Date: ____________________
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+<div class="footer-notice">
+  <strong>CONFIDENTIAL</strong> — This document contains confidential and privileged information
+  belonging to TengaSale. It is intended solely for the named recipient. Any reproduction,
+  distribution or disclosure without prior written consent is strictly prohibited.
+  <br>
+  Generated by TengaSale Staff Management System &bull; Document: {{ document_number }} &bull;
+  Version {{ version }} &bull; {{ generated_at|date:"d F Y H:i" }}
+</div>
+
 </body>
 </html>

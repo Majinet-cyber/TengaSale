@@ -30,32 +30,88 @@
 <div class="staff-page">
   <header class="staff-head">
     <div>
-      <div class="staff-kicker">Founder / Staff Management</div>
-      <h1 class="staff-title">{{ profile.display_name|default:request.user.username }}</h1>
+      <div class="staff-kicker">Founder / Staff</div>
+      <h1 class="staff-title">{{ profile.display_name|default:request.user.get_full_name|default:request.user.username }}</h1>
       <p class="staff-sub">Login gives identity. Role gives access. Rank gives earning power. Volts measure work.</p>
     </div>
     <div class="staff-actions">
-      <a href="{% url 'hq_dashboard' %}" class="staff-btn">HQ</a>
+      <a href="{% url 'hq_dashboard' %}" class="staff-btn">← HQ</a>
       {% if 'volts' in profile.staff_role.module_permissions or request.user.is_superuser %}<a href="{% url 'hq_volts_engine' %}" class="staff-btn">Volts</a>{% endif %}
       {% if equity %}<a href="{% url 'hq_founder_equity' %}" class="staff-btn staff-btn--orange">Equity</a>{% endif %}
     </div>
   </header>
 
+  {% if not profile.staff_role and not profile.rank and not profile.department %}
+  {# ── Setup required state ─────────────────────────────────────── #}
+  <div style="background:#fff;border:1.5px dashed #d0d5dd;border-radius:20px;padding:36px 24px;text-align:center;margin-bottom:14px;">
+    <div style="width:56px;height:56px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:26px;">⚙️</div>
+    <h2 style="font-size:18px;font-weight:900;color:#101828;margin:0 0 8px;">Staff Profile Not Fully Configured</h2>
+    <p style="font-size:14px;color:#667085;margin:0 0 20px;line-height:1.6;max-width:360px;margin-left:auto;margin-right:auto;">
+      Assign a role, rank, and department to activate Volts tracking, responsibilities, and pay calculations.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      {% if request.user.is_superuser %}
+      <a href="{% url 'hq_staff_roles' %}" style="background:#ff5a00;color:#fff;padding:11px 20px;border-radius:12px;font-weight:900;text-decoration:none;font-size:14px;">Assign Role</a>
+      {% endif %}
+      <a href="{% url 'hq_volts_engine' %}" style="background:#fff;color:#344054;padding:11px 20px;border-radius:12px;font-weight:800;text-decoration:none;font-size:14px;border:1.5px solid #d0d5dd;">View Staff Rules</a>
+    </div>
+  </div>
+  {% endif %}
+
   <section class="staff-grid">
-    <div class="staff-card"><span>My Role</span><strong>{{ profile.staff_role.name|default:profile.get_role_display|default:"Unassigned" }}</strong></div>
-    <div class="staff-card"><span>My Rank</span><strong>{{ profile.rank.code|default:"Unranked" }}</strong></div>
-    <div class="staff-card"><span>My Department</span><strong>{{ profile.department.name|default:"Unassigned" }}</strong></div>
-    <div class="staff-card"><span>Monthly Volts</span><strong>{{ volts.approved_volts|tsnum }}</strong></div>
-    <div class="staff-card"><span>Pending Volts</span><strong>{{ volts.pending_volts|tsnum }}</strong></div>
-    <div class="staff-card"><span>Estimated Pay</span><strong>{{ volts.capped_pay|mwk }}</strong></div>
-    <div class="staff-card"><span>Monthly Ceiling</span><strong>{% if volts.monthly_ceiling %}{{ volts.monthly_ceiling|mwk }}{% else %}Board controlled{% endif %}</strong></div>
-    <div class="staff-card"><span>Department Score</span><strong>{{ department_score }}%</strong></div>
-    <div class="staff-card"><span>Discipline Score</span><strong>{% if discipline %}{{ discipline.final_score|floatformat:1 }}%{% else %}100%{% endif %}</strong></div>
-    <div class="staff-card"><span>Pending Responsibilities</span><strong>{{ pending_responsibilities|tsnum }}</strong></div>
-    <div class="staff-card"><span>Penalties</span><strong>{{ penalties_count|tsnum }}</strong></div>
+    <div class="staff-card">
+      <span>My Role</span>
+      <strong>{{ profile.staff_role.name|default:profile.get_role_display|default:"No role assigned" }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>My Rank</span>
+      <strong>{{ profile.rank.code|default:"No rank" }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>My Department</span>
+      <strong>{{ profile.department.name|default:"No department" }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Monthly Volts</span>
+      <strong>{{ volts.approved_volts|tsnum }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Pending Volts</span>
+      <strong>{{ volts.pending_volts|tsnum }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Estimated Pay</span>
+      <strong>{{ volts.capped_pay|mwk }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Monthly Ceiling</span>
+      <strong>{% if volts.monthly_ceiling %}{{ volts.monthly_ceiling|mwk }}{% else %}Board controlled{% endif %}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Department Score</span>
+      <strong>{{ department_score }}%</strong>
+    </div>
+    <div class="staff-card">
+      <span>Discipline Score</span>
+      <strong>{% if discipline %}{{ discipline.final_score|floatformat:1 }}%{% else %}100%{% endif %}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Pending Tasks</span>
+      <strong>{{ pending_responsibilities|tsnum }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Penalties</span>
+      <strong>{{ penalties_count|tsnum }}</strong>
+    </div>
     {% if equity %}
-    <div class="staff-card"><span>Founder Shares</span><strong>{{ equity.allocated_shares|tsnum }}</strong></div>
-    <div class="staff-card"><span>Vested Shares</span><strong>{{ equity.vested_shares|tsnum }} / {{ equity.allocated_shares|tsnum }}</strong></div>
+    <div class="staff-card">
+      <span>Founder Shares</span>
+      <strong>{{ equity.allocated_shares|tsnum }}</strong>
+    </div>
+    <div class="staff-card">
+      <span>Vested Shares</span>
+      <strong>{{ equity.vested_shares|tsnum }} / {{ equity.allocated_shares|tsnum }}</strong>
+    </div>
     {% endif %}
   </section>
 
@@ -65,7 +121,7 @@
       {% for module in allowed_modules %}
       <span class="staff-chip">{{ module.label }}</span>
       {% empty %}
-      <span class="staff-chip">No modules assigned</span>
+      <p style="font-size:13px;color:#94a3b8;margin:0;">No modules assigned — this will activate after role configuration.</p>
       {% endfor %}
     </div>
   </section>
