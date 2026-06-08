@@ -16,20 +16,21 @@
     <span class="mobile-header__title topbar-page-title">{% block page_heading %}{{ page_heading|default:"Home" }}{% endblock %}</span>
   </div>
 
-  <div class="mobile-header__actions">
+  <div class="mobile-header__actions" style="flex-shrink:0;flex-wrap:nowrap;">
     <a
       class="mh-icon-btn mh-btn-whatsapp"
       href="{{ tengasale_whatsapp_link }}"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="WhatsApp support"
+      data-testid="topbar-whatsapp"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Z"/>
       </svg>
     </a>
 
-    <a href="{% url 'notifications_list' %}" class="mh-icon-btn mh-btn-bell" aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}">
+    <a href="{% url 'notifications_list' %}" class="mh-icon-btn mh-btn-bell" aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}" data-testid="topbar-notifications">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
         <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
@@ -39,7 +40,7 @@
 
     <form method="post" action="{% url 'logout' %}" style="margin:0;">
       {% csrf_token %}
-      <button class="mh-icon-btn mh-btn-logout" type="submit" aria-label="Log out">
+      <button class="mh-icon-btn mh-btn-logout" type="submit" aria-label="Log out" data-testid="topbar-logout">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <path d="M16 17l5-5-5-5"/>

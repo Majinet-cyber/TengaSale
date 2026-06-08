@@ -3919,3 +3919,111 @@ def hq_agreement_pdf(request, agreement_id):
     except FileNotFoundError:
         messages.error(request, "PDF file not found.")
         return redirect("hq_merchant_agreements")
+
+
+# ── HQ WhatsApp Bot Operations Dashboard ────────────────────────────────────
+
+@hq_required
+def hq_whatsapp_bot(request):
+    """WhatsApp Bot Operations Dashboard — channel health, templates, analytics."""
+    from communications.models import SMSLog
+    from django.utils import timezone as tz
+
+    today = tz.now().date()
+    yesterday = today - timedelta(days=1)
+
+    # Message stats from SMS/WhatsApp logs
+    try:
+        wa_sent_today = SMSLog.objects.filter(
+            created_at__date=today,
+            provider__icontains="whatsapp"
+        ).count()
+        wa_failed_today = SMSLog.objects.filter(
+            created_at__date=today,
+            provider__icontains="whatsapp",
+            status="failed"
+        ).count()
+        wa_queued = SMSLog.objects.filter(
+            provider__icontains="whatsapp",
+            status="queued"
+        ).count()
+        wa_sent_yesterday = SMSLog.objects.filter(
+            created_at__date=yesterday,
+            provider__icontains="whatsapp"
+        ).count()
+        # Last inbound/outbound from support
+        from support.models import SupportConversation, SupportMessage
+        last_inbound = SupportMessage.objects.filter(
+            direction="inbound"
+        ).select_related("conversation").order_by("-created_at").first()
+        last_outbound = SupportMessage.objects.filter(
+            direction="outbound"
+        ).select_related("conversation").order_by("-created_at").first()
+        conversation_count = SupportConversation.objects.count()
+        open_conversations = SupportConversation.objects.filter(status="open").count()
+    except Exception:
+        wa_sent_today = wa_failed_today = wa_queued = wa_sent_yesterday = 0
+        last_inbound = last_outbound = None
+        conversation_count = open_conversations = 0
+
+    # Webhook config
+    webhook_url = getattr(settings, "WHATSAPP_WEBHOOK_URL", "")
+    messaging_provider = getattr(settings, "MESSAGING_PROVIDER", "mock")
+    twilio_wa_number = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
+    meta_wa_number = getattr(settings, "META_WHATSAPP_PHONE_NUMBER_ID", "")
+
+    channel_healthy = messaging_provider != "mock" and (twilio_wa_number or meta_wa_number)
+
+    delivery_rate = None
+    if wa_sent_today > 0:
+        delivery_rate = round((wa_sent_today - wa_failed_today) / wa_sent_today * 100, 1)
+
+    # WhatsApp templates
+    templates = [
+        {"name": "OTP Verification",         "key": "otp",                  "enabled": True,  "category": "Authentication"},
+        {"name": "Application Submitted",     "key": "app_submitted",        "enabled": True,  "category": "Transactional"},
+        {"name": "Application Approved",      "key": "app_approved",         "enabled": True,  "category": "Transactional"},
+        {"name": "IMEI Required",             "key": "imei_required",        "enabled": True,  "category": "Action Required"},
+        {"name": "Payment Received",          "key": "payment_received",     "enabled": True,  "category": "Transactional"},
+        {"name": "Payment Due in 2 Days",     "key": "due_2_days",           "enabled": True,  "category": "Reminder"},
+        {"name": "Payment Due Today",         "key": "due_today",            "enabled": True,  "category": "Reminder"},
+        {"name": "Payment Overdue",           "key": "overdue",              "enabled": True,  "category": "Collections"},
+        {"name": "Device Lock Warning",       "key": "lock_warning",         "enabled": True,  "category": "Collections"},
+        {"name": "Correction Required",       "key": "correction_required",  "enabled": True,  "category": "Action Required"},
+        {"name": "Support Reply",             "key": "support_reply",        "enabled": True,  "category": "Support"},
+        {"name": "Merchant Onboarding",       "key": "merchant_onboarding",  "enabled": True,  "category": "Onboarding"},
+        {"name": "Payout Approved",           "key": "payout_approved",      "enabled": True,  "category": "Financial"},
+        {"name": "Application Rejected",      "key": "app_rejected",         "enabled": False, "category": "Transactional"},
+    ]
+
+    # Automation flows
+    automations = [
+        {"name": "OTP Verification",      "trigger": "New Application",   "active": True},
+        {"name": "Repayment Reminders",   "trigger": "Daily (8am)",        "active": True},
+        {"name": "Arrears Escalation",    "trigger": "3 days overdue",     "active": True},
+        {"name": "Correction Request",    "trigger": "Underwriter flags",  "active": True},
+        {"name": "IMEI Required",         "trigger": "Post-approval",      "active": True},
+        {"name": "Approval Notification", "trigger": "Application approved","active": True},
+        {"name": "Payment Confirmation",  "trigger": "Payment received",   "active": True},
+        {"name": "Support Ticket Created","trigger": "WhatsApp inbound",   "active": True},
+    ]
+
+    return render(request, "dashboard/hq_whatsapp_bot.html", {
+        "page_title": "WhatsApp Bot Operations",
+        "messaging_provider": messaging_provider,
+        "channel_healthy": channel_healthy,
+        "twilio_wa_number": twilio_wa_number,
+        "meta_wa_number": meta_wa_number,
+        "webhook_url": webhook_url,
+        "wa_sent_today": wa_sent_today,
+        "wa_failed_today": wa_failed_today,
+        "wa_queued": wa_queued,
+        "wa_sent_yesterday": wa_sent_yesterday,
+        "delivery_rate": delivery_rate,
+        "last_inbound": last_inbound,
+        "last_outbound": last_outbound,
+        "conversation_count": conversation_count,
+        "open_conversations": open_conversations,
+        "templates": templates,
+        "automations": automations,
+    })

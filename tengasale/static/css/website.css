@@ -5,6 +5,11 @@
    Light mode throughout. Glassmorphic premium fintech UI.
    ================================================================ */
 
+/* ── Global Safety ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+img, video, svg, canvas { max-width: 100%; }
+
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
   /* Brand — matches TengaSale system token #ff5a00 */

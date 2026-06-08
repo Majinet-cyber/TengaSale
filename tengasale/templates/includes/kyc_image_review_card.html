@@ -4,13 +4,13 @@ Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missi
       retake_step (optional int), show_send_back (bool), correction (optional), field_name (for send-back)
 {% endcomment %}
 
-<article class="kyc-portrait-card kyc-portrait-card--{{ card_type|default:'selfie' }}">
+<article class="kyc-portrait-card kyc-portrait-card--{{ card_type|default:'selfie' }} ts-kyc-img-card{% if correction %} ts-kyc-img-card--flagged{% endif %}{% if status == 'missing' %} ts-kyc-img-card--missing{% endif %}">
   <div class="kyc-portrait-card__head">
     <h3 class="kyc-portrait-card__label">{{ label }}</h3>
     {% if show_send_back and field_name %}
     <button
       type="button"
-      class="review-edit-btn{% if correction %} review-edit-btn--active{% endif %}"
+      class="review-edit-btn ts-edit-icon-btn{% if correction %} review-edit-btn--active{% endif %}"
       aria-label="Request retake for {{ label }}"
       data-correction-open
       data-field-name="{{ field_name }}"
@@ -18,11 +18,12 @@ Vars: label, image_url, card_type (selfie|id_front|id_back), status (ready|missi
       data-field-section="Images"
       data-correction-note="{{ correction.note|default:'' }}"
       data-correction-active="{% if correction %}true{% else %}false{% endif %}"
+      style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.90);border:1px solid rgba(0,0,0,0.10);"
     >
       {% if correction %}
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
       {% else %}
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
       {% endif %}
     </button>
     {% endif %}

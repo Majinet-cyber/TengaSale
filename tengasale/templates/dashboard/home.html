@@ -497,24 +497,28 @@
       <span class="merchant-brand-name">TengaSale</span>
     </a>
 
-    <div class="merchant-header-actions">
+    <div class="merchant-header-actions" style="flex-shrink:0;flex-wrap:nowrap;display:flex;align-items:center;gap:4px;">
       <a class="merchant-header-btn"
          href="{{ tengasale_whatsapp_link|default:'#' }}"
          target="_blank" rel="noopener noreferrer"
-         aria-label="WhatsApp support" title="WhatsApp support">
+         aria-label="WhatsApp support" title="WhatsApp support"
+         data-testid="topbar-whatsapp"
+         style="flex-shrink:0;">
         <i class="bi bi-whatsapp" aria-hidden="true"></i>
       </a>
       <a href="{% url 'notifications_list' %}"
          class="merchant-header-btn merchant-header-btn--notify"
-         aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}">
+         aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}"
+         data-testid="topbar-notifications"
+         style="flex-shrink:0;">
         <i class="bi bi-bell" aria-hidden="true"></i>
         {% if unread_notification_count %}
           <span class="merchant-header-badge">{{ unread_notification_count }}</span>
         {% endif %}
       </a>
-      <form method="post" action="{% url 'logout' %}" class="merchant-logout-form">
+      <form method="post" action="{% url 'logout' %}" class="merchant-logout-form" style="margin:0;flex-shrink:0;">
         {% csrf_token %}
-        <button type="submit" class="merchant-header-btn" aria-label="Log out" title="Log out">
+        <button type="submit" class="merchant-header-btn" aria-label="Log out" title="Log out" data-testid="topbar-logout">
           <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         </button>
       </form>

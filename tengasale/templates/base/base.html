@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.0.3">
     <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
     <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=1.0.1">
+    <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=2.0.0">
     {% block extra_head %}{% endblock %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
@@ -45,7 +46,7 @@
         </div>
 
         {% if request.user.is_authenticated %}
-            <div class="top-actions">
+            <div class="top-actions" style="flex-shrink:0;flex-wrap:nowrap;">
                 <a
                     class="icon-button whatsapp-button"
                     href="{{ tengasale_whatsapp_link }}"
@@ -53,6 +54,7 @@
                     rel="noopener noreferrer"
                     aria-label="WhatsApp support"
                     title="WhatsApp support"
+                    data-testid="topbar-whatsapp"
                 >
                     <svg aria-hidden="true" viewBox="0 0 24 24">
                         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Zm.01 18.16h-.01a8.22 8.22 0 0 1-4.19-1.15l-.3-.18-3.11.82.83-3.03-.2-.31a8.18 8.18 0 0 1-1.25-4.39c0-4.53 3.69-8.22 8.23-8.22a8.18 8.18 0 0 1 5.81 2.41 8.17 8.17 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.22 8.23Zm4.51-6.16c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.96-.14.17-.29.19-.54.07-.25-.13-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.7-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47c-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.05 0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.18 3.69.58.25 1.04.4 1.39.51.58.18 1.12.16 1.54.1.47-.07 1.46-.6 1.66-1.17.21-.58.21-1.07.14-1.17-.06-.1-.22-.16-.47-.28Z"></path>
@@ -66,7 +68,7 @@
                         </svg>
                     </a>
                 {% endif %}
-                <a href="{% url 'notifications_list' %}" class="icon-button notification-button" aria-label="Notifications ({{ unread_notification_count }} unread)">
+                <a href="{% url 'notifications_list' %}" class="icon-button notification-button" aria-label="Notifications ({{ unread_notification_count }} unread)" data-testid="topbar-notifications">
                     <svg aria-hidden="true" viewBox="0 0 24 24">
                         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
                         <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
@@ -75,9 +77,9 @@
                         <span class="notification-count notification-count--live">{{ unread_notification_count }}</span>
                     {% endif %}
                 </a>
-                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                <form method="post" action="{% url 'logout' %}" class="logout-form" style="margin:0;">
                     {% csrf_token %}
-                    <button class="icon-button logout-button" type="submit" aria-label="Log out" title="Log out">
+                    <button class="icon-button logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout">
                         <svg aria-hidden="true" viewBox="0 0 24 24">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <path d="M16 17l5-5-5-5"></path>
@@ -117,6 +119,8 @@
 
 {% block extra_scripts %}{% endblock %}
 <script src="{% static 'js/tengasale-motion.js' %}?v=1.2.0" defer></script>
+<script src="{% static 'js/mobile-select-sheet.js' %}?v=2.0.0" defer></script>
+<script src="{% static 'js/premium-animations.js' %}?v=2.0.0" defer></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

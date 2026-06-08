@@ -1,0 +1,1645 @@
+/* =====================================================================
+   TengaSale Premium Design System v2.0
+   Glass cards · KPI cards · Topbar safety · Mobile sheets · Modals
+   ===================================================================== */
+
+/* ── 1. GLOBAL SAFETY ────────────────────────────────────────────── */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  overflow-x: hidden;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+}
+
+/* ── 2. PREMIUM DESIGN TOKENS ─────────────────────────────────────── */
+:root {
+  /* Brand */
+  --p-brand:         #FF4D00;
+  --p-brand-dark:    #C73D00;
+  --p-brand-soft:    #FFF1E8;
+  --p-brand-border:  rgba(255, 77, 0, 0.20);
+
+  /* Palette */
+  --p-navy:          #0F172A;
+  --p-slate:         #475569;
+  --p-muted:         #94A3B8;
+  --p-bg:            #F8FAFC;
+  --p-surface:       #FFFFFF;
+
+  /* Semantic */
+  --p-success:       #16A34A;
+  --p-success-soft:  #DCFCE7;
+  --p-danger:        #DC2626;
+  --p-danger-soft:   #FEE2E2;
+  --p-warning:       #F59E0B;
+  --p-warning-soft:  #FEF3C7;
+  --p-info:          #2563EB;
+  --p-info-soft:     #DBEAFE;
+
+  /* Glass */
+  --p-glass-bg:      rgba(255, 255, 255, 0.80);
+  --p-glass-border:  rgba(255, 255, 255, 0.65);
+  --p-glass-shadow:  0 18px 45px rgba(15, 23, 42, 0.08);
+
+  /* Motion */
+  --p-ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --p-ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --p-ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --p-dur-fast:      120ms;
+  --p-dur-normal:    220ms;
+  --p-dur-slow:      380ms;
+}
+
+/* ── 3. TOPBAR STABILITY ─────────────────────────────────────────── */
+/* Ensures top-right actions never wrap or distort */
+
+.topbar,
+.mobile-header {
+  flex-wrap: nowrap !important;
+  overflow: visible;
+}
+
+.top-actions,
+.mobile-header__actions {
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-left,
+.mobile-header__left {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.brand-lockup,
+.mobile-header__logo-link {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.icon-button,
+.mh-icon-btn {
+  flex-shrink: 0 !important;
+}
+
+/* Merchant home header */
+.merchant-header {
+  flex-wrap: nowrap !important;
+}
+
+.merchant-header-actions {
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.merchant-brand {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.merchant-brand-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 4. GLASS SQUARE CARD SYSTEM ─────────────────────────────────── */
+.ts-glass-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--p-glass-border);
+  background: var(--p-glass-bg);
+  padding: 20px;
+  box-shadow: var(--p-glass-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform var(--p-dur-normal) var(--p-ease-out),
+              box-shadow var(--p-dur-normal) var(--p-ease-out);
+}
+
+@media (hover: hover) {
+  .ts-glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.12);
+  }
+}
+
+.ts-glass-card:active {
+  transform: scale(0.985);
+}
+
+/* Top accent rail */
+.ts-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--p-brand);
+  border-radius: 20px 20px 0 0;
+}
+
+.ts-glass-card--success::before { background: var(--p-success); }
+.ts-glass-card--danger::before  { background: var(--p-danger); }
+.ts-glass-card--warning::before { background: var(--p-warning); }
+.ts-glass-card--info::before    { background: var(--p-info); }
+
+/* Background glow */
+.ts-glass-card__glow {
+  pointer-events: none;
+  position: absolute;
+  top: -32px;
+  right: -32px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--p-brand);
+  opacity: 0.08;
+  filter: blur(28px);
+}
+
+.ts-glass-card--success .ts-glass-card__glow { background: var(--p-success); }
+.ts-glass-card--danger  .ts-glass-card__glow { background: var(--p-danger); }
+.ts-glass-card--warning .ts-glass-card__glow { background: var(--p-warning); }
+.ts-glass-card--info    .ts-glass-card__glow { background: var(--p-info); }
+
+/* Icon tile inside glass card */
+.ts-glass-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--p-brand-soft);
+  color: var(--p-brand);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.ts-glass-card--success .ts-glass-card__icon {
+  background: var(--p-success-soft);
+  color: var(--p-success);
+}
+.ts-glass-card--danger .ts-glass-card__icon {
+  background: var(--p-danger-soft);
+  color: var(--p-danger);
+}
+.ts-glass-card--warning .ts-glass-card__icon {
+  background: var(--p-warning-soft);
+  color: var(--p-warning);
+}
+.ts-glass-card--info .ts-glass-card__icon {
+  background: var(--p-info-soft);
+  color: var(--p-info);
+}
+
+.ts-glass-card__icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Value & label */
+.ts-glass-card__value {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--p-navy);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 2px;
+}
+
+.ts-glass-card__label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--p-muted);
+  margin: 0 0 8px;
+}
+
+.ts-glass-card__desc {
+  font-size: 12px;
+  color: var(--p-slate);
+  margin: 4px 0 0;
+}
+
+/* ── 5. KPI / COMMAND CARD GRID ──────────────────────────────────── */
+.ts-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0 16px;
+}
+
+@media (min-width: 640px) {
+  .ts-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .ts-kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.ts-kpi-card {
+  position: relative;
+  background: var(--p-glass-bg);
+  border: 1px solid var(--p-glass-border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+  transition: transform var(--p-dur-fast) var(--p-ease-out);
+}
+
+.ts-kpi-card:active { transform: scale(0.97); }
+
+.ts-kpi-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ts-kpi-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--p-brand-soft);
+  color: var(--p-brand);
+  flex-shrink: 0;
+}
+
+.ts-kpi-card__icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ts-kpi-card--success .ts-kpi-card__icon { background: var(--p-success-soft); color: var(--p-success); }
+.ts-kpi-card--danger  .ts-kpi-card__icon { background: var(--p-danger-soft);  color: var(--p-danger); }
+.ts-kpi-card--warning .ts-kpi-card__icon { background: var(--p-warning-soft); color: var(--p-warning); }
+.ts-kpi-card--info    .ts-kpi-card__icon { background: var(--p-info-soft);    color: var(--p-info); }
+
+.ts-kpi-card__value {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--p-navy);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.ts-kpi-card__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--p-muted);
+  margin: 2px 0 0;
+}
+
+/* Accent top line */
+.ts-kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--p-brand);
+  border-radius: 16px 16px 0 0;
+}
+
+.ts-kpi-card--success::after { background: var(--p-success); }
+.ts-kpi-card--danger::after  { background: var(--p-danger); }
+.ts-kpi-card--warning::after { background: var(--p-warning); }
+.ts-kpi-card--info::after    { background: var(--p-info); }
+
+/* ── 6. TREND ARROWS ─────────────────────────────────────────────── */
+.ts-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+
+.ts-trend--up {
+  background: var(--p-success-soft);
+  color: var(--p-success);
+}
+
+.ts-trend--down {
+  background: var(--p-danger-soft);
+  color: var(--p-danger);
+}
+
+.ts-trend--flat {
+  background: #F1F5F9;
+  color: var(--p-muted);
+}
+
+.ts-trend__arrow {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ── 7. COUNTRY PILL ─────────────────────────────────────────────── */
+.ts-country-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #374151;
+  flex-shrink: 0;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ts-country-pill__flag {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ts-country-pill__code {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--p-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── 8. OUTSIDE HOURS MODAL ──────────────────────────────────────── */
+.ts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.50);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+@media (min-width: 480px) {
+  .ts-modal-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+.ts-modal-backdrop.ts-modal--hidden {
+  display: none;
+}
+
+.ts-modal-box {
+  background: var(--p-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--p-glass-border);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 64px rgba(15, 23, 42, 0.18);
+  padding: 28px 24px 32px;
+  width: 100%;
+  max-width: 440px;
+  animation: ts-modal-slide-up var(--p-dur-slow) var(--p-ease-spring) both;
+}
+
+@media (min-width: 480px) {
+  .ts-modal-box {
+    border-radius: 24px;
+    box-shadow: var(--p-glass-shadow);
+    animation: ts-modal-scale-in var(--p-dur-slow) var(--p-ease-spring) both;
+  }
+}
+
+@keyframes ts-modal-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes ts-modal-scale-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-modal-box { animation: none; }
+}
+
+.ts-modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--p-warning-soft);
+  color: var(--p-warning);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+}
+
+.ts-modal-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ts-modal-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--p-navy);
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.ts-modal-body {
+  font-size: 14px;
+  color: var(--p-slate);
+  text-align: center;
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.ts-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ts-modal-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all var(--p-dur-fast) var(--p-ease-out);
+  letter-spacing: 0.01em;
+}
+
+.ts-modal-btn:active { transform: scale(0.97); }
+
+.ts-modal-btn--primary {
+  background: var(--p-brand);
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(255, 77, 0, 0.28);
+}
+
+.ts-modal-btn--primary:hover { background: var(--p-brand-dark); }
+
+.ts-modal-btn--secondary {
+  background: #F1F5F9;
+  color: var(--p-slate);
+}
+
+.ts-modal-btn--secondary:hover { background: #E2E8F0; }
+
+/* Outside hours chip (subtle, after modal dismissed) */
+.ts-outside-hours-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--p-warning-soft);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400E;
+  margin-bottom: 12px;
+}
+
+/* ── 9. PREMIUM MOBILE SELECT SHEET ──────────────────────────────── */
+.ts-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-navy);
+  cursor: pointer;
+  transition: border-color var(--p-dur-fast);
+  text-align: left;
+}
+
+.ts-select-trigger:focus {
+  outline: none;
+  border-color: var(--p-brand);
+  box-shadow: 0 0 0 3px var(--p-brand-border);
+}
+
+.ts-select-trigger__placeholder { color: var(--p-muted); }
+.ts-select-trigger__chevron {
+  flex-shrink: 0;
+  color: var(--p-muted);
+  transition: transform var(--p-dur-fast);
+}
+
+.ts-select-trigger[aria-expanded="true"] .ts-select-trigger__chevron {
+  transform: rotate(180deg);
+}
+
+.ts-select-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 8000;
+}
+
+.ts-select-sheet-backdrop.hidden { display: none; }
+
+.ts-select-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 40px rgba(15, 23, 42, 0.16);
+  z-index: 8001;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  animation: ts-sheet-up var(--p-dur-normal) var(--p-ease-out) both;
+}
+
+@media (min-width: 480px) {
+  .ts-select-sheet {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    bottom: auto;
+    border-radius: 14px;
+    max-height: 320px;
+    animation: ts-dropdown-in var(--p-dur-fast) var(--p-ease-out) both;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+  }
+}
+
+@keyframes ts-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes ts-dropdown-in {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-select-sheet { animation: none; }
+}
+
+.ts-select-sheet__header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ts-select-sheet__title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--p-navy);
+}
+
+.ts-select-sheet__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #F1F5F9;
+  color: var(--p-slate);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ts-select-sheet__search {
+  padding: 10px 16px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.ts-select-sheet__search input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+.ts-select-sheet__search input:focus {
+  border-color: var(--p-brand);
+}
+
+.ts-select-sheet__list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 0;
+}
+
+.ts-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-navy);
+  cursor: pointer;
+  transition: background var(--p-dur-fast);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 48px;
+}
+
+.ts-select-option:hover  { background: #F8FAFC; }
+.ts-select-option:active { background: var(--p-brand-soft); }
+
+.ts-select-option--selected {
+  color: var(--p-brand);
+  background: var(--p-brand-soft);
+}
+
+.ts-select-option__check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #E2E8F0;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: all var(--p-dur-fast);
+}
+
+.ts-select-option--selected .ts-select-option__check {
+  background: var(--p-brand);
+  border-color: var(--p-brand);
+  color: #ffffff;
+}
+
+/* ── 10. EDITABLE REVIEW FIELD (Yellow-style) ────────────────────── */
+.ts-editable-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #F1F5F9;
+  background: #ffffff;
+  transition: background var(--p-dur-fast);
+  position: relative;
+}
+
+.ts-editable-field:last-child { border-bottom: none; }
+
+.ts-editable-field--flagged {
+  background: #FFFBEB;
+  border-left: 3px solid var(--p-warning);
+}
+
+.ts-editable-field--corrected {
+  background: #F0FDF4;
+  border-left: 3px solid var(--p-success);
+}
+
+.ts-editable-field--missing {
+  background: #FFF5F5;
+  border-left: 3px solid var(--p-danger);
+}
+
+.ts-editable-field__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ts-editable-field__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1px;
+}
+
+.ts-editable-field__value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-editable-field__note {
+  font-size: 11px;
+  color: #92400E;
+  margin-top: 2px;
+}
+
+.ts-editable-field__corrected-note {
+  font-size: 11px;
+  color: #166534;
+  margin-top: 2px;
+}
+
+/* The user-pencil edit icon */
+.ts-edit-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--p-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background var(--p-dur-fast), color var(--p-dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ts-edit-icon-btn:hover {
+  background: var(--p-brand-soft);
+  color: var(--p-brand);
+}
+
+.ts-edit-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* undo/return arrow on flagged fields */
+.ts-editable-field--flagged .ts-edit-icon-btn {
+  color: var(--p-warning);
+}
+
+.ts-editable-field--flagged .ts-edit-icon-btn:hover {
+  background: var(--p-warning-soft);
+  color: #B45309;
+}
+
+/* Status badges */
+.ts-field-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+
+.ts-field-status--ok        { background: var(--p-success-soft); color: #166534; }
+.ts-field-status--flagged   { background: var(--p-warning-soft); color: #92400E; }
+.ts-field-status--corrected { background: var(--p-success-soft); color: #166534; }
+.ts-field-status--missing   { background: var(--p-danger-soft);  color: #991B1B; }
+
+/* ── 11. KYC IMAGE CARD ──────────────────────────────────────────── */
+.ts-kyc-img-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ts-kyc-img-card__img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #F8FAFC;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.ts-kyc-img-card__img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--p-dur-normal) var(--p-ease-out);
+}
+
+.ts-kyc-img-card__img-wrap:hover img { transform: scale(1.03); }
+
+.ts-kyc-img-card__edit-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--p-slate);
+  transition: background var(--p-dur-fast), color var(--p-dur-fast);
+}
+
+.ts-kyc-img-card__edit-btn:hover {
+  background: #ffffff;
+  color: var(--p-brand);
+}
+
+.ts-kyc-img-card__edit-btn svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round;
+}
+
+.ts-kyc-img-card__footer {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ts-kyc-img-card__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--p-navy);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-kyc-img-card--flagged   { border-color: var(--p-warning); }
+.ts-kyc-img-card--missing   { border-color: var(--p-danger); border-style: dashed; }
+.ts-kyc-img-card--corrected { border-color: var(--p-success); }
+
+/* Image zoom modal */
+.ts-img-zoom-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.92);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ts-img-zoom-backdrop.hidden { display: none; }
+
+.ts-img-zoom-backdrop img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.ts-img-zoom-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+/* ── 12. ROLE CARDS ──────────────────────────────────────────────── */
+.ts-role-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ts-role-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--p-brand);
+  border-radius: 16px 0 0 16px;
+}
+
+.ts-role-card--exec::before   { background: var(--p-info); }
+.ts-role-card--support::before{ background: var(--p-success); }
+.ts-role-card--credit::before { background: var(--p-warning); }
+.ts-role-card--system::before { background: var(--p-muted); }
+
+.ts-role-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ts-role-card__title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--p-navy);
+}
+
+.ts-role-card__group {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--p-brand-soft);
+  color: var(--p-brand);
+  flex-shrink: 0;
+}
+
+.ts-role-card--exec .ts-role-card__group   { background: var(--p-info-soft);    color: var(--p-info); }
+.ts-role-card--support .ts-role-card__group{ background: var(--p-success-soft); color: var(--p-success); }
+.ts-role-card--credit .ts-role-card__group { background: var(--p-warning-soft); color: #92400E; }
+.ts-role-card--system .ts-role-card__group { background: #F1F5F9; color: var(--p-muted); }
+
+.ts-role-card__perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ts-role-perm-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: var(--p-slate);
+}
+
+.ts-role-perm-chip--active {
+  background: var(--p-success-soft);
+  color: var(--p-success);
+}
+
+/* ── 13. CELEBRATION ANIMATIONS ──────────────────────────────────── */
+@keyframes ts-success-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+  70%  { box-shadow: 0 0 0 16px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+@keyframes ts-pop-in {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes ts-float-up {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(-32px); opacity: 0; }
+}
+
+@keyframes ts-check-draw {
+  0%   { stroke-dashoffset: 40; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-success-pulse, .ts-pop-in, .ts-float-up, .ts-check-draw {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.ts-success-ring {
+  animation: ts-success-pulse 1s ease-out both;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ts-pop-in {
+  animation: ts-pop-in var(--p-dur-slow) var(--p-ease-spring) both;
+}
+
+/* ── 14. PREMIUM STATUS BADGE ─────────────────────────────────────── */
+.ts-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.ts-status-pill--approved,
+.ts-status-pill--active,
+.ts-status-pill--paid    { background: var(--p-success-soft); color: #166534; }
+.ts-status-pill--pending { background: var(--p-warning-soft); color: #92400E; }
+.ts-status-pill--rejected,
+.ts-status-pill--overdue,
+.ts-status-pill--danger  { background: var(--p-danger-soft);  color: #991B1B; }
+.ts-status-pill--info,
+.ts-status-pill--review  { background: var(--p-info-soft);    color: #1E40AF; }
+.ts-status-pill--neutral { background: #F1F5F9;                color: var(--p-muted); }
+.ts-status-pill--brand   { background: var(--p-brand-soft);   color: var(--p-brand-dark); }
+
+/* Status dot */
+.ts-status-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── 15. CHART CARD ───────────────────────────────────────────────── */
+.ts-chart-card {
+  background: var(--p-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--p-glass-border);
+  border-radius: 20px;
+  padding: 20px 20px 16px;
+  box-shadow: var(--p-glass-shadow);
+  overflow: hidden;
+  position: relative;
+}
+
+.ts-chart-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.ts-chart-card__title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--p-navy);
+  margin: 0;
+}
+
+.ts-chart-card__subtitle {
+  font-size: 12px;
+  color: var(--p-muted);
+  margin: 2px 0 0;
+}
+
+.ts-chart-card__period-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: #F1F5F9;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-slate);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ts-chart-canvas-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.ts-chart-canvas-wrap canvas {
+  max-width: 100%;
+  height: 260px !important;
+}
+
+/* ── 16. PREMIUM SECTION HEADER ──────────────────────────────────── */
+.ts-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 20px 16px 10px;
+}
+
+.ts-section-header__title {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--p-muted);
+  margin: 0;
+}
+
+.ts-section-header__action {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--p-brand);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.ts-section-header__action:hover { text-decoration: underline; }
+
+/* ── 17. TOPBAR WHATSAPP PANEL TRIGGER ───────────────────────────── */
+.ts-wa-panel {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 300px;
+  background: var(--p-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--p-glass-border);
+  border-radius: 20px;
+  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.16);
+  z-index: 500;
+  padding: 16px;
+  animation: ts-dropdown-in var(--p-dur-fast) var(--p-ease-out) both;
+}
+
+.ts-wa-panel.hidden { display: none; }
+
+.ts-wa-panel__title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--p-navy);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ts-wa-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #F1F5F9;
+  text-decoration: none;
+  color: var(--p-navy);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color var(--p-dur-fast);
+}
+
+.ts-wa-panel__item:last-child { border-bottom: none; }
+.ts-wa-panel__item:hover { color: var(--p-brand); }
+
+.ts-wa-panel__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ts-wa-panel__dot--online  { background: var(--p-success); }
+.ts-wa-panel__dot--offline { background: var(--p-danger); }
+.ts-wa-panel__dot--unknown { background: var(--p-muted); }
+
+/* ── 18. HQ SECTION UPGRADES ─────────────────────────────────────── */
+.ts-hq-page-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--p-navy);
+  letter-spacing: -0.02em;
+  margin: 0 0 2px;
+}
+
+.ts-hq-page-subtitle {
+  font-size: 13px;
+  color: var(--p-muted);
+  margin: 0 0 20px;
+}
+
+.ts-hq-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+/* Fraud signal card */
+.ts-fraud-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ts-fraud-card--high::before,
+.ts-fraud-card--critical::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--p-danger);
+  border-radius: 16px 0 0 16px;
+}
+
+.ts-fraud-card--medium::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--p-warning);
+  border-radius: 16px 0 0 16px;
+}
+
+.ts-fraud-card__severity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-bottom: 6px;
+}
+
+.ts-fraud-card__severity--critical,
+.ts-fraud-card__severity--high   { background: var(--p-danger-soft);  color: #991B1B; }
+.ts-fraud-card__severity--medium { background: var(--p-warning-soft); color: #92400E; }
+.ts-fraud-card__severity--low    { background: #F1F5F9; color: var(--p-muted); }
+
+.ts-fraud-card__title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--p-navy);
+  margin: 0 0 4px;
+}
+
+.ts-fraud-card__desc {
+  font-size: 12px;
+  color: var(--p-slate);
+  margin: 0 0 10px;
+}
+
+/* ── 19. PREMIUM MOTION UTILITIES ────────────────────────────────── */
+.ts-fade-in {
+  animation: ts-fade-in var(--p-dur-normal) var(--p-ease-out) both;
+}
+
+@keyframes ts-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ts-stagger-1 { animation-delay: 60ms; }
+.ts-stagger-2 { animation-delay: 120ms; }
+.ts-stagger-3 { animation-delay: 180ms; }
+.ts-stagger-4 { animation-delay: 240ms; }
+.ts-stagger-5 { animation-delay: 300ms; }
+.ts-stagger-6 { animation-delay: 360ms; }
+
+/* Reduced motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── 20. PREMIUM DOCUMENT LAYOUT ─────────────────────────────────── */
+.ts-doc-layout {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+}
+
+.ts-doc-header {
+  background: var(--p-navy);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ts-doc-header__brand {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: rgba(255, 255, 255, 0.60);
+  margin-bottom: 6px;
+}
+
+.ts-doc-header__title {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0 0 4px;
+}
+
+.ts-doc-header__meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ts-doc-section {
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.ts-doc-section__title {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--p-brand);
+  background: var(--p-brand-soft);
+  border-bottom: 1px solid rgba(255, 77, 0, 0.12);
+}
+
+.ts-doc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F8FAFC;
+  font-size: 13px;
+}
+
+.ts-doc-row:last-child { border-bottom: none; }
+
+.ts-doc-row__label {
+  width: 120px;
+  flex-shrink: 0;
+  color: var(--p-muted);
+  font-weight: 600;
+}
+
+.ts-doc-row__value {
+  flex: 1;
+  font-weight: 700;
+  color: var(--p-navy);
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Mobile PDF action buttons */
+.ts-doc-mobile-actions {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+@media (min-width: 768px) {
+  .ts-doc-mobile-actions { display: none; }
+}
+
+.ts-doc-mobile-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: all var(--p-dur-fast);
+}
+
+.ts-doc-mobile-btn--primary {
+  background: var(--p-brand);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 77, 0, 0.25);
+}
+
+.ts-doc-mobile-btn--secondary {
+  background: #F1F5F9;
+  color: var(--p-navy);
+}
+
+/* ── 21. SIGNATURE EXECUTIVE CARD ────────────────────────────────── */
+.ts-sig-exec-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ts-sig-exec-card__img-zone {
+  background: #F8FAFC;
+  aspect-ratio: 3/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ts-sig-exec-card__img-zone img {
+  max-height: 80px;
+  max-width: 90%;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.ts-sig-exec-card__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--p-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ts-sig-exec-card__footer {
+  padding: 12px 14px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.ts-sig-exec-card__role {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--p-muted);
+}
+
+.ts-sig-exec-card__name {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--p-navy);
+  margin: 2px 0 0;
+}
+
+.ts-sig-exec-card__active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--p-success-soft);
+  color: var(--p-success);
+  margin-top: 4px;
+}
+
+/* ── 22. WHATSAPP BOT DASHBOARD ──────────────────────────────────── */
+.ts-wa-health-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ts-wa-health-card__indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ts-wa-health-card__indicator--online  { background: var(--p-success); box-shadow: 0 0 0 3px var(--p-success-soft); }
+.ts-wa-health-card__indicator--offline { background: var(--p-danger);  box-shadow: 0 0 0 3px var(--p-danger-soft); }
+.ts-wa-health-card__indicator--unknown { background: var(--p-warning); box-shadow: 0 0 0 3px var(--p-warning-soft); }
+
+.ts-wa-template-card {
+  background: #ffffff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.ts-wa-template-card__name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--p-navy);
+  margin-bottom: 4px;
+}
+
+.ts-wa-template-card__body {
+  font-size: 12px;
+  color: var(--p-slate);
+  line-height: 1.5;
+  background: #F8FAFC;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 3px solid #E5E7EB;
+  margin: 8px 0;
+}
+
+/* ── 23. PREMIUM TOPBAR ACTION CLUSTER ───────────────────────────── */
+/* Ensure WhatsApp stays visible with data-testid for regression testing */
+[data-testid="topbar-whatsapp"],
+[data-testid="topbar-notifications"],
+[data-testid="topbar-logout"] {
+  flex-shrink: 0 !important;
+  display: grid !important;
+}
+
+/* ── Scroll reveal visibility ────────────────────────────────────── */
+.ts-fade-in {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--p-dur-normal) var(--p-ease-out),
+              transform var(--p-dur-normal) var(--p-ease-out);
+}
+
+.ts-fade-in.ts-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Immediately visible (no JS) fallback */
+@media (prefers-reduced-motion: reduce) {
+  .ts-fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── 24. PRINT STYLES ─────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  .app-shell { box-shadow: none; max-width: 100%; }
+  .ts-doc-layout { max-width: 100%; padding: 0; }
+}
