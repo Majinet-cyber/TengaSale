@@ -149,6 +149,8 @@ describe("D — Outside Business Hours Modal", () => {
         // Modal is present — it should not be the only content (form should also be present)
         cy.get('[data-testid="outside-hours-modal"]').should("exist");
         cy.get('[data-testid="outside-hours-continue"]').should("exist");
+        cy.contains("Monday–Friday: 9am–6pm CAT").should("exist");
+        cy.contains("approval may take longer").should("exist");
       }
       // If outside business hours element not present, we're within hours — test passes
     });
@@ -370,11 +372,12 @@ describe("I — KYC Orientation Intelligence", () => {
     });
   });
 
-  it("KYC cards have orientation pills", () => {
+  it("KYC cards do not show orientation warning pills", () => {
     cy.visit("/sales/");
     cy.get("body").then(($body) => {
       if ($body.find(".kyc-smart-card").length) {
-        cy.get(".kyc-orient-pill").should("exist");
+        cy.get(".kyc-orient-pill").should("not.exist");
+        cy.get(".kyc-orient-warn").should("not.exist");
       }
     });
   });
@@ -1073,7 +1076,7 @@ describe("T — HQ Overview Mixed Layout", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // U. LANDING PAGE PLATFORM FLOW
 // ────────────────────────────────────────────────────────────────────────────
-describe("U — Landing Page Platform Flow", () => {
+describe("U — Landing Page", () => {
   it("landing page loads without error", () => {
     cy.visit("/");
     cy.get("body").should("not.contain", "Server Error");
@@ -1084,30 +1087,27 @@ describe("U — Landing Page Platform Flow", () => {
     cy.get(".hero").should("be.visible");
   });
 
-  it("platform flow strip renders", () => {
+  it("does not expose internal tooling on public home", () => {
     cy.visit("/");
-    cy.get(".platform-flow-strip").should("exist");
+    cy.get("body").invoke("text").then((text) => {
+      expect(text).not.to.include("PayChangu");
+      expect(text).not.to.include("HQ credit command");
+      expect(text).not.to.include("Volts Engine");
+      expect(text).not.to.include("fraud signals");
+    });
   });
 
-  it("platform flow has 5 steps", () => {
+  it("Start Application links to application flow", () => {
     cy.visit("/");
-    cy.get(".pf-steps .pf-step").should("have.length", 5);
+    cy.get('[data-testid="start-application-cta"]')
+      .should("have.attr", "href")
+      .and("include", "/applications/new/");
   });
 
   it("How it Works section renders", () => {
     cy.visit("/");
     cy.get("#how-it-works").should("exist");
-    cy.contains(/How TengaSale works/i).should("exist");
-  });
-
-  it("how-it-works animated flow pills render", () => {
-    cy.visit("/");
-    cy.get(".hiw-flow .hiw-flow-pill").should("have.length.gte", 5);
-  });
-
-  it("how-it-works step cards render", () => {
-    cy.visit("/");
-    cy.get(".steps-list .step").should("have.length.gte", 4);
+    cy.contains(/Choose a phone/i).should("exist");
   });
 
   it("landing page no horizontal overflow on mobile", () => {

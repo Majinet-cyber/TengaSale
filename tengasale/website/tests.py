@@ -291,18 +291,46 @@ class LandingPageUIRegressionTests(TestCase):
     def test_landing_hero_headline_present(self):
         """Hero headline must be present."""
         response = self._get_landing()
-        # Updated headline — "Malawi-first platform" messaging
-        self.assertContains(response, "Malawi-first platform")
+        self.assertContains(response, "Get a smartphone today")
+        self.assertContains(response, "Pay flexibly over time")
 
-    def test_landing_platform_section_present(self):
-        """Platform stats section must be present."""
+    def test_landing_how_it_works_section_present(self):
+        """How it works section must be present."""
         response = self._get_landing()
-        self.assertContains(response, "platform-stats-grid")
+        self.assertContains(response, "how-it-works")
+        self.assertContains(response, "Choose a phone")
 
-    def test_landing_faq_present(self):
-        """FAQ section must be present."""
+    def test_landing_no_internal_tooling_exposed(self):
+        """Public landing must not expose internal systems."""
         response = self._get_landing()
-        self.assertContains(response, "faq-item")
+        content = response.content.decode()
+        forbidden = [
+            "PayChangu",
+            "HQ credit command",
+            "fraud signals",
+            "AI-Assisted",
+            "Volts Engine",
+            "Volts payout",
+            "webhook",
+            "recovery tooling",
+            "underwriter intelligence",
+            "internal payout",
+        ]
+        for term in forbidden:
+            self.assertNotIn(term, content, f"Internal term '{term}' found on public landing")
+
+    def test_landing_start_application_links_to_new_application(self):
+        """Start Application CTA must route to the application start URL."""
+        response = self._get_landing()
+        self.assertContains(response, reverse("new_application"))
+        self.assertContains(response, "Start Application")
+
+    def test_anonymous_start_application_redirects_to_login(self):
+        """Anonymous users clicking Start Application are sent to login with next URL."""
+        response = self.client.get(reverse("new_application"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+        self.assertIn("next=", response["Location"])
 
     def test_landing_no_blue_label_classes(self):
         """Landing page must not use Bootstrap blue classes on section labels."""

@@ -1562,8 +1562,11 @@ class ContractDepositPaymentTests(TestCase):
         url = reverse("contract_pay_deposit", args=[self.contract.id])
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Pay Deposit")
+        self.assertContains(resp, "TengaSale Payment")
+        self.assertContains(resp, "Pay Now")
         self.assertContains(resp, "45")  # deposit amount
+        self.assertNotContains(resp, "PayChangu-powered")
+        self.assertNotContains(resp, "Secured by PayChangu")
 
     def test_deposit_payment_page_requires_locked_device(self):
         self.contract.phone_locked = False

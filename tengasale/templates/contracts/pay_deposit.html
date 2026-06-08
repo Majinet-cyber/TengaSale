@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}Pay Deposit — {{ contract.contract_number }}{% endblock %}
+{% block page_title %}TengaSale Payment — {{ contract.contract_number }}{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -187,12 +187,22 @@
 .pending-sub { font-size: 13px; color: #b45309; }
 
 /* Provider badge */
-.paychangu-badge {
+.ts-payment-badge {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; color: #6b7280; padding: 4px 10px;
   background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;
   margin-top: 4px;
 }
+
+.payment-method-row {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+}
+.payment-method-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700;
+  border: 1.5px solid #e5e7eb; background: #fff; color: #374151;
+}
+.payment-method-chip--active { border-color: #ff5a00; background: #fff8f5; color: #c44400; }
 
 /* Entrance animations */
 .ts-fade-up {
@@ -220,8 +230,9 @@
     </a>
   </div>
 
-  <h1 class="greeting" style="margin-bottom:4px;">Pay Deposit</h1>
-  <p style="font-size:13px;color:#9ca3af;margin:0 0 18px;">Contract {{ contract.contract_number }}</p>
+  <h1 class="greeting" style="margin-bottom:4px;">TengaSale Payment</h1>
+  <p style="font-size:14px;color:#6b7280;margin:0 0 6px;">Complete your payment securely to continue.</p>
+  <p style="font-size:13px;color:#9ca3af;margin:0 0 18px;">Deposit Payment · Contract {{ contract.contract_number }}</p>
 
   <!-- ── PAID: Receipt ──────────────────────────────────────── -->
   {% if is_paid %}
@@ -275,9 +286,9 @@
   {% if is_pending and not is_paid %}
   <div class="pending-pulse ts-fade-up" x-show="!isPaid && isPending">
     <div class="pulse-circle"></div>
-    <div class="pending-title">Awaiting Payment Confirmation</div>
-    <div class="pending-sub">The payment prompt has been sent. Please confirm on the phone.</div>
-    <p style="font-size:11px;color:#b45309;margin-top:8px;">Transaction Ref: <strong>{{ contract.deposit_payment_tx_ref }}</strong></p>
+    <div class="pending-title">Waiting for confirmation</div>
+    <div class="pending-sub">Confirm the payment on your phone when prompted.</div>
+    <p style="font-size:12px;color:#b45309;margin-top:8px;">Your contract will update automatically after payment confirmation.</p>
     <button @click="checkStatus()" class="action-btn-large outline" style="margin-top:14px;font-size:13px;" :disabled="checking">
       <span x-show="!checking">↻ Check Payment Status</span>
       <span x-show="checking">Checking...</span>
@@ -289,9 +300,9 @@
   {% if is_failed and not is_paid %}
   <div class="payment-failure-card ts-fade-up">
     <div class="failure-icon">⚠️</div>
-    <div class="failure-title">Payment Failed</div>
-    <div class="failure-sub">The deposit payment was not completed. Please try again with a different phone number or payment method.</div>
-    <button @click="resetForRetry()" class="action-btn-large secondary">Retry Payment</button>
+    <div class="failure-title">Payment failed</div>
+    <div class="failure-sub">The payment was not completed. Please try again with your mobile money number.</div>
+    <button @click="resetForRetry()" class="action-btn-large secondary">Try again</button>
   </div>
   {% endif %}
 
@@ -300,14 +311,14 @@
     <div>
       <!-- Amount hero -->
       <div class="payment-amount-hero ts-fade-up">
-        <div class="payment-amount-hero__label">Deposit Required</div>
+        <div class="payment-amount-hero__label">Amount Due</div>
         <div class="payment-amount-hero__amount">{{ deposit_amount|mwk }}</div>
         <div class="payment-amount-hero__sub">
-          Remaining after deposit: {{ amount_after_deposit|mwk }}
+          Payment type: Deposit · Remaining after payment: {{ amount_after_deposit|mwk }}
         </div>
         <div class="payment-amount-hero__badge">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          PayChangu Mobile Money
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secure TengaSale Payment
         </div>
         {% if mock_mode %}
         <div style="font-size:10px;opacity:.7;margin-top:6px;">⚠ TEST MODE — no real charges</div>
@@ -316,9 +327,9 @@
 
       <!-- Contract summary -->
       <div class="contract-summary-card ts-fade-up ts-fade-up--d1">
-        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Contract Summary</div>
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Payment Details</div>
         <div class="contract-summary-row">
-          <span class="contract-summary-row__label">Contract Number</span>
+          <span class="contract-summary-row__label">Contract ID</span>
           <span class="contract-summary-row__value" style="font-family:monospace;">{{ contract.contract_number }}</span>
         </div>
         <div class="contract-summary-row">
@@ -326,27 +337,23 @@
           <span class="contract-summary-row__value">{{ contract.customer_name }}</span>
         </div>
         <div class="contract-summary-row">
-          <span class="contract-summary-row__label">Device / Deal</span>
+          <span class="contract-summary-row__label">Device</span>
           <span class="contract-summary-row__value">{{ contract.deal_name|default:"–" }}</span>
         </div>
         <div class="contract-summary-row">
-          <span class="contract-summary-row__label">Cash Price</span>
-          <span class="contract-summary-row__value">{{ contract.cash_price|mwk }}</span>
+          <span class="contract-summary-row__label">Payment Type</span>
+          <span class="contract-summary-row__value">Deposit</span>
         </div>
         <div class="contract-summary-row">
-          <span class="contract-summary-row__label" style="font-weight:700;">Deposit Due</span>
+          <span class="contract-summary-row__label" style="font-weight:700;">Amount Due</span>
           <span class="contract-summary-row__value" style="color:#ff5a00;">{{ deposit_amount|mwk }}</span>
-        </div>
-        <div class="contract-summary-row">
-          <span class="contract-summary-row__label">Remaining Balance</span>
-          <span class="contract-summary-row__value">{{ amount_after_deposit|mwk }}</span>
         </div>
       </div>
 
       <!-- Phone input card -->
       <div class="phone-input-card ts-fade-up ts-fade-up--d2">
-        <div class="phone-input-card__title">Payment Phone Number</div>
-        <div class="phone-input-card__hint">Enter the number that will receive the payment prompt.</div>
+        <div class="phone-input-card__title">Phone Number</div>
+        <div class="phone-input-card__hint">Enter the mobile money number that will receive the payment prompt.</div>
         <div class="phone-input-wrapper">
           <div class="phone-input-prefix">🇲🇼 +265</div>
           <input
@@ -368,7 +375,12 @@
           <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
           TNM Mpamba
         </div>
-        <div x-show="!operator && phone.length > 2" class="operator-chip unknown">Unknown provider</div>
+        <div x-show="!operator && phone.length > 2" class="operator-chip unknown">Enter a valid Malawi number</div>
+        <div class="payment-method-row" aria-label="Payment methods">
+          <span class="payment-method-chip payment-method-chip--active">Airtel Money</span>
+          <span class="payment-method-chip payment-method-chip--active">TNM Mpamba</span>
+        </div>
+        <p style="font-size:12px;color:#6b7280;margin:10px 0 0;">Confirm the payment on your phone when prompted.</p>
         <template x-if="phoneError">
           <p style="color:#dc2626;font-size:12px;margin-top:6px;" x-text="phoneError"></p>
         </template>
@@ -389,11 +401,10 @@
               <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="12"/>
             </svg>
           </template>
-          <span x-text="loading ? 'Creating checkout...' : 'Pay Deposit {{ deposit_amount|mwk }}'"></span>
+          <span x-text="loading ? 'Processing...' : 'Pay Now'"></span>
         </button>
-        <div class="paychangu-badge" style="display:flex;justify-content:center;margin-top:6px;">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Secured by PayChangu
+        <div style="display:flex;justify-content:center;margin-top:10px;">
+          <a href="{% url 'contract_progress' contract.id %}" class="action-btn-large outline" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;padding:10px 18px;">Cancel</a>
         </div>
       </div>
 
@@ -406,7 +417,7 @@
 
   <!-- ── Payment Timeline ───────────────────────────────────── -->
   <div class="payment-timeline ts-fade-up ts-fade-up--d4">
-    <div class="payment-timeline__title">Payment Steps</div>
+    <div class="payment-timeline__title">Payment Status</div>
     <div class="timeline-steps">
       {% for step in payment_states %}
       <div class="timeline-step {% if step.done %}done{% elif forloop.first and not is_paid %}current{% else %}pending{% endif %}">
@@ -453,7 +464,7 @@ function depositPayment() {
       if (this.isPending) {
         this.startPolling();
       }
-      // Check URL param for return from PayChangu
+      // Check URL param for return after mobile money checkout
       const urlParams = new URLSearchParams(window.location.search);
       const txRef = urlParams.get('tx_ref') || urlParams.get('txRef');
       if (txRef) {

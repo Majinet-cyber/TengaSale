@@ -21,15 +21,15 @@
     </div>
     <h2 class="ts-modal-title" id="ohm-title">Outside business hours</h2>
     <p class="ts-modal-body">
-      We are currently outside normal approval hours ({{ business_hours_label }}).
-      You can still submit this application, but approval may take longer than usual.
+      We are currently outside business hours (Monday–Friday: 9am–6pm CAT; Saturday: 9am–5pm CAT; Sunday: closed).
+      Your application can still be submitted, but approval may take longer.
     </p>
     <div class="ts-modal-actions">
       <button type="button" class="ts-modal-btn ts-modal-btn--primary" id="ohm-continue" data-testid="outside-hours-continue">
         OK, continue
       </button>
-      <a href="{% url 'merchant_dashboard' %}" class="ts-modal-btn ts-modal-btn--secondary" style="text-align:center;text-decoration:none;">
-        Go back
+      <a href="{% url 'merchant_dashboard' %}" class="ts-modal-btn ts-modal-btn--secondary" style="text-align:center;text-decoration:none;" data-testid="outside-hours-cancel">
+        Cancel
       </a>
     </div>
   </div>
