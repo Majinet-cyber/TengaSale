@@ -59,12 +59,7 @@ def _get_landing_stats():
 
 
 def landing(request):
-    return render(request, "website/landing.html", {
-        "workflow_steps": [
-            "Apply", "Verify", "Pay Deposit", "Approve",
-            "Lock Device", "Collect Payments", "Reward",
-        ],
-    })
+    return render(request, "website/landing.html")
 
 
 def about(request):

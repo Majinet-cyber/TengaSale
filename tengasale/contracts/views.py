@@ -972,7 +972,7 @@ def contract_pay_deposit(request, contract_id):
         {"key": "awaiting_confirmation", "label": "Customer Confirming", "done": payment_status in (
             Contract.DEPOSIT_STATUS_PROCESSING, Contract.DEPOSIT_STATUS_PAID,
         )},
-        {"key": "processing", "label": "PayChangu Verifying", "done": payment_status == Contract.DEPOSIT_STATUS_PAID},
+        {"key": "processing", "label": "Payment confirming", "done": payment_status == Contract.DEPOSIT_STATUS_PAID},
         {"key": "paid", "label": "Contract Activated", "done": payment_status == Contract.DEPOSIT_STATUS_PAID},
     ]
 

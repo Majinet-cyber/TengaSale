@@ -650,6 +650,26 @@ class ApplicationFlowTests(ApplicationTestCase):
 
         self.assertRedirects(response, reverse("edit_customer_details", args=[app.id]))
 
+    @patch("core.business_hours.is_business_hours", return_value=False)
+    def test_outside_hours_modal_shows_detailed_text(self, _mock_hours):
+        app = self.create_application()
+        response = self.client.get(reverse("edit_customer_details", args=[app.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-testid="outside-hours-modal"')
+        self.assertContains(response, "Outside business hours")
+        self.assertContains(response, "Monday–Friday: 9am–6pm CAT")
+        self.assertContains(response, "Sunday: closed")
+        self.assertContains(response, "OK, continue")
+        self.assertContains(response, "Customer Details")
+
+    @patch("core.business_hours.is_business_hours", return_value=False)
+    def test_outside_hours_modal_not_inline_blocking_card(self, _mock_hours):
+        app = self.create_application()
+        response = self.client.get(reverse("edit_customer_details", args=[app.id]))
+        content = response.content.decode()
+        self.assertIn("ts-modal-backdrop", content)
+        self.assertNotIn("outside-hours-warning-card", content)
+
     def test_customer_page_saves_valid_data_and_redirects_to_device_page(self):
         app = self.create_application()
 
