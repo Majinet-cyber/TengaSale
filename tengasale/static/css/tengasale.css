@@ -2537,13 +2537,45 @@ img.ts-logo-wordmark {
   border-radius: inherit;
 }
 
-/* KYC preview image */
+/* KYC preview image — default (selfie/square) */
 .kyc-preview-img {
   width: 100%;
   height: 180px;
   object-fit: cover;
   border-radius: 12px;
   border: 2px solid #e5e7eb;
+}
+
+/* ID front & back — landscape card ratio (ISO 7810 ID-1 = 85.6 × 54 mm ≈ 1.586:1) */
+.kyc-id-front-preview,
+.kyc-id-back-preview {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.586 / 1;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  background: #f1f5f9;
+}
+
+/* Landscape guidance text shown below ID capture areas */
+.kyc-landscape-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-top: 8px;
+}
+.kyc-landscape-hint svg {
+  flex-shrink: 0;
+  width: 14px; height: 14px;
+  fill: none; stroke: #94a3b8; stroke-width: 2; stroke-linecap: round;
 }
 
 /* Confirmation modal overlay */

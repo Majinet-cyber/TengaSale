@@ -1673,6 +1673,12 @@ body {
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>
       Staff Documents
     </a>
+    {% endif %}
+    <a href="{% url 'hq_operational_notices' %}" class="hq-sidebar-link" data-testid="sidebar-operational-notices">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Notices &amp; Templates
+    </a>
+    {% if 'staff_documents' in staff_module_keys %}
     {% if request.user.is_superuser or is_hq_user %}
     <a href="{% url 'hq_executive_signatures' %}" class="hq-sidebar-link" style="padding-left:2.2rem;font-size:12px;">
       <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
@@ -2698,6 +2704,67 @@ body {
 {% block page_footer %}{% endblock page_footer %}
 
 {% block extra_scripts %}
+<style>
+/* ── HQ Collapsible Sections ──────────────────────────────────────── */
+.hq-cs-wrap {
+  margin-bottom: 8px;
+}
+
+.hq-cs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0 6px;
+  gap: 10px;
+}
+.hq-cs-header:hover .hq-cs-label { color: var(--hq-ink); }
+
+.hq-cs-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--hq-muted);
+  margin: 0;
+  transition: color .12s;
+}
+
+.hq-cs-toggle {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--hq-surface);
+  border: 1.5px solid var(--hq-border);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background .12s, border-color .12s, transform .2s;
+}
+.hq-cs-toggle svg {
+  width: 11px; height: 11px;
+  fill: none; stroke: var(--hq-muted); stroke-width: 2.5; stroke-linecap: round;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+
+.hq-cs-wrap.is-collapsed .hq-cs-toggle svg {
+  transform: rotate(-90deg);
+}
+
+.hq-cs-body {
+  overflow: hidden;
+  max-height: 9999px;
+  transition: max-height .35s cubic-bezier(.4,0,.2,1), opacity .2s;
+  opacity: 1;
+}
+
+.hq-cs-wrap.is-collapsed .hq-cs-body {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {{ financial_performance_chart|json_script:"financial-performance-data" }}
 {{ contract_value_chart|json_script:"contract-value-data" }}
@@ -3049,6 +3116,257 @@ body {
       }
     });
   }
+
+})();
+</script>
+
+{# ── HQ Collapsible Sections — progressive enhancement ── #}
+<script>
+(function () {
+  'use strict';
+
+  // Sections that start collapsed by default (matched against label text, case-insensitive)
+  var DEFAULT_COLLAPSED = [
+    'portfolio intelligence',
+    'command pulse',
+    'underwriter performance',
+    'merchant performance',
+    'devices & locking',
+    'payments & collections',
+    'documents & notices',
+    'risk / compliance',
+    'system health',
+    'quick navigation'
+  ];
+
+  // Sections that are always open (matched against label text)
+  var DEFAULT_OPEN = [
+    'key metrics',
+    'action center',
+    'portfolio hero',
+    'overview',
+    'today'
+  ];
+
+  var STORAGE_PREFIX = 'ts_hq_cs_';
+
+  function getSavedState(key) {
+    try { return localStorage.getItem(STORAGE_PREFIX + key); } catch (e) { return null; }
+  }
+  function saveState(key, value) {
+    try { localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) {}
+  }
+
+  function normalise(text) {
+    return (text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function matchesList(label, list) {
+    var n = normalise(label);
+    return list.some(function (s) { return n.indexOf(s) !== -1; });
+  }
+
+  // Find all section labels inside .hq-dash
+  var dash = document.querySelector('.hq-dash');
+  if (!dash) return;
+
+  var labels = Array.from(dash.querySelectorAll('.hq-sl'));
+  labels.forEach(function (label) {
+    var labelText = label.textContent.trim();
+    var storageKey = labelText.replace(/\s+/g, '_').toLowerCase();
+
+    // Gather sibling elements that belong to this section
+    // (everything after the label up to the next label or .hq-ph)
+    var siblings = [];
+    var next = label.nextElementSibling;
+    while (next && !next.classList.contains('hq-sl') && !next.classList.contains('hq-ph')) {
+      siblings.push(next);
+      next = next.nextElementSibling;
+    }
+    if (!siblings.length) return;
+
+    // Create wrapper
+    var wrap = document.createElement('div');
+    wrap.className = 'hq-cs-wrap';
+    wrap.setAttribute('data-hq-collapse-btn', storageKey);
+
+    // Create header
+    var header = document.createElement('div');
+    header.className = 'hq-cs-header';
+    header.setAttribute('role', 'button');
+    header.setAttribute('tabindex', '0');
+    header.setAttribute('aria-expanded', 'true');
+
+    var labelClone = document.createElement('p');
+    labelClone.className = 'hq-cs-label hq-sl';
+    labelClone.textContent = labelText;
+
+    var toggle = document.createElement('span');
+    toggle.className = 'hq-cs-toggle';
+    toggle.setAttribute('aria-hidden', 'true');
+    toggle.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
+
+    header.appendChild(labelClone);
+    header.appendChild(toggle);
+
+    // Create body
+    var body = document.createElement('div');
+    body.className = 'hq-cs-body';
+
+    // Insert wrapper before the label, move label+siblings into wrapper
+    label.parentNode.insertBefore(wrap, label);
+    label.remove(); // remove original label (replaced by header)
+    siblings.forEach(function (el) { body.appendChild(el); });
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+
+    // Determine initial state
+    var saved = getSavedState(storageKey);
+    var shouldCollapse;
+    if (saved !== null) {
+      shouldCollapse = saved === 'collapsed';
+    } else {
+      shouldCollapse = matchesList(labelText, DEFAULT_COLLAPSED) && !matchesList(labelText, DEFAULT_OPEN);
+    }
+
+    if (shouldCollapse) {
+      wrap.classList.add('is-collapsed');
+      header.setAttribute('aria-expanded', 'false');
+    }
+
+    // Toggle handler
+    function toggleSection() {
+      var collapsed = wrap.classList.toggle('is-collapsed');
+      header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      saveState(storageKey, collapsed ? 'collapsed' : 'open');
+    }
+
+    header.addEventListener('click', toggleSection);
+    header.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSection();
+      }
+    });
+  });
+})();
+</script>
+{# ── TASK 8: Count-up animations, skeleton loaders, live pulse ── #}
+<style>
+/* Skeleton loader for chart frames while JS initialises */
+.hq-chart-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: hq-skeleton-sweep 1.4s ease-in-out infinite;
+  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+}
+@keyframes hq-skeleton-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Chart card fade-in once chart is ready */
+.hq-chart-card { opacity: 0; transition: opacity .35s ease; }
+.hq-chart-card.hq-chart-ready { opacity: 1; }
+
+/* Live pulse badge dot */
+.hq-live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  margin-right: 5px;
+  vertical-align: middle;
+  animation: hq-live-pulse 2s cubic-bezier(.4,0,.6,1) infinite;
+}
+@keyframes hq-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .4; transform: scale(1.4); }
+}
+
+/* KPI count-up shimmer while animating */
+[data-count-up].is-counting {
+  transition: color .1s;
+}
+</style>
+<script>
+(function () {
+  'use strict';
+
+  /* ── 1. Count-up animation for [data-count-up] KPI values ── */
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animateCount(el) {
+    var target = parseFloat(el.getAttribute('data-count-up'));
+    if (isNaN(target) || target <= 0) { el.classList.add('is-counting'); return; }
+    var duration = parseInt(el.getAttribute('data-count-duration') || '700', 10);
+    var start = null;
+    el.classList.add('is-counting');
+    function step(ts) {
+      if (!start) start = ts;
+      var elapsed = ts - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var current = Math.round(easeOut(progress) * target);
+      el.textContent = current.toLocaleString();
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = target.toLocaleString();
+        el.classList.remove('is-counting');
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Trigger count-up when element enters viewport */
+  var countEls = document.querySelectorAll('[data-count-up]');
+  if ('IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          animateCount(entry.target);
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    countEls.forEach(function (el) { obs.observe(el); });
+  } else {
+    countEls.forEach(function (el) { animateCount(el); });
+  }
+
+  /* ── 2. Chart card fade-in: mark cards ready on next frame ── */
+  /* The Chart.js charts already rendered above; fade cards in */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      document.querySelectorAll('.hq-chart-card').forEach(function (card) {
+        card.classList.add('hq-chart-ready');
+      });
+    });
+  });
+
+  /* ── 3. Live pulse dot on "Live" pills ── */
+  document.querySelectorAll('.hq-chart-pill').forEach(function (pill) {
+    if (/live/i.test(pill.textContent)) {
+      var dot = document.createElement('span');
+      dot.className = 'hq-live-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      pill.insertBefore(dot, pill.firstChild);
+    }
+  });
+
+  /* Also add live dot to pulse-grid "live" labels */
+  document.querySelectorAll('.hq-pulse-live').forEach(function (el) {
+    if (!el.querySelector('.hq-live-dot')) {
+      var dot = document.createElement('span');
+      dot.className = 'hq-live-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      el.insertBefore(dot, el.firstChild);
+    }
+  });
 
 })();
 </script>

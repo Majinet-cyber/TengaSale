@@ -1091,6 +1091,122 @@ def hq_staff_documents(request):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Operational Document / Notice Templates
+# ─────────────────────────────────────────────────────────────────────────────
+
+@hq_required
+def hq_operational_notices(request):
+    """Polished operational document templates for HQ use."""
+    from portal.models import PaymentContract
+    from decimal import Decimal
+
+    # Gather a sample of overdue/active applications for context data in previews
+    overdue_apps = (
+        FinancingApplication.objects
+        .select_related("deal", "merchant", "claimed_by")
+        .filter(status__in=["active_contract", "rejected"])
+        .order_by("-submitted_at")[:20]
+    )
+
+    overdue_contracts = (
+        PaymentContract.objects
+        .select_related("application", "application__deal")
+        .filter(status__in=["overdue", "locked"])
+        .order_by("-created_at")[:20]
+    )
+
+    today_str = timezone.now().strftime("%d %B %Y")
+
+    return render(request, "dashboard/hq_operational_notices.html", {
+        "overdue_apps": overdue_apps,
+        "overdue_contracts": overdue_contracts,
+        "today_str": today_str,
+        "doc_types": [
+            {
+                "id": "termination_notice",
+                "title": "Customer Termination Notice",
+                "icon": "person-x",
+                "color": "red",
+                "description": "Formal notice of account termination due to default.",
+                "tone": "Firm, lawful, final.",
+            },
+            {
+                "id": "final_demand",
+                "title": "Final Demand Notice",
+                "icon": "exclamation-triangle",
+                "color": "red",
+                "description": "Last payment demand before legal/recovery steps.",
+                "tone": "Urgent, clear, professional.",
+            },
+            {
+                "id": "device_lock_warning",
+                "title": "Device Lock Warning",
+                "icon": "lock",
+                "color": "amber",
+                "description": "Warning that device will be locked if payment is not made.",
+                "tone": "Informative, preventive.",
+            },
+            {
+                "id": "payment_reminder",
+                "title": "Payment Reminder",
+                "icon": "calendar-check",
+                "color": "blue",
+                "description": "Friendly reminder of upcoming or overdue payment.",
+                "tone": "Polite, helpful.",
+            },
+            {
+                "id": "merchant_warning",
+                "title": "Merchant Warning",
+                "icon": "shop",
+                "color": "amber",
+                "description": "Formal warning to merchant about compliance or quality issues.",
+                "tone": "Professional, corrective.",
+            },
+            {
+                "id": "uw_quality_warning",
+                "title": "Underwriter Quality Warning",
+                "icon": "person-check",
+                "color": "amber",
+                "description": "Warning to underwriter about review quality or errors.",
+                "tone": "Internal, constructive.",
+            },
+            {
+                "id": "recovery_assignment",
+                "title": "Recovery Assignment Note",
+                "icon": "arrow-repeat",
+                "color": "orange",
+                "description": "Note assigning a customer account to recovery team.",
+                "tone": "Internal, operational.",
+            },
+            {
+                "id": "contract_summary",
+                "title": "Contract Summary",
+                "icon": "file-text",
+                "color": "green",
+                "description": "Summary of customer financing agreement terms.",
+                "tone": "Factual, neutral.",
+            },
+            {
+                "id": "guarantor_notice",
+                "title": "Guarantor Notice",
+                "icon": "people",
+                "color": "blue",
+                "description": "Notice to guarantor about default liability.",
+                "tone": "Formal, lawful.",
+            },
+            {
+                "id": "settlement_confirmation",
+                "title": "Settlement Confirmation",
+                "icon": "check-circle",
+                "color": "green",
+                "description": "Confirmation that an account has been fully settled.",
+                "tone": "Positive, conclusive.",
+            },
+        ],
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Executive Signature Management
 # ─────────────────────────────────────────────────────────────────────────────
 

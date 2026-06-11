@@ -1,0 +1,724 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Operational Notices & Templates — TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
+<style>
+/* ─── Operational Notices ─────────────────────────────────────────────────── */
+:root {
+  --on-bg: #f8fafc;
+  --on-surface: #fff;
+  --on-border: #e5e7eb;
+  --on-ink: #101828;
+  --on-muted: #667085;
+  --on-orange: #ff5a00;
+  --on-radius: 14px;
+  --on-shadow: 0 2px 8px rgba(15,23,42,0.06);
+}
+
+.on-page {
+  background: var(--on-bg);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* Topbar */
+.on-topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--on-border);
+  padding: 0 22px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.on-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--on-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 9px;
+  transition: background .12s, color .12s;
+}
+.on-back-btn:hover { background: #f1f5f9; color: var(--on-ink); }
+.on-back-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.on-topbar-title { font-size: 16px; font-weight: 800; color: var(--on-ink); flex: 1; }
+.on-topbar-sub { font-size: 11px; color: var(--on-muted); }
+
+/* Page body */
+.on-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.on-page-header {
+  margin-bottom: 24px;
+}
+.on-page-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--on-ink);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.on-page-sub {
+  font-size: 13px;
+  color: var(--on-muted);
+  margin: 0;
+}
+
+/* Doc grid */
+.on-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+}
+
+/* Doc card */
+.on-card {
+  background: var(--on-surface);
+  border: 1.5px solid var(--on-border);
+  border-radius: 18px;
+  box-shadow: var(--on-shadow);
+  overflow: hidden;
+  transition: box-shadow .2s, transform .12s;
+}
+.on-card:hover { box-shadow: 0 6px 24px rgba(15,23,42,.10); transform: translateY(-2px); }
+
+.on-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 18px 14px;
+}
+.on-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.on-card-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.on-icon-red    { background: rgba(220,38,38,.10);  color: #dc2626; }
+.on-icon-amber  { background: rgba(245,158,11,.10); color: #d97706; }
+.on-icon-blue   { background: rgba(29,78,216,.10);  color: #1d4ed8; }
+.on-icon-green  { background: rgba(22,163,74,.10);  color: #16a34a; }
+.on-icon-orange { background: rgba(255,90,0,.10);   color: #ff5a00; }
+
+.on-card-info { flex: 1; min-width: 0; }
+.on-card-title { font-size: 14px; font-weight: 800; color: var(--on-ink); margin: 0 0 3px; }
+.on-card-desc  { font-size: 12px; color: var(--on-muted); margin: 0; line-height: 1.4; }
+.on-card-tone  { font-size: 11px; font-weight: 600; color: #94a3b8; margin-top: 4px; }
+
+.on-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid #f5f5f5;
+  background: #fafafa;
+}
+.on-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--on-orange);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .12s;
+}
+.on-preview-btn:hover { background: #e64d00; }
+.on-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--on-muted);
+  border: 1.5px solid var(--on-border);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.on-copy-btn:hover { border-color: var(--on-orange); color: var(--on-orange); }
+.on-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--on-muted);
+  border: 1.5px solid var(--on-border);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.on-print-btn:hover { border-color: #1d4ed8; color: #1d4ed8; }
+.on-card-icon svg, .on-preview-btn svg, .on-copy-btn svg, .on-print-btn svg {
+  width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
+}
+
+/* Document preview modal */
+.on-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.on-modal-backdrop.is-open {
+  opacity: 1;
+  pointer-events: all;
+}
+.on-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(15,23,42,.20);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(16px) scale(.97);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.on-modal-backdrop.is-open .on-modal {
+  transform: translateY(0) scale(1);
+}
+.on-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+.on-modal-title { font-size: 15px; font-weight: 800; color: var(--on-ink); }
+.on-modal-close {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: var(--on-muted);
+  transition: background .12s;
+}
+.on-modal-close:hover { background: #e5e7eb; color: var(--on-ink); }
+.on-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.on-modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Document letterhead */
+.doc-letterhead {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.doc-header {
+  background: #ff5a00;
+  color: #fff;
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.doc-header-brand { font-size: 20px; font-weight: 900; letter-spacing: -0.02em; }
+.doc-header-tagline { font-size: 10px; opacity: .8; margin-top: 2px; }
+.doc-header-meta { text-align: right; font-size: 10px; opacity: .8; }
+.doc-body {
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #101828;
+  background: #fff;
+}
+.doc-body h3 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #ff5a00;
+  margin: 0 0 12px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 6px;
+}
+.doc-body p { margin: 0 0 10px; }
+.doc-recipient-block {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.doc-recipient-block .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 4px; }
+.doc-recipient-block .value { font-weight: 700; color: #101828; }
+.doc-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.doc-detail {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.doc-detail .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; }
+.doc-detail .val { font-size: 12px; font-weight: 700; color: #101828; margin-top: 2px; }
+.doc-footer {
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #94a3b8;
+}
+.doc-footer-brand { font-weight: 700; }
+.doc-sig-line {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+.doc-sig-title { font-size: 11px; color: var(--on-muted); margin-top: 4px; }
+
+@media (max-width: 600px) {
+  .on-grid { grid-template-columns: 1fr; }
+  .doc-details-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block topbar %}{% endblock %}
+{% block page_footer %}{% endblock %}
+
+{% block content %}
+<div class="on-page">
+
+  <div class="on-topbar">
+    <a href="{% url 'hq_dashboard' %}" class="on-back-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      HQ Dashboard
+    </a>
+    <span class="on-topbar-title">Operational Notices &amp; Templates</span>
+    <span class="on-topbar-sub">{{ today_str }}</span>
+  </div>
+
+  <div class="on-body">
+
+    <div class="on-page-header">
+      <h1 class="on-page-title">Document &amp; Notice Templates</h1>
+      <p class="on-page-sub">10 professional templates for operational communications. Click Preview to view a filled template, then copy or print.</p>
+    </div>
+
+    <div class="on-grid" data-testid="on-doc-grid">
+
+      {% for doc in doc_types %}
+      <div class="on-card" data-testid="on-doc-card-{{ doc.id }}">
+        <div class="on-card-top">
+          <div class="on-card-icon on-icon-{{ doc.color }}" aria-hidden="true">
+            {% if doc.id == "termination_notice" or doc.id == "final_demand" %}
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            {% elif doc.id == "device_lock_warning" %}
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            {% elif doc.id == "payment_reminder" %}
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {% elif doc.id == "merchant_warning" or doc.id == "uw_quality_warning" %}
+            <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            {% elif doc.id == "recovery_assignment" %}
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+            {% elif doc.id == "contract_summary" %}
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            {% elif doc.id == "guarantor_notice" %}
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            {% elif doc.id == "settlement_confirmation" %}
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            {% endif %}
+          </div>
+          <div class="on-card-info">
+            <div class="on-card-title">{{ doc.title }}</div>
+            <div class="on-card-desc">{{ doc.description }}</div>
+            <div class="on-card-tone">Tone: {{ doc.tone }}</div>
+          </div>
+        </div>
+        <div class="on-card-footer">
+          <button type="button" class="on-preview-btn"
+                  data-open-modal="{{ doc.id }}"
+                  aria-label="Preview {{ doc.title }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+          <button type="button" class="on-copy-btn"
+                  data-copy-doc="{{ doc.id }}"
+                  aria-label="Copy {{ doc.title }} text">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+          <button type="button" class="on-print-btn"
+                  data-print-doc="{{ doc.id }}"
+                  aria-label="Print {{ doc.title }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+</div>
+
+{# ── Document Preview Modals ─────────────────────────────────────────────── #}
+{% with app=overdue_apps.0 contract=overdue_contracts.0 %}
+
+{# Helper macros for common fallback patterns #}
+{% with
+  cust_name=app.customer_name|default:"Customer Name (Not provided)"
+  cust_nid=app.national_id|default:"Not provided"
+  cust_phone=app.customer_phone|default:"Not provided"
+  device_model=app.deal.device_name|default:"Device (Not provided)"
+  imei=app.imei_number|default:"Not provided"
+  merchant_name=app.merchant.get_full_name|default:"Not provided"
+  uw_name=app.claimed_by.get_full_name|default:"Not provided"
+  outstanding=contract.outstanding_balance|default:0
+  days_overdue=contract.days_overdue|default:0
+  contract_ref=app.reference_number|default:"TS-XXXXXXXX"
+%}
+
+{% for doc in doc_types %}
+<div id="modal-{{ doc.id }}" class="on-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title-{{ doc.id }}" data-testid="on-doc-modal-{{ doc.id }}">
+  <div class="on-modal">
+    <div class="on-modal-header">
+      <span class="on-modal-title" id="modal-title-{{ doc.id }}">{{ doc.title }}</span>
+      <button type="button" class="on-modal-close" data-close-modal="{{ doc.id }}" aria-label="Close preview">&#x2715;</button>
+    </div>
+    <div class="on-modal-body" id="doc-body-{{ doc.id }}">
+      <div class="doc-letterhead">
+
+        <div class="doc-header">
+          <div>
+            <div class="doc-header-brand">TengaSale</div>
+            <div class="doc-header-tagline">Device Financing &middot; Malawi</div>
+          </div>
+          <div class="doc-header-meta">
+            <div>{{ doc.title }}</div>
+            <div>{{ today_str }}</div>
+            <div>Ref: {{ contract_ref }}</div>
+          </div>
+        </div>
+
+        <div class="doc-body">
+
+          <div class="doc-recipient-block">
+            <div class="label">Recipient</div>
+            <div class="value">{{ cust_name }}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px;">NID: {{ cust_nid }} &nbsp;·&nbsp; Phone: +265 {{ cust_phone }}</div>
+          </div>
+
+          <div class="doc-details-grid">
+            <div class="doc-detail">
+              <div class="lbl">Device</div>
+              <div class="val">{{ device_model }}</div>
+            </div>
+            <div class="doc-detail">
+              <div class="lbl">IMEI</div>
+              <div class="val">{{ imei }}</div>
+            </div>
+            <div class="doc-detail">
+              <div class="lbl">Contract</div>
+              <div class="val">{{ contract_ref }}</div>
+            </div>
+            <div class="doc-detail">
+              <div class="lbl">Merchant</div>
+              <div class="val">{{ merchant_name }}</div>
+            </div>
+            <div class="doc-detail">
+              <div class="lbl">Underwriter</div>
+              <div class="val">{{ uw_name }}</div>
+            </div>
+            <div class="doc-detail">
+              <div class="lbl">Generated</div>
+              <div class="val">{{ today_str }}</div>
+            </div>
+          </div>
+
+          {% if doc.id == "termination_notice" %}
+          <h3>Notice of Account Termination</h3>
+          <p>Dear {{ cust_name }},</p>
+          <p>Our records show that your TengaSale device financing agreement for <strong>{{ device_model }}</strong> (IMEI: {{ imei }}) remains in default. Despite previous notifications, the outstanding balance of <strong>MWK {{ outstanding|mwk }}</strong> has not been settled or subject to an approved repayment arrangement.</p>
+          <p>Unless the outstanding amount is paid in full or a written settlement arrangement is approved by TengaSale within <strong>7 calendar days</strong> of this notice, TengaSale may proceed with lawful account termination, device lock enforcement, and recovery steps in accordance with your signed financing agreement.</p>
+          <p>This action may affect your eligibility for future TengaSale services. Where permitted by law, we reserve the right to report this account to applicable credit reference bureaus.</p>
+          <p>To resolve this matter immediately, contact TengaSale on <strong>+265 (WhatsApp/Call)</strong> or visit your nearest registered merchant.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Credit &amp; Collections</strong></p>
+            <div class="doc-sig-title">Authorised by TengaSale Operations &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "final_demand" %}
+          <h3>Final Demand — Immediate Payment Required</h3>
+          <p>Dear {{ cust_name }},</p>
+          <p>This is a <strong>FINAL DEMAND</strong> for immediate payment of <strong>MWK {{ outstanding|mwk }}</strong> owed under your TengaSale financing agreement for <strong>{{ device_model }}</strong> (Contract: {{ contract_ref }}).</p>
+          <p>Your account is currently <strong>{{ days_overdue }} day{{ days_overdue|pluralize }}</strong> overdue. You have received previous reminders that have not resulted in payment or an approved arrangement.</p>
+          <p>If full payment or a written settlement plan is not received within <strong>48 hours</strong> of this notice, TengaSale will initiate device lock enforcement and may refer this matter to our recovery agents in accordance with your financing agreement and applicable law.</p>
+          <p><strong>Pay now:</strong> Contact us via WhatsApp or visit your merchant immediately.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Collections Team</strong></p>
+            <div class="doc-sig-title">Final Demand Notice &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "device_lock_warning" %}
+          <h3>Device Lock Warning</h3>
+          <p>Dear {{ cust_name }},</p>
+          <p>We are writing to inform you that your <strong>{{ device_model }}</strong> (IMEI: {{ imei }}) is registered under TengaSale's device financing programme and is subject to remote lock capability.</p>
+          <p>Our records indicate that your account (Contract: {{ contract_ref }}) has an outstanding balance of <strong>MWK {{ outstanding|mwk }}</strong>. If this balance is not cleared or an approved payment arrangement is not in place within <strong>3 business days</strong>, TengaSale may activate a remote device lock in accordance with your signed financing agreement.</p>
+          <p>A locked device will be unable to make or receive calls, access mobile data, or run applications until the account is settled.</p>
+          <p>To avoid device lock: <strong>Contact TengaSale immediately</strong> via WhatsApp or through your merchant.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Device Management</strong></p>
+            <div class="doc-sig-title">Lock Warning Notice &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "payment_reminder" %}
+          <h3>Payment Reminder</h3>
+          <p>Dear {{ cust_name }},</p>
+          <p>This is a friendly reminder that a payment is due on your TengaSale device financing account for <strong>{{ device_model }}</strong> (Contract: {{ contract_ref }}).</p>
+          <p>Outstanding balance: <strong>MWK {{ outstanding|mwk }}</strong>.</p>
+          <p>Keeping your account up to date ensures uninterrupted use of your device and maintains your good standing for future TengaSale products and services.</p>
+          <p>To make a payment or discuss your account, please contact us via <strong>WhatsApp</strong> or visit your registered TengaSale merchant.</p>
+          <p>Thank you for being a valued TengaSale customer.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Customer Care</strong></p>
+            <div class="doc-sig-title">Payment Reminder &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "merchant_warning" %}
+          <h3>Merchant Performance Warning</h3>
+          <p>Dear {{ merchant_name }},</p>
+          <p>This notice is issued to inform you that TengaSale has identified compliance and/or quality concerns associated with your merchant account.</p>
+          <p>The specific concern(s) include: [describe issue — e.g., high rejection rate, customer quality, documentation gaps, policy non-compliance].</p>
+          <p>TengaSale expects all registered merchants to maintain high standards of customer selection, documentation accuracy, and compliance with the TengaSale Merchant Agreement. Continued non-compliance may result in account suspension or termination in accordance with your signed agreement.</p>
+          <p>Please contact your assigned TengaSale relationship manager within <strong>5 business days</strong> to discuss corrective measures.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Merchant Relations</strong></p>
+            <div class="doc-sig-title">Merchant Warning &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "uw_quality_warning" %}
+          <h3>Underwriter Quality Review Notice</h3>
+          <p>Dear {{ uw_name }},</p>
+          <p>This notice is issued following a quality review of your recent application assessments. Concerns have been identified in the following area(s): [describe — e.g., incomplete documentation, inaccurate income verification, compliance gaps].</p>
+          <p>TengaSale's underwriting standards require thorough, accurate, and consistent application reviews. Sub-standard performance affects portfolio quality and may impact your commission and quality score.</p>
+          <p>Please review the TengaSale Underwriting Guidelines and ensure all future assessments meet the required standard. A quality coaching session may be scheduled.</p>
+          <p>This notice is recorded under your performance file. A second warning may result in further disciplinary action in accordance with your staff agreement.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Quality Assurance</strong></p>
+            <div class="doc-sig-title">Quality Warning &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "recovery_assignment" %}
+          <h3>Recovery Assignment Note</h3>
+          <p>This note confirms that the following account has been assigned to the TengaSale Recovery Team for active follow-up and enforcement.</p>
+          <p><strong>Customer:</strong> {{ cust_name }} &nbsp;|&nbsp; <strong>NID:</strong> {{ cust_nid }}<br>
+          <strong>Device:</strong> {{ device_model }} &nbsp;|&nbsp; <strong>IMEI:</strong> {{ imei }}<br>
+          <strong>Contract:</strong> {{ contract_ref }} &nbsp;|&nbsp; <strong>Outstanding:</strong> MWK {{ outstanding|mwk }}</p>
+          <p>The recovery team is authorised to contact the customer, guarantors, and next of kin as detailed in the application file, and to coordinate device lock enforcement where applicable, in accordance with the financing agreement and applicable law.</p>
+          <p>All recovery actions must be logged in the TengaSale CRM system within 24 hours of occurrence.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Collections &amp; Recovery</strong></p>
+            <div class="doc-sig-title">Recovery Assignment &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "contract_summary" %}
+          <h3>Financing Contract Summary</h3>
+          <p><strong>Customer:</strong> {{ cust_name }}<br>
+          <strong>National ID:</strong> {{ cust_nid }}<br>
+          <strong>Phone:</strong> +265 {{ cust_phone }}<br>
+          <strong>Device:</strong> {{ device_model }}<br>
+          <strong>IMEI:</strong> {{ imei }}<br>
+          <strong>Contract No.:</strong> {{ contract_ref }}<br>
+          <strong>Merchant:</strong> {{ merchant_name }}<br>
+          <strong>Underwriter:</strong> {{ uw_name }}</p>
+          <p>This document summarises the key terms of the customer's TengaSale device financing agreement. The full agreement, including repayment schedule and terms &amp; conditions, is on file and was signed by the customer at the time of application approval.</p>
+          <p>For any queries regarding this contract, contact TengaSale HQ or the assigned merchant.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Operations</strong></p>
+            <div class="doc-sig-title">Contract Summary &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "guarantor_notice" %}
+          <h3>Guarantor Liability Notice</h3>
+          <p>Dear [Guarantor Name],</p>
+          <p>You are listed as a guarantor on the TengaSale device financing agreement for <strong>{{ cust_name }}</strong> (Contract: {{ contract_ref }}, Device: {{ device_model }}).</p>
+          <p>Our records show that the primary account holder has failed to meet their repayment obligations. The outstanding balance is currently <strong>MWK {{ outstanding|mwk }}</strong>.</p>
+          <p>As guarantor, you may be liable for this outstanding amount under the terms of the financing agreement you signed. We request that you contact TengaSale within <strong>5 business days</strong> to assist in resolving this matter.</p>
+          <p>Where permitted by law and your signed agreement, TengaSale may take appropriate steps to recover the outstanding balance.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Credit Collections</strong></p>
+            <div class="doc-sig-title">Guarantor Notice &middot; {{ today_str }}</div>
+          </div>
+
+          {% elif doc.id == "settlement_confirmation" %}
+          <h3>Account Settlement Confirmation</h3>
+          <p>Dear {{ cust_name }},</p>
+          <p>We are pleased to confirm that your TengaSale device financing account (Contract: {{ contract_ref }}) for <strong>{{ device_model }}</strong> (IMEI: {{ imei }}) has been <strong>fully settled</strong> as of {{ today_str }}.</p>
+          <p>All outstanding obligations under this financing agreement have been met. Your device ownership has been fully transferred and no further payments are due.</p>
+          <p>Where applicable, any device lock associated with this agreement will be deactivated. Please retain this document as proof of settlement.</p>
+          <p>Thank you for completing your TengaSale financing agreement. We look forward to serving you in the future.</p>
+          <div class="doc-sig-line">
+            <p><strong>TengaSale Accounts</strong></p>
+            <div class="doc-sig-title">Settlement Confirmation &middot; {{ today_str }}</div>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <div class="doc-footer">
+          <span class="doc-footer-brand">TengaSale &middot; Device Financing &middot; Malawi</span>
+          <span>{{ today_str }} &middot; Ref: {{ contract_ref }}</span>
+        </div>
+
+      </div>
+    </div>
+    <div class="on-modal-footer">
+      <button type="button" class="on-preview-btn"
+              data-copy-doc="{{ doc.id }}"
+              onclick="copyDocContent('doc-body-{{ doc.id }}')">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Text
+      </button>
+      <button type="button" class="on-print-btn"
+              onclick="window.print()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print
+      </button>
+      <button type="button" class="on-modal-close" data-close-modal="{{ doc.id }}" style="margin-left:auto;">Close</button>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endwith %}
+
+<script>
+(function () {
+  'use strict';
+
+  // Open modal
+  document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-open-modal');
+      var modal = document.getElementById('modal-' + id);
+      if (modal) modal.classList.add('is-open');
+    });
+  });
+
+  // Close modal via button
+  document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-close-modal');
+      var modal = document.getElementById('modal-' + id);
+      if (modal) modal.classList.remove('is-open');
+    });
+  });
+
+  // Close modal via backdrop click
+  document.querySelectorAll('.on-modal-backdrop').forEach(function (backdrop) {
+    backdrop.addEventListener('click', function (e) {
+      if (e.target === backdrop) backdrop.classList.remove('is-open');
+    });
+  });
+
+  // Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.on-modal-backdrop.is-open').forEach(function (m) {
+        m.classList.remove('is-open');
+      });
+    }
+  });
+});
+
+// Copy document text to clipboard
+function copyDocContent(bodyId) {
+  var el = document.getElementById(bodyId);
+  if (!el) return;
+  var text = el.innerText || el.textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function () {
+      showCopyToast();
+    }).catch(function () {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showCopyToast(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+function showCopyToast() {
+  var t = document.createElement('div');
+  t.textContent = '✓ Copied to clipboard';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#101828;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(function () { document.body.removeChild(t); }, 2000);
+}
+</script>
+{% endblock %}

@@ -11,32 +11,99 @@
 <p class="text-muted small mb-3" style="margin-top:-8px;margin-bottom:18px;">Step 1 — Customer identity &amp; demographics</p>
 
 {% if not is_business_hours %}
-{# ── Outside hours modal — hidden by default; JS opts-in to show it ── #}
-{# Rendered hidden so there is no blur flash on page paint.              #}
-<div id="outside-hours-modal" class="ts-modal-backdrop ts-modal--hidden" role="dialog" aria-modal="true" aria-labelledby="ohm-title" data-testid="outside-hours-modal">
-  <div class="ts-modal-box">
-    <div class="ts-modal-icon">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-      </svg>
-    </div>
-    <h2 class="ts-modal-title" id="ohm-title">Outside business hours</h2>
-    <p class="ts-modal-body">
+{# ── Outside hours inline alert — appears at top of form, never blocks ── #}
+<style>
+.ts-oha {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1.5px solid #fcd34d;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 0 0 18px;
+  position: relative;
+  transition: opacity .2s, max-height .25s;
+}
+.ts-oha--hidden {
+  display: none;
+}
+.ts-oha__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(245,158,11,.12);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ts-oha__icon svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: #d97706; stroke-width: 2; stroke-linecap: round;
+}
+.ts-oha__body { flex: 1; min-width: 0; }
+.ts-oha__title {
+  font-size: 13px; font-weight: 800; color: #92400e; margin: 0 0 3px;
+}
+.ts-oha__text {
+  font-size: 12px; color: #78350f; line-height: 1.5; margin: 0 0 10px;
+}
+.ts-oha__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ts-oha__btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 10px;
+  background: #d97706; color: #fff;
+  border: none; font-size: 12px; font-weight: 800; cursor: pointer;
+  text-decoration: none; transition: background .12s;
+}
+.ts-oha__btn-primary:hover { background: #b45309; }
+.ts-oha__btn-secondary {
+  display: inline-flex; align-items: center;
+  padding: 7px 14px; border-radius: 10px;
+  background: #fff; color: #78350f;
+  border: 1.5px solid #fcd34d; font-size: 12px; font-weight: 700;
+  cursor: pointer; text-decoration: none; transition: border-color .12s;
+}
+.ts-oha__btn-secondary:hover { border-color: #d97706; }
+.ts-oha__dismiss {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  color: #92400e; font-size: 16px; line-height: 1; padding: 2px 4px;
+  opacity: .6;
+}
+.ts-oha__dismiss:hover { opacity: 1; }
+</style>
+
+<div id="outside-hours-modal"
+     class="ts-oha ts-oha--hidden"
+     role="alert"
+     aria-live="polite"
+     aria-label="Outside business hours notice"
+     data-testid="outside-hours-modal">
+  <div class="ts-oha__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+  </div>
+  <div class="ts-oha__body">
+    <div class="ts-oha__title">Outside business hours</div>
+    <p class="ts-oha__text">
       We are currently outside business hours (Monday–Friday: 9am–6pm CAT; Saturday: 9am–5pm CAT; Sunday: closed).
-      Your application can still be submitted, but approval may take longer.
+      Your application can still be submitted, but approval may take longer as it will be reviewed during working hours.
     </p>
-    <div class="ts-modal-actions">
-      <button type="button" class="ts-modal-btn ts-modal-btn--primary" id="ohm-continue" data-testid="outside-hours-continue">
+    <div class="ts-oha__actions">
+      <button type="button" class="ts-oha__btn-primary" id="ohm-continue" data-testid="outside-hours-continue">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         OK, continue
       </button>
-      <a href="{% url 'merchant_dashboard' %}" class="ts-modal-btn ts-modal-btn--secondary" style="text-align:center;text-decoration:none;" data-testid="outside-hours-cancel">
+      <a href="{% url 'merchant_dashboard' %}" class="ts-oha__btn-secondary" data-testid="outside-hours-cancel">
         Cancel
       </a>
     </div>
   </div>
+  <button type="button" class="ts-oha__dismiss" aria-label="Dismiss outside-hours notice" id="ohm-dismiss">&#x2715;</button>
 </div>
 
-{# Subtle chip shown after modal dismissed #}
+{# Subtle chip shown after alert dismissed #}
 <div id="outside-hours-chip" class="ts-outside-hours-chip" style="display:none;" data-testid="outside-hours-chip">
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
   Outside business hours
@@ -44,29 +111,26 @@
 
 <script>
 (function () {
-  var modal = document.getElementById('outside-hours-modal');
-  var chip  = document.getElementById('outside-hours-chip');
-  var btn   = document.getElementById('ohm-continue');
+  var alert  = document.getElementById('outside-hours-modal');
+  var chip   = document.getElementById('outside-hours-chip');
+  var btn    = document.getElementById('ohm-continue');
+  var xBtn   = document.getElementById('ohm-dismiss');
 
-  if (!modal) return;
+  if (!alert) return;
 
-  // Always ensure body overflow is clean on page load — guards against
-  // stale overflow:hidden left by a previous navigation or SPA transition.
+  // Ensure body scroll is never locked by this element.
   document.body.style.overflow = '';
 
   var today = new Date().toISOString().slice(0, 10);
   var STORAGE_KEY = 'ts_ohm_dismissed';
 
-  function dismissModal() {
-    modal.classList.add('ts-modal--hidden');
-    // Unconditionally clear overflow so the form is always scrollable.
-    document.body.style.overflow = '';
-    document.body.classList.remove('overflow-hidden');
+  function dismissAlert() {
+    alert.classList.add('ts-oha--hidden');
     try { localStorage.setItem(STORAGE_KEY, today); } catch (e) {}
     if (chip) chip.style.display = 'inline-flex';
   }
 
-  // Already dismissed today — stay hidden, show chip, done.
+  // Already dismissed today — stay hidden, show chip only.
   try {
     if (localStorage.getItem(STORAGE_KEY) === today) {
       if (chip) chip.style.display = 'inline-flex';
@@ -74,20 +138,15 @@
     }
   } catch (e) {}
 
-  // First visit today outside hours: reveal the modal and lock body scroll.
-  modal.classList.remove('ts-modal--hidden');
-  document.body.style.overflow = 'hidden';
+  // First visit today outside hours: reveal the inline alert (no body lock).
+  alert.classList.remove('ts-oha--hidden');
 
-  if (btn) btn.addEventListener('click', dismissModal);
-
-  // Clicking the dim backdrop also dismisses.
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) dismissModal();
-  });
+  if (btn)  btn.addEventListener('click', dismissAlert);
+  if (xBtn) xBtn.addEventListener('click', dismissAlert);
 
   // Escape key dismisses.
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') dismissModal();
+    if (e.key === 'Escape') dismissAlert();
   }, { once: true });
 })();
 </script>

@@ -194,47 +194,210 @@
 
 
   <div x-show="tab === 'qc'" x-cloak>
-    <div class="earnings-kpi-grid">
-      <div class="earnings-kpi">
-        <span>Applied</span>
-        <strong class="text-red">{{ qc_penalty_totals.applied.total|default:0|mwk }}</strong>
+
+    <style>
+    /* QC penalties — polished alert cards */
+    .qc-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 12px 0 18px;
+    }
+    @media (min-width: 520px) { .qc-summary-grid { grid-template-columns: repeat(4, 1fr); } }
+    .qc-summary-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .qc-summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; }
+    .qc-summary-value { font-size: 17px; font-weight: 900; }
+    .qc-summary-value--red    { color: #dc2626; }
+    .qc-summary-value--amber  { color: #d97706; }
+    .qc-summary-value--blue   { color: #1d4ed8; }
+    .qc-summary-value--green  { color: #16a34a; }
+
+    .qc-penalty-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .qc-penalty-card--active  { border-left: 3px solid #dc2626; }
+    .qc-penalty-card--pending { border-left: 3px solid #f59e0b; }
+    .qc-penalty-card--disputed{ border-left: 3px solid #1d4ed8; }
+    .qc-penalty-card--reversed{ border-left: 3px solid #16a34a; }
+
+    .qc-penalty-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .qc-penalty-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+    .qc-icon-red     { background: rgba(220,38,38,.10);  color: #dc2626; }
+    .qc-icon-amber   { background: rgba(245,158,11,.10); color: #d97706; }
+    .qc-icon-blue    { background: rgba(29,78,216,.10);  color: #1d4ed8; }
+    .qc-icon-green   { background: rgba(22,163,74,.10);  color: #16a34a; }
+
+    .qc-penalty-body { flex: 1; min-width: 0; }
+    .qc-penalty-title { font-size: 13px; font-weight: 800; color: #101828; margin: 0 0 3px; }
+    .qc-penalty-meta  { font-size: 12px; color: #667085; margin: 0; }
+    .qc-penalty-notes { font-size: 12px; color: #374151; margin-top: 5px; font-style: italic; }
+    .qc-penalty-date  { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+    .qc-penalty-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .qc-penalty-amount { font-size: 14px; font-weight: 900; }
+    .qc-penalty-amount--debit   { color: #dc2626; }
+    .qc-penalty-amount--credit  { color: #16a34a; }
+
+    .qc-status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .qc-badge-active  { background: rgba(220,38,38,.10);  color: #dc2626; }
+    .qc-badge-pending { background: rgba(245,158,11,.10); color: #d97706; }
+    .qc-badge-disputed{ background: rgba(29,78,216,.10);  color: #1d4ed8; }
+    .qc-badge-reversed{ background: rgba(22,163,74,.10);  color: #16a34a; }
+
+    .qc-dispute-form {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .qc-dispute-input {
+      flex: 1; min-width: 160px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      outline: none;
+    }
+    .qc-dispute-input:focus { border-color: #ff5a00; }
+    .qc-dispute-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: #fff;
+      color: #667085;
+      border: 1.5px solid #e5e7eb;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .12s, color .12s;
+    }
+    .qc-dispute-btn:hover { border-color: #1d4ed8; color: #1d4ed8; }
+
+    .qc-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .qc-empty-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      background: #dcfce7;
+      display: grid;
+      place-items: center;
+    }
+    .qc-empty-icon svg { width: 22px; height: 22px; fill: none; stroke: #16a34a; stroke-width: 2; stroke-linecap: round; }
+    .qc-empty-title { font-size: 14px; font-weight: 800; color: #101828; }
+    .qc-empty-sub   { font-size: 12px; color: #667085; }
+    </style>
+
+    <div class="qc-summary-grid">
+      <div class="qc-summary-card">
+        <div class="qc-summary-label">Applied</div>
+        <div class="qc-summary-value qc-summary-value--red">{{ qc_penalty_totals.applied.total|default:0|mwk }}</div>
       </div>
-      <div class="earnings-kpi">
-        <span>Pending</span>
-        <strong>{{ qc_penalty_totals.pending.total|default:0|mwk }}</strong>
+      <div class="qc-summary-card">
+        <div class="qc-summary-label">Pending</div>
+        <div class="qc-summary-value qc-summary-value--amber">{{ qc_penalty_totals.pending.total|default:0|mwk }}</div>
       </div>
-      <div class="earnings-kpi">
-        <span>Disputed</span>
-        <strong>{{ qc_penalty_totals.disputed.total|default:0|mwk }}</strong>
+      <div class="qc-summary-card">
+        <div class="qc-summary-label">Disputed</div>
+        <div class="qc-summary-value qc-summary-value--blue">{{ qc_penalty_totals.disputed.total|default:0|mwk }}</div>
       </div>
-      <div class="earnings-kpi">
-        <span>Reversed</span>
-        <strong class="text-green">{{ qc_penalty_totals.reversed.total|default:0|mwk }}</strong>
+      <div class="qc-summary-card">
+        <div class="qc-summary-label">Reversed</div>
+        <div class="qc-summary-value qc-summary-value--green">{{ qc_penalty_totals.reversed.total|default:0|mwk }}</div>
       </div>
     </div>
+
     {% if qc_penalties %}
       {% for penalty in qc_penalties %}
-        <div class="tx-row tx-row--debit" data-testid="qc-penalty-row">
-          <div class="tx-row__left">
-            <div class="tx-row__type">QC penalty: {{ penalty.offense_type.name }}</div>
-            <div class="tx-row__meta">{{ penalty.application.application_number }} - {{ penalty.get_status_display }}</div>
-            <div class="tx-row__date">{{ penalty.issued_at|date:"d M Y, H:i" }}</div>
-            {% if penalty.notes %}<div class="tx-row__meta">{{ penalty.notes|linebreaksbr }}</div>{% endif %}
-            {% if penalty.status != "reversed" and penalty.status != "disputed" %}
-              <form method="post" action="{% url 'sales_qc_penalty_dispute' penalty.id %}" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
-                {% csrf_token %}
-                <input class="input" name="explanation" placeholder="Dispute explanation" required style="flex:1;min-width:180px;">
-                <button type="submit" class="btn-secondary">Dispute</button>
-              </form>
+        <div class="qc-penalty-card
+          {% if penalty.status == 'reversed' %}qc-penalty-card--reversed
+          {% elif penalty.status == 'disputed' %}qc-penalty-card--disputed
+          {% elif penalty.status == 'pending' %}qc-penalty-card--pending
+          {% else %}qc-penalty-card--active{% endif %}"
+          data-testid="qc-penalty-row">
+          <div class="qc-penalty-icon
+            {% if penalty.status == 'reversed' %}qc-icon-green
+            {% elif penalty.status == 'disputed' %}qc-icon-blue
+            {% elif penalty.status == 'pending' %}qc-icon-amber
+            {% else %}qc-icon-red{% endif %}" aria-hidden="true">
+            {% if penalty.status == "reversed" %}
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            {% elif penalty.status == "disputed" %}
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
             {% endif %}
           </div>
-          <div class="tx-row__amount {% if penalty.status == 'reversed' %}text-green{% else %}text-red{% endif %}">
-            {% if penalty.status == 'reversed' %}+{% else %}-{% endif %}{{ penalty.amount_mwk|mwk }}
+          <div class="qc-penalty-body">
+            <div class="qc-penalty-title">{{ penalty.offense_type.name }}</div>
+            <div class="qc-penalty-meta">Application {{ penalty.application.application_number }}</div>
+            {% if penalty.notes %}
+              <div class="qc-penalty-notes">{{ penalty.notes }}</div>
+            {% endif %}
+            <div class="qc-penalty-date">{{ penalty.issued_at|date:"d M Y, H:i" }}</div>
+            {% if penalty.status != "reversed" and penalty.status != "disputed" %}
+            <form method="post" action="{% url 'sales_qc_penalty_dispute' penalty.id %}" class="qc-dispute-form">
+              {% csrf_token %}
+              <input class="qc-dispute-input" name="explanation" placeholder="Explain your dispute…" required>
+              <button type="submit" class="qc-dispute-btn">Dispute</button>
+            </form>
+            {% endif %}
+          </div>
+          <div class="qc-penalty-right">
+            <span class="qc-status-badge
+              {% if penalty.status == 'reversed' %}qc-badge-reversed
+              {% elif penalty.status == 'disputed' %}qc-badge-disputed
+              {% elif penalty.status == 'pending' %}qc-badge-pending
+              {% else %}qc-badge-active{% endif %}">{{ penalty.get_status_display }}</span>
+            <span class="qc-penalty-amount {% if penalty.status == 'reversed' %}qc-penalty-amount--credit{% else %}qc-penalty-amount--debit{% endif %}">
+              {% if penalty.status == "reversed" %}+{% else %}−{% endif %}{{ penalty.amount_mwk|mwk }}
+            </span>
           </div>
         </div>
       {% endfor %}
     {% else %}
-      <div class="empty-state"><p>No QC penalties.</p></div>
+      <div class="qc-empty-state">
+        <div class="qc-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="qc-empty-title">No mistake contributions recorded</div>
+        <div class="qc-empty-sub">No QC penalties found for this payout period. Keep up the quality work!</div>
+      </div>
     {% endif %}
   </div>
 

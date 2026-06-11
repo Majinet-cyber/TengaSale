@@ -7812,3 +7812,235 @@ body {
 /* ══════════════════════════════════════════════════════════════════
    END APPLICATION FLOW POLISH v4.0
    ══════════════════════════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════════════════════════
+   TASK 10 — Design Token Reinforcement
+   Consistent surface, shadow, radius, tap targets, typography
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Ensure global body background is the soft off-white brand surface */
+body {
+  background-color: var(--ts-bg, #fffaf7);
+}
+
+/* Consistent card surface */
+.card,
+.app-card,
+.form-card,
+.tool-card,
+.stat-card,
+.home-card,
+.menu-row,
+.app-row-card {
+  background: var(--ts-surface, #fff);
+  border-radius: var(--ts-radius, 14px);
+  box-shadow: var(--ts-shadow-sm, 0 1px 4px rgba(15,23,42,.06));
+}
+
+/* Minimum tap target for all interactive controls */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+button:not([aria-hidden="true"]):not([tabindex="-1"]),
+a.btn,
+a.nav-link,
+.topbar-icon,
+.menu-row,
+.app-row-card,
+.ts-modal-btn {
+  min-height: 44px;
+}
+
+/* Remove hover state color leakage on non-clickable elements */
+.hq-kpi__label,
+.hq-chart-title,
+.section-label {
+  color: var(--ts-muted, #667085);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* Consistent blue for active/review state across all roles */
+.status-active,
+.badge-active,
+.kpi-blue {
+  color: #1d4ed8;
+}
+.status-active-bg { background: rgba(29,78,216,.10); }
+
+/* Consistent success green */
+.status-success,
+.badge-success,
+.text-green { color: var(--ts-success, #16a34a); }
+
+/* Consistent amber warning */
+.status-warning,
+.badge-warning,
+.text-amber { color: var(--ts-warning, #f59e0b); }
+
+/* Consistent red danger */
+.status-danger,
+.badge-danger,
+.text-red { color: var(--ts-danger, #dc2626); }
+
+/* Section labels — consistent across all dashboards */
+.section-label,
+.wallet-section-label,
+.hq-sl {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ts-muted, #667085);
+  padding: 4px 0 6px;
+  margin-top: 20px;
+  margin-bottom: 6px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TASK 11 — Responsiveness Audit Fixes
+   360px / 390px / 430px / tablet
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Global: prevent unwanted horizontal overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Fix wide fixed-width elements that can break narrow viewports */
+.app-shell,
+.content,
+.page-wrap,
+.form-container {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Make all <img> safe on narrow screens */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables: force horizontal scroll container instead of overflow */
+table {
+  min-width: 0;
+}
+.table-responsive,
+.table-scroll,
+.table-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--ts-radius-sm, 9px);
+}
+
+/* Modals: ensure they don't exceed screen width */
+.ts-modal-box,
+.modal-box,
+.drawer-panel {
+  max-width: min(480px, calc(100vw - 32px));
+  box-sizing: border-box;
+}
+
+/* Action button rows: wrap gracefully instead of clipping */
+.action-row,
+.btn-row,
+.card-actions,
+.ts-oha__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Topbar icons on very narrow screens */
+@media (max-width: 360px) {
+  .topbar {
+    padding-inline: 12px;
+    gap: 6px;
+  }
+  .topbar-icon,
+  .topbar-btn {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+  .brand-name {
+    font-size: 15px;
+  }
+  .content {
+    padding-inline: 12px;
+  }
+  .btn-primary,
+  .btn,
+  .btn-secondary {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+}
+
+/* Earnings/wallet KPI grid on narrow screens */
+@media (max-width: 400px) {
+  .earnings-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .qc-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Status/application row cards on narrow screens: prevent clipping */
+@media (max-width: 430px) {
+  .app-row-card__meta,
+  .app-row-card__label,
+  .tx-row__type {
+    font-size: 12px;
+  }
+  .app-row-card__amount,
+  .tx-row__amount {
+    font-size: 14px;
+  }
+  .app-row-card__name {
+    font-size: 14px;
+  }
+}
+
+/* HQ charts: ensure they don't overflow on tablet */
+@media (max-width: 768px) {
+  .hq-charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .hq-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* KYC/form pages: landscape ID preview keeps ratio on all widths */
+@media (max-width: 430px) {
+  .kyc-id-front-preview,
+  .kyc-id-back-preview {
+    aspect-ratio: 1.586 / 1;
+    width: 100%;
+  }
+}
+
+/* Performance / QC penalty cards: prevent right-side amount from wrapping oddly */
+@media (max-width: 380px) {
+  .qc-penalty-card {
+    flex-direction: column;
+  }
+  .qc-penalty-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   END TASKS 10 & 11
+   ══════════════════════════════════════════════════════════════════ */
