@@ -656,19 +656,36 @@ class ApplicationFlowTests(ApplicationTestCase):
         response = self.client.get(reverse("edit_customer_details", args=[app.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-testid="outside-hours-modal"')
+        self.assertContains(response, 'role="dialog"')
+        self.assertContains(response, 'aria-modal="true"')
         self.assertContains(response, "Outside business hours")
         self.assertContains(response, "Monday–Friday: 9am–6pm CAT")
         self.assertContains(response, "Sunday: closed")
         self.assertContains(response, "OK, continue")
+        self.assertContains(response, "Cancel")
         self.assertContains(response, "Customer Details")
 
     @patch("core.business_hours.is_business_hours", return_value=False)
-    def test_outside_hours_modal_not_inline_blocking_card(self, _mock_hours):
+    def test_outside_hours_notice_is_centered_modal(self, _mock_hours):
         app = self.create_application()
         response = self.client.get(reverse("edit_customer_details", args=[app.id]))
         content = response.content.decode()
-        self.assertIn("ts-modal-backdrop", content)
+        self.assertIn('data-testid="outside-hours-modal"', content)
+        self.assertIn("ts-oha", content)
+        self.assertIn("ts-oha__dialog", content)
+        self.assertIn("sessionStorage.setItem", content)
+        self.assertIn("ts-oha-open", content)
+        self.assertNotIn('data-testid="outside-hours-chip"', content)
+        self.assertNotIn("document.body.style.overflow = ''", content)
+        self.assertNotIn("localStorage", content)
         self.assertNotIn("outside-hours-warning-card", content)
+
+    @patch("core.business_hours.is_business_hours", return_value=True)
+    def test_outside_hours_modal_hidden_during_business_hours(self, _mock_hours):
+        app = self.create_application()
+        response = self.client.get(reverse("edit_customer_details", args=[app.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'data-testid="outside-hours-modal"')
 
     def test_customer_page_saves_valid_data_and_redirects_to_device_page(self):
         app = self.create_application()
