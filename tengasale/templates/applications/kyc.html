@@ -237,6 +237,10 @@
             <div class="kyc-tip">All 4 corners visible</div>
             <div class="kyc-tip">Text clearly readable</div>
         </div>
+        <p class="kyc-landscape-hint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+            Capture the full ID card in landscape. All text must be readable.
+        </p>
 
         <div class="kyc-file-field">
             {{ form.id_front_image }}
@@ -323,6 +327,10 @@
             <div class="kyc-tip">All 4 corners visible</div>
             <div class="kyc-tip">All text clearly readable</div>
         </div>
+        <p class="kyc-landscape-hint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+            Capture the full ID card in landscape. All text must be readable.
+        </p>
 
         <div class="kyc-file-field">
             {{ form.id_back_image }}
@@ -331,9 +339,9 @@
 
         <div class="kyc-preview{% if app.id_back_image %} is-visible{% endif %}" data-preview-card>
             {% if app.id_back_image %}
-                <img src="{{ app.id_back_image.url }}" alt="ID Back preview" data-preview-image class="kyc-preview-img">
+                <img src="{{ app.id_back_image.url }}" alt="ID Back preview" data-preview-image class="kyc-preview-img kyc-id-back-preview">
             {% else %}
-                <img src="" alt="ID Back preview" data-preview-image class="kyc-preview-img" style="display:none;">
+                <img src="" alt="ID Back preview" data-preview-image class="kyc-preview-img kyc-id-back-preview" style="display:none;">
             {% endif %}
             <div class="kyc-preview-meta">
                 <strong>ID Back</strong>
