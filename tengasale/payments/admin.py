@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     SalarySchedule, SpinRewardPayout, PaymentApproval, PaymentAuditLog,
+    AirtelTransaction, AirtelCallbackLog,
 )
 
 
@@ -64,3 +65,35 @@ class PaymentAuditLogAdmin(admin.ModelAdmin):
     list_filter = ["action"]
     search_fields = ["action", "transaction_ref", "notes"]
     readonly_fields = ["created_at"]
+
+
+@admin.register(AirtelTransaction)
+class AirtelTransactionAdmin(admin.ModelAdmin):
+    list_display = ["internal_reference", "amount", "purpose", "direction", "status", "callback_verified", "created_at"]
+    list_filter = ["status", "purpose", "direction", "callback_verified"]
+    search_fields = [
+        "internal_reference",
+        "provider_reference",
+        "airtel_money_id",
+        "airtel_transaction_id",
+        "airtel_reference_id",
+        "customer_msisdn",
+    ]
+    readonly_fields = [
+        "internal_reference",
+        "raw_request",
+        "raw_response",
+        "raw_callback",
+        "callback_received_at",
+        "processed_success_at",
+        "created_at",
+        "updated_at",
+    ]
+
+
+@admin.register(AirtelCallbackLog)
+class AirtelCallbackLogAdmin(admin.ModelAdmin):
+    list_display = ["id", "transaction", "signature_valid", "processed", "duplicate", "created_at"]
+    list_filter = ["signature_valid", "processed", "duplicate"]
+    search_fields = ["transaction__internal_reference", "raw_body", "processing_error"]
+    readonly_fields = ["received_headers", "raw_body", "parsed_body", "created_at"]

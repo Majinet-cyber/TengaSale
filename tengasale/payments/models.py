@@ -596,3 +596,130 @@ class PaymentAuditLog(models.Model):
 # ──────────────────────────────────────────────────────────────────────────────
 # HQ dashboard summary data is computed in views from existing models.
 # No additional stored model needed for that.
+
+
+class AirtelTransaction(models.Model):
+    """Direct Airtel Money transaction audit record."""
+
+    PURPOSE_DEPOSIT = "DEPOSIT"
+    PURPOSE_INSTALLMENT = "INSTALLMENT"
+    PURPOSE_ARREARS = "ARREARS"
+    PURPOSE_UNLOCK = "UNLOCK"
+    PURPOSE_REFUND = "REFUND"
+    PURPOSE_COMMISSION = "COMMISSION"
+    PURPOSE_TEST = "TEST"
+
+    PURPOSE_CHOICES = [
+        (PURPOSE_DEPOSIT, "Deposit"),
+        (PURPOSE_INSTALLMENT, "Installment"),
+        (PURPOSE_ARREARS, "Arrears"),
+        (PURPOSE_UNLOCK, "Unlock"),
+        (PURPOSE_REFUND, "Refund"),
+        (PURPOSE_COMMISSION, "Commission"),
+        (PURPOSE_TEST, "Test"),
+    ]
+
+    DIRECTION_COLLECTION = "COLLECTION"
+    DIRECTION_DISBURSEMENT = "DISBURSEMENT"
+
+    DIRECTION_CHOICES = [
+        (DIRECTION_COLLECTION, "Collection"),
+        (DIRECTION_DISBURSEMENT, "Disbursement"),
+    ]
+
+    STATUS_INITIATED = "INITIATED"
+    STATUS_PENDING = "PENDING"
+    STATUS_SUCCESS = "SUCCESS"
+    STATUS_FAILED = "FAILED"
+    STATUS_REVERSED = "REVERSED"
+    STATUS_EXPIRED = "EXPIRED"
+    STATUS_UNKNOWN = "UNKNOWN"
+
+    STATUS_CHOICES = [
+        (STATUS_INITIATED, "Initiated"),
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_REVERSED, "Reversed"),
+        (STATUS_EXPIRED, "Expired"),
+        (STATUS_UNKNOWN, "Unknown"),
+    ]
+
+    internal_reference = models.CharField(max_length=60, unique=True, db_index=True)
+    provider_reference = models.CharField(max_length=120, null=True, blank=True, db_index=True)
+    airtel_money_id = models.CharField(max_length=120, null=True, blank=True, db_index=True)
+    airtel_transaction_id = models.CharField(max_length=120, null=True, blank=True, db_index=True)
+    airtel_reference_id = models.CharField(max_length=120, null=True, blank=True, db_index=True)
+    customer_msisdn = models.CharField(max_length=30)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=5, default="MWK")
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES, default=DIRECTION_COLLECTION)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_INITIATED)
+    raw_request = models.JSONField(default=dict, blank=True)
+    raw_response = models.JSONField(default=dict, blank=True)
+    raw_callback = models.JSONField(default=dict, blank=True)
+    callback_verified = models.BooleanField(default=False)
+    callback_received_at = models.DateTimeField(null=True, blank=True)
+    contract = models.ForeignKey(
+        "portal.PaymentContract",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="airtel_transactions",
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="airtel_transactions",
+    )
+    payment_transaction = models.OneToOneField(
+        "portal.PaymentTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="airtel_transaction",
+    )
+    processed_success_at = models.DateTimeField(null=True, blank=True)
+    processing_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["purpose", "direction"]),
+        ]
+
+    def __str__(self):
+        return f"{self.internal_reference} - {self.status}"
+
+
+class AirtelCallbackLog(models.Model):
+    """Raw Airtel callback log retained for support and reconciliation."""
+
+    transaction = models.ForeignKey(
+        AirtelTransaction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="callback_logs",
+    )
+    received_headers = models.JSONField(default=dict, blank=True)
+    raw_body = models.TextField()
+    parsed_body = models.JSONField(null=True, blank=True)
+    signature_valid = models.BooleanField(default=False)
+    processed = models.BooleanField(default=False)
+    duplicate = models.BooleanField(default=False)
+    processing_error = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        ref = self.transaction.internal_reference if self.transaction_id else "unmatched"
+        return f"Airtel callback {ref} - {self.created_at}"

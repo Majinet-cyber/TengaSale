@@ -8,6 +8,7 @@ from website import views as website_views
 from config.health import healthz, readyz
 from config.media_views import serve_media
 from applications.didit_views import didit_callback_done, didit_webhook
+from payments import api_views as payment_api_views
 
 urlpatterns = [
     path("healthz/", healthz, name="healthz"),
@@ -24,6 +25,13 @@ urlpatterns = [
     path("applications/", include("applications.urls")),
     path("kyc/didit/done/", didit_callback_done, name="didit_callback_done"),
     path("api/webhooks/didit/", didit_webhook, name="didit_webhook"),
+    path("api/payments/airtel/callback/", payment_api_views.airtel_callback, name="airtel_callback"),
+    path("api/payments/airtel/collections/initiate/", payment_api_views.airtel_collection_initiate, name="airtel_collection_initiate"),
+    path(
+        "api/payments/airtel/transactions/<str:internal_reference>/enquiry/",
+        payment_api_views.airtel_transaction_enquiry,
+        name="airtel_transaction_enquiry",
+    ),
     path("deals/", include("deals.urls")),
     path("earnings/", include("earnings.urls")),
     path("payments/", payments_home, name="payments_home"),
