@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import api_views
 
 app_name = "payments"
 
@@ -10,6 +11,7 @@ urlpatterns = [
     # Customer Collections
     path("collections/", views.collections_list, name="collections"),
     path("collections/<str:ref>/", views.transaction_detail, name="transaction_detail"),
+    path("airtel/", api_views.airtel_dashboard, name="airtel_dashboard"),
 
     # Payout Batches
     path("batches/", views.payout_batches, name="payout_batches"),

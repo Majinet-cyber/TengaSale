@@ -265,6 +265,35 @@ AIRTEL_MONEY_CLIENT_SECRET = os.environ.get("AIRTEL_MONEY_CLIENT_SECRET", "")
 TNM_MPAMBA_API_KEY = os.environ.get("TNM_MPAMBA_API_KEY", "")
 PAYTRIGGER_API_KEY = os.environ.get("PAYTRIGGER_API_KEY", "")
 
+# Direct Airtel Money Malawi API (UAT/live). Keep all values in environment.
+AIRTEL_ENV = os.environ.get("AIRTEL_ENV", "uat").lower()
+AIRTEL_BASE_URL = os.environ.get("AIRTEL_BASE_URL", "https://openapiuat.airtel.mw")
+AIRTEL_COUNTRY = os.environ.get("AIRTEL_COUNTRY", "MW")
+AIRTEL_CURRENCY = os.environ.get("AIRTEL_CURRENCY", "MWK")
+AIRTEL_MERCHANT_CODE = os.environ.get("AIRTEL_MERCHANT_CODE", "")
+AIRTEL_CALLBACK_AUTH_ENABLED = os.environ.get("AIRTEL_CALLBACK_AUTH_ENABLED", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+    "on",
+)
+AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", "")
+AIRTEL_CLIENT_ID = os.environ.get("AIRTEL_CLIENT_ID", "")
+AIRTEL_CLIENT_SECRET = os.environ.get("AIRTEL_CLIENT_SECRET", "")
+AIRTEL_AUTH_TOKEN = os.environ.get("AIRTEL_AUTH_TOKEN", "")
+AIRTEL_PIN = os.environ.get("AIRTEL_PIN", "")
+AIRTEL_MESSAGE_SIGNING_ENABLED = os.environ.get("AIRTEL_MESSAGE_SIGNING_ENABLED", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+    "on",
+)
+AIRTEL_SIGNATURE_SECRET = os.environ.get("AIRTEL_SIGNATURE_SECRET", "")
+AIRTEL_KEY = os.environ.get("AIRTEL_KEY", "")
+AIRTEL_COLLECTION_PATH = os.environ.get("AIRTEL_COLLECTION_PATH", "/merchant/v1/payments/")
+AIRTEL_ENQUIRY_PATH_TEMPLATE = os.environ.get("AIRTEL_ENQUIRY_PATH_TEMPLATE", "/standard/v1/payments/{reference}")
+AIRTEL_DISBURSEMENT_PATH = os.environ.get("AIRTEL_DISBURSEMENT_PATH", "/standard/v3/disbursements")
+
 # Production safety guard: if DEBUG=False and live charges are on, keys must exist
 if not DEBUG and PAYMENTS_ALLOW_LIVE_CHARGES:
     if not PAYCHANGU_PUBLIC_KEY or not PAYCHANGU_SECRET_KEY:

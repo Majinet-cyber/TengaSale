@@ -1,0 +1,104 @@
+{% extends "payments/base_payment.html" %}
+{% load humanize %}
+
+{% block pay_content %}
+<div class="pay-header">
+  <div class="pay-header-left">
+    <h1>Airtel Money</h1>
+    <p>Direct Airtel Money collections, callbacks, and reconciliation.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="badge {{ config.env }}">{{ config.env }}</span>
+    <span class="badge {% if config.auth_token %}success{% else %}pending{% endif %}">Token {% if config.auth_token %}set{% else %}missing{% endif %}</span>
+  </div>
+</div>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Summary</h3></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:16px 20px;">
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Today</div><strong>MWK {{ summary.collections_today|intcomma }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">This month</div><strong>MWK {{ summary.collections_month|intcomma }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Success</div><strong>{{ summary.successful_payments }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Pending</div><strong>{{ summary.pending_payments }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Failed</div><strong>{{ summary.failed_payments }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Expired</div><strong>{{ summary.expired_payments }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Needs review</div><strong>{{ summary.unknown_payments }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Callbacks</div><strong>{{ summary.callbacks_received }}</strong></div>
+    <div><div style="font-size:11px;color:var(--pay-muted);font-weight:700;text-transform:uppercase;">Duplicates</div><strong>{{ summary.duplicate_callbacks }}</strong></div>
+  </div>
+</div>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Configuration</h3></div>
+  <table class="pay-table">
+    <tbody>
+      <tr><th>Base URL</th><td>{{ config.base_url }}</td><th>Country/Currency</th><td>{{ config.country }} / {{ config.currency }}</td></tr>
+      <tr><th>Merchant code</th><td>{% if config.merchant_code_present %}Present{% else %}Missing{% endif %}</td><th>Callback auth</th><td>{{ config.callback_auth_enabled }}</td></tr>
+      <tr><th>Hash key</th><td>{{ config.callback_hash_key|default:"Missing" }}</td><th>Auth token</th><td>{{ config.auth_token|default:"Missing" }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<form method="get" class="pay-filter-bar">
+  <div>
+    <label>Status</label>
+    <select name="status">
+      <option value="">All statuses</option>
+      <option value="SUCCESS" {% if filter_status == 'SUCCESS' %}selected{% endif %}>Success</option>
+      <option value="PENDING" {% if filter_status == 'PENDING' %}selected{% endif %}>Pending</option>
+      <option value="FAILED" {% if filter_status == 'FAILED' %}selected{% endif %}>Failed</option>
+      <option value="EXPIRED" {% if filter_status == 'EXPIRED' %}selected{% endif %}>Expired</option>
+      <option value="UNKNOWN" {% if filter_status == 'UNKNOWN' %}selected{% endif %}>Unknown</option>
+    </select>
+  </div>
+  <div><label>&nbsp;</label><button class="btn btn-orange" type="submit">Filter</button></div>
+  {% if filter_status %}<div><label>&nbsp;</label><a href="{% url 'payments:airtel_dashboard' %}" class="btn btn-ghost">Clear</a></div>{% endif %}
+</form>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Transactions ({{ page_obj.paginator.count }})</h3></div>
+  <table class="pay-table">
+    <thead>
+      <tr><th>Reference</th><th>Customer</th><th>Amount</th><th>Purpose</th><th>Status</th><th>Callback</th><th>Date</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for tx in page_obj %}
+      <tr>
+        <td style="font-family:monospace;font-size:12px;">{{ tx.internal_reference }}</td>
+        <td>{{ tx.customer_msisdn }}</td>
+        <td>MWK {{ tx.amount|intcomma }}</td>
+        <td>{{ tx.purpose }}</td>
+        <td><span class="badge {{ tx.status|lower }}">{{ tx.status }}</span></td>
+        <td>{% if tx.callback_verified %}<span class="badge success">verified</span>{% else %}<span class="badge pending">unverified</span>{% endif %}</td>
+        <td>{{ tx.created_at|date:"d M Y H:i" }}</td>
+        <td><a class="btn btn-ghost btn-sm" href="{% url 'airtel_transaction_enquiry' tx.internal_reference %}">Enquire</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">No Airtel transactions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pay-table-card">
+  <div class="pay-table-header"><h3>Recent Callback Logs</h3></div>
+  <table class="pay-table">
+    <thead><tr><th>ID</th><th>Transaction</th><th>Signature</th><th>Processed</th><th>Duplicate</th><th>Error</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for log in callback_logs %}
+      <tr>
+        <td>{{ log.id }}</td>
+        <td style="font-family:monospace;font-size:12px;">{{ log.transaction.internal_reference|default:"unmatched" }}</td>
+        <td>{{ log.signature_valid }}</td>
+        <td>{{ log.processed }}</td>
+        <td>{{ log.duplicate }}</td>
+        <td>{{ log.processing_error|default:"" }}</td>
+        <td>{{ log.created_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No callbacks received yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
