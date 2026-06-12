@@ -65,7 +65,7 @@
                         <h2 data-offer-model></h2>
                         <p class="text-muted" data-offer-specs></p>
                     </div>
-                    <span class="status-pill"><span data-term-months>12</span> months</span>
+                    <span class="status-pill"><span data-term-display>12</span> months</span>
                 </div>
                 <div class="deal-badge-row">
                     <span class="deal-mini-badge" data-offer-condition>New</span>
@@ -167,6 +167,9 @@
             <button class="new-application-button deal-continue-btn ts-button-primary primary-big-action" type="submit">Start Application</button>
         </section>
     </form>
+    <div class="card empty-state" data-deal-js-error hidden>
+        The deal selector did not finish loading. Refresh this page, then try again. Your customer details are already saved.
+    </div>
 {% else %}
     <div class="card empty-state">
         No deals available. Please ask management to add device deals.
@@ -174,6 +177,10 @@
 {% endif %}
 
 <script>
+    window.addEventListener("error", function () {
+        var fallback = document.querySelector("[data-deal-js-error]");
+        if (fallback) fallback.hidden = false;
+    });
     (function () {
         const dataEl = document.getElementById("deal-options-data");
         if (!dataEl) {
@@ -194,6 +201,7 @@
         const hiddenTerm = document.getElementById("selected-term-months");
         const form = document.getElementById("deal-form");
         const termChips = document.querySelectorAll(".term-chip");
+        const termDisplay = document.querySelector("[data-term-display]");
 
         document.querySelectorAll("[data-brand-logo]").forEach(function (img) {
             img.addEventListener("error", function () {
@@ -300,7 +308,7 @@
             document.querySelectorAll("[data-term-copy-daily]").forEach(function (el) {
                 el.textContent = selectedTermMonths;
             });
-            document.querySelector("[data-term-months]").textContent = selectedTermMonths;
+            if (termDisplay) termDisplay.textContent = selectedTermMonths;
             if (hiddenTerm) hiddenTerm.value = selectedTermMonths;
             document.querySelector("[data-min-cash]").textContent = money(deal.min_cash_price);
             document.querySelector("[data-max-cash]").textContent = money(deal.max_cash_price);
@@ -327,7 +335,7 @@
             document.querySelectorAll("[data-term-copy-daily]").forEach(function (el) {
                 el.textContent = termMonths;
             });
-            document.querySelector("[data-term-months]").textContent = termMonths;
+            if (termDisplay) termDisplay.textContent = termMonths;
             const sixTotal = totalLoan * 0.85;
             const threeTotal = totalLoan * 0.75;
 
