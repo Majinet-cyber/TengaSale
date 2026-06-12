@@ -44,7 +44,7 @@
 {% elif apps %}
   <div class="app-card-list" style="margin-top:10px;">
   {% for app in apps %}
-    <a href="{% url 'sales_review_summary' app.id %}" class="app-card-v2">
+    <a href="{% if tab == 'completed' or tab == 'rejected' %}{% url 'sales_application_detail' app.id %}{% else %}{% url 'sales_review_summary' app.id %}{% endif %}" class="app-card-v2">
 
       {% if app.customer_face_image %}
         <img

@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from accounts.utils import assign_role
 from applications.models import FinancingApplication
+from merchants.models import Merchant
 from portal.models import PaymentContract
 from .portfolio_services import calculate_contract_risk, calculate_par_band, calculate_portfolio_kpis
 
@@ -228,12 +229,25 @@ class HomePageTests(TestCase):
         self.assertContains(response, reverse("all_deals"))
         self.assertContains(response, reverse("active_applications"))
         self.assertContains(response, reverse("earnings_home"))
-        self.assertContains(response, reverse("ticket_create"))
+        self.assertContains(response, reverse("profile_settings"))
         assert_merchant_dashboard_malawi_flag(self, response)
         self.assertContains(response, "row-arrow")
         self.assertNotContains(response, "Claim Next")
         self.assertNotContains(response, "Active Contracts")
         self.assertNotContains(response, "Completed Contracts")
+
+    def test_profile_settings_is_role_aware_and_keeps_support_link(self):
+        user = self.create_user("merchant-profile", "Merchant", email="merchant@example.com")
+        Merchant.objects.create(owner=user, business_name="Profile Shop", phone_number="0990870616")
+        self.client.login(username="merchant-profile", password="test-pass-123")
+
+        response = self.client.get(reverse("profile_settings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Profile Shop")
+        self.assertContains(response, "Malawi")
+        self.assertContains(response, reverse("ticket_create"))
+        self.assertContains(response, reverse("ticket_list"))
 
     def test_merchant_dashboard_loads_with_empty_data_without_pdf_generation(self):
         self.create_user("empty-merchant", "Merchant")

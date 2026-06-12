@@ -545,6 +545,10 @@ class FinancingApplication(models.Model):
     def merchant_status_label(self):
         return self.MERCHANT_STATUS_LABELS.get(self.merchant_status_key, self.get_status_display())
 
+    @property
+    def is_read_only_record(self):
+        return self.status in {"active_contract", "contract_complete", "completed", "rejected", "cancelled"}
+
     def get_continue_url(self):
         if self.status in {"approved", "approved_pending_device_lock", "imei_required"}:
             if getattr(self, "contract", None):

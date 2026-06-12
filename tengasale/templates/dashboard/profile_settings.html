@@ -1,0 +1,81 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Profile Settings - TengaSale{% endblock %}
+
+{% block content %}
+<style>
+.profile-settings-page { padding: 14px; display: grid; gap: 14px; }
+.profile-settings-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; box-shadow: 0 2px 10px rgba(15,23,42,.04); }
+.profile-settings-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.profile-settings-kicker { margin: 0 0 4px; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.profile-settings-title { margin: 0; color: #0f172a; font-size: 24px; line-height: 1.1; }
+.profile-settings-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 10px; border-radius: 999px; background: #ecfdf3; color: #16783b; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.profile-settings-grid { display: grid; gap: 10px; margin-top: 14px; }
+.profile-settings-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid #f1f5f9; }
+.profile-settings-row span { color: #64748b; font-size: 13px; }
+.profile-settings-row strong { color: #0f172a; font-size: 13px; text-align: right; }
+.profile-settings-actions { display: grid; gap: 10px; }
+.profile-settings-link, .profile-settings-logout { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #0f172a; font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
+.profile-settings-logout { width: 100%; color: #b42318; }
+.profile-settings-link i, .profile-settings-logout i { color: #ff5a00; }
+@media (min-width: 720px) {
+  .profile-settings-page { max-width: 720px; margin: 0 auto; }
+}
+</style>
+
+<div class="profile-settings-page">
+  <a href="{% url 'home' %}" class="soft-back">
+    <span class="soft-back-icon">&larr;</span>
+    <span>Back</span>
+  </a>
+
+  <section class="profile-settings-card">
+    <div class="profile-settings-head">
+      <div>
+        <p class="profile-settings-kicker">Profile / Settings</p>
+        <h1 class="profile-settings-title">
+          {% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}
+        </h1>
+      </div>
+      <span class="profile-settings-chip">{{ profile_role_label }}</span>
+    </div>
+
+    <div class="profile-settings-grid">
+      {% if profile_role == "merchant" %}
+        <div class="profile-settings-row"><span>Merchant</span><strong>{% if merchant %}{{ merchant.business_name }}{% else %}{{ request.user.username }}{% endif %}</strong></div>
+        <div class="profile-settings-row"><span>Merchant code</span><strong>{% if merchant and merchant.id %}M{{ merchant.id|stringformat:"05d" }}{% else %}Not available{% endif %}</strong></div>
+        <div class="profile-settings-row"><span>Phone</span><strong>{% if merchant and merchant.phone_number %}{{ merchant.phone_number }}{% else %}Not available{% endif %}</strong></div>
+        <div class="profile-settings-row"><span>Email</span><strong>{{ request.user.email|default:"Not available" }}</strong></div>
+        <div class="profile-settings-row"><span>Country</span><strong>Malawi</strong></div>
+        <div class="profile-settings-row"><span>Status</span><strong>{{ merchant_status|default:"Good standing" }}</strong></div>
+      {% elif profile_role == "underwriter" %}
+        <div class="profile-settings-row"><span>Name</span><strong>{% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}</strong></div>
+        <div class="profile-settings-row"><span>Role</span><strong>Underwriter</strong></div>
+        <div class="profile-settings-row"><span>Email</span><strong>{{ request.user.email|default:"Not available" }}</strong></div>
+        <div class="profile-settings-row"><span>Country</span><strong>Malawi</strong></div>
+        <div class="profile-settings-row"><span>Active reviews</span><strong>{{ active_reviews }}</strong></div>
+        <div class="profile-settings-row"><span>Completed reviews</span><strong>{{ reviewed_count }}</strong></div>
+      {% else %}
+        <div class="profile-settings-row"><span>Name</span><strong>{% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}</strong></div>
+        <div class="profile-settings-row"><span>Role</span><strong>{{ profile_role_label }}</strong></div>
+        <div class="profile-settings-row"><span>Email</span><strong>{{ request.user.email|default:"Not available" }}</strong></div>
+        <div class="profile-settings-row"><span>Country</span><strong>Malawi</strong></div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="profile-settings-actions" aria-label="Profile quick links">
+    <a href="{% url 'ticket_create' %}" class="profile-settings-link"><span><i class="bi bi-life-preserver" aria-hidden="true"></i> Report issue</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    {% if profile_role == "hq" or request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'notifications_list' %}" class="profile-settings-link"><span><i class="bi bi-bell" aria-hidden="true"></i> Notifications</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+      <a href="{% url 'hq_users' %}" class="profile-settings-link"><span><i class="bi bi-gear" aria-hidden="true"></i> System/settings</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    {% else %}
+      <a href="{% url 'ticket_list' %}" class="profile-settings-link"><span><i class="bi bi-chat-left-text" aria-hidden="true"></i> Support</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    {% endif %}
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="profile-settings-logout"><span><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Logout</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    </form>
+  </section>
+</div>
+{% endblock %}
