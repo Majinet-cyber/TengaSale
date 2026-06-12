@@ -15,6 +15,7 @@
     <link rel="icon" type="image/png" href="{% static 'images/icon-192.png' %}" sizes="192x192">
     <link rel="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.0.3">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
     <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=1.0.1">
     <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=2.0.0">
@@ -108,6 +109,81 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    {% if request.user.is_authenticated %}
+        {% with current_url=request.resolver_match.url_name current_tab=request.GET.tab %}
+            {% if current_tengasale_role == "merchant" %}
+                <nav class="ts-mobile-role-nav" aria-label="Merchant mobile navigation">
+                    <a href="{% url 'merchant_dashboard' %}" class="ts-mobile-role-nav__item {% if current_url == 'merchant_dashboard' %}is-active{% endif %}" {% if current_url == 'merchant_dashboard' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-house-door" aria-hidden="true"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{% url 'all_deals' %}" class="ts-mobile-role-nav__item {% if current_url == 'all_deals' %}is-active{% endif %}" {% if current_url == 'all_deals' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-grid" aria-hidden="true"></i>
+                        <span>Deals</span>
+                    </a>
+                    <a href="{% url 'active_applications' %}" class="ts-mobile-role-nav__item {% if current_url == 'active_applications' or current_url == 'pending_applications' or current_url == 'completed_applications' or current_url == 'rejected_applications' or current_url == 'application_detail' %}is-active{% endif %}" {% if current_url == 'active_applications' or current_url == 'pending_applications' or current_url == 'completed_applications' or current_url == 'rejected_applications' or current_url == 'application_detail' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-files" aria-hidden="true"></i>
+                        <span>Applications</span>
+                    </a>
+                    <a href="{% url 'earnings_home' %}" class="ts-mobile-role-nav__item {% if current_url == 'earnings_home' or current_url == 'merchant_leaderboard' or current_url == 'spin_rewards' %}is-active{% endif %}" {% if current_url == 'earnings_home' or current_url == 'merchant_leaderboard' or current_url == 'spin_rewards' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                        <span>Earnings</span>
+                    </a>
+                    <a href="{% url 'ticket_create' %}" class="ts-mobile-role-nav__item {% if current_url == 'ticket_create' or current_url == 'support_dashboard' %}is-active{% endif %}" {% if current_url == 'ticket_create' or current_url == 'support_dashboard' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            {% elif current_tengasale_role == "underwriter" %}
+                <nav class="ts-mobile-role-nav" aria-label="Underwriter mobile navigation">
+                    <a href="{% url 'sales_home' %}" class="ts-mobile-role-nav__item {% if current_url == 'sales_home' or current_url == 'underwriter_dashboard' %}is-active{% endif %}" {% if current_url == 'sales_home' or current_url == 'underwriter_dashboard' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-house-door" aria-hidden="true"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{% url 'sales_applications' %}?tab=queue" class="ts-mobile-role-nav__item {% if current_url == 'sales_applications' and current_tab == 'queue' %}is-active{% endif %}" {% if current_url == 'sales_applications' and current_tab == 'queue' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <span>Queue</span>
+                    </a>
+                    <a href="{% url 'sales_applications' %}?tab=active" class="ts-mobile-role-nav__item {% if current_url == 'sales_applications' and current_tab != 'queue' %}is-active{% endif %}" {% if current_url == 'sales_applications' and current_tab != 'queue' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                        <span>Reviews</span>
+                    </a>
+                    <a href="{% url 'sales_wallet' %}" class="ts-mobile-role-nav__item {% if current_url == 'sales_wallet' or current_url == 'sales_spin' %}is-active{% endif %}" {% if current_url == 'sales_wallet' or current_url == 'sales_spin' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-wallet2" aria-hidden="true"></i>
+                        <span>Earnings</span>
+                    </a>
+                    <a href="{% url 'ticket_create' %}" class="ts-mobile-role-nav__item {% if current_url == 'ticket_create' or current_url == 'support_dashboard' %}is-active{% endif %}" {% if current_url == 'ticket_create' or current_url == 'support_dashboard' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            {% elif current_tengasale_role == "hq" %}
+                <nav class="ts-mobile-role-nav ts-mobile-role-nav--hq" aria-label="HQ mobile navigation">
+                    <a href="{% url 'hq_dashboard' %}" class="ts-mobile-role-nav__item {% if current_url == 'hq_dashboard' %}is-active{% endif %}" {% if current_url == 'hq_dashboard' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-command" aria-hidden="true"></i>
+                        <span>Command</span>
+                    </a>
+                    <a href="{% url 'hq_applications' %}" class="ts-mobile-role-nav__item {% if current_url == 'hq_applications' %}is-active{% endif %}" {% if current_url == 'hq_applications' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-files" aria-hidden="true"></i>
+                        <span>Applications</span>
+                    </a>
+                    <a href="{% url 'hq_portfolio' %}" class="ts-mobile-role-nav__item {% if current_url == 'hq_portfolio' or current_url == 'hq_payment_collections' %}is-active{% endif %}" {% if current_url == 'hq_portfolio' or current_url == 'hq_payment_collections' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                        <span>Portfolio</span>
+                    </a>
+                    <a href="{% url 'device_lock:hq_lock_centre' %}" class="ts-mobile-role-nav__item {% if current_url == 'hq_lock_centre' or current_url == 'hq_devices' %}is-active{% endif %}" {% if current_url == 'hq_lock_centre' or current_url == 'hq_devices' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-lock" aria-hidden="true"></i>
+                        <span>Locks</span>
+                    </a>
+                    <a href="{% url 'hq_operations' %}" class="ts-mobile-role-nav__item {% if current_url != 'hq_dashboard' and current_url != 'hq_applications' and current_url != 'hq_portfolio' and current_url != 'hq_payment_collections' and current_url != 'hq_lock_centre' and current_url != 'hq_devices' %}is-active{% endif %}" {% if current_url != 'hq_dashboard' and current_url != 'hq_applications' and current_url != 'hq_portfolio' and current_url != 'hq_payment_collections' and current_url != 'hq_lock_centre' and current_url != 'hq_devices' %}aria-current="page"{% endif %}>
+                        <i class="bi bi-three-dots" aria-hidden="true"></i>
+                        <span>More</span>
+                    </a>
+                </nav>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
 
     {% block page_footer %}
     <footer class="footer">

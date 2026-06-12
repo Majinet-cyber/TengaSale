@@ -2689,6 +2689,83 @@ img.ts-logo-wordmark {
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
 }
 
+.ts-mobile-role-nav {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .app-shell:has(.ts-mobile-role-nav) .content {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+
+  .ts-mobile-role-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 210;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: min(100%, 560px);
+    transform: translateX(-50%);
+    padding: 7px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid rgba(226, 232, 240, 0.95);
+    box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.10);
+    backdrop-filter: blur(14px);
+  }
+
+  .ts-mobile-role-nav__item {
+    min-width: 0;
+    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: #667085;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.1;
+    transition: background .12s, color .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ts-mobile-role-nav__item i {
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  .ts-mobile-role-nav__item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ts-mobile-role-nav__item.is-active {
+    background: rgba(255, 90, 0, 0.10);
+    color: #ff5a00;
+  }
+
+  .ts-mobile-role-nav--hq .ts-mobile-role-nav__item.is-active {
+    background: rgba(15, 23, 42, 0.08);
+    color: #101828;
+  }
+}
+
+@media (max-width: 370px) {
+  .ts-mobile-role-nav {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .ts-mobile-role-nav__item {
+    font-size: 9.5px;
+  }
+}
+
 /* Non-fixed footer — prevents overlap by flowing naturally */
 .footer {
   position: relative !important;
@@ -3497,6 +3574,7 @@ label,
   font-weight: 800;
   color: var(--ts-text);
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .merchant-dashboard-shell .action-row-value {
@@ -3505,14 +3583,16 @@ label,
   color: var(--ts-muted);
   text-align: right;
   white-space: nowrap;
-  max-width: 42%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
+  justify-self: end;
 }
 
 .merchant-dashboard-shell .action-row-chevron {
   color: #cbd5e1;
   font-size: 18px;
+  width: 18px;
+  text-align: right;
+  justify-self: end;
   flex-shrink: 0;
 }
 
@@ -3586,7 +3666,6 @@ label,
 
   .merchant-dashboard-shell .action-row-value {
     font-size: 12px;
-    max-width: 36%;
   }
 }
 

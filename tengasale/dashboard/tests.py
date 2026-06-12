@@ -224,6 +224,11 @@ class HomePageTests(TestCase):
         self.assertContains(response, 'aria-label="Log out"')
         self.assertContains(response, "merchant-shell")
         self.assertContains(response, "merchant-dashboard-shell")
+        self.assertContains(response, 'aria-label="Merchant mobile navigation"')
+        self.assertContains(response, reverse("all_deals"))
+        self.assertContains(response, reverse("active_applications"))
+        self.assertContains(response, reverse("earnings_home"))
+        self.assertContains(response, reverse("ticket_create"))
         assert_merchant_dashboard_malawi_flag(self, response)
         self.assertContains(response, "row-arrow")
         self.assertNotContains(response, "Claim Next")
@@ -309,6 +314,10 @@ class HomePageTests(TestCase):
 
         self.assertEqual(hq_response.status_code, 200)
         self.assertContains(hq_response, "HQ")
+        self.assertContains(hq_response, 'aria-label="HQ mobile navigation"')
+        self.assertContains(hq_response, reverse("hq_applications"))
+        self.assertContains(hq_response, reverse("hq_portfolio"))
+        self.assertContains(hq_response, reverse("device_lock:hq_lock_centre"))
         self.assert_role_forbidden(merchant_response)
 
     def test_hq_dashboard_loads_with_sparse_empty_data(self):
