@@ -824,6 +824,9 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertContains(response, "25% discount")
         self.assertContains(response, 'name="deal_id"')
         self.assertContains(response, 'name="selected_cash_price"')
+        self.assertContains(response, "data-term-display")
+        self.assertContains(response, "data-deal-js-error")
+        self.assertContains(response, 'document.querySelector("[data-term-display]")')
 
     def test_invalid_deal_id_post_returns_error(self):
         app = self.create_application()
@@ -1292,6 +1295,8 @@ class KYCCaptureTests(ApplicationTestCase):
         payload = response.json()
         self.assertTrue(payload["ok"])
         self.assertIn("/media/", payload["url"])
+        self.assertIn("preview_url", payload)
+        self.assertIn("?v=", payload["preview_url"])
 
         app.refresh_from_db()
         self.assertTrue(app.customer_face_image)
@@ -1311,6 +1316,11 @@ class KYCCaptureTests(ApplicationTestCase):
     def test_kyc_template_skips_empty_review_src_error_binding(self):
         response = self.client.get(reverse("kyc_capture", args=[self.create_application().id]))
         self.assertContains(response, "if (!src || src === window.location.href) return")
+        self.assertContains(response, 'id="kyc-img-selfie"')
+        self.assertContains(response, 'id="kyc-img-id_front"')
+        self.assertContains(response, 'id="kyc-img-id_back"')
+        self.assertContains(response, 'id="kyc-img-id_front-empty"')
+        self.assertContains(response, 'id="kyc-img-id_back-empty"')
 
     def test_kyc_review_shows_saved_image_urls(self):
         app = self.create_application()

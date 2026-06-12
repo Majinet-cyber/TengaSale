@@ -1870,18 +1870,57 @@ def hq_commissions(request):
 
 @hq_required
 def hq_merchant_payouts(request):
-    from commissions.models import MerchantContractPayout
-    from decimal import Decimal
     from core.models import AuditLog
 
     msg = None
     msg_type = "info"
+
+    def _merchant_profile_for(user):
+        if not user:
+            return None
+        return Merchant.objects.filter(owner=user).order_by("id").first()
+
+    def _block_if_non_compliant(payout, action_name):
+        merchant_profile = _merchant_profile_for(payout.merchant)
+        if merchant_profile and merchant_profile.is_compliance_complete:
+            return False, merchant_profile, ""
+        reason = merchant_profile.payout_block_reason if merchant_profile else "Blocked: merchant profile missing"
+        payout.status = MerchantContractPayout.STATUS_BLOCKED
+        payout.hold_reason = reason
+        payout.save(update_fields=["status", "hold_reason", "updated_at"])
+        AuditLog.objects.create(
+            user=request.user,
+            action=f"hq_payout_{action_name}_blocked",
+            object_type="MerchantContractPayout",
+            object_id=str(payout.pk),
+            detail={"reason": reason, "amount": str(payout.total_payable)},
+        )
+        return True, merchant_profile, reason
 
     if request.method == "POST":
         action = request.POST.get("action", "")
         payout_id = request.POST.get("payout_id")
         try:
             payout = MerchantContractPayout.objects.get(pk=payout_id)
+            if action in {"approve_payout", "queue_payout", "mark_paid", "release_hold"}:
+                blocked, _, reason = _block_if_non_compliant(payout, action)
+                if blocked:
+                    messages.error(request, f"Payout #{payout.pk} blocked. {reason}")
+                    return redirect(f"{reverse('hq_merchant_payouts')}?status=blocked")
+
+            if action == "approve_payout":
+                payout.status = MerchantContractPayout.STATUS_APPROVED
+                payout.hold_reason = ""
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="hq_payout_approved",
+                    object_type="MerchantContractPayout",
+                    object_id=str(payout.pk),
+                    detail={"amount": str(payout.total_payable)},
+                )
+                messages.success(request, f"Payout #{payout.pk} approved for settlement control.")
+                return redirect("hq_merchant_payouts")
             if action == "mark_paid":
                 ref = request.POST.get("reference", "").strip()
                 payout.mark_paid(reference=ref)
@@ -1892,11 +1931,12 @@ def hq_merchant_payouts(request):
                     object_id=str(payout.pk),
                     detail={"reference": ref, "amount": str(payout.total_payable)},
                 )
-                msg = f"Payout #{payout.pk} marked as paid."
-                msg_type = "success"
+                messages.success(request, f"Payout #{payout.pk} marked as manually paid.")
+                return redirect("hq_merchant_payouts")
             elif action == "queue_payout":
                 payout.status = MerchantContractPayout.STATUS_PROCESSING
-                payout.save(update_fields=["status", "updated_at"])
+                payout.hold_reason = ""
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
                 AuditLog.objects.create(
                     user=request.user,
                     action="hq_payout_queued",
@@ -1904,13 +1944,46 @@ def hq_merchant_payouts(request):
                     object_id=str(payout.pk),
                     detail={"amount": str(payout.total_payable)},
                 )
-                msg = f"Payout #{payout.pk} queued for processing."
-                msg_type = "success"
+                messages.success(request, f"Payout #{payout.pk} queued for internal processing.")
+                return redirect("hq_merchant_payouts")
+            elif action == "hold_payout":
+                reason = request.POST.get("hold_reason", "").strip() or "Held for internal review"
+                payout.status = MerchantContractPayout.STATUS_HELD
+                payout.hold_reason = reason[:255]
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="hq_payout_held",
+                    object_type="MerchantContractPayout",
+                    object_id=str(payout.pk),
+                    detail={"reason": reason, "amount": str(payout.total_payable)},
+                )
+                messages.info(request, f"Payout #{payout.pk} held for review.")
+                return redirect("hq_merchant_payouts")
+            elif action == "release_hold":
+                payout.status = MerchantContractPayout.STATUS_PENDING
+                payout.hold_reason = ""
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
+                messages.success(request, f"Payout #{payout.pk} released back to pending.")
+                return redirect("hq_merchant_payouts")
+            elif action == "mark_disputed":
+                reason = request.POST.get("hold_reason", "").strip() or "Marked disputed by HQ"
+                payout.status = MerchantContractPayout.STATUS_DISPUTED
+                payout.hold_reason = reason[:255]
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
+                messages.info(request, f"Payout #{payout.pk} marked as disputed.")
+                return redirect("hq_merchant_payouts")
+            elif action == "add_note":
+                payout.internal_note = request.POST.get("internal_note", "").strip()
+                payout.save(update_fields=["internal_note", "updated_at"])
+                messages.success(request, f"Internal note updated for payout #{payout.pk}.")
+                return redirect("hq_merchant_payouts")
             elif action == "retry_payout":
                 payout.status = MerchantContractPayout.STATUS_PENDING
-                payout.save(update_fields=["status", "updated_at"])
-                msg = f"Payout #{payout.pk} reset to pending for retry."
-                msg_type = "info"
+                payout.hold_reason = ""
+                payout.save(update_fields=["status", "hold_reason", "updated_at"])
+                messages.info(request, f"Payout #{payout.pk} reset to pending for retry.")
+                return redirect("hq_merchant_payouts")
         except MerchantContractPayout.DoesNotExist:
             msg = "Payout not found."
             msg_type = "error"
@@ -1927,6 +2000,36 @@ def hq_merchant_payouts(request):
         all_payouts = all_payouts.filter(status=status_filter)
     if merchant_filter:
         all_payouts = all_payouts.filter(merchant__username__icontains=merchant_filter)
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="merchant-payout-control.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            "Payout ID", "Merchant", "Compliance", "Status", "Cash Price",
+            "Commission", "Total Payable", "Method", "Hold Reason", "Provider Reference", "Created",
+        ])
+        profiles = {
+            merchant.owner_id: merchant for merchant in Merchant.objects.filter(
+                owner_id__in=all_payouts.values_list("merchant_id", flat=True)
+            ).select_related("owner")
+        }
+        for payout in all_payouts[:1000]:
+            merchant_profile = profiles.get(payout.merchant_id)
+            writer.writerow([
+                payout.pk,
+                payout.merchant.get_full_name() or payout.merchant.username,
+                merchant_profile.compliance_label if merchant_profile else "Merchant profile missing",
+                payout.get_status_display(),
+                payout.cash_price,
+                payout.merchant_commission_amount,
+                payout.total_payable,
+                payout.get_payout_method_display(),
+                payout.hold_reason,
+                payout.provider_reference,
+                payout.created_at.isoformat(),
+            ])
+        return response
 
     # Totals on full (possibly filtered) queryset — NEVER filter on a sliced queryset
     pending_total = MerchantContractPayout.objects.filter(
@@ -1945,15 +2048,50 @@ def hq_merchant_payouts(request):
         status=MerchantContractPayout.STATUS_PROCESSING
     ).aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
 
+    approved_total = MerchantContractPayout.objects.filter(
+        status=MerchantContractPayout.STATUS_APPROVED
+    ).aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
+    held_total = MerchantContractPayout.objects.filter(
+        status__in=[
+            MerchantContractPayout.STATUS_HELD,
+            MerchantContractPayout.STATUS_DISPUTED,
+            MerchantContractPayout.STATUS_BLOCKED,
+        ]
+    ).aggregate(t=Sum("total_payable"))["t"] or Decimal("0")
+    compliance_missing_count = sum(
+        1 for merchant in Merchant.objects.all()
+        if not merchant.is_compliance_complete
+    )
+
     # Slice only for display
-    payouts = all_payouts[:100]
+    payouts = list(all_payouts[:100])
+    profiles = {
+        merchant.owner_id: merchant for merchant in Merchant.objects.filter(
+            owner_id__in=[payout.merchant_id for payout in payouts]
+        ).select_related("owner")
+    }
+    payout_rows = []
+    for payout in payouts:
+        merchant_profile = profiles.get(payout.merchant_id)
+        payout_rows.append({
+            "payout": payout,
+            "merchant_profile": merchant_profile,
+            "compliance_label": merchant_profile.compliance_label if merchant_profile else "Merchant profile missing",
+            "is_compliant": bool(merchant_profile and merchant_profile.is_compliance_complete),
+            "block_reason": merchant_profile.payout_block_reason if merchant_profile else "Blocked: merchant profile missing",
+        })
 
     return render(request, "dashboard/hq_merchant_payouts.html", {
         "payouts": payouts,
+        "payout_rows": payout_rows,
         "pending_total": pending_total,
+        "approved_total": approved_total,
         "paid_total": paid_total,
         "commission_total": commission_total,
         "processing_total": processing_total,
+        "held_total": held_total,
+        "compliance_missing_count": compliance_missing_count,
+        "status_choices": MerchantContractPayout.STATUS_CHOICES,
         "status_filter": status_filter,
         "merchant_filter": merchant_filter,
         "msg": msg,
@@ -2608,29 +2746,25 @@ def hq_devices(request):
                 msg = f"Enrollment initiated for {contract.contract_number}."
                 msg_type = "success"
             elif action == "lock_device":
-                contract.device_lock_status = PaymentContract.LOCK_STATUS_LOCKED
-                contract.save(update_fields=["device_lock_status", "updated_at"])
                 AuditLog.objects.create(
                     user=request.user,
-                    action="hq_device_lock",
+                    action="hq_device_lock_request_blocked",
                     object_type="PaymentContract",
                     object_id=str(contract.pk),
-                    detail={"contract": contract.contract_number},
+                    detail={"contract": contract.contract_number, "reason": "No connected lock provider command configured"},
                 )
-                msg = f"Device locked for {contract.contract_number}."
-                msg_type = "success"
+                msg = f"Lock request for {contract.contract_number} was not sent. Configure a lock provider command before changing device state."
+                msg_type = "error"
             elif action == "unlock_device":
-                contract.device_lock_status = PaymentContract.LOCK_STATUS_UNLOCKED
-                contract.save(update_fields=["device_lock_status", "updated_at"])
                 AuditLog.objects.create(
                     user=request.user,
-                    action="hq_device_unlock",
+                    action="hq_device_unlock_request_blocked",
                     object_type="PaymentContract",
                     object_id=str(contract.pk),
-                    detail={"contract": contract.contract_number},
+                    detail={"contract": contract.contract_number, "reason": "No connected lock provider command configured"},
                 )
-                msg = f"Device unlocked for {contract.contract_number}."
-                msg_type = "success"
+                msg = f"Unlock request for {contract.contract_number} was not sent. Configure a lock provider command before changing device state."
+                msg_type = "error"
             elif action == "release_device":
                 contract.device_enrollment_status = PaymentContract.ENROLLMENT_NONE
                 contract.device_lock_status = PaymentContract.LOCK_STATUS_UNLOCKED
@@ -3253,6 +3387,13 @@ def hq_reconciliation(request):
     )
     # External pending
     ext_pending = PaymentTransaction.objects.filter(status="processing").count()
+    total_transactions = PaymentTransaction.objects.count()
+    reconciliation_rate = round((matched / total_transactions) * 100, 1) if total_transactions else 0
+    unlinked_paid = PaymentTransaction.objects.filter(status="paid", payment_contract__isnull=True).count()
+    missing_provider_ref = PaymentTransaction.objects.filter(
+        Q(provider_reference="") | Q(provider_reference__isnull=True)
+    ).count()
+    manual_review_total = unmatched + ext_pending + dup_refs + unlinked_paid
 
     # Recent unmatched for review
     unmatched_qs = PaymentTransaction.objects.filter(
@@ -3264,6 +3405,10 @@ def hq_reconciliation(request):
         "unmatched": unmatched,
         "dup_refs": dup_refs,
         "ext_pending": ext_pending,
+        "reconciliation_rate": reconciliation_rate,
+        "unlinked_paid": unlinked_paid,
+        "missing_provider_ref": missing_provider_ref,
+        "manual_review_total": manual_review_total,
         "unmatched_qs": unmatched_qs,
         "msg": msg,
         "msg_type": msg_type,
@@ -4026,7 +4171,45 @@ def hq_underwriter_preview(request):
 @hq_required
 def hq_merchant_agreements(request):
     from merchants.models import Merchant, MerchantAgreement
-    User = get_user_model()
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        merchant_id = request.POST.get("merchant_id")
+        merchant = get_object_or_404(Merchant, id=merchant_id)
+        if action == "approve_compliance":
+            if not merchant.certificate_file:
+                messages.error(request, "Merchant has not uploaded a certificate.")
+            elif not merchant.has_signed_agreement:
+                messages.error(request, "Merchant must sign the agreement before compliance approval.")
+            else:
+                merchant.certificate_status = Merchant.CERTIFICATE_APPROVED
+                merchant.compliance_reviewed_by = request.user
+                merchant.compliance_reviewed_at = timezone.now()
+                merchant.compliance_rejection_reason = ""
+                merchant.save(update_fields=[
+                    "certificate_status",
+                    "compliance_reviewed_by",
+                    "compliance_reviewed_at",
+                    "compliance_rejection_reason",
+                ])
+                messages.success(request, f"{merchant.business_name} compliance approved.")
+        elif action == "reject_compliance":
+            reason = request.POST.get("rejection_reason", "").strip()
+            if not reason:
+                messages.error(request, "Add a rejection reason before rejecting compliance.")
+            else:
+                merchant.certificate_status = Merchant.CERTIFICATE_REJECTED
+                merchant.compliance_reviewed_by = request.user
+                merchant.compliance_reviewed_at = timezone.now()
+                merchant.compliance_rejection_reason = reason
+                merchant.save(update_fields=[
+                    "certificate_status",
+                    "compliance_reviewed_by",
+                    "compliance_reviewed_at",
+                    "compliance_rejection_reason",
+                ])
+                messages.info(request, f"{merchant.business_name} compliance rejected.")
+        return redirect("hq_merchant_agreements")
 
     agreements = (
         MerchantAgreement.objects
@@ -4038,6 +4221,13 @@ def hq_merchant_agreements(request):
     merchants_with_agreement = agreements.values_list("merchant_id", flat=True).distinct()
     merchants_all = Merchant.objects.select_related("owner").all()
     merchants_unsigned = merchants_all.exclude(id__in=merchants_with_agreement)
+    merchant_compliance_rows = []
+    for merchant in merchants_all.prefetch_related("agreements").order_by("business_name"):
+        merchant_compliance_rows.append({
+            "merchant": merchant,
+            "agreement": merchant.agreements.order_by("-created_at").first(),
+            "can_approve": merchant.has_signed_agreement and bool(merchant.certificate_file),
+        })
 
     stats = {
         "total": agreements.count(),
@@ -4045,10 +4235,15 @@ def hq_merchant_agreements(request):
         "pending": agreements.filter(status__in=["not_started", "viewed"]).count(),
         "suspended": agreements.filter(status="suspended").count(),
         "no_agreement": merchants_unsigned.count(),
+        "compliance_approved": sum(1 for merchant in merchants_all if merchant.is_compliance_complete),
+        "compliance_pending": merchants_all.filter(certificate_status=Merchant.CERTIFICATE_PENDING).count(),
+        "compliance_rejected": merchants_all.filter(certificate_status=Merchant.CERTIFICATE_REJECTED).count(),
+        "compliance_blocked": sum(1 for merchant in merchants_all if not merchant.is_compliance_complete),
     }
 
     return render(request, "dashboard/hq_merchant_agreements.html", {
         "agreements": agreements[:100],
+        "merchant_compliance_rows": merchant_compliance_rows,
         "merchants_unsigned": merchants_unsigned[:50],
         "stats": stats,
     })

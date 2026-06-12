@@ -1,4 +1,5 @@
 import logging
+import time
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -446,12 +447,15 @@ def kyc_save_image(request, app_id):
         media_url,
         image.name,
     )
+    preview_version = str(int(time.time() * 1000))
     return JsonResponse({
         "ok": True,
         "field": field_name,
         "url": media_url,
         "relative_url": relative_url,
         "absolute_url": media_url,
+        "preview_version": preview_version,
+        "preview_url": f"{media_url}?v={preview_version}",
     })
 
 

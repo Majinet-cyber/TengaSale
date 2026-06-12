@@ -558,21 +558,9 @@
                             class="de-action-btn de-action-btn--enroll">Enroll</button>
                   </form>
                 {% endif %}
-                {% if device.device_lock_status != 'locked' %}
-                  <form method="post" style="display:inline;">{% csrf_token %}
-                    <input type="hidden" name="action" value="lock_device">
-                    <input type="hidden" name="contract_id" value="{{ device.pk }}">
-                    <button type="submit" onclick="return confirm('Lock this device?')"
-                            class="de-action-btn de-action-btn--lock">Lock</button>
-                  </form>
-                {% else %}
-                  <form method="post" style="display:inline;">{% csrf_token %}
-                    <input type="hidden" name="action" value="unlock_device">
-                    <input type="hidden" name="contract_id" value="{{ device.pk }}">
-                    <button type="submit" onclick="return confirm('Unlock this device?')"
-                            class="de-action-btn de-action-btn--unlock">Unlock</button>
-                  </form>
-                {% endif %}
+                <span class="de-action-btn de-action-btn--release" title="Lock and unlock commands require a connected provider integration.">
+                  Provider command required
+                </span>
                 {% if device.status == 'completed' %}
                   <form method="post" style="display:inline;">{% csrf_token %}
                     <input type="hidden" name="action" value="release_device">

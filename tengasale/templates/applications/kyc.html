@@ -525,6 +525,45 @@
         if (photoState[stepNum]) photoState[stepNum].saved = !!isSaved;
     }
 
+    function versionedPreviewUrl(url, version) {
+        if (!url || url.indexOf('blob:') === 0 || url.indexOf('data:') === 0) return url;
+        var token = version || Date.now();
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + encodeURIComponent(token);
+    }
+
+    function snapshotPhotoState(stepNum, previewImage) {
+        var reviewId = reviewKeyMap[stepNum];
+        var reviewImg = reviewId && document.getElementById(reviewId);
+        var state = photoState[stepNum] || {};
+        return {
+            saved: serverPhotoReady(stepNum) || !!(state.saved && state.previewOk),
+            previewSrc: previewImage ? (previewImage.getAttribute('src') || '') : '',
+            reviewSrc: reviewImg ? (reviewImg.getAttribute('src') || '') : ''
+        };
+    }
+
+    function restorePhotoState(stepNum, snapshot, previewImage, previewCard, statusEl, nextBtn) {
+        if (!snapshot || !snapshot.saved) return false;
+        setSectionSaved(stepNum, true);
+        if (stepNum === 0) form.dataset.selfieDone = 'true';
+        if (stepNum === 1) form.dataset.idFrontDone = 'true';
+        if (stepNum === 2) form.dataset.idBackDone = 'true';
+        if (photoState[stepNum]) photoState[stepNum].previewOk = true;
+        if (previewImage && snapshot.previewSrc) {
+            previewImage.src = snapshot.previewSrc;
+            previewImage.style.display = '';
+        }
+        if (previewCard) previewCard.classList.add('is-visible');
+        if (statusEl) {
+            statusEl.textContent = 'Photo saved.';
+            statusEl.classList.add('captured');
+        }
+        if (nextBtn) nextBtn.hidden = false;
+        if (snapshot.reviewSrc) updateReviewImage(stepNum, snapshot.reviewSrc, true);
+        refreshSubmitState();
+        return true;
+    }
+
     function bindReviewImageLoad(img) {
         if (!img || img.dataset.loadBound) return;
         var src = (img.getAttribute('src') || '').trim();
@@ -590,7 +629,7 @@
         refreshSubmitState();
     }
 
-    function saveCaptureToServer(stepNum, file, previewUrl) {
+    function saveCaptureToServer(stepNum, file, previewUrl, previousSnapshot, previewImage, previewCard, nextBtn) {
         if (!saveUrl || !file) return;
         var fieldName = stepFieldMap[stepNum];
         if (!fieldName) return;
@@ -615,6 +654,7 @@
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (data && data.ok && data.url) {
+                    var displayUrl = data.preview_url || versionedPreviewUrl(data.url, data.preview_version);
                     setSectionSaved(stepNum, true);
                     if (stepNum === 0) form.dataset.selfieDone = 'true';
                     if (stepNum === 1) form.dataset.idFrontDone = 'true';
@@ -627,8 +667,16 @@
                     if (serverPhotoReady(0) && serverPhotoReady(1) && serverPhotoReady(2)) {
                         form.dataset.kycComplete = 'true';
                     }
-                    updateReviewImage(stepNum, data.url, true);
+                    if (previewImage) {
+                        previewImage.src = displayUrl;
+                        previewImage.style.display = '';
+                    }
+                    updateReviewImage(stepNum, displayUrl, true);
                 } else {
+                    if (restorePhotoState(stepNum, previousSnapshot, previewImage, section && section.querySelector('[data-preview-card]'), statusEl, nextBtn)) {
+                        showKycError(data && data.error ? data.error : 'Photo upload failed. Previous saved photo was kept.');
+                        return;
+                    }
                     setSectionSaved(stepNum, false);
                     if (statusEl) {
                         statusEl.textContent = 'Photo upload failed. Retake or retry.';
@@ -639,6 +687,10 @@
                 }
             })
             .catch(function () {
+                if (restorePhotoState(stepNum, previousSnapshot, previewImage, section && section.querySelector('[data-preview-card]'), statusEl, nextBtn)) {
+                    showKycError('Photo upload failed. Previous saved photo was kept.');
+                    return;
+                }
                 setSectionSaved(stepNum, false);
                 if (statusEl) {
                     statusEl.textContent = 'Photo upload failed. Retake or retry.';
@@ -819,6 +871,7 @@
         }
 
         function applyCapture(blob) {
+            var previousSnapshot = snapshotPhotoState(stepNum, previewImage);
             var name = (input ? (input.name || 'capture') : 'capture') + '.png';
             var file = new File([blob], name, { type: 'image/png' });
             var dt   = new DataTransfer();
@@ -834,7 +887,7 @@
             setSectionSaved(stepNum, false);
 
             updateReviewImage(stepNum, url, false);
-            saveCaptureToServer(stepNum, file, url);
+            saveCaptureToServer(stepNum, file, url, previousSnapshot, previewImage, previewCard, nextBtn);
 
             refreshSubmitState();
             if (stepNum < 2) {
@@ -950,15 +1003,21 @@
 
         if (recaptureBtn) {
             recaptureBtn.addEventListener('click', function () {
-                section.dataset.existing = 'false';
-                if (photoState[stepNum]) {
-                    photoState[stepNum].saved = false;
-                    photoState[stepNum].previewOk = false;
+                var hasSavedPhoto = serverPhotoReady(stepNum) || !!(photoState[stepNum] && photoState[stepNum].saved && photoState[stepNum].previewOk);
+                if (!hasSavedPhoto) {
+                    section.dataset.existing = 'false';
+                    if (photoState[stepNum]) {
+                        photoState[stepNum].saved = false;
+                        photoState[stepNum].previewOk = false;
+                    }
+                    if (previewCard)  previewCard.classList.remove('is-visible');
+                    if (statusEl)     { statusEl.textContent = 'Required'; statusEl.classList.remove('captured'); }
+                    if (nextBtn) nextBtn.hidden = true;
+                } else if (statusEl) {
+                    statusEl.textContent = 'Retaking photo...';
+                    statusEl.classList.add('captured');
                 }
-                if (previewCard)  previewCard.classList.remove('is-visible');
-                if (statusEl)     { statusEl.textContent = 'Required'; statusEl.classList.remove('captured'); }
                 if (captureButton) captureButton.style.display = '';
-                if (nextBtn) nextBtn.hidden = true;
                 currentFacing = getEffectiveFacing();
                 openCamera(currentFacing);
                 refreshSubmitState();
@@ -1000,6 +1059,7 @@
                     confirmHintText,
                     confirmType,
                     function () {
+                        var previousSnapshot = snapshotPhotoState(stepNum, previewImage);
                         if (previewImage) { previewImage.src = url; previewImage.style.display = ''; }
                         if (previewCard)  previewCard.classList.add('is-visible');
                         if (statusEl)     { statusEl.textContent = '✓ Captured'; statusEl.classList.add('captured'); }
@@ -1007,7 +1067,7 @@
                         if (nextBtn) nextBtn.hidden = false;
                         setSectionSaved(stepNum, false);
                         updateReviewImage(stepNum, url, false);
-                        saveCaptureToServer(stepNum, file, url);
+                        saveCaptureToServer(stepNum, file, url, previousSnapshot, previewImage, previewCard, nextBtn);
                         refreshSubmitState();
                         if (stepNum < 2) {
                             setTimeout(function () { goToStep(stepNum + 1); }, 350);

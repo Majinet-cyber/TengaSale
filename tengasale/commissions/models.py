@@ -215,15 +215,23 @@ class MerchantContractPayout(models.Model):
     """
 
     STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
     STATUS_PROCESSING = "processing"
     STATUS_PAID = "paid"
+    STATUS_HELD = "held"
+    STATUS_DISPUTED = "disputed"
+    STATUS_BLOCKED = "blocked"
     STATUS_FAILED = "failed"
     STATUS_CANCELLED = "cancelled"
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
+        (STATUS_APPROVED, "Approved"),
         (STATUS_PROCESSING, "Processing"),
         (STATUS_PAID, "Paid"),
+        (STATUS_HELD, "Held"),
+        (STATUS_DISPUTED, "Disputed"),
+        (STATUS_BLOCKED, "Blocked"),
         (STATUS_FAILED, "Failed"),
         (STATUS_CANCELLED, "Cancelled"),
     ]
@@ -262,6 +270,8 @@ class MerchantContractPayout(models.Model):
     destination_phone = models.CharField(max_length=30, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     provider_reference = models.CharField(max_length=120, blank=True)
+    internal_note = models.TextField(blank=True)
+    hold_reason = models.CharField(max_length=255, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

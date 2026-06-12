@@ -1,16 +1,20 @@
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.management import call_command
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import patch
 from datetime import timedelta
 from decimal import Decimal
+import tempfile
+import shutil
 
 from accounts.utils import assign_role
 from applications.models import FinancingApplication
-from merchants.models import Merchant
+from commissions.models import MerchantContractPayout
+from merchants.models import Merchant, MerchantAgreement
 from portal.models import PaymentContract
 from .portfolio_services import calculate_contract_risk, calculate_par_band, calculate_portfolio_kpis
 
@@ -54,6 +58,146 @@ def assert_merchant_dashboard_malawi_flag(test_case, response):
         "MW label must stay inside the country chip beside the flag",
     )
     test_case.assertIn(">MW<", chip_region, "MW text must render inside the greeting country chip")
+
+
+class MerchantComplianceWorkflowTests(TestCase):
+    def setUp(self):
+        media_root = tempfile.mkdtemp()
+        self.settings_override = override_settings(MEDIA_ROOT=media_root)
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+        self.addCleanup(lambda: shutil.rmtree(media_root, ignore_errors=True))
+
+        User = get_user_model()
+        self.hq = User.objects.create_user(username="hq_compliance", password="test-pass-123")
+        self.merchant_user = User.objects.create_user(username="merchant_compliance", password="test-pass-123")
+        assign_role(self.hq, "hq")
+        assign_role(self.merchant_user, "merchant")
+        self.merchant = Merchant.objects.create(
+            owner=self.merchant_user,
+            business_name="Compliance Phones",
+            phone_number="0999000000",
+            location="Blantyre",
+        )
+
+    def _signed_agreement(self):
+        return MerchantAgreement.objects.create(
+            merchant=self.merchant,
+            status=MerchantAgreement.STATUS_SIGNED,
+            signer_name="Merchant Owner",
+            business_name=self.merchant.business_name,
+            signed_at=timezone.now(),
+            agreed_read=True,
+            agreed_good_faith=True,
+            agreed_genuine_customers=True,
+            agreed_discretion=True,
+            agreed_commissions=True,
+            agreed_electronic_signature=True,
+        )
+
+    def test_merchant_uploads_certificate_for_review(self):
+        self._signed_agreement()
+        self.client.login(username="merchant_compliance", password="test-pass-123")
+        upload = SimpleUploadedFile("certificate.pdf", b"%PDF-1.4", content_type="application/pdf")
+        response = self.client.post(reverse("merchant_agreement_status"), {"certificate_file": upload})
+        self.assertEqual(response.status_code, 302)
+        self.merchant.refresh_from_db()
+        self.assertEqual(self.merchant.certificate_status, Merchant.CERTIFICATE_PENDING)
+        self.assertTrue(self.merchant.certificate_file.name)
+
+    def test_hq_approves_certificate_compliance(self):
+        self._signed_agreement()
+        self.merchant.certificate_file = SimpleUploadedFile("certificate.pdf", b"%PDF-1.4")
+        self.merchant.certificate_status = Merchant.CERTIFICATE_PENDING
+        self.merchant.certificate_uploaded_at = timezone.now()
+        self.merchant.save()
+
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.post(reverse("hq_merchant_agreements"), {
+            "action": "approve_compliance",
+            "merchant_id": self.merchant.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.merchant.refresh_from_db()
+        self.assertEqual(self.merchant.certificate_status, Merchant.CERTIFICATE_APPROVED)
+        self.assertTrue(self.merchant.is_compliance_complete)
+
+    def test_hq_agreement_compliance_register_renders(self):
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.get(reverse("hq_merchant_agreements"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Merchant Compliance Review")
+
+    def test_noncompliant_payout_is_blocked_before_approval(self):
+        payout = MerchantContractPayout.objects.create(
+            merchant=self.merchant_user,
+            cash_price=Decimal("100000.00"),
+            merchant_commission_amount=Decimal("1000.00"),
+            total_payable=Decimal("101000.00"),
+        )
+
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.post(reverse("hq_merchant_payouts"), {
+            "action": "approve_payout",
+            "payout_id": payout.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        payout.refresh_from_db()
+        self.assertEqual(payout.status, MerchantContractPayout.STATUS_BLOCKED)
+        self.assertIn("agreement", payout.hold_reason)
+
+    def test_hq_payout_control_page_renders(self):
+        MerchantContractPayout.objects.create(
+            merchant=self.merchant_user,
+            cash_price=Decimal("100000.00"),
+            merchant_commission_amount=Decimal("1000.00"),
+            total_payable=Decimal("101000.00"),
+        )
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.get(reverse("hq_merchant_payouts"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Merchant Payouts")
+        self.assertContains(response, "Compliance")
+
+    def test_hq_device_lock_request_does_not_fake_lock_state(self):
+        contract = PaymentContract.objects.create(
+            customer_name="Device Customer",
+            customer_phone="+265881111111",
+            total_amount=Decimal("100000.00"),
+            amount_paid=Decimal("25000.00"),
+            device_lock_status=PaymentContract.LOCK_STATUS_UNLOCKED,
+        )
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.post(reverse("hq_devices"), {
+            "action": "lock_device",
+            "contract_id": contract.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        contract.refresh_from_db()
+        self.assertEqual(contract.device_lock_status, PaymentContract.LOCK_STATUS_UNLOCKED)
+        self.assertContains(response, "was not sent")
+
+    def test_compliant_payout_can_be_approved(self):
+        self._signed_agreement()
+        self.merchant.certificate_status = Merchant.CERTIFICATE_APPROVED
+        self.merchant.compliance_reviewed_by = self.hq
+        self.merchant.compliance_reviewed_at = timezone.now()
+        self.merchant.save()
+        payout = MerchantContractPayout.objects.create(
+            merchant=self.merchant_user,
+            cash_price=Decimal("100000.00"),
+            merchant_commission_amount=Decimal("1000.00"),
+            total_payable=Decimal("101000.00"),
+        )
+
+        self.client.login(username="hq_compliance", password="test-pass-123")
+        response = self.client.post(reverse("hq_merchant_payouts"), {
+            "action": "approve_payout",
+            "payout_id": payout.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        payout.refresh_from_db()
+        self.assertEqual(payout.status, MerchantContractPayout.STATUS_APPROVED)
 
 
 class HQPortfolioManagementTests(TestCase):
