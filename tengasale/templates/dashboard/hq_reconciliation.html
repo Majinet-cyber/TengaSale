@@ -82,6 +82,22 @@
       <div class="rcn-stat-val">{{ ext_pending }}</div>
       <div class="rcn-stat-lbl">External pending</div>
     </div>
+    <div class="rcn-stat" style="--rcn-accent:#2563eb;">
+      <div class="rcn-stat-val">{{ reconciliation_rate }}%</div>
+      <div class="rcn-stat-lbl">Match rate</div>
+    </div>
+    <div class="rcn-stat" style="--rcn-accent:#991b1b;">
+      <div class="rcn-stat-val">{{ manual_review_total }}</div>
+      <div class="rcn-stat-lbl">Manual review queue</div>
+    </div>
+    <div class="rcn-stat" style="--rcn-accent:#7c3aed;">
+      <div class="rcn-stat-val">{{ unlinked_paid }}</div>
+      <div class="rcn-stat-lbl">Paid but unlinked</div>
+    </div>
+    <div class="rcn-stat" style="--rcn-accent:#475569;">
+      <div class="rcn-stat-val">{{ missing_provider_ref }}</div>
+      <div class="rcn-stat-lbl">Missing provider ref</div>
+    </div>
   </div>
 
   <div class="rcn-card">

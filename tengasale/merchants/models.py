@@ -5,11 +5,39 @@ from django.utils import timezone
 
 
 class Merchant(models.Model):
+    CERTIFICATE_NOT_SUBMITTED = "not_submitted"
+    CERTIFICATE_PENDING = "pending_review"
+    CERTIFICATE_APPROVED = "approved"
+    CERTIFICATE_REJECTED = "rejected"
+
+    CERTIFICATE_STATUS_CHOICES = [
+        (CERTIFICATE_NOT_SUBMITTED, "Not Submitted"),
+        (CERTIFICATE_PENDING, "Pending Review"),
+        (CERTIFICATE_APPROVED, "Approved"),
+        (CERTIFICATE_REJECTED, "Rejected"),
+    ]
+
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     business_name = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=30)
     location = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
+    certificate_file = models.FileField(upload_to="merchant_certificates/", null=True, blank=True)
+    certificate_status = models.CharField(
+        max_length=20,
+        choices=CERTIFICATE_STATUS_CHOICES,
+        default=CERTIFICATE_NOT_SUBMITTED,
+    )
+    certificate_uploaded_at = models.DateTimeField(null=True, blank=True)
+    compliance_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="merchant_compliance_reviews",
+    )
+    compliance_reviewed_at = models.DateTimeField(null=True, blank=True)
+    compliance_rejection_reason = models.TextField(blank=True)
 
     def __str__(self):
         return self.business_name
@@ -25,6 +53,40 @@ class Merchant(models.Model):
         return self.agreements.filter(
             status__in=[MerchantAgreement.STATUS_SIGNED, MerchantAgreement.STATUS_ACTIVE]
         ).exists()
+
+    @property
+    def compliance_status(self):
+        if not self.has_signed_agreement:
+            return "pending_signature"
+        if self.certificate_status == self.CERTIFICATE_NOT_SUBMITTED:
+            return "pending_certificate"
+        if self.certificate_status == self.CERTIFICATE_PENDING:
+            return "submitted"
+        if self.certificate_status == self.CERTIFICATE_APPROVED:
+            return "approved"
+        return "rejected"
+
+    @property
+    def compliance_label(self):
+        return {
+            "pending_signature": "Pending Signature",
+            "pending_certificate": "Pending Certificate",
+            "submitted": "Submitted for Review",
+            "approved": "Approved",
+            "rejected": "Rejected",
+        }.get(self.compliance_status, "Not Started")
+
+    @property
+    def is_compliance_complete(self):
+        return self.has_signed_agreement and self.certificate_status == self.CERTIFICATE_APPROVED
+
+    @property
+    def payout_block_reason(self):
+        if not self.has_signed_agreement:
+            return "Blocked: merchant agreement unsigned"
+        if self.certificate_status != self.CERTIFICATE_APPROVED:
+            return "Blocked: merchant compliance certificate not approved"
+        return ""
 
 
 class MerchantAgreement(models.Model):

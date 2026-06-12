@@ -56,6 +56,55 @@
     {% endif %}
   </div>
 
+  <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,0.07),0 4px 16px rgba(15,23,42,0.04);padding:22px 24px;margin-bottom:24px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+      <div>
+        <h2 style="font-size:16px;font-weight:800;color:#0f1923;margin:0 0 4px;">Merchant Compliance</h2>
+        <p style="font-size:13px;color:#667085;margin:0;">Your agreement and certificate must both be approved before payouts can be released.</p>
+      </div>
+      <span style="display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800;background:{% if compliance_status == 'approved' %}#dcfce7;color:#166534{% elif compliance_status == 'rejected' %}#fee2e2;color:#991b1b{% elif compliance_status == 'submitted' %}#dbeafe;color:#1d4ed8{% else %}#fef3c7;color:#92400e{% endif %};">
+        {{ compliance_label }}
+      </span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#667085;margin-bottom:4px;">Agreement</div>
+        <div style="font-size:13px;font-weight:700;color:{% if agreement and agreement.is_signed %}#16a34a{% else %}#d97706{% endif %};">
+          {% if agreement and agreement.is_signed %}Signed{% else %}Signature Required{% endif %}
+        </div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#667085;margin-bottom:4px;">Certificate</div>
+        <div style="font-size:13px;font-weight:700;color:#0f1923;">{{ merchant.get_certificate_status_display }}</div>
+        {% if merchant.certificate_uploaded_at %}
+        <div style="font-size:11.5px;color:#667085;margin-top:3px;">Uploaded {{ merchant.certificate_uploaded_at|date:"d M Y H:i" }}</div>
+        {% endif %}
+      </div>
+      {% if merchant.certificate_file %}
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#667085;margin-bottom:4px;">Current File</div>
+        <a href="{{ merchant.certificate_file.url }}" target="_blank" style="font-size:13px;font-weight:700;color:#ff5a00;text-decoration:none;">View uploaded certificate</a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if merchant.compliance_rejection_reason %}
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 14px;color:#991b1b;font-size:13px;margin-bottom:16px;">
+      <strong>HQ feedback:</strong> {{ merchant.compliance_rejection_reason }}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" style="border-top:1px solid #e5e7eb;padding-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required
+             style="min-height:40px;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:13px;flex:1;min-width:220px;">
+      <button type="submit" style="min-height:40px;background:#0f172a;color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13px;font-weight:800;cursor:pointer;">
+        Upload Certificate
+      </button>
+    </form>
+  </div>
+
   {% if agreement %}
   <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,0.07),0 4px 16px rgba(15,23,42,0.04);padding:20px 24px;">
     <h3 style="font-size:13px;font-weight:700;color:#344054;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 14px;">Agreement Details</h3>

@@ -4,9 +4,10 @@ from .models import Merchant, MerchantAgreement
 
 @admin.register(Merchant)
 class MerchantAdmin(admin.ModelAdmin):
-    list_display = ("business_name", "owner", "phone_number", "location", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("business_name", "owner", "phone_number", "location", "certificate_status", "is_active")
+    list_filter = ("is_active", "certificate_status")
     search_fields = ("business_name", "owner__username", "phone_number")
+    readonly_fields = ("certificate_uploaded_at", "compliance_reviewed_at")
 
 
 @admin.register(MerchantAgreement)

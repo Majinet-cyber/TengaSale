@@ -92,6 +92,102 @@ table.hq-ma-table { width: 100%; border-collapse: collapse; }
       <div class="hq-ma-kpi-label">No Agreement</div>
       <div class="hq-ma-kpi-val red">{{ stats.no_agreement }}</div>
     </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Compliance Approved</div>
+      <div class="hq-ma-kpi-val green">{{ stats.compliance_approved }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Certs Pending</div>
+      <div class="hq-ma-kpi-val amber">{{ stats.compliance_pending }}</div>
+    </div>
+    <div class="hq-ma-kpi">
+      <div class="hq-ma-kpi-label">Payout Blocked</div>
+      <div class="hq-ma-kpi-val red">{{ stats.compliance_blocked }}</div>
+    </div>
+  </div>
+
+  <!-- Merchant compliance table -->
+  <div class="hq-ma-card">
+    <div class="hq-ma-card-hdr">
+      <span class="hq-ma-card-title">Merchant Compliance Review</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="hq-ma-table">
+        <thead>
+          <tr>
+            <th>Merchant</th>
+            <th>Agreement</th>
+            <th>Certificate</th>
+            <th>Compliance</th>
+            <th>Reviewed</th>
+            <th>HQ Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in merchant_compliance_rows %}
+          <tr>
+            <td>
+              <div style="font-weight:700;color:#0f1923;">{{ row.merchant.business_name }}</div>
+              <div style="font-size:11px;color:#667085;">{{ row.merchant.owner.get_full_name|default:row.merchant.owner.username }}</div>
+            </td>
+            <td>
+              {% if row.merchant.has_signed_agreement %}
+              <span class="status-pill signed">Signed</span>
+              {% elif row.agreement %}
+              <span class="status-pill viewed">{{ row.agreement.get_status_display }}</span>
+              {% else %}
+              <span class="status-pill pending">Not Started</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill {% if row.merchant.certificate_status == 'approved' %}signed{% elif row.merchant.certificate_status == 'rejected' %}suspended{% elif row.merchant.certificate_status == 'pending_review' %}viewed{% else %}pending{% endif %}">
+                {{ row.merchant.get_certificate_status_display }}
+              </span>
+              {% if row.merchant.certificate_file %}
+              <div style="margin-top:5px;"><a href="{{ row.merchant.certificate_file.url }}" target="_blank" style="color:#ff5a00;font-size:12px;font-weight:700;text-decoration:none;">Open certificate</a></div>
+              {% endif %}
+            </td>
+            <td>
+              <div style="font-weight:700;color:{% if row.merchant.is_compliance_complete %}#16a34a{% elif row.merchant.compliance_status == 'rejected' %}#dc2626{% else %}#d97706{% endif %};">{{ row.merchant.compliance_label }}</div>
+              {% if row.merchant.payout_block_reason %}
+              <div style="font-size:11px;color:#667085;margin-top:3px;">{{ row.merchant.payout_block_reason }}</div>
+              {% endif %}
+              {% if row.merchant.compliance_rejection_reason %}
+              <div style="font-size:11px;color:#991b1b;margin-top:4px;">{{ row.merchant.compliance_rejection_reason }}</div>
+              {% endif %}
+            </td>
+            <td style="font-size:12px;color:#667085;">
+              {% if row.merchant.compliance_reviewed_at %}
+                {{ row.merchant.compliance_reviewed_at|date:"d M Y H:i" }}<br>
+                {{ row.merchant.compliance_reviewed_by.get_full_name|default:row.merchant.compliance_reviewed_by.username }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;min-width:240px;">
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve_compliance">
+                  <input type="hidden" name="merchant_id" value="{{ row.merchant.id }}">
+                  <button type="submit" class="hq-ma-btn orange" {% if not row.can_approve %}disabled style="opacity:.45;cursor:not-allowed;"{% endif %}>Approve</button>
+                </form>
+                <form method="post" style="display:flex;gap:5px;align-items:center;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject_compliance">
+                  <input type="hidden" name="merchant_id" value="{{ row.merchant.id }}">
+                  <input type="text" name="rejection_reason" placeholder="Reason" style="width:110px;border:1px solid #d1d5db;border-radius:7px;padding:6px 8px;font-size:12px;">
+                  <button type="submit" class="hq-ma-btn red">Reject</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:24px;color:#667085;">No merchants found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Agreements table -->

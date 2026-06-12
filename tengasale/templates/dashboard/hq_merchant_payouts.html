@@ -27,6 +27,14 @@
 .mpo-filter input, .mpo-filter select { min-height:40px; padding:8px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:0.85rem; background:#fff; }
 .mpo-filter button { min-height:40px; background:#ff5a00; color:#fff; border:none; padding:8px 16px; border-radius:10px; font-weight:800; cursor:pointer; font-size:0.85rem; }
 .mpo-note { font-size:0.75rem; color:#64748b; text-align:center; margin-top:12px; }
+.mpo-mini-form { display:flex; gap:5px; align-items:center; justify-content:center; flex-wrap:wrap; }
+.mpo-action { font-size:0.72rem; padding:4px 8px; border-radius:6px; cursor:pointer; border:1px solid transparent; font-weight:800; }
+.mpo-action.orange { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+.mpo-action.blue { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.mpo-action.green { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.mpo-action.red { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+.mpo-action.slate { background:#f8fafc; color:#475569; border-color:#cbd5e1; }
+.mpo-small-input { width:92px; min-height:28px; border:1px solid #d1d5db; border-radius:6px; padding:4px 6px; font-size:0.72rem; }
 </style>
 {% endblock %}
 
@@ -46,6 +54,11 @@
       {{ msg }}
     </div>
   {% endif %}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} mb-3">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
   <div class="mpo-stats">
     <div class="mpo-stat" style="--mpo-accent:#d97706;">
@@ -56,6 +69,14 @@
       <div class="mpo-stat-val">{{ processing_total|mwk }}</div>
       <div class="mpo-stat-lbl">Processing</div>
     </div>
+    <div class="mpo-stat" style="--mpo-accent:#2563eb;">
+      <div class="mpo-stat-val">{{ approved_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Approved control</div>
+    </div>
+    <div class="mpo-stat" style="--mpo-accent:#dc2626;">
+      <div class="mpo-stat-val">{{ held_total|mwk }}</div>
+      <div class="mpo-stat-lbl">Held / blocked / disputed</div>
+    </div>
     <div class="mpo-stat" style="--mpo-accent:#16a34a;">
       <div class="mpo-stat-val">{{ paid_total|mwk }}</div>
       <div class="mpo-stat-lbl">Paid settlement</div>
@@ -64,6 +85,10 @@
       <div class="mpo-stat-val">{{ commission_total|mwk }}</div>
       <div class="mpo-stat-lbl">Total commission</div>
     </div>
+    <div class="mpo-stat" style="--mpo-accent:#991b1b;">
+      <div class="mpo-stat-val">{{ compliance_missing_count }}</div>
+      <div class="mpo-stat-lbl">Merchants blocking payouts</div>
+    </div>
   </div>
 
   <form method="get" class="mpo-filter">
@@ -71,12 +96,12 @@
            style="min-width:180px;">
     <select name="status">
       <option value="">All Status</option>
-      <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-      <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
-      <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
-      <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+      {% for value,label in status_choices %}
+      <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
     </select>
     <button type="submit">Filter</button>
+    <a href="{% url 'hq_merchant_payouts' %}?export=csv{% if status_filter %}&status={{ status_filter }}{% endif %}{% if merchant_filter %}&merchant={{ merchant_filter }}{% endif %}" style="min-height:40px;display:inline-flex;align-items:center;border:1px solid #cbd5e1;color:#334155;padding:0 14px;border-radius:10px;font-size:0.85rem;font-weight:800;text-decoration:none;">Export CSV</a>
     <a href="{% url 'hq_merchant_payouts' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 
@@ -90,17 +115,19 @@
             <th style="padding:10px 8px;text-align:right;">Cash Price</th>
             <th style="padding:10px 8px;text-align:right;">Commission (1%)</th>
             <th style="padding:10px 8px;text-align:right;">Total Payable</th>
-            <th style="padding:10px 8px;text-align:center;">Method</th>
+            <th style="padding:10px 8px;text-align:center;">Compliance</th>
             <th style="padding:10px 8px;text-align:center;">Status</th>
-            <th style="padding:10px 8px;text-align:center;">Date</th>
-            <th style="padding:10px 8px;text-align:center;">Actions</th>
+            <th style="padding:10px 8px;text-align:left;">Control Note</th>
+            <th style="padding:10px 8px;text-align:center;min-width:270px;">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {% for p in payouts %}
+          {% for row in payout_rows %}
+            {% with p=row.payout %}
             <tr style="border-bottom:1px solid var(--border);" data-testid="merchant-payout-row">
               <td style="padding:8px;font-weight:600;">
                 {% if p.merchant %}{{ p.merchant.get_full_name|default:p.merchant.username }}{% else %}<span style="color:var(--muted);">No merchant</span>{% endif %}
+                <div style="font-size:0.7rem;color:#64748b;font-weight:600;">{{ p.get_payout_method_display }} · {{ p.created_at|date:"d M Y" }}</div>
               </td>
               <td style="padding:8px;color:var(--primary);">
                 {% if p.contract %}{{ p.contract.contract_number }}{% else %}—{% endif %}
@@ -109,54 +136,90 @@
               <td style="padding:8px;text-align:right;color:var(--primary);">{{ p.merchant_commission_amount|mwk }}</td>
               <td style="padding:8px;text-align:right;font-weight:700;">{{ p.total_payable|mwk }}</td>
               <td style="padding:8px;text-align:center;">
-                <span style="font-size:0.75rem;background:#f3f4f6;padding:2px 6px;border-radius:4px;">
-                  {{ p.get_payout_method_display }}
+                <span class="status-badge {% if row.is_compliant %}status-badge--approved{% else %}status-badge--rejected{% endif %}">
+                  {{ row.compliance_label }}
                 </span>
+                {% if not row.is_compliant %}
+                <div style="font-size:0.68rem;color:#b91c1c;margin-top:4px;">{{ row.block_reason }}</div>
+                {% endif %}
               </td>
               <td style="padding:8px;text-align:center;">
                 <span class="status-badge
                   {% if p.status == 'paid' %}status-badge--approved
-                  {% elif p.status == 'failed' %}status-badge--rejected
-                  {% elif p.status == 'processing' %}status-badge--review
+                  {% elif p.status == 'failed' or p.status == 'blocked' or p.status == 'disputed' %}status-badge--rejected
+                  {% elif p.status == 'processing' or p.status == 'approved' or p.status == 'held' %}status-badge--review
                   {% else %}status-badge--pending{% endif %}">
                   {{ p.get_status_display }}
                 </span>
               </td>
-              <td style="padding:8px;text-align:center;color:var(--muted);font-size:0.78rem;">
-                {{ p.created_at|date:"d M Y" }}
+              <td style="padding:8px;color:#64748b;font-size:0.74rem;min-width:150px;">
+                {% if p.hold_reason %}<div><strong>Reason:</strong> {{ p.hold_reason }}</div>{% endif %}
+                {% if p.internal_note %}<div><strong>Note:</strong> {{ p.internal_note }}</div>{% endif %}
+                {% if p.provider_reference %}<div><strong>Ref:</strong> {{ p.provider_reference }}</div>{% endif %}
               </td>
               <td style="padding:8px;text-align:center;">
-                {% if p.status == 'pending' %}
-                  <form method="post" style="display:inline;">{% csrf_token %}
+                <div class="mpo-mini-form">
+                  {% if p.status == 'pending' or p.status == 'blocked' %}
+                  <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="approve_payout">
+                    <input type="hidden" name="payout_id" value="{{ p.pk }}">
+                    <button type="submit" class="mpo-action orange">Approve</button>
+                  </form>
+                  {% endif %}
+                  {% if p.status == 'approved' or p.status == 'pending' %}
+                  <form method="post">{% csrf_token %}
                     <input type="hidden" name="action" value="queue_payout">
                     <input type="hidden" name="payout_id" value="{{ p.pk }}">
-                    <button type="submit" onclick="return confirm('Queue this payout for processing?')"
-                            style="font-size:0.72rem;padding:3px 8px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;cursor:pointer;">
-                      Queue
-                    </button>
+                    <button type="submit" class="mpo-action blue">Queue</button>
                   </form>
-                  <form method="post" style="display:inline;">{% csrf_token %}
+                  {% endif %}
+                  {% if p.status == 'processing' or p.status == 'approved' %}
+                  <form method="post">{% csrf_token %}
                     <input type="hidden" name="action" value="mark_paid">
                     <input type="hidden" name="payout_id" value="{{ p.pk }}">
-                    <button type="submit" onclick="return confirm('Mark this payout as manually paid?')"
-                            style="font-size:0.72rem;padding:3px 8px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:4px;cursor:pointer;margin-left:3px;">
-                      Mark Paid
-                    </button>
+                    <input class="mpo-small-input" type="text" name="reference" placeholder="Reference">
+                    <button type="submit" class="mpo-action green" onclick="return confirm('Confirm manual payment was completed?')">Paid</button>
                   </form>
-                {% elif p.status == 'failed' %}
-                  <form method="post" style="display:inline;">{% csrf_token %}
+                  {% endif %}
+                  {% if p.status == 'held' or p.status == 'disputed' %}
+                  <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="release_hold">
+                    <input type="hidden" name="payout_id" value="{{ p.pk }}">
+                    <button type="submit" class="mpo-action slate">Release</button>
+                  </form>
+                  {% endif %}
+                  {% if p.status == 'failed' %}
+                  <form method="post">{% csrf_token %}
                     <input type="hidden" name="action" value="retry_payout">
                     <input type="hidden" name="payout_id" value="{{ p.pk }}">
-                    <button type="submit" onclick="return confirm('Retry this payout?')"
-                            style="font-size:0.72rem;padding:3px 8px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:4px;cursor:pointer;">
-                      Retry
-                    </button>
+                    <button type="submit" class="mpo-action orange">Retry</button>
                   </form>
-                {% else %}
+                  {% endif %}
+                  {% if p.status != 'paid' %}
+                  <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="hold_payout">
+                    <input type="hidden" name="payout_id" value="{{ p.pk }}">
+                    <input class="mpo-small-input" type="text" name="hold_reason" placeholder="Hold reason">
+                    <button type="submit" class="mpo-action slate">Hold</button>
+                  </form>
+                  <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="mark_disputed">
+                    <input type="hidden" name="payout_id" value="{{ p.pk }}">
+                    <input class="mpo-small-input" type="text" name="hold_reason" placeholder="Dispute">
+                    <button type="submit" class="mpo-action red">Dispute</button>
+                  </form>
+                  {% endif %}
+                  <form method="post">{% csrf_token %}
+                    <input type="hidden" name="action" value="add_note">
+                    <input type="hidden" name="payout_id" value="{{ p.pk }}">
+                    <input class="mpo-small-input" type="text" name="internal_note" placeholder="Internal note" value="{{ p.internal_note }}">
+                    <button type="submit" class="mpo-action slate">Save</button>
+                  </form>
                   <span style="color:var(--muted);font-size:0.75rem;">{{ p.provider_reference|default:"—" }}</span>
-                {% endif %}
+                </div>
               </td>
             </tr>
+            {% endwith %}
           {% empty %}
             <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted);">No payout records found.</td></tr>
           {% endfor %}

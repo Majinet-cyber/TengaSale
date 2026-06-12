@@ -168,10 +168,37 @@ def agreement_status(request):
         messages.error(request, "Merchant profile not found.")
         return redirect("home")
 
+    if request.method == "POST":
+        certificate = request.FILES.get("certificate_file")
+        allowed_ext = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+        if not certificate:
+            messages.error(request, "Choose a certificate or business registration document to upload.")
+        elif os.path.splitext(certificate.name)[1].lower() not in allowed_ext:
+            messages.error(request, "Upload a PDF, JPG, PNG, or WebP certificate file.")
+        else:
+            merchant.certificate_file = certificate
+            merchant.certificate_status = Merchant.CERTIFICATE_PENDING
+            merchant.certificate_uploaded_at = timezone.now()
+            merchant.compliance_rejection_reason = ""
+            merchant.compliance_reviewed_by = None
+            merchant.compliance_reviewed_at = None
+            merchant.save(update_fields=[
+                "certificate_file",
+                "certificate_status",
+                "certificate_uploaded_at",
+                "compliance_rejection_reason",
+                "compliance_reviewed_by",
+                "compliance_reviewed_at",
+            ])
+            messages.success(request, "Certificate uploaded for HQ review.")
+        return redirect("merchant_agreement_status")
+
     agreement = merchant.agreements.order_by("-created_at").first()
     return render(request, "merchants/agreement_status.html", {
         "merchant": merchant,
         "agreement": agreement,
+        "compliance_status": merchant.compliance_status,
+        "compliance_label": merchant.compliance_label,
         "page_title": "Agreement Status — TengaSale",
     })
 
