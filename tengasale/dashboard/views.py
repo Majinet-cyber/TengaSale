@@ -66,6 +66,7 @@ from commissions.models import Commission, MerchantContractPayout, CommissionLed
 from contracts.models import Contract
 from core.view_safety import safe_page
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
+from merchants.models import Merchant
 from rewards.models import SpinWallet
 from .portfolio_services import (
     calculate_portfolio_kpis,
@@ -88,6 +89,45 @@ ROLE_DISPLAY_LABELS = {
     "legal_compliance": "Legal & Compliance",
     "ceo_strategy": "CEO / Strategy Lead",
 }
+
+
+@login_required
+@safe_page("Profile settings")
+def profile_settings(request):
+    role = primary_role(request.user) or ""
+    merchant = None
+    merchant_status = ""
+    active_reviews = 0
+    reviewed_count = 0
+
+    if role == UserProfile.ROLE_MERCHANT:
+        merchant = Merchant.objects.filter(owner=request.user).order_by("-id").first()
+        if merchant:
+            agreement = merchant.active_agreement
+            if agreement:
+                merchant_status = agreement.get_status_display()
+            else:
+                merchant_status = "Good standing" if merchant.is_active else "Inactive"
+
+    if role == UserProfile.ROLE_UNDERWRITER:
+        active_reviews = FinancingApplication.objects.filter(
+            claimed_by=request.user,
+            status="under_review",
+        ).count()
+        reviewed_count = FinancingApplication.objects.filter(
+            reviewed_by=request.user,
+            status__in=["approved", "active_contract", "contract_complete", "completed", "rejected"],
+        ).count()
+
+    role_label = ROLE_DISPLAY_LABELS.get(role, role.replace("_", " ").title() or "User")
+    return render(request, "dashboard/profile_settings.html", {
+        "profile_role": role,
+        "profile_role_label": role_label,
+        "merchant": merchant,
+        "merchant_status": merchant_status,
+        "active_reviews": active_reviews,
+        "reviewed_count": reviewed_count,
+    })
 
 
 def _clean_label(value, fallback="-"):

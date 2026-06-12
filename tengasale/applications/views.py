@@ -756,6 +756,17 @@ def application_detail(request, app_id):
     is_post_approval = app.status in post_approval_statuses
     next_step_label = _post_approval_labels.get(app.status, "")
 
+    if app.is_read_only_record:
+        return render(
+            request,
+            "applications/read_only_detail.html",
+            {
+                "app": app,
+                "back_url": reverse("rejected_applications") if app.status in {"rejected", "cancelled"} else reverse("completed_applications"),
+                "back_label": "Back",
+            },
+        )
+
     return render(
         request,
         "applications/detail.html",
@@ -764,6 +775,7 @@ def application_detail(request, app_id):
             "is_incomplete": app.status in incomplete_statuses,
             "show_continue": show_continue,
             "is_post_approval": is_post_approval,
+            "is_read_only_completed": app.is_read_only_record,
             "next_step_label": next_step_label,
         },
     )

@@ -42,7 +42,7 @@
 
 <div class="app-card-list" style="margin-top:12px;">
     {% for app in apps %}
-        <a href="{{ app.get_continue_url }}" class="app-card-v2">
+        <a href="{% if app.is_read_only_record %}{% url 'application_detail' app.id %}{% else %}{{ app.get_continue_url }}{% endif %}" class="app-card-v2">
 
             {% if app.customer_face_image %}
                 <img

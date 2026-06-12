@@ -507,6 +507,24 @@ class ApplicationListTests(ApplicationTestCase):
         self.assertContains(response, f'href="{app.get_continue_url()}"')
         self.assertEqual(app.get_continue_url(), reverse("application_detail", args=[app.id]))
 
+    def test_completed_application_detail_is_read_only_audit_view(self):
+        app = self.create_application()
+        self.complete_kyc_images(app)
+        app.customer_name = "Jane Banda"
+        app.status = "completed"
+        app.save()
+
+        response = self.client.get(reverse("application_detail", args=[app.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Completed Application")
+        self.assertContains(response, "readonly-detail-card")
+        self.assertContains(response, "kyc-smart-card__frame--selfie")
+        self.assertContains(response, "kyc-smart-card__frame--id_front")
+        self.assertContains(response, "kyc-smart-card__frame--id_back")
+        self.assertNotContains(response, "Continue Application")
+        self.assertNotContains(response, "Continue")
+
     def test_needs_edit_application_page_contains_clickable_card(self):
         app = self.create_application()
         app.status = "correction_requested"

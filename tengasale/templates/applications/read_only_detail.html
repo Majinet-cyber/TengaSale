@@ -1,0 +1,119 @@
+{% extends "base/base.html" %}
+{% load ts_filters %}
+
+{% block page_title %}Completed Application - TengaSale{% endblock %}
+
+{% block content %}
+<style>
+.readonly-detail-page { padding: 14px; display: grid; gap: 14px; }
+.readonly-detail-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; box-shadow: 0 2px 10px rgba(15,23,42,.04); }
+.readonly-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.readonly-detail-title { margin: 0; color: #0f172a; font-size: 24px; line-height: 1.12; }
+.readonly-detail-sub { margin: 5px 0 0; color: #64748b; font-size: 13px; }
+.readonly-detail-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 10px; border-radius: 999px; background: #ecfdf3; color: #16783b; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.readonly-detail-section-title { margin: 0 0 10px; color: #0f172a; font-size: 16px; }
+.readonly-detail-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+.readonly-detail-row:first-of-type { border-top: 0; }
+.readonly-detail-row span { color: #64748b; font-size: 13px; }
+.readonly-detail-row strong { color: #0f172a; font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+.readonly-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.readonly-detail-doc-grid { display: grid; gap: 12px; }
+.readonly-detail-doc-grid .kyc-smart-card--selfie { max-width: 260px; justify-self: center; width: 100%; }
+.readonly-detail-proof-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 14px; border: 1px solid #e5e7eb; border-radius: 10px; color: #0f172a; font-weight: 800; text-decoration: none; }
+@media (min-width: 760px) {
+  .readonly-detail-page { max-width: 880px; margin: 0 auto; }
+  .readonly-detail-doc-grid { grid-template-columns: minmax(180px, 260px) 1fr 1fr; align-items: start; }
+}
+</style>
+
+<div class="readonly-detail-page">
+  <a href="{{ back_url|default:'#' }}" class="soft-back">
+    <span class="soft-back-icon">&larr;</span>
+    <span>{{ back_label|default:"Back" }}</span>
+  </a>
+
+  <section class="readonly-detail-card">
+    <div class="readonly-detail-head">
+      <div>
+        <h1 class="readonly-detail-title">Completed Application</h1>
+        <p class="readonly-detail-sub">{{ app.application_number|default:app.id }}{% if app.contract.contract_number %} / {{ app.contract.contract_number }}{% endif %}</p>
+      </div>
+      <span class="readonly-detail-badge">{{ app.get_status_display }}</span>
+    </div>
+  </section>
+
+  <section class="readonly-detail-card">
+    <h2 class="readonly-detail-section-title">Customer & Application</h2>
+    <div class="readonly-detail-row"><span>Customer</span><strong>{{ app.customer_name|default:"Not captured" }}</strong></div>
+    <div class="readonly-detail-row"><span>National ID</span><strong>{{ app.national_id|default:"Not captured" }}</strong></div>
+    <div class="readonly-detail-row"><span>Phone</span><strong>{% if app.customer_phone %}+265 {{ app.customer_phone }}{% else %}Not captured{% endif %}</strong></div>
+    <div class="readonly-detail-row"><span>Submitted by</span><strong>{{ app.created_by.get_full_name|default:app.created_by.username }}</strong></div>
+    <div class="readonly-detail-row"><span>Submitted at</span><strong>{{ app.submitted_at|date:"Y/m/d, H:i"|default:"Not submitted" }}</strong></div>
+    <div class="readonly-detail-row"><span>Underwriter</span><strong>{% if app.reviewed_by %}{{ app.reviewed_by.get_full_name|default:app.reviewed_by.username }}{% elif app.claimed_by %}{{ app.claimed_by.get_full_name|default:app.claimed_by.username }}{% else %}Not assigned{% endif %}</strong></div>
+    <div class="readonly-detail-row"><span>Reviewed at</span><strong>{{ app.reviewed_at|date:"Y/m/d, H:i"|default:"Not recorded" }}</strong></div>
+    <div class="readonly-detail-row"><span>Comment</span><strong>{{ app.manager_comment|default:"No comment" }}</strong></div>
+  </section>
+
+  <section class="readonly-detail-card">
+    <h2 class="readonly-detail-section-title">Device & Offer</h2>
+    <div class="readonly-detail-row"><span>Device</span><strong>{{ app.deal|default:"Not selected" }}</strong></div>
+    <div class="readonly-detail-row"><span>IMEI</span><strong>{{ app.imei_number|default:"Not captured" }}</strong></div>
+    <div class="readonly-detail-row"><span>Cash price</span><strong>{{ app.selected_cash_price|mwk }}</strong></div>
+    <div class="readonly-detail-row"><span>Total loan</span><strong>{{ app.calculated_total_loan|mwk }}</strong></div>
+    <div class="readonly-detail-row"><span>Deposit</span><strong>{{ app.calculated_deposit_amount|mwk }}</strong></div>
+    <div class="readonly-detail-row"><span>Monthly payment</span><strong>{{ app.calculated_monthly_payment|mwk }}</strong></div>
+    <div class="readonly-detail-row"><span>Daily payment</span><strong>{{ app.calculated_daily_payment|mwk }}</strong></div>
+  </section>
+
+  {% if app.contract %}
+  <section class="readonly-detail-card">
+    <h2 class="readonly-detail-section-title">Contract Summary</h2>
+    <div class="readonly-detail-row"><span>Contract</span><strong>{{ app.contract.contract_number|default:app.contract.id }}</strong></div>
+    <div class="readonly-detail-row"><span>PayG number</span><strong>{{ app.contract.payg_number|default:"Not available" }}</strong></div>
+    <div class="readonly-detail-row"><span>Status</span><strong>{{ app.contract.get_status_display|default:app.contract.status }}</strong></div>
+    <div class="readonly-detail-row"><span>Terms accepted</span><strong>{% if app.contract.terms_accepted_at %}{{ app.contract.terms_accepted_at|date:"Y/m/d, H:i" }}{% else %}Not recorded{% endif %}</strong></div>
+    <div class="readonly-detail-actions">
+      {% if app.contract.completed_pdf %}<a href="{% url 'contract_pdf_completed' app.contract.id %}" target="_blank" class="btn btn-outline btn-sm">View PDF</a>{% endif %}
+      {% if app.contract.completed_bundle_pdf %}<a href="{% url 'contract_pdf_completed_bundle' app.contract.id %}" target="_blank" class="btn btn-outline btn-sm">View Bundle</a>{% endif %}
+      {% if app.contract.initial_pdf %}<a href="{% url 'contract_pdf_initial' app.contract.id %}" target="_blank" class="btn btn-outline btn-sm">Initial PDF</a>{% endif %}
+      {% if app.contract.contract_bundle_pdf %}<a href="{% url 'contract_pdf_bundle' app.contract.id %}" target="_blank" class="btn btn-outline btn-sm">Initial Bundle</a>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="readonly-detail-card">
+    <h2 class="readonly-detail-section-title">Documents</h2>
+    <div class="readonly-detail-doc-grid">
+      {% if app.customer_face_image %}
+        {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" %}
+      {% else %}
+        {% include "includes/kyc_image_review_card.html" with label="Selfie Image" card_type="selfie" status="missing" %}
+      {% endif %}
+      {% if app.id_front_image %}
+        {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image.url card_type="id_front" status="ready" %}
+      {% else %}
+        {% include "includes/kyc_image_review_card.html" with label="ID Card Front" card_type="id_front" status="missing" %}
+      {% endif %}
+      {% if app.id_back_image %}
+        {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image.url card_type="id_back" status="ready" %}
+      {% else %}
+        {% include "includes/kyc_image_review_card.html" with label="ID Card Back" card_type="id_back" status="missing" %}
+      {% endif %}
+    </div>
+    {% if app.proof_income_file %}
+      <div style="margin-top:12px;">
+        {% if ".pdf" in app.proof_income_file.name|lower %}
+          <a href="{{ app.proof_income_file.url }}" target="_blank" class="readonly-detail-proof-link">View proof document</a>
+        {% else %}
+          {% include "includes/kyc_image_review_card.html" with label="Proof Document" image_url=app.proof_income_file.url card_type="proof" status="ready" %}
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if app.signature_image %}
+      <div style="margin-top:12px;">
+        {% include "includes/kyc_image_review_card.html" with label="Customer Signature" image_url=app.signature_image.url card_type="signature" status="ready" %}
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

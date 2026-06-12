@@ -15,6 +15,7 @@ urlpatterns = [
     path("payments/", views.sales_payments, name="sales_payments"),
 
     # Review steps
+    path("applications/<int:app_id>/detail/", views.sales_application_detail, name="sales_application_detail"),
     path("applications/<int:app_id>/", views.sales_review_summary, name="sales_review_summary"),
     path("applications/<int:app_id>/identity/", views.sales_identity_check, name="sales_identity_check"),
     path("applications/<int:app_id>/address/", views.sales_address_check, name="sales_address_check"),

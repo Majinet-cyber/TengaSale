@@ -13,6 +13,7 @@ Coverage:
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
+from django.urls import reverse
 from django.utils import timezone
 
 from core.models import QueueRule
@@ -156,3 +157,30 @@ class SalesPageSmokeTest(TestCase):
         self.client.login(username="testsalesrep", password="testpass123")
         res = self.client.get("/sales/applications/")
         self.assertEqual(res.status_code, 200)
+
+    def test_completed_application_opens_read_only_detail(self):
+        merchant = User.objects.create_user(username="merchant-completed", password="testpass123")
+        app = FinancingApplication.objects.create(
+            created_by=merchant,
+            reviewed_by=self.underwriter,
+            status="approved",
+            customer_name="Completed Customer",
+            customer_phone="990870616",
+            national_id="ABCD1234",
+            submitted_at=timezone.now(),
+            reviewed_at=timezone.now(),
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        list_res = self.client.get(reverse("sales_applications"), {"tab": "completed"})
+
+        self.assertEqual(list_res.status_code, 200)
+        self.assertContains(list_res, reverse("sales_application_detail", args=[app.id]))
+        self.assertNotContains(list_res, f'href="{reverse("sales_review_summary", args=[app.id])}"')
+
+        detail_res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertContains(detail_res, "Completed Application")
+        self.assertContains(detail_res, "readonly-detail-card")
+        self.assertNotContains(detail_res, "Review &amp; Send Back")

@@ -13,9 +13,10 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -101,6 +102,27 @@ def _audit(user, action, obj_type="", obj_id="", detail=None, request=None):
 
 def _underwriter_or_hq(user):
     return is_underwriter(user) or is_hq(user) or user.is_staff or user.is_superuser
+
+
+UNDERWRITER_READ_ONLY_STATUSES = {
+    "approved",
+    "approved_pending_device_lock",
+    "device_locked",
+    "active_contract",
+    "contract_complete",
+    "completed",
+    "rejected",
+    "cancelled",
+}
+
+
+def _render_read_only_application(request, app, *, back_tab="completed"):
+    return render(request, "applications/read_only_detail.html", {
+        "page_heading": "Completed Application",
+        "app": app,
+        "back_url": reverse("sales_applications") + f"?tab={back_tab}",
+        "back_label": "Back",
+    })
 
 
 def _questionnaire_app_for_user(request, app_id):
@@ -361,7 +383,7 @@ def sales_applications(request):
 
     return render(request, "sales/applications_list.html", {
         "page_heading": "Applications",
-        "apps": apps.select_related("deal", "created_by")[:50],
+        "apps": apps.select_related("deal", "deal__brand", "created_by", "contract")[:50],
         "tab": tab,
         "pending_count": pending_count,
         "active_count": active_count,
@@ -371,6 +393,20 @@ def sales_applications(request):
     })
 
 
+@underwriter_required
+def sales_application_detail(request, app_id):
+    app = get_object_or_404(
+        FinancingApplication.objects.select_related("deal", "deal__brand", "created_by", "claimed_by", "reviewed_by", "contract"),
+        id=app_id,
+    )
+    if app.reviewed_by_id != request.user.id and app.claimed_by_id != request.user.id:
+        raise PermissionDenied
+    if app.status not in UNDERWRITER_READ_ONLY_STATUSES:
+        return redirect("sales_review_summary", app_id=app.id)
+    back_tab = "rejected" if app.status in {"rejected", "cancelled"} else "completed"
+    return _render_read_only_application(request, app, back_tab=back_tab)
+
+
 # ---------------------------------------------------------------------------
 # Review steps (new templates, same business logic as approvals.views)
 # ---------------------------------------------------------------------------
@@ -378,6 +414,16 @@ def sales_applications(request):
 @underwriter_required
 def sales_review_summary(request, app_id):
     from applications.services.duplicate_check import check_duplicate_customer
+    read_only_app = (
+        FinancingApplication.objects.select_related("deal", "deal__brand", "created_by", "claimed_by", "reviewed_by", "contract")
+        .filter(id=app_id, status__in=UNDERWRITER_READ_ONLY_STATUSES)
+        .filter(Q(reviewed_by=request.user) | Q(claimed_by=request.user))
+        .first()
+    )
+    if read_only_app:
+        back_tab = "rejected" if read_only_app.status in {"rejected", "cancelled"} else "completed"
+        return _render_read_only_application(request, read_only_app, back_tab=back_tab)
+
     app, response = review_guard(request, app_id)
     if response:
         return response

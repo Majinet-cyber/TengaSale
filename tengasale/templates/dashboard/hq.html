@@ -1450,17 +1450,31 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 149;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgba(15,23,42,0.42);
+  backdrop-filter: blur(2px);
+  z-index: 300;
 }
 
 @media (max-width: 860px) {
+  body.hq-sidebar-open {
+    overflow: hidden;
+    touch-action: none;
+  }
   .hq-sidebar {
     position: fixed;
     top: 0;
     left: 0;
+    width: min(300px, 86vw);
     height: 100vh;
-    z-index: 150;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    z-index: 310;
     transform: translateX(-100%);
     transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 20px rgba(0,0,0,0.12);
@@ -2881,6 +2895,7 @@ body {
     sidebar.classList.add('is-open');
     if (sidebarOverlay) { sidebarOverlay.classList.add('is-open'); }
     if (sidebarBtn) sidebarBtn.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('hq-sidebar-open');
     document.body.style.overflow = 'hidden';
   }
   function closeSidebar() {
@@ -2888,6 +2903,7 @@ body {
     sidebar.classList.remove('is-open');
     if (sidebarOverlay) { sidebarOverlay.classList.remove('is-open'); }
     if (sidebarBtn) sidebarBtn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('hq-sidebar-open');
     document.body.style.overflow = '';
   }
   if (sidebarBtn) sidebarBtn.addEventListener('click', openSidebar);
