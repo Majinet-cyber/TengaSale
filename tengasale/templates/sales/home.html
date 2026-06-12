@@ -149,6 +149,28 @@
 .uw-claim-btn:hover { background: #e64d00; }
 .uw-claim-btn:active { transform: scale(.98); }
 .uw-claim-btn .bi { font-size: 18px; }
+.uw-claim-btn--available {
+  background: #16a34a;
+  box-shadow: 0 4px 14px rgba(22,163,74,.28);
+}
+.uw-claim-btn--available:hover { background: #15803d; }
+.uw-claim-btn__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #dcfce7;
+  box-shadow: 0 0 0 0 rgba(220,252,231,.58);
+  animation: uw-claim-ready-pulse 2.2s ease-out infinite;
+  flex-shrink: 0;
+}
+@keyframes uw-claim-ready-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(220,252,231,.58); }
+  70% { box-shadow: 0 0 0 8px rgba(220,252,231,0); }
+  100% { box-shadow: 0 0 0 0 rgba(220,252,231,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .uw-claim-btn__dot { animation: none; }
+}
 .uw-queue-badge {
   display: inline-flex;
   align-items: center;
@@ -309,7 +331,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .uw-list-badge {
   display: inline-flex;
@@ -318,9 +341,8 @@
   border-radius: 99px;
   font-size: 11px;
   font-weight: 900;
-  max-width: 92px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
+  white-space: nowrap;
 }
 .uw-list-badge--blue   { background: rgba(29,78,216,.10); color: #1d4ed8; }
 .uw-list-badge--amber  { background: rgba(245,158,11,.10); color: #d97706; }
@@ -328,15 +350,18 @@
 .uw-list-badge--gray   { background: #f1f5f9; color: #64748b; }
 .uw-list-badge--orange { background: rgba(255,90,0,.10); color: #ff5a00; }
 .uw-list-row__chevron { color: #94a3b8; font-size: 18px; }
+.uw-list-row__chevron {
+  width: 18px;
+  flex: 0 0 18px;
+  text-align: right;
+}
 
 /* ── Muted value text ───────────────────────────────────────────── */
 .uw-list-row__value {
   font-size: 13px;
   font-weight: 700;
   color: #667085;
-  max-width: 92px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: none;
   white-space: nowrap;
 }
 
@@ -356,7 +381,7 @@
   .uw-list-row__icon { width: 36px; height: 36px; }
   .uw-list-row__right { gap: 5px; }
   .uw-list-badge,
-  .uw-list-row__value { max-width: 70px; }
+  .uw-list-row__value { font-size: 12px; }
 }
 </style>
 {% endblock %}
@@ -405,9 +430,10 @@
     <div class="uw-queue-card__action">
       <form method="post" action="{% url 'sales_claim_next' %}" data-claim-next-form>
         {% csrf_token %}
-        <button type="submit" class="uw-claim-btn ts-motion-tap" data-ts-sound="claim">
+        <button type="submit" class="uw-claim-btn uw-claim-btn--available ts-motion-tap" data-ts-sound="claim">
+          <span class="uw-claim-btn__dot" aria-hidden="true"></span>
           <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
-          <span data-claim-label>Claim Next Application</span>
+          <span data-claim-label>Claim next application</span>
           <span class="ts-spinner sm uw-claim-button__spinner" aria-hidden="true"></span>
         </button>
       </form>

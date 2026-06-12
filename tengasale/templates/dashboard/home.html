@@ -285,17 +285,17 @@
   font-weight: 700;
   color: #667085;
   white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
+  max-width: none;
 }
 
 .action-row-chevron,
 .row-arrow {
   font-size: 16px;
   color: #9ca3af;
-  flex-shrink: 0;
+  flex: 0 0 18px;
+  width: 18px;
+  text-align: right;
 }
 
 /* ── Overview card ──────────────────────────────────────────────── */
@@ -600,7 +600,7 @@
   .merchant-quality-stats { gap: 6px; }
   .action-row,
   .simple-row { padding-left: 12px; padding-right: 12px; gap: 10px; }
-  .action-row-value { max-width: 96px; }
+  .action-row-value { font-size: 12px; }
 }
 </style>
 {% endblock %}
@@ -836,19 +836,5 @@
 </div>{# /merchant-shell #}
 
 {# ── Bottom navigation ────────────────────────────────────────── #}
-<nav class="bottom-nav" aria-label="Main navigation">
-  <a href="{% url 'merchant_dashboard' %}" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
-    <i class="bi bi-house-fill" aria-hidden="true"></i>
-    <span>Home</span>
-  </a>
-  <a href="{% url 'new_application' %}" class="bottom-nav__fab" aria-label="New application">
-    <i class="bi bi-plus-lg" aria-hidden="true"></i>
-  </a>
-  <a href="{% url 'earnings_home' %}" class="bottom-nav__item">
-    <i class="bi bi-person-circle" aria-hidden="true"></i>
-    <span>Profile</span>
-  </a>
-</nav>
-
 </div>{# /merchant-dashboard-shell #}
 {% endblock %}

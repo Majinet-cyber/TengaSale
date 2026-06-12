@@ -1473,6 +1473,12 @@ body {
   }
   .hq-sidebar-toggle { display: flex; }
   .hq-dash.hq-main { padding-left: 14px; padding-right: 14px; }
+  .app-shell:has(.hq-topbar):has(.ts-mobile-role-nav) main.content {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+  .app-shell:has(.hq-topbar):has(.ts-mobile-role-nav) .hq-dash.hq-main {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 16px));
+  }
   .hq-layout { display: block; }
 }
 </style>

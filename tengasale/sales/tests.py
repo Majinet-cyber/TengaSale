@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from core.models import QueueRule
 from approvals.models import UnderwriterReview
+from applications.models import FinancingApplication
 
 User = get_user_model()
 
@@ -110,6 +111,36 @@ class SalesPageSmokeTest(TestCase):
         self.client.login(username="testsalesrep", password="testpass123")
         res = self.client.get("/sales/")
         self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'aria-label="Underwriter mobile navigation"')
+        self.assertContains(res, "/sales/applications/?tab=queue")
+        self.assertContains(res, "/sales/applications/?tab=active")
+        self.assertContains(res, "/sales/wallet/")
+
+    def test_sales_home_claim_button_green_when_queue_available(self):
+        merchant = User.objects.create_user(username="merchant-for-queue", password="testpass123")
+        FinancingApplication.objects.create(
+            created_by=merchant,
+            status="pending_review",
+            customer_name="Queue Customer",
+            customer_phone="990870616",
+            national_id="ABCD1234",
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        res = self.client.get("/sales/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "uw-claim-btn--available")
+        self.assertContains(res, "Claim next application")
+
+    def test_sales_home_no_green_claim_button_when_queue_empty(self):
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        res = self.client.get("/sales/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "No Applications in Queue")
+        self.assertNotContains(res, 'class="uw-claim-btn uw-claim-btn--available')
 
     def test_queue_rules_page_renders(self):
         self.client.login(username="testsalesrep", password="testpass123")

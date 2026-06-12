@@ -20,15 +20,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
   background: rgba(15,23,42,.46);
   backdrop-filter: blur(4px);
+  overflow: hidden;
 }
 .ts-oha--hidden {
   display: none;
 }
 .ts-oha__dialog {
   width: min(100%, 460px);
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
+  overflow-y: auto;
   background: #fff;
   border: 1px solid rgba(226,232,240,.95);
   border-radius: 18px;
