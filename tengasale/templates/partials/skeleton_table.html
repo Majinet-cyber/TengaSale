@@ -1,9 +1,10 @@
-<div class="ts-skeleton ts-skeleton-table" aria-hidden="true" data-testid="skeleton-table">
-  {% for _ in "12345" %}
+{# Skeleton table — use while loading a data table #}
+<div class="ts-skeleton" role="status" aria-busy="true" aria-label="Loading table…" style="padding:16px;">
+  {% for i in "12345" %}
   <div class="ts-skeleton__row">
     <div class="ts-skeleton__cell"></div>
     <div class="ts-skeleton__cell"></div>
-    <div class="ts-skeleton__cell ts-skeleton__cell--short"></div>
+    <div class="ts-skeleton__cell" style="max-width:80px;"></div>
   </div>
   {% endfor %}
 </div>

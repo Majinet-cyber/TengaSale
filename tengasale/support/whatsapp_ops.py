@@ -724,9 +724,12 @@ def update_message_status(payload: dict[str, Any]) -> dict[str, Any]:
     except WhatsAppMessage.DoesNotExist:
         return {"ok": True, "matched": False}
     message.provider_status = normalized
+    message.last_status_callback_at = timezone.now()
     if normalized in {WhatsAppMessage.STATUS_FAILED, WhatsAppMessage.STATUS_UNDELIVERED}:
-        error = payload.get("ErrorMessage") or payload.get("ErrorCode") or "Delivery failed"
-        message.error_message = str(error)
+        error_msg = payload.get("ErrorMessage") or "Delivery failed"
+        error_code = payload.get("ErrorCode") or ""
+        message.error_message = str(error_msg)
+        message.error_code = str(error_code)
     message.raw_payload = {**(message.raw_payload or {}), "status_callback": payload}
-    message.save(update_fields=["provider_status", "error_message", "raw_payload", "updated_at"])
+    message.save(update_fields=["provider_status", "error_message", "error_code", "last_status_callback_at", "raw_payload", "updated_at"])
     return {"ok": True, "matched": True, "message_id": message.pk, "status": normalized}

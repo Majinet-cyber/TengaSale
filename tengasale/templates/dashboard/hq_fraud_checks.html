@@ -923,6 +923,311 @@ html, body { overflow-x: hidden; }
   </div>
   {% endif %}
 
+  {# ═══════════════════════════════════════════════════════════════════════
+     CONNECTIVITY SUPPORT INTELLIGENCE
+     ═══════════════════════════════════════════════════════════════════════ #}
+  <div class="frd-section" style="margin-top:32px;" id="connectivity-intelligence">
+
+    {# Section header #}
+    <div class="frd-section-title" style="margin-bottom:18px;">
+      <h2 style="font-size:1.1rem;">
+        <span class="frd-section-icon" style="background:#eff6ff;color:#2563eb;width:32px;height:32px;border-radius:10px;">
+          <svg viewBox="0 0 24 24"><path d="M1 6l9.09 9.09a2 2 0 0 0 2.82 0L22 6"/><path d="M22 6v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6"/><path d="M1 6l11 7 11-7"/></svg>
+        </span>
+        Connectivity Support Intelligence
+      </h2>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        {% if telemetry_connected %}
+          <span style="font-size:11px;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 12px;border-radius:99px;">● Telemetry Connected</span>
+        {% else %}
+          <span style="font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 12px;border-radius:99px;">⚠ Telemetry not connected — showing manual/mock signals</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Telemetry notice if not connected #}
+    {% if not telemetry_connected %}
+    <div class="frd-alert frd-alert--info" style="margin-bottom:18px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Telemetry provider not connected. Showing available manual signals. Set <code>PAYTRIGGER_API_KEY</code> or <code>UPYA_API_KEY</code> in environment to connect live device telemetry.</span>
+    </div>
+    {% endif %}
+
+    {# Principle reminder #}
+    <div class="frd-alert frd-alert--info" style="margin-bottom:18px;font-size:12px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span><strong>Principle:</strong> Offline days are a risk/support signal — not automatic proof of fraud. Reasons may include network issues, travel, power outages, poverty, or deliberate evasion. Use wording "connectivity anomaly", "sync pending", "possible evasion". Only use "fraud" after HQ review.</span>
+    </div>
+
+    {# KPI cards grid #}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr));gap:10px;margin-bottom:20px;">
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #3b82f6;">
+        <div class="ts-kpi-card__value" style="color:#1d4ed8;">{{ conn_offline_total }}</div>
+        <div class="ts-kpi-card__label">Offline Devices</div>
+        <div class="ts-kpi-card__sub">≥1 day offline</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #f59e0b;">
+        <div class="ts-kpi-card__value" style="color:#d97706;">{{ conn_high_risk }}</div>
+        <div class="ts-kpi-card__label">High-Risk Offline</div>
+        <div class="ts-kpi-card__sub">High or Critical band</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #dc2626;">
+        <div class="ts-kpi-card__value" style="color:#dc2626;">{{ conn_critical }}</div>
+        <div class="ts-kpi-card__label">Critical Offline</div>
+        <div class="ts-kpi-card__sub">21+ days offline</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #16a34a;">
+        <div class="ts-kpi-card__value" style="color:#15803d;">{{ conn_paid_offline }}</div>
+        <div class="ts-kpi-card__label">Paid but Offline</div>
+        <div class="ts-kpi-card__sub">Sync help needed</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #ea580c;">
+        <div class="ts-kpi-card__value" style="color:#c2410c;">{{ conn_arrears_offline }}</div>
+        <div class="ts-kpi-card__label">Offline + Arrears</div>
+        <div class="ts-kpi-card__sub">Monitor closely</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #8b5cf6;">
+        <div class="ts-kpi-card__value" style="color:#7c3aed;">{{ conn_sync_pending }}</div>
+        <div class="ts-kpi-card__label">Sync Pending</div>
+        <div class="ts-kpi-card__sub">Command queued</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #0ea5e9;">
+        <div class="ts-kpi-card__value" style="color:#0284c7;">{{ conn_needs_internet }}</div>
+        <div class="ts-kpi-card__label">Needs Internet</div>
+        <div class="ts-kpi-card__sub">Send sync instruction</div>
+      </div>
+
+      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #9d174d;">
+        <div class="ts-kpi-card__value" style="color:#9d174d;">{{ conn_escalated }}</div>
+        <div class="ts-kpi-card__label">Recovery Escalated</div>
+        <div class="ts-kpi-card__sub">Recovery desk</div>
+      </div>
+
+    </div>
+
+    {# Connectivity signal table #}
+    <div class="frd-panel ts-stagger-item" data-testid="connectivity-signal-panel">
+      <div class="frd-panel-head">
+        <div class="frd-panel-head-icon" style="background:#eff6ff;color:#2563eb;">
+          <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        </div>
+        <span class="frd-panel-head-title">Device Connectivity Signals</span>
+        <span class="frd-panel-head-badge" style="background:#eff6ff;color:#2563eb;">{{ connectivity_signals|length }} records</span>
+      </div>
+
+      {% if connectivity_signals %}
+      <div class="ts-table-wrapper" style="overflow-x:auto;">
+        <table class="frd-table" style="min-width:1000px;">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>IMEI</th>
+              <th>Device</th>
+              <th style="text-align:center;">Days Offline</th>
+              <th>Last Seen</th>
+              <th style="text-align:center;">Arrears</th>
+              <th style="text-align:center;">Lock State</th>
+              <th style="text-align:center;">Risk</th>
+              <th>Connectivity Status</th>
+              <th style="text-align:center;">Sync</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sig in connectivity_signals %}
+            <tr>
+              <td>
+                <div style="font-weight:700;font-size:0.82rem;">{{ sig.customer_name|default:"—" }}</div>
+                <div style="font-size:0.72rem;color:#64748b;">{{ sig.customer_phone|default:"" }}</div>
+              </td>
+              <td class="frd-mono" style="font-size:0.76rem;">{{ sig.imei|default:"—" }}</td>
+              <td style="font-size:0.78rem;color:#475569;">{{ sig.device_model|default:"—" }}</td>
+              <td style="text-align:center;">
+                <span style="font-weight:900;font-size:0.95rem;
+                  color:{% if sig.days_offline >= 21 %}#dc2626{% elif sig.days_offline >= 11 %}#d97706{% elif sig.days_offline >= 3 %}#ca8a04{% else %}#15803d{% endif %};">
+                  {{ sig.days_offline }}d
+                </span>
+              </td>
+              <td style="font-size:0.76rem;color:#64748b;">
+                {{ sig.last_seen_at|date:"d M Y H:i"|default:"Unknown" }}
+              </td>
+              <td style="text-align:center;font-weight:700;
+                color:{% if sig.arrears_days > 14 %}#dc2626{% elif sig.arrears_days > 0 %}#d97706{% else %}#15803d{% endif %};">
+                {{ sig.arrears_days }}d
+              </td>
+              <td style="text-align:center;">
+                <span class="ts-chip
+                  {% if sig.lock_state == 'locked' %}ts-chip-danger
+                  {% elif sig.lock_state == 'active' %}ts-chip-success
+                  {% elif sig.lock_state == 'warning' %}ts-chip-warning
+                  {% else %}{% endif %}">
+                  {{ sig.get_lock_state_display }}
+                </span>
+              </td>
+              <td style="text-align:center;">
+                <span class="frd-badge
+                  {% if sig.risk_band == 'critical' %}frd-status--mismatch
+                  {% elif sig.risk_band == 'high' %}frd-status--possible
+                  {% elif sig.risk_band == 'warning' %}frd-status--error
+                  {% elif sig.risk_band == 'watch' %}
+                  {% else %}{% endif %}"
+                  style="{% if sig.risk_band == 'normal' %}background:#dcfce7;color:#15803d;{% endif %}">
+                  {{ sig.get_risk_band_display }}
+                  {% if sig.risk_score %}({{ sig.risk_score }}){% endif %}
+                </span>
+              </td>
+              <td>
+                <span style="font-size:0.73rem;color:#475569;">
+                  {{ sig.get_connectivity_status_display }}
+                </span>
+                {% if sig.connectivity_help_needed %}
+                  <span style="display:block;font-size:0.68rem;color:#0284c7;font-weight:700;margin-top:2px;">⚡ Needs internet</span>
+                {% endif %}
+              </td>
+              <td style="text-align:center;">
+                <span class="ts-chip
+                  {% if sig.sync_status == 'pending_device_online' %}ts-chip-warning
+                  {% elif sig.sync_status == 'synced' %}ts-chip-success
+                  {% elif sig.sync_status == 'failed' %}ts-chip-danger
+                  {% endif %}">
+                  {{ sig.get_sync_status_display }}
+                </span>
+              </td>
+              <td>
+                <div class="frd-action-row" style="padding:6px 0;background:transparent;border:none;gap:4px;flex-wrap:wrap;">
+                  {% if sig.connectivity_help_needed and not sig.sync_instruction_sent_at %}
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="signal_id" value="{{ sig.pk }}">
+                    <button name="conn_action" value="send_sync_instruction" class="frd-btn" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-size:11px;" title="Send internet sync instruction via WhatsApp">
+                      <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                      Sync Instruction
+                    </button>
+                  </form>
+                  {% elif sig.sync_instruction_sent_at %}
+                    <span style="font-size:10px;color:#64748b;">Sent {{ sig.sync_instruction_sent_at|date:"d M" }}</span>
+                  {% endif %}
+
+                  {% if sig.risk_band in "high,critical" and not sig.escalated_at %}
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="signal_id" value="{{ sig.pk }}">
+                    <button name="conn_action" value="escalate_recovery" class="frd-btn frd-btn--danger" style="font-size:11px;">
+                      Escalate
+                    </button>
+                  </form>
+                  {% elif sig.escalated_at %}
+                    <span style="font-size:10px;color:#9d174d;font-weight:700;">↑ Escalated</span>
+                  {% endif %}
+
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="signal_id" value="{{ sig.pk }}">
+                    <button name="conn_action" value="mark_false_positive" class="frd-btn frd-btn--green" style="font-size:11px;" title="Mark as false positive / not a concern">
+                      FP
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {# Recommended action row #}
+            {% if sig.recommended_action %}
+            <tr>
+              <td colspan="11" style="padding:6px 16px 10px;background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                <div style="font-size:0.72rem;color:#475569;display:flex;align-items:flex-start;gap:6px;">
+                  <span style="color:#ff5a00;font-size:10px;flex-shrink:0;padding-top:1px;">→</span>
+                  <span><strong>Recommended:</strong> {{ sig.recommended_action }}</span>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# WhatsApp sync message template #}
+      <div style="margin:12px 16px 16px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+        <div style="font-size:11px;font-weight:800;color:#15803d;margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;">WhatsApp Sync Instruction Template</div>
+        <p style="font-size:0.78rem;color:#166534;margin:0;line-height:1.6;font-family:'SF Mono','Fira Mono',monospace;">
+          Hi {{1}}, your TengaSale device may need internet to update its status. Please connect the phone to mobile data or Wi-Fi for 5–10 minutes, then restart the phone. If it remains locked, reply HELP.
+        </p>
+      </div>
+
+      {% else %}
+      <div class="frd-empty-state">
+        <div class="frd-empty-state__icon">
+          <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        </div>
+        <h4>No connectivity signals recorded</h4>
+        <p>Connect a telemetry provider (PayTrigger / Upya) or add manual signals to start tracking device connectivity.</p>
+        <span class="frd-scan-time">Signals are auto-classified when added</span>
+      </div>
+      {% endif %}
+    </div>{# /frd-panel connectivity #}
+
+    {# Connectivity status reference guide #}
+    <div style="margin-top:16px;" x-data="{open:false}" @keydown.escape.window="open=false">
+      <button @click="open=!open" type="button" class="frd-btn" style="font-size:12px;gap:5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span x-text="open ? 'Hide guide' : 'Show connectivity status guide'">Show connectivity status guide</span>
+      </button>
+      <div x-show="open" x-transition style="margin-top:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:10px;">
+
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:800;color:#15803d;margin-bottom:4px;">✓ Paid but Offline</div>
+            <p style="font-size:0.72rem;color:#166534;margin:0;line-height:1.5;">
+              Customer has paid. Device just needs to come online to sync.
+              <strong>Action:</strong> Ask customer to connect to mobile data or Wi-Fi for 5–10 minutes.
+            </p>
+          </div>
+
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:800;color:#92400e;margin-bottom:4px;">⚠ Offline + Arrears</div>
+            <p style="font-size:0.72rem;color:#78350f;margin:0;line-height:1.5;">
+              Customer is overdue and device is offline. Monitor as risk signal.
+              <strong>Action:</strong> Attempt customer contact. If offline continues, escalate.
+            </p>
+          </div>
+
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:4px;">⏳ Sync Pending</div>
+            <p style="font-size:0.72rem;color:#1e40af;margin:0;line-height:1.5;">
+              A lock or unlock command is queued but device is offline.
+              <strong>Action:</strong> Command pending. Device must come online before status can update.
+            </p>
+          </div>
+
+          <div style="background:#fdf2f8;border:1px solid #f3abdc;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:800;color:#9d174d;margin-bottom:4px;">🔴 Possible Evasion</div>
+            <p style="font-size:0.72rem;color:#831843;margin:0;line-height:1.5;">
+              Extended offline with arrears — possible connectivity anomaly.
+              <strong>Not confirmed fraud.</strong> Escalate for HQ review.
+            </p>
+          </div>
+
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:800;color:#475569;margin-bottom:4px;">↩ Device Came Online</div>
+            <p style="font-size:0.72rem;color:#475569;margin:0;line-height:1.5;">
+              Device reconnected after many offline days.
+              <strong>Action:</strong> Refresh lock/payment status and verify customer activity.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>{# /connectivity-intelligence section #}
+
 </div>{# /frd-console #}
 
 <script>

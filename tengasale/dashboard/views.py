@@ -4098,6 +4098,106 @@ def hq_fraud_checks(request):
         imei_verification_status__in=["api_error", "unknown"]
     ).exclude(imei_number="").count()
 
+    # ── Device Connectivity Intelligence ─────────────────────────────────────
+    from risk.models import DeviceConnectivitySignal
+    from django.utils import timezone as tz
+
+    # Handle connectivity POST actions
+    conn_action = request.POST.get("conn_action", "") if request.method == "POST" else ""
+    signal_id = request.POST.get("signal_id")
+    if conn_action and signal_id:
+        try:
+            signal = DeviceConnectivitySignal.objects.get(pk=signal_id)
+            if conn_action == "mark_false_positive":
+                signal.is_false_positive = True
+                signal.false_positive_marked_by = request.user
+                signal.save(update_fields=["is_false_positive", "false_positive_marked_by", "updated_at"])
+                AuditLog.objects.create(
+                    user=request.user, action="connectivity_false_positive",
+                    object_type="DeviceConnectivitySignal", object_id=str(signal.pk),
+                    detail={"imei": signal.imei},
+                )
+                msg = f"Signal for IMEI {signal.imei} marked as false positive."
+                msg_type = "success"
+            elif conn_action == "send_sync_instruction":
+                signal.sync_instruction_sent_at = tz.now()
+                signal.save(update_fields=["sync_instruction_sent_at", "updated_at"])
+                AuditLog.objects.create(
+                    user=request.user, action="sync_instruction_sent",
+                    object_type="DeviceConnectivitySignal", object_id=str(signal.pk),
+                    detail={"imei": signal.imei, "customer": signal.customer_name},
+                )
+                msg = f"Internet sync instruction sent for {signal.customer_name}."
+                msg_type = "success"
+            elif conn_action == "escalate_recovery":
+                signal.escalated_at = tz.now()
+                signal.connectivity_status = DeviceConnectivitySignal.CONN_RECOVERY_REVIEW
+                signal.save(update_fields=["escalated_at", "connectivity_status", "updated_at"])
+                AuditLog.objects.create(
+                    user=request.user, action="recovery_escalation",
+                    object_type="DeviceConnectivitySignal", object_id=str(signal.pk),
+                    detail={"imei": signal.imei},
+                )
+                msg = f"IMEI {signal.imei} escalated to recovery desk."
+                msg_type = "warning"
+        except DeviceConnectivitySignal.DoesNotExist:
+            if not msg:
+                msg = "Connectivity signal not found."
+                msg_type = "error"
+        except Exception as exc:
+            if not msg:
+                msg = f"Error: {exc}"
+                msg_type = "error"
+
+    # Fetch connectivity signals
+    connectivity_signals = (
+        DeviceConnectivitySignal.objects.filter(is_false_positive=False)
+        .select_related("application", "lock_profile")
+        .order_by("-risk_score", "-days_offline")[:50]
+    )
+
+    # Connectivity KPI counters
+    conn_offline_total = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False, days_offline__gte=1
+    ).count()
+    conn_high_risk = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False, risk_band__in=["high", "critical"]
+    ).count()
+    conn_critical = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False, risk_band="critical"
+    ).count()
+    conn_paid_offline = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False,
+        connectivity_status="offline_paid",
+    ).count()
+    conn_arrears_offline = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False,
+        connectivity_status="offline_arrears",
+    ).count()
+    conn_sync_pending = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False,
+        sync_status="pending_device_online",
+    ).count()
+    conn_needs_internet = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False,
+        connectivity_help_needed=True,
+    ).count()
+    conn_escalated = DeviceConnectivitySignal.objects.filter(
+        is_false_positive=False,
+        escalated_at__isnull=False,
+    ).count()
+
+    # Telemetry provider status from settings
+    paytrigger_configured = bool(
+        getattr(settings, "PAYTRIGGER_API_KEY", None)
+        or getattr(settings, "ENABLE_PAYTRIGGER", False)
+    )
+    upya_configured = bool(
+        getattr(settings, "UPYA_API_KEY", None)
+        or getattr(settings, "ENABLE_UPYA", False)
+    )
+    telemetry_connected = paytrigger_configured or upya_configured
+
     return render(request, "dashboard/hq_fraud_checks.html", {
         "dup_ids": list(dup_ids),
         "dup_phones": list(dup_phones),
@@ -4114,6 +4214,17 @@ def hq_fraud_checks(request):
         "imei_mismatch_count": imei_mismatch_count,
         "imei_possible_count": imei_possible_count,
         "imei_error_count": imei_error_count,
+        # Connectivity intelligence
+        "connectivity_signals": connectivity_signals,
+        "conn_offline_total": conn_offline_total,
+        "conn_high_risk": conn_high_risk,
+        "conn_critical": conn_critical,
+        "conn_paid_offline": conn_paid_offline,
+        "conn_arrears_offline": conn_arrears_offline,
+        "conn_sync_pending": conn_sync_pending,
+        "conn_needs_internet": conn_needs_internet,
+        "conn_escalated": conn_escalated,
+        "telemetry_connected": telemetry_connected,
     })
 
 
@@ -4603,6 +4714,8 @@ def hq_whatsapp_bot(request):
             "last_twilio_sid": last_outbound.provider_message_sid if last_outbound else "",
             "last_twilio_status": last_outbound.provider_status if last_outbound else "",
             "last_twilio_error": last_outbound.error_message if last_outbound else "",
+            "last_twilio_error_code": last_outbound.error_code if last_outbound else "",
+            "last_status_callback_at": last_outbound.last_status_callback_at if last_outbound else None,
             "last_inbound": last_inbound,
             "last_inbound_sender": mask_secret(last_inbound.from_phone) if last_inbound else "",
             "last_status_callback": last_status_callback,

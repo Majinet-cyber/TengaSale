@@ -1,0 +1,32 @@
+{#
+  Full-page branded loader.
+  Use on slow pages by rendering this partial while HTMX loads content.
+  label: optional message shown below spinner (e.g. "Loading risk signals…")
+#}
+<div class="ts-page-loader" role="status" aria-label="{{ label|default:'Loading…' }}" style="
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  gap: 16px;
+  padding: 40px 20px;
+">
+  <div style="
+    width: 44px; height: 44px;
+    border: 3px solid rgba(255,77,0,0.15);
+    border-top-color: #FF4D00;
+    border-radius: 50%;
+    {% if not request.user.prefers_reduced_motion %}
+    animation: ts-spin 0.8s linear infinite;
+    {% endif %}
+  " aria-hidden="true"></div>
+  <p style="
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0;
+    text-align: center;
+    letter-spacing: 0.02em;
+  ">{{ label|default:"Preparing HQ intelligence…" }}</p>
+</div>

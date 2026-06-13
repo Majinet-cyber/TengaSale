@@ -1,1 +1,16 @@
-<div class="ts-toast-container" id="ts-toast-container" aria-live="polite" aria-atomic="true" data-testid="toast-container"></div>
+{#
+  Toast container — already added globally in base.html.
+  Include this partial only on standalone pages that don't extend base.html.
+#}
+<div id="ts-toast-container" aria-live="polite" aria-atomic="false" style="
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 12px));
+  right: 16px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  width: calc(100vw - 32px);
+  pointer-events: none;
+"></div>

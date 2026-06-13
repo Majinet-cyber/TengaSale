@@ -1,4 +1,21 @@
-<button type="{{ button_type|default:'submit' }}" class="ts-button-primary ts-loading-btn {{ extra_class }}" {% if disabled %}disabled{% endif %} {% if testid %}data-testid="{{ testid }}"{% endif %}>
-  <span class="ts-loading-btn__label">{{ label|default:"Save" }}</span>
+{#
+  Loading button partial.
+  Usage:
+    {% include "partials/loading_button.html" with label="Save Deal" icon="bi-check2" extra_class="ts-button-primary" %}
+  Or in a form submit:
+    <button type="submit" class="ts-button-primary ts-loading-btn">
+      <span class="ts-loading-btn__label">Save Deal</span>
+      <span class="ts-loading-btn__spinner" aria-hidden="true"></span>
+    </button>
+#}
+<button
+  type="{{ button_type|default:'submit' }}"
+  class="{{ extra_class|default:'ts-button-primary' }} ts-loading-btn"
+  {% if name %}name="{{ name }}"{% endif %}
+  {% if value %}value="{{ value }}"{% endif %}
+  {% if disabled %}disabled{% endif %}
+>
+  {% if icon %}<i class="bi {{ icon }}" aria-hidden="true"></i>{% endif %}
+  <span class="ts-loading-btn__label">{{ label|default:"Submit" }}</span>
   <span class="ts-loading-btn__spinner" aria-hidden="true"></span>
 </button>

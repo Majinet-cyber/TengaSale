@@ -456,7 +456,7 @@ def bug_to_ticket(request, bug_id):
 @tech_support_required
 def conversation_list(request):
     """HQ view of all WhatsApp conversations."""
-    from .models import WhatsAppConversation, WhatsAppMessage
+    from .models import WhatsAppConversation
 
     conversations = (
         WhatsAppConversation.objects

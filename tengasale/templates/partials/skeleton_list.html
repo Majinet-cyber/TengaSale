@@ -1,10 +1,11 @@
-<div class="ts-skeleton ts-skeleton-list" aria-hidden="true" data-testid="skeleton-list">
-  {% for _ in "123" %}
+{# Skeleton list — use while loading a list of items #}
+<div class="ts-skeleton" role="status" aria-busy="true" aria-label="Loading list…" style="padding:16px;">
+  {% for i in "1234" %}
   <div class="ts-skeleton__list-item">
     <div class="ts-skeleton__avatar"></div>
     <div class="ts-skeleton__lines">
-      <div class="ts-skeleton__line"></div>
-      <div class="ts-skeleton__line ts-skeleton__line--short"></div>
+      <div class="ts-skeleton__line ts-skeleton__line--medium"></div>
+      <div class="ts-skeleton__line ts-skeleton__line--short" style="margin-bottom:0;"></div>
     </div>
   </div>
   {% endfor %}
