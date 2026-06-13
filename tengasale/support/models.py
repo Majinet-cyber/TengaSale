@@ -25,6 +25,32 @@ class SupportTicket(models.Model):
     CAT_PAYOUT          = "payout"
     CAT_DATA_CORRECTION = "data_correction"
     CAT_OTHER           = "other"
+    CAT_APPLICATION_STATUS = "application_status"
+    CAT_PAYMENT_NOT_REFLECTING = "payment_not_reflecting"
+    CAT_UNLOCK_REQUEST = "unlock_request"
+    CAT_DEPOSIT_ISSUE = "deposit_issue"
+    CAT_WRONG_PHONE_NUMBER = "wrong_phone_number"
+    CAT_WRONG_ID_DETAILS = "wrong_id_details"
+    CAT_CONTRACT_ISSUE = "contract_issue"
+    CAT_WARRANTY_ISSUE = "warranty_issue"
+    CAT_GUARANTOR_ISSUE = "guarantor_issue"
+    CAT_MERCHANT_COMPLAINT = "merchant_complaint"
+    CAT_UNDERWRITER_COMPLAINT = "underwriter_complaint"
+    CAT_GENERAL_SUPPORT = "general_support"
+    CAT_MERCHANT_SUPPORT = "merchant_support"
+    CAT_HANDOVER_PROBLEM = "handover_problem"
+    CAT_IMEI_SUBMISSION_PROBLEM = "imei_submission_problem"
+    CAT_DEPOSIT_CONFIRMATION_ISSUE = "deposit_confirmation_issue"
+    CAT_STOCK_ISSUE = "stock_issue"
+    CAT_CONTRACT_GENERATION_ISSUE = "contract_generation_issue"
+    CAT_MERCHANT_COMMISSION_ISSUE = "merchant_commission_issue"
+    CAT_SUSPECTED_CUSTOMER_FRAUD = "suspected_customer_fraud"
+    CAT_FINANCE_REVIEW = "finance_review"
+    CAT_RECOVERY_REVIEW = "recovery_review"
+    CAT_LEGAL_REVIEW = "legal_review"
+    CAT_MANAGEMENT_ESCALATION = "management_escalation"
+    CAT_FRAUD_REPORT = "fraud_report"
+    CAT_SYSTEM_ISSUE = "system_issue"
 
     CATEGORY_CHOICES = [
         (CAT_PAYMENT,          "Payment issue"),
@@ -36,43 +62,78 @@ class SupportTicket(models.Model):
         (CAT_CONTRACT,         "Contract issue"),
         (CAT_PAYOUT,           "Payout issue"),
         (CAT_DATA_CORRECTION,  "Data correction request"),
+        (CAT_APPLICATION_STATUS, "Application status"),
+        (CAT_PAYMENT_NOT_REFLECTING, "Payment not reflecting"),
+        (CAT_UNLOCK_REQUEST, "Unlock request"),
+        (CAT_DEPOSIT_ISSUE, "Deposit issue"),
+        (CAT_WRONG_PHONE_NUMBER, "Wrong phone number"),
+        (CAT_WRONG_ID_DETAILS, "Wrong ID details"),
+        (CAT_CONTRACT_ISSUE, "Contract issue"),
+        (CAT_WARRANTY_ISSUE, "Warranty / damaged phone"),
+        (CAT_GUARANTOR_ISSUE, "Guarantor issue"),
+        (CAT_MERCHANT_COMPLAINT, "Merchant complaint"),
+        (CAT_UNDERWRITER_COMPLAINT, "Underwriter complaint"),
+        (CAT_GENERAL_SUPPORT, "General support"),
+        (CAT_MERCHANT_SUPPORT, "Merchant support"),
+        (CAT_HANDOVER_PROBLEM, "Handover problem"),
+        (CAT_IMEI_SUBMISSION_PROBLEM, "IMEI submission problem"),
+        (CAT_DEPOSIT_CONFIRMATION_ISSUE, "Deposit confirmation issue"),
+        (CAT_STOCK_ISSUE, "Stock issue"),
+        (CAT_CONTRACT_GENERATION_ISSUE, "Contract generation issue"),
+        (CAT_MERCHANT_COMMISSION_ISSUE, "Merchant commission issue"),
+        (CAT_SUSPECTED_CUSTOMER_FRAUD, "Suspected customer fraud"),
+        (CAT_FINANCE_REVIEW, "Finance review"),
+        (CAT_RECOVERY_REVIEW, "Recovery review"),
+        (CAT_LEGAL_REVIEW, "Legal review"),
+        (CAT_MANAGEMENT_ESCALATION, "Management escalation"),
+        (CAT_FRAUD_REPORT, "Fraud report"),
+        (CAT_SYSTEM_ISSUE, "System issue"),
         (CAT_OTHER,            "Other"),
     ]
 
     # ── priorities ───────────────────────────────────────────────────────────
     PRI_LOW      = "low"
+    PRI_NORMAL   = "normal"
     PRI_MEDIUM   = "medium"
     PRI_HIGH     = "high"
+    PRI_URGENT   = "urgent"
     PRI_CRITICAL = "critical"
 
     PRIORITY_CHOICES = [
         (PRI_LOW,      "Low"),
+        (PRI_NORMAL,   "Normal"),
         (PRI_MEDIUM,   "Medium"),
         (PRI_HIGH,     "High"),
+        (PRI_URGENT,   "Urgent"),
         (PRI_CRITICAL, "Critical"),
     ]
 
     # ── statuses ─────────────────────────────────────────────────────────────
+    STATUS_NEW            = "new"
     STATUS_OPEN           = "open"
     STATUS_ASSIGNED       = "assigned"
     STATUS_IN_PROGRESS    = "in_progress"
     STATUS_WAITING_USER   = "waiting_user"
+    STATUS_WAITING_CUSTOMER = "waiting_for_customer"
     STATUS_WAITING_PROV   = "waiting_provider"
     STATUS_ESCALATED      = "escalated"
     STATUS_RESOLVED       = "resolved"
     STATUS_CLOSED         = "closed"
 
     STATUS_CHOICES = [
+        (STATUS_NEW,          "New"),
         (STATUS_OPEN,         "Open"),
         (STATUS_ASSIGNED,     "Assigned"),
         (STATUS_IN_PROGRESS,  "In Progress"),
         (STATUS_WAITING_USER, "Waiting on User"),
+        (STATUS_WAITING_CUSTOMER, "Waiting for Customer"),
         (STATUS_WAITING_PROV, "Waiting on Provider"),
         (STATUS_ESCALATED,    "Escalated to HQ"),
         (STATUS_RESOLVED,     "Resolved"),
         (STATUS_CLOSED,       "Closed"),
     ]
 
+    ticket_number = models.CharField(max_length=24, unique=True, blank=True, db_index=True)
     title       = models.CharField(max_length=200)
     description = models.TextField()
     category    = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default=CAT_OTHER)
@@ -113,6 +174,46 @@ class SupportTicket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at  = models.DateTimeField(null=True, blank=True)
+    source = models.CharField(max_length=30, blank=True, default="")
+    sender_phone = models.CharField(max_length=30, blank=True, default="", db_index=True)
+    sender_name = models.CharField(max_length=160, blank=True, default="")
+    sender_type = models.CharField(max_length=30, blank=True, default="unknown")
+    linked_contact = models.ForeignKey(
+        "WhatsAppContact",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets",
+    )
+    linked_customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="customer_support_tickets",
+    )
+    linked_merchant = models.ForeignKey(
+        "merchants.Merchant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="support_tickets",
+    )
+    linked_underwriter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="underwriter_support_tickets",
+    )
+    first_response_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    sla_due_at = models.DateTimeField(null=True, blank=True)
+    escalation_reason = models.TextField(blank=True, default="")
+    resolution_summary = models.TextField(blank=True, default="")
+    last_message_preview = models.CharField(max_length=240, blank=True, default="")
+    last_message_at = models.DateTimeField(null=True, blank=True)
+    reopened_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["-created_at"]
@@ -122,9 +223,13 @@ class SupportTicket(models.Model):
     def __str__(self):
         return f"#{self.pk} — {self.title}"
 
-    @property
-    def ticket_number(self):
-        return f"TS-{self.pk:05d}"
+    def save(self, *args, **kwargs):
+        needs_ticket_number = not self.ticket_number
+        super().save(*args, **kwargs)
+        if needs_ticket_number:
+            year = (self.created_at or timezone.now()).year
+            self.ticket_number = f"TS-{year}-{self.pk:06d}"
+            super().save(update_fields=["ticket_number"])
 
 
 class TicketComment(models.Model):
@@ -433,3 +538,182 @@ class SupportCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class WhatsAppContact(models.Model):
+    SENDER_CUSTOMER = "customer"
+    SENDER_MERCHANT = "merchant"
+    SENDER_UNDERWRITER = "underwriter"
+    SENDER_UNKNOWN = "unknown"
+
+    SENDER_TYPE_CHOICES = [
+        (SENDER_CUSTOMER, "Customer"),
+        (SENDER_MERCHANT, "Merchant"),
+        (SENDER_UNDERWRITER, "Underwriter"),
+        (SENDER_UNKNOWN, "Unknown"),
+    ]
+
+    phone_e164 = models.CharField(max_length=30, unique=True, db_index=True)
+    whatsapp_id = models.CharField(max_length=80, blank=True, default="")
+    profile_name = models.CharField(max_length=160, blank=True, default="")
+    sender_type = models.CharField(max_length=30, choices=SENDER_TYPE_CHOICES, default=SENDER_UNKNOWN)
+    linked_customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_customer_contacts",
+    )
+    linked_merchant = models.ForeignKey(
+        "merchants.Merchant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_contacts",
+    )
+    linked_underwriter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_underwriter_contacts",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-last_seen_at", "-updated_at"]
+
+    def __str__(self):
+        return f"{self.phone_e164} ({self.sender_type})"
+
+
+class WhatsAppConversation(models.Model):
+    STATUS_OPEN = "open"
+    STATUS_WAITING_FOR_CUSTOMER = "waiting_for_customer"
+    STATUS_RESOLVED = "resolved"
+    STATUS_CLOSED = "closed"
+
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_WAITING_FOR_CUSTOMER, "Waiting for Customer"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_CLOSED, "Closed"),
+    ]
+
+    contact = models.OneToOneField(WhatsAppContact, on_delete=models.CASCADE, related_name="conversation")
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    last_message_at = models.DateTimeField(null=True, blank=True)
+    last_message_preview = models.CharField(max_length=240, blank=True, default="")
+    active_ticket = models.ForeignKey(
+        SupportTicket,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_conversations",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-last_message_at", "-updated_at"]
+
+    def __str__(self):
+        return f"WhatsApp conversation {self.contact.phone_e164}"
+
+
+class WhatsAppMessage(models.Model):
+    DIRECTION_INBOUND = "inbound"
+    DIRECTION_OUTBOUND = "outbound"
+    PROVIDER_MOCK = "mock"
+    PROVIDER_TWILIO = "twilio"
+
+    STATUS_QUEUED = "queued"
+    STATUS_SENT = "sent"
+    STATUS_DELIVERED = "delivered"
+    STATUS_READ = "read"
+    STATUS_FAILED = "failed"
+    STATUS_UNDELIVERED = "undelivered"
+    STATUS_RECEIVED = "received"
+    STATUS_UNKNOWN = "unknown"
+
+    DIRECTION_CHOICES = [
+        (DIRECTION_INBOUND, "Inbound"),
+        (DIRECTION_OUTBOUND, "Outbound"),
+    ]
+    PROVIDER_CHOICES = [
+        (PROVIDER_MOCK, "Mock"),
+        (PROVIDER_TWILIO, "Twilio"),
+    ]
+    STATUS_CHOICES = [
+        (STATUS_QUEUED, "Queued"),
+        (STATUS_SENT, "Sent"),
+        (STATUS_DELIVERED, "Delivered"),
+        (STATUS_READ, "Read"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_UNDELIVERED, "Undelivered"),
+        (STATUS_RECEIVED, "Received"),
+        (STATUS_UNKNOWN, "Unknown"),
+    ]
+
+    conversation = models.ForeignKey(WhatsAppConversation, on_delete=models.CASCADE, related_name="messages")
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.SET_NULL, null=True, blank=True, related_name="whatsapp_messages")
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default=PROVIDER_MOCK)
+    provider_message_sid = models.CharField(max_length=80, blank=True, default="", db_index=True)
+    provider_status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_UNKNOWN)
+    from_phone = models.CharField(max_length=30, blank=True, default="")
+    to_phone = models.CharField(max_length=30, blank=True, default="")
+    body = models.TextField(blank=True, default="")
+    media_count = models.PositiveIntegerField(default=0)
+    media_json = models.JSONField(default=list, blank=True)
+    raw_payload = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True, default="")
+    sent_by_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sent_whatsapp_support_messages",
+    )
+    received_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.direction}: {self.body[:60]}"
+
+
+class SupportTicketAuditLog(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="audit_logs")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=80)
+    from_status = models.CharField(max_length=30, blank=True, default="")
+    to_status = models.CharField(max_length=30, blank=True, default="")
+    note = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.ticket.ticket_number} {self.action}"
+
+
+class SupportTicketInternalNote(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name="internal_note_entries")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    note = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Internal note on {self.ticket.ticket_number}"

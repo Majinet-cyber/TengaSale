@@ -272,17 +272,17 @@
         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
       </svg>
       <div>
-        <h1 class="wa-bot-hero__title">WhatsApp Bot Operations</h1>
-        <p class="wa-bot-hero__sub">Channel health · Templates · Automations · Analytics</p>
+        <h1 class="wa-bot-hero__title">WhatsApp Support Operations</h1>
+        <p class="wa-bot-hero__sub">Ticket intake, staff replies, delivery health, and escalation oversight</p>
       </div>
     </div>
     <div class="wa-bot-hero__status" data-testid="wa-bot-status">
       {% if channel_healthy %}
         <span class="wa-status-dot"></span>
-        Bot Online · {{ messaging_provider|title }}
+        Ready · {{ provider_label }}
       {% elif messaging_provider == "mock" %}
         <span class="wa-status-dot wa-status-dot--mock"></span>
-        Simulation Mode (Mock)
+        {{ provider_label }}
       {% else %}
         <span class="wa-status-dot wa-status-dot--offline"></span>
         Configuration Required
@@ -293,20 +293,39 @@
   {# ── Stat cards ───────────────────────────────────────────────── #}
   <div class="wa-stat-row">
     <div class="wa-stat-card">
-      <div class="wa-stat-card__val">{{ wa_sent_today }}</div>
-      <div class="wa-stat-card__lbl">Sent Today</div>
+      <div class="wa-stat-card__val">{{ open_tickets }}</div>
+      <div class="wa-stat-card__lbl">Open Tickets</div>
     </div>
     <div class="wa-stat-card wa-stat-card--failed">
-      <div class="wa-stat-card__val">{{ wa_failed_today }}</div>
-      <div class="wa-stat-card__lbl">Failed Today</div>
+      <div class="wa-stat-card__val">{{ urgent_tickets }}</div>
+      <div class="wa-stat-card__lbl">Urgent Tickets</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--queued">
+      <div class="wa-stat-card__val">{{ overdue_sla }}</div>
+      <div class="wa-stat-card__lbl">Overdue SLA</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--conv">
+      <div class="wa-stat-card__val">{{ waiting_for_customer }}</div>
+      <div class="wa-stat-card__lbl">Waiting Customer</div>
+    </div>
+  </div>
+
+  <div class="wa-stat-row">
+    <div class="wa-stat-card">
+      <div class="wa-stat-card__val">{{ resolved_today }}</div>
+      <div class="wa-stat-card__lbl">Resolved Today</div>
+    </div>
+    <div class="wa-stat-card wa-stat-card--conv">
+      <div class="wa-stat-card__val">{% if avg_first_response %}{{ avg_first_response }}m{% else %}-{% endif %}</div>
+      <div class="wa-stat-card__lbl">Avg First Response</div>
+    </div>
+    <div class="wa-stat-card">
+      <div class="wa-stat-card__val">{{ wa_sent_today }}</div>
+      <div class="wa-stat-card__lbl">Outbound Today</div>
     </div>
     <div class="wa-stat-card wa-stat-card--queued">
       <div class="wa-stat-card__val">{{ wa_queued }}</div>
       <div class="wa-stat-card__lbl">Queued</div>
-    </div>
-    <div class="wa-stat-card wa-stat-card--conv">
-      <div class="wa-stat-card__val">{{ open_conversations }}</div>
-      <div class="wa-stat-card__lbl">Open Conversations</div>
     </div>
   </div>
 
@@ -327,10 +346,12 @@
       </span>
     </div>
     <div class="ts-panel__body">
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider</span><span class="wa-webhook-row__val">{{ messaging_provider|title }}</span></div>
-      {% if twilio_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Twilio WA Number</span><span class="wa-webhook-row__val">{{ twilio_wa_number }}</span></div>{% endif %}
-      {% if meta_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Meta WA Number ID</span><span class="wa-webhook-row__val">{{ meta_wa_number }}</span></div>{% endif %}
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider</span><span class="wa-webhook-row__val">{{ provider_label }}</span></div>
+      {% if messaging_service_sid %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Messaging Service SID</span><span class="wa-webhook-row__val">{{ messaging_service_sid }}</span></div>{% endif %}
+      {% if twilio_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Sender</span><span class="wa-webhook-row__val">{{ twilio_wa_number }}</span></div>{% endif %}
+      {% if provider_missing %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Config Error</span><span class="wa-webhook-row__val">{{ provider_missing|join:", " }}</span></div>{% endif %}
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Webhook URL</span><span class="wa-webhook-row__val">{% if webhook_url %}{{ webhook_url }}{% else %}/tengasale/support/whatsapp/webhook/{% endif %}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Status Callback URL</span><span class="wa-webhook-row__val">{{ status_callback_url }}</span></div>
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Simulate Endpoint</span><span class="wa-webhook-row__val">/tengasale/support/whatsapp/simulate/</span></div>
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Conversations</span><span class="wa-webhook-row__val">{{ conversation_count }} total · {{ open_conversations }} open</span></div>
     </div>
@@ -365,7 +386,8 @@
         Test Message
       </span>
     </div>
-    <form method="get" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-test-form">
+    <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-test-form" id="wa-test-form">
+      {% csrf_token %}
       <input
         type="tel"
         name="phone"
@@ -374,11 +396,49 @@
         pattern="[0-9]{12,14}"
         data-testid="wa-test-phone"
       >
+      <input
+        type="text"
+        name="message"
+        value="Hi"
+        aria-label="Test WhatsApp message"
+        class="wa-test-input"
+        data-testid="wa-test-message"
+      >
       <button type="submit" class="wa-test-btn" data-testid="wa-test-submit">Send Test</button>
     </form>
-    <p style="padding:0 16px 12px;font-size:12px;color:#94A3B8;">
-      Sends a simulated WhatsApp message via the simulation endpoint. Only available in development/staging.
-    </p>
+    <p id="wa-test-result" style="padding:0 16px 12px;font-size:12px;color:#64748B;" aria-live="polite"></p>
+  </div>
+
+  <div class="ts-panel" data-testid="wa-ticket-list">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">Support Tickets</span>
+    </div>
+    <div class="ts-panel__body">
+      {% for ticket in recent_tickets %}
+      <div class="wa-webhook-row">
+        <span class="wa-webhook-row__label">{{ ticket.ticket_number }} · {{ ticket.sender_name|default:ticket.sender_phone }}</span>
+        <span class="wa-webhook-row__val">{{ ticket.category }} · {{ ticket.status }} · {{ ticket.priority }}</span>
+      </div>
+      {% empty %}
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">No support tickets yet</span><span class="wa-webhook-row__val">Inbound WhatsApp messages will appear here.</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="ts-panel" data-testid="wa-escalations">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">Management Escalations</span>
+    </div>
+    <div class="ts-panel__body">
+      {% for ticket in escalations %}
+      <div class="wa-webhook-row">
+        <span class="wa-webhook-row__label">{{ ticket.ticket_number }} · {{ ticket.category }}</span>
+        <span class="wa-webhook-row__val">{{ ticket.priority }} · {% if ticket.sla_due_at %}SLA {{ ticket.sla_due_at|date:"d M H:i" }}{% else %}Needs review{% endif %}</span>
+      </div>
+      {% empty %}
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">No escalation items</span><span class="wa-webhook-row__val">Urgent, fraud, legal, overdue, and complaint tickets will appear here.</span></div>
+      {% endfor %}
+    </div>
   </div>
 
   {# ── Message Templates ─────────────────────────────────────────── #}
@@ -427,4 +487,36 @@
   </div>
 
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("wa-test-form");
+  const result = document.getElementById("wa-test-result");
+  if (!form || !result) return;
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    result.textContent = "Sending test message...";
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        result.textContent = data.error || "Test message failed.";
+        result.style.color = "#DC2626";
+        return;
+      }
+      result.textContent = data.ticket_number
+        ? `Created ${data.ticket_number}.`
+        : "Simulated inbound message received.";
+      result.style.color = "#128C7E";
+      window.setTimeout(function () { window.location.reload(); }, 900);
+    } catch (error) {
+      result.textContent = "Test message failed.";
+      result.style.color = "#DC2626";
+    }
+  });
+});
+</script>
 {% endblock %}

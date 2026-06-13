@@ -983,8 +983,26 @@ body {
   transform: translateY(-1px);
 }
 
-.hq-action-item--urgent  { border-left: 3px solid #f59e0b; }
-.hq-action-item--danger  { border-left: 3px solid #dc2626; }
+.hq-action-item--urgent  { box-shadow: var(--hq-shadow), inset 0 0 0 1px rgba(245,158,11,0.16); }
+.hq-action-item--danger  { box-shadow: var(--hq-shadow), inset 0 0 0 1px rgba(220,38,38,0.14); }
+.hq-kpi[data-hq-kpi-url] { cursor: pointer; }
+.hq-kpi[data-hq-kpi-url]:focus-visible {
+  outline: 3px solid rgba(255,90,0,.22);
+  outline-offset: 3px;
+}
+.hq-kpi[data-hq-kpi-url]::after {
+  content: "Open";
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
 
 .hq-action-icon {
   width: 38px;
@@ -2026,7 +2044,7 @@ body {
   <p class="hq-sl" style="margin-top:10px;">Portfolio Intelligence</p>
   <div class="hq-kpi-grid" data-testid="hq-kpi-grid">
 
-    <div class="hq-kpi kpi-orange" style="border-top:3px solid #ff5a00;">
+    <div class="hq-kpi kpi-orange" data-hq-kpi-url="{% url 'hq_portfolio' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </div>
@@ -2035,7 +2053,7 @@ body {
       <span class="hq-kpi-trend hq-kpi-trend--up">▲ Portfolio</span>
     </div>
 
-    <div class="hq-kpi kpi-green" style="border-top:3px solid #16a34a;">
+    <div class="hq-kpi kpi-green" data-hq-kpi-url="{% url 'hq_payment_collections' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></svg>
       </div>
@@ -2044,7 +2062,7 @@ body {
       <span class="hq-kpi-trend hq-kpi-trend--up">▲ Inbound</span>
     </div>
 
-    <div class="hq-kpi kpi-blue" style="border-top:3px solid #1d4ed8;">
+    <div class="hq-kpi kpi-blue" data-hq-kpi-url="{% url 'hq_portfolio' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-4"/><path d="M12 16V8"/><path d="M16 16v-6"/></svg>
       </div>
@@ -2053,7 +2071,7 @@ body {
       <span class="hq-kpi-trend hq-kpi-trend--quiet">Open portfolio</span>
     </div>
 
-    <div class="hq-kpi kpi-amber" style="border-top:3px solid #f59e0b;">
+    <div class="hq-kpi kpi-amber" data-hq-kpi-url="{% url 'hq_simulations' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
       </div>
@@ -2061,7 +2079,7 @@ body {
       <div class="hq-kpi__label">Expected Gross Profit</div>
     </div>
 
-    <div class="hq-kpi {% if portfolio_at_risk > 20 %}kpi-red{% elif portfolio_at_risk > 10 %}kpi-amber{% else %}kpi-green{% endif %}" style="border-top:3px solid {% if portfolio_at_risk > 20 %}#dc2626{% elif portfolio_at_risk > 10 %}#f59e0b{% else %}#16a34a{% endif %};">
+    <div class="hq-kpi {% if portfolio_at_risk > 20 %}kpi-red{% elif portfolio_at_risk > 10 %}kpi-amber{% else %}kpi-green{% endif %}" data-hq-kpi-url="{% url 'hq_portfolio' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
@@ -2069,7 +2087,7 @@ body {
       <div class="hq-kpi__label">Portfolio At Risk</div>
     </div>
 
-    <div class="hq-kpi {% if lock_locked_count %}kpi-red{% else %}hq-kpi--quiet{% endif %}">
+    <div class="hq-kpi {% if lock_locked_count %}kpi-red{% else %}hq-kpi--quiet{% endif %}" data-hq-kpi-url="{% url 'hq_devices' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       </div>
@@ -2078,7 +2096,7 @@ body {
       {% if not lock_locked_count %}<span class="hq-kpi-trend hq-kpi-trend--quiet">No active locks</span>{% endif %}
     </div>
 
-    <div class="hq-kpi {% if overdue_contracts_count %}kpi-red{% else %}hq-kpi--quiet{% endif %}">
+    <div class="hq-kpi {% if overdue_contracts_count %}kpi-red{% else %}hq-kpi--quiet{% endif %}" data-hq-kpi-url="{% url 'hq_portfolio' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
       </div>
@@ -2087,7 +2105,7 @@ body {
       {% if not overdue_contracts_count %}<span class="hq-kpi-trend hq-kpi-trend--quiet">Clear</span>{% endif %}
     </div>
 
-    <div class="hq-kpi kpi-blue">
+    <div class="hq-kpi kpi-blue" data-hq-kpi-url="{% url 'hq_applications' %}" tabindex="0" role="link">
       <div class="hq-kpi__icon">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       </div>
@@ -2953,6 +2971,20 @@ body {
   });
 
   /* ── Live clock ── */
+  document.querySelectorAll('[data-hq-kpi-url]').forEach(function(card) {
+    function openCard() {
+      var url = card.getAttribute('data-hq-kpi-url');
+      if (url) window.location.href = url;
+    }
+    card.addEventListener('click', openCard);
+    card.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openCard();
+      }
+    });
+  });
+
   var clockEl = document.getElementById('hq-clock');
   var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

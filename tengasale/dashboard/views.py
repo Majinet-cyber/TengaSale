@@ -68,6 +68,7 @@ from core.view_safety import safe_page
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
 from merchants.models import Merchant
 from rewards.models import SpinWallet
+from .export_utils import dated_filename, export_pdf_response
 from .portfolio_services import (
     calculate_portfolio_kpis,
     portfolio_chart_data,
@@ -1448,6 +1449,7 @@ def hq_deals(request):
                     deposit_percent=Decimal(request.POST.get("deposit_percent", "13") or "13"),
                     loan_multiplier=Decimal(request.POST.get("loan_multiplier", "2.5") or "2.5"),
                     term_months=int(request.POST.get("term_months", "12") or "12"),
+                    unlock_days=int(request.POST.get("unlock_days", "7") or "7"),
                     is_active="is_active" in request.POST,
                     is_featured="is_featured" in request.POST,
                     stock_status=request.POST.get("stock_status", "in_stock"),
@@ -1485,6 +1487,7 @@ def hq_deals(request):
                 deal.deposit_percent = Decimal(request.POST.get("deposit_percent") or str(deal.deposit_percent))
                 deal.loan_multiplier = Decimal(request.POST.get("loan_multiplier") or str(deal.loan_multiplier))
                 deal.term_months = int(request.POST.get("term_months") or str(deal.term_months))
+                deal.unlock_days = int(request.POST.get("unlock_days") or str(deal.unlock_days))
                 deal.is_active = "is_active" in request.POST
                 deal.is_featured = "is_featured" in request.POST
                 deal.stock_status = request.POST.get("stock_status", deal.stock_status)
@@ -1566,43 +1569,58 @@ def hq_deals(request):
         deals_qs = deals_qs.filter(is_active=False)
 
     brands = DeviceBrand.objects.order_by("name")
-    main_brand_keys = ["TECNO", "ITEL", "REDMI", "SAMSUNG"]
+    main_brand_keys = ["TECNO", "ITEL", "SAMSUNG", "REDMI"]
     brand_groups = OrderedDict()
 
     def brand_group_key(brand_name):
         normalized = (brand_name or "").strip().upper()
+        if "XIAOMI" in normalized:
+            return "REDMI"
         for key in main_brand_keys:
             if key in normalized:
                 return key
         return "OTHER"
 
+    def display_brand_id_for(key):
+        for brand in brands:
+            if brand_group_key(brand.name) == key:
+                return brand.pk
+        return None
+
+    for key in [*main_brand_keys, "OTHER"]:
+        brand_groups[key] = {
+            "key": key,
+            "name": key.title() if key != "OTHER" else "Other",
+            "deals": [],
+            "count": 0,
+            "active_count": 0,
+            "inactive_count": 0,
+            "in_stock_count": 0,
+            "brand_id": display_brand_id_for(key) if key != "OTHER" else None,
+        }
+
+    brand_groups["TECNO"]["name"] = "TECNO"
+    brand_groups["ITEL"]["name"] = "ITEL"
+    brand_groups["SAMSUNG"]["name"] = "SAMSUNG"
+    brand_groups["REDMI"]["name"] = "REDMI"
+
     for deal in deals_qs:
         key = brand_group_key(deal.brand.name if deal.brand_id else "")
         if key not in brand_groups:
-            brand_groups[key] = {
-                "key": key,
-                "name": key,
-                "deals": [],
-                "count": 0,
-                "active_count": 0,
-                "in_stock_count": 0,
-                "brand_id": deal.brand_id if key != "OTHER" else None,
-            }
+            key = "OTHER"
         group = brand_groups[key]
         group["deals"].append(deal)
         group["count"] += 1
         if deal.is_active:
             group["active_count"] += 1
+        else:
+            group["inactive_count"] += 1
         if deal.stock_status == DeviceDeal.STOCK_IN:
             group["in_stock_count"] += 1
         if key != "OTHER" and not group["brand_id"]:
             group["brand_id"] = deal.brand_id
 
-    brand_groups = [
-        brand_groups[key]
-        for key in [*main_brand_keys, "OTHER"]
-        if key in brand_groups and brand_groups[key]["count"] > 0
-    ]
+    brand_groups = [brand_groups[key] for key in [*main_brand_keys, "OTHER"] if brand_groups[key]["count"] > 0 or key != "OTHER"]
 
     # Catalog intelligence stats
     all_deals = deals_qs
@@ -1657,6 +1675,58 @@ def hq_applications(request):
         )
     if dup_filter == "1":
         apps_qs = apps_qs.filter(third_party_phone_user_risk_flagged=True)
+
+    export = request.GET.get("export", "")
+    export_rows_qs = apps_qs[:1000]
+    if export == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="{dated_filename("applications", "csv")}"'
+        writer = csv.writer(response)
+        writer.writerow([
+            "Application", "Customer", "Phone", "Merchant", "Underwriter",
+            "Deal", "Deposit %", "Status", "Submitted",
+        ])
+        for app in export_rows_qs:
+            writer.writerow([
+                app.application_number or app.pk,
+                app.customer_name,
+                app.customer_phone,
+                app.created_by.get_full_name() or app.created_by.username if app.created_by_id else "",
+                app.claimed_by.get_full_name() or app.claimed_by.username if app.claimed_by_id else "",
+                str(app.deal) if app.deal_id else "",
+                app.selected_deposit_percent or "",
+                app.get_status_display(),
+                app.submitted_at.isoformat() if app.submitted_at else "",
+            ])
+        return response
+    if export == "pdf":
+        rows = [
+            [
+                app.application_number or app.pk,
+                app.customer_name,
+                app.customer_phone,
+                app.created_by.get_full_name() or app.created_by.username if app.created_by_id else "",
+                app.claimed_by.get_full_name() or app.claimed_by.username if app.claimed_by_id else "",
+                str(app.deal) if app.deal_id else "",
+                app.get_status_display(),
+                app.submitted_at.strftime("%Y-%m-%d") if app.submitted_at else "",
+            ]
+            for app in export_rows_qs
+        ]
+        return export_pdf_response(
+            "Applications",
+            ["App", "Customer", "Phone", "Merchant", "Underwriter", "Deal", "Status", "Submitted"],
+            rows,
+            filename=dated_filename("applications", "pdf"),
+            filters=[
+                ("Search", search),
+                ("Status", status_filter),
+                ("Merchant", merchant_filter),
+                ("Third-party risk", "Yes" if dup_filter == "1" else ""),
+            ],
+            summary=[("Matching applications", apps_qs.count())],
+            landscape=True,
+        )
 
     total_count = apps_qs.count()
     apps = apps_qs[:200]
@@ -2001,9 +2071,10 @@ def hq_merchant_payouts(request):
     if merchant_filter:
         all_payouts = all_payouts.filter(merchant__username__icontains=merchant_filter)
 
-    if request.GET.get("export") == "csv":
+    export = request.GET.get("export", "")
+    if export == "csv":
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="merchant-payout-control.csv"'
+        response["Content-Disposition"] = f'attachment; filename="{dated_filename("merchant-payout-control", "csv")}"'
         writer = csv.writer(response)
         writer.writerow([
             "Payout ID", "Merchant", "Compliance", "Status", "Cash Price",
@@ -2030,6 +2101,35 @@ def hq_merchant_payouts(request):
                 payout.created_at.isoformat(),
             ])
         return response
+    if export == "pdf":
+        profiles = {
+            merchant.owner_id: merchant for merchant in Merchant.objects.filter(
+                owner_id__in=all_payouts.values_list("merchant_id", flat=True)
+            ).select_related("owner")
+        }
+        export_payouts = list(all_payouts[:1000])
+        rows = []
+        for payout in export_payouts:
+            merchant_profile = profiles.get(payout.merchant_id)
+            rows.append([
+                payout.pk,
+                payout.merchant.get_full_name() or payout.merchant.username,
+                merchant_profile.compliance_label if merchant_profile else "Merchant profile missing",
+                payout.get_status_display(),
+                payout.total_payable,
+                payout.get_payout_method_display(),
+                payout.hold_reason,
+                payout.created_at.strftime("%Y-%m-%d"),
+            ])
+        return export_pdf_response(
+            "Merchant Payout Control",
+            ["ID", "Merchant", "Compliance", "Status", "Payable", "Method", "Control note", "Created"],
+            rows,
+            filename=dated_filename("merchant-payout-control", "pdf"),
+            filters=[("Status", status_filter), ("Merchant", merchant_filter)],
+            summary=[("Records", len(export_payouts))],
+            landscape=True,
+        )
 
     # Totals on full (possibly filtered) queryset — NEVER filter on a sliced queryset
     pending_total = MerchantContractPayout.objects.filter(
@@ -2809,6 +2909,54 @@ def hq_devices(request):
             | Q(source_application__contract__contract_number__icontains=search)
         )
 
+    export = request.GET.get("export", "")
+    if export in {"csv", "pdf"}:
+        export_devices = list(devices_qs[:1000])
+        if export == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = f'attachment; filename="{dated_filename("devices", "csv")}"'
+            writer = csv.writer(response)
+            writer.writerow([
+                "Contract", "Customer", "Phone", "Device", "IMEI",
+                "Enrollment", "Lock Status", "Provider", "Last Sync", "Last Error",
+            ])
+            for device in export_devices:
+                writer.writerow([
+                    device.contract_number,
+                    device.customer_name,
+                    device.customer_phone,
+                    device.device_model,
+                    device.imei_number,
+                    device.device_enrollment_status,
+                    device.device_lock_status,
+                    device.device_lock_provider,
+                    device.last_lock_sync_at.isoformat() if device.last_lock_sync_at else "",
+                    device.last_lock_error,
+                ])
+            return response
+        rows = [
+            [
+                device.contract_number,
+                device.customer_name,
+                device.device_model,
+                device.imei_number,
+                device.device_enrollment_status,
+                device.device_lock_status,
+                device.device_lock_provider,
+                device.last_lock_sync_at.strftime("%Y-%m-%d %H:%M") if device.last_lock_sync_at else "Never",
+            ]
+            for device in export_devices
+        ]
+        return export_pdf_response(
+            "Devices and Locking Register",
+            ["Contract", "Customer", "Device", "IMEI", "Enrollment", "Lock", "Provider", "Last sync"],
+            rows,
+            filename=dated_filename("devices-locking", "pdf"),
+            filters=[("Enrollment", enroll_filter), ("Lock", lock_filter), ("Provider", provider_filter), ("Search", search)],
+            summary=[("Records", len(export_devices))],
+            landscape=True,
+        )
+
     # Summary counts
     total_enrolled = PaymentContract.objects.filter(
         device_enrollment_status=PaymentContract.ENROLLMENT_ENROLLED
@@ -3254,25 +3402,6 @@ def hq_auto_approval(request):
 def hq_payment_collections(request):
     """Payment collections control page."""
     from portal.models import PaymentContract, PaymentTransaction
-    from decimal import Decimal
-    import csv
-    from django.http import HttpResponse
-
-    if request.GET.get("export") == "csv":
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="payment_collections.csv"'
-        writer = csv.writer(response)
-        writer.writerow(["Contract", "Customer", "Amount", "Provider", "Status", "Paid At", "Reference"])
-        qs = PaymentTransaction.objects.select_related("payment_contract").order_by("-created_at")[:2000]
-        for t in qs:
-            writer.writerow([
-                t.payment_contract.contract_number if t.payment_contract_id else "",
-                t.payment_contract.customer_name if t.payment_contract_id else "",
-                t.amount, t.provider, t.status,
-                t.paid_at.date() if t.paid_at else "",
-                t.provider_reference or t.internal_reference,
-            ])
-        return response
 
     today = timezone.now().date()
     month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -3315,6 +3444,47 @@ def hq_payment_collections(request):
             txns_qs = txns_qs.filter(created_at__date__lte=date.fromisoformat(date_to))
         except ValueError:
             pass
+
+    export = request.GET.get("export", "")
+    if export in {"csv", "pdf"}:
+        export_txns = list(txns_qs[:2000])
+        if export == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = f'attachment; filename="{dated_filename("payments", "csv")}"'
+            writer = csv.writer(response)
+            writer.writerow(["Contract", "Customer", "Amount", "Provider", "Status", "Paid At", "Reference"])
+            for txn in export_txns:
+                writer.writerow([
+                    txn.payment_contract.contract_number if txn.payment_contract_id else "",
+                    txn.payment_contract.customer_name if txn.payment_contract_id else "",
+                    txn.amount,
+                    txn.provider,
+                    txn.status,
+                    txn.paid_at.isoformat() if txn.paid_at else "",
+                    txn.provider_reference or txn.internal_reference,
+                ])
+            return response
+        rows = [
+            [
+                txn.payment_contract.contract_number if txn.payment_contract_id else "Unlinked",
+                txn.payment_contract.customer_name if txn.payment_contract_id else "",
+                txn.amount,
+                txn.provider,
+                txn.status,
+                txn.paid_at.strftime("%Y-%m-%d %H:%M") if txn.paid_at else "",
+                txn.provider_reference or txn.internal_reference,
+            ]
+            for txn in export_txns
+        ]
+        return export_pdf_response(
+            "Payment Collections",
+            ["Contract", "Customer", "Amount", "Provider", "Status", "Paid at", "Reference"],
+            rows,
+            filename=dated_filename("payments", "pdf"),
+            filters=[("Status", status_filter), ("Provider", provider_filter), ("From", date_from), ("To", date_to)],
+            summary=[("Records", len(export_txns)), ("Today", collections_today), ("Month", collections_month)],
+            landscape=True,
+        )
 
     transactions = txns_qs[:100]
     providers = PaymentTransaction.objects.values_list("provider", flat=True).distinct().order_by("provider")
@@ -3399,6 +3569,51 @@ def hq_reconciliation(request):
     unmatched_qs = PaymentTransaction.objects.filter(
         Q(status__in=["pending", "processing"]) | Q(payment_contract__isnull=True, status="failed")
     ).select_related("payment_contract").order_by("-created_at")[:50]
+
+    export = request.GET.get("export", "")
+    if export in {"csv", "pdf"}:
+        review_qs = PaymentTransaction.objects.filter(
+            Q(status__in=["pending", "processing"]) | Q(payment_contract__isnull=True, status="failed")
+        ).select_related("payment_contract").order_by("-created_at")[:1000]
+        if export == "csv":
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = f'attachment; filename="{dated_filename("reconciliation", "csv")}"'
+            writer = csv.writer(response)
+            writer.writerow(["Reference", "Provider", "Amount", "Status", "Contract", "Created"])
+            for txn in review_qs:
+                writer.writerow([
+                    txn.provider_reference or txn.internal_reference,
+                    txn.provider,
+                    txn.amount,
+                    txn.status,
+                    txn.payment_contract.contract_number if txn.payment_contract_id else "",
+                    txn.created_at.isoformat(),
+                ])
+            return response
+        rows = [
+            [
+                txn.provider_reference or txn.internal_reference,
+                txn.provider,
+                txn.amount,
+                txn.status,
+                txn.payment_contract.contract_number if txn.payment_contract_id else "Unlinked",
+                txn.created_at.strftime("%Y-%m-%d %H:%M"),
+            ]
+            for txn in review_qs
+        ]
+        return export_pdf_response(
+            "Payment Reconciliation",
+            ["Reference", "Provider", "Amount", "Status", "Contract", "Created"],
+            rows,
+            filename=dated_filename("reconciliation", "pdf"),
+            summary=[
+                ("Matched", matched),
+                ("Unmatched", unmatched),
+                ("Duplicate refs", dup_refs),
+                ("Match rate", f"{reconciliation_rate}%"),
+            ],
+            landscape=True,
+        )
 
     return render(request, "dashboard/hq_reconciliation.html", {
         "matched": matched,
@@ -4286,6 +4501,111 @@ def hq_agreement_pdf(request, agreement_id):
 
 @hq_required
 def hq_whatsapp_bot(request):
+    from support.models import SupportTicket, WhatsAppConversation, WhatsAppMessage
+    from support.whatsapp_ops import mask_secret, provider_config_status, provider_label
+
+    now = timezone.now()
+    today = now.date()
+    config = provider_config_status()
+    whatsapp_tickets = SupportTicket.objects.filter(source="whatsapp")
+    active_statuses = [
+        SupportTicket.STATUS_NEW,
+        SupportTicket.STATUS_OPEN,
+        SupportTicket.STATUS_ASSIGNED,
+        SupportTicket.STATUS_IN_PROGRESS,
+        SupportTicket.STATUS_WAITING_CUSTOMER,
+        SupportTicket.STATUS_WAITING_USER,
+        SupportTicket.STATUS_ESCALATED,
+    ]
+    open_tickets = whatsapp_tickets.filter(status__in=active_statuses).count()
+    urgent_tickets = whatsapp_tickets.filter(
+        priority__in=[SupportTicket.PRI_URGENT, SupportTicket.PRI_CRITICAL],
+        status__in=active_statuses,
+    ).count()
+    overdue_sla = whatsapp_tickets.filter(sla_due_at__lt=now, status__in=active_statuses).count()
+    waiting_for_customer = whatsapp_tickets.filter(
+        status__in=[SupportTicket.STATUS_WAITING_CUSTOMER, SupportTicket.STATUS_WAITING_USER]
+    ).count()
+    resolved_today = whatsapp_tickets.filter(status=SupportTicket.STATUS_RESOLVED, resolved_at__date=today).count()
+    first_response_values = [
+        (ticket.first_response_at - ticket.created_at).total_seconds() / 60
+        for ticket in whatsapp_tickets.exclude(first_response_at__isnull=True)[:100]
+    ]
+    avg_first_response = round(sum(first_response_values) / len(first_response_values), 1) if first_response_values else None
+    wa_sent_today = WhatsAppMessage.objects.filter(
+        direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+        created_at__date=today,
+    ).count()
+    wa_failed_today = WhatsAppMessage.objects.filter(
+        direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+        provider_status__in=[WhatsAppMessage.STATUS_FAILED, WhatsAppMessage.STATUS_UNDELIVERED],
+        created_at__date=today,
+    ).count()
+    wa_queued = WhatsAppMessage.objects.filter(provider_status=WhatsAppMessage.STATUS_QUEUED).count()
+    delivery_rate = round((wa_sent_today - wa_failed_today) / wa_sent_today * 100, 1) if wa_sent_today else None
+    last_inbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_INBOUND).order_by("-created_at").first()
+    last_outbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_OUTBOUND).order_by("-created_at").first()
+    conversation_count = WhatsAppConversation.objects.count()
+    open_conversations = WhatsAppConversation.objects.filter(status=WhatsAppConversation.STATUS_OPEN).count()
+    recent_messages = WhatsAppMessage.objects.select_related("conversation__contact", "ticket").order_by("-created_at")[:8]
+    recent_tickets = whatsapp_tickets.select_related(
+        "assigned_to", "linked_contact", "related_application"
+    ).order_by("-last_message_at", "-created_at")[:12]
+    escalations = whatsapp_tickets.filter(
+        Q(priority__in=[SupportTicket.PRI_URGENT, SupportTicket.PRI_CRITICAL])
+        | Q(category__in=[
+            SupportTicket.CAT_FRAUD_REPORT,
+            SupportTicket.CAT_LEGAL_REVIEW,
+            SupportTicket.CAT_MERCHANT_COMPLAINT,
+            SupportTicket.CAT_UNDERWRITER_COMPLAINT,
+        ])
+        | Q(sla_due_at__lt=now)
+        | Q(created_at__lt=now - timedelta(hours=24), status__in=active_statuses)
+    ).order_by("sla_due_at", "-created_at")[:10]
+    templates = [
+        {"name": "tengasale_ticket_created", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_ticket_assigned", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_ticket_waiting_customer", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_ticket_escalated", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_ticket_resolved", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_ticket_closed", "enabled": True, "category": "Support lifecycle"},
+        {"name": "tengasale_support_menu", "enabled": True, "category": "Active session utility"},
+        {"name": "tengasale_otp_verification", "enabled": True, "category": "Authentication"},
+    ]
+    return render(request, "dashboard/hq_whatsapp_bot.html", {
+        "page_title": "WhatsApp Support Operations",
+        "messaging_provider": config["mode"],
+        "provider_label": provider_label(),
+        "provider_ready": config["ready"],
+        "provider_missing": config["missing"],
+        "channel_healthy": config["ready"],
+        "twilio_wa_number": mask_secret(config["sender"]),
+        "messaging_service_sid": mask_secret(config["messaging_service_sid"]),
+        "webhook_url": getattr(settings, "WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/"),
+        "status_callback_url": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/"),
+        "wa_sent_today": wa_sent_today,
+        "wa_failed_today": wa_failed_today,
+        "wa_queued": wa_queued,
+        "delivery_rate": delivery_rate,
+        "last_inbound": last_inbound,
+        "last_outbound": last_outbound,
+        "conversation_count": conversation_count,
+        "open_conversations": open_conversations,
+        "open_tickets": open_tickets,
+        "urgent_tickets": urgent_tickets,
+        "overdue_sla": overdue_sla,
+        "waiting_for_customer": waiting_for_customer,
+        "resolved_today": resolved_today,
+        "avg_first_response": avg_first_response,
+        "recent_messages": recent_messages,
+        "recent_tickets": recent_tickets,
+        "escalations": escalations,
+        "status_choices": SupportTicket.STATUS_CHOICES,
+        "category_choices": SupportTicket.CATEGORY_CHOICES,
+        "priority_choices": SupportTicket.PRIORITY_CHOICES,
+        "templates": templates,
+        "automations": [],
+    })
     """WhatsApp Bot Operations Dashboard — channel health, templates, analytics."""
     from communications.models import SMSLog
     from django.utils import timezone as tz

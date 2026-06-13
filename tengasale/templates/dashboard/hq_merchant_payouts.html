@@ -102,6 +102,7 @@
     </select>
     <button type="submit">Filter</button>
     <a href="{% url 'hq_merchant_payouts' %}?export=csv{% if status_filter %}&status={{ status_filter }}{% endif %}{% if merchant_filter %}&merchant={{ merchant_filter }}{% endif %}" style="min-height:40px;display:inline-flex;align-items:center;border:1px solid #cbd5e1;color:#334155;padding:0 14px;border-radius:10px;font-size:0.85rem;font-weight:800;text-decoration:none;">Export CSV</a>
+    <a href="{% url 'hq_merchant_payouts' %}?export=pdf{% if status_filter %}&status={{ status_filter }}{% endif %}{% if merchant_filter %}&merchant={{ merchant_filter }}{% endif %}" style="min-height:40px;display:inline-flex;align-items:center;border:1px solid #cbd5e1;color:#334155;padding:0 14px;border-radius:10px;font-size:0.85rem;font-weight:800;text-decoration:none;">Export PDF</a>
     <a href="{% url 'hq_merchant_payouts' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 

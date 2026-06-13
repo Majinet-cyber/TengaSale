@@ -925,6 +925,55 @@ class HQPhase10ETests(TestCase):
         response = self.client.get(reverse("hq_devices"))
         self.assertEqual(response.status_code, 200)
 
+    def test_hq_subpages_render_persistent_sidebar_shell(self):
+        for url_name in ["hq_applications", "hq_deals", "hq_devices", "hq_merchant_payouts"]:
+            with self.subTest(url_name=url_name):
+                response = self.client.get(reverse(url_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'data-testid="hq-persistent-shell"')
+                self.assertContains(response, 'id="hq-shell-sidebar"')
+                self.assertContains(response, "Deals Catalog")
+
+    def test_hq_applications_exports_filtered_csv_and_pdf(self):
+        from applications.models import FinancingApplication
+
+        FinancingApplication.objects.create(
+            created_by=self.hq_user,
+            customer_name="Export Customer",
+            customer_phone="0999000000",
+            national_id="EXP12345",
+            status="pending_review",
+        )
+
+        csv_response = self.client.get(reverse("hq_applications"), {"search": "Export", "export": "csv"})
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertEqual(csv_response["Content-Type"], "text/csv")
+        self.assertIn("tengasale-applications-", csv_response["Content-Disposition"])
+        self.assertContains(csv_response, "Export Customer")
+
+        pdf_response = self.client.get(reverse("hq_applications"), {"search": "Export", "export": "pdf"})
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response["Content-Type"], "application/pdf")
+        self.assertIn("tengasale-applications-", pdf_response["Content-Disposition"])
+
+    def test_hq_operational_exports_return_files(self):
+        export_urls = [
+            ("hq_merchant_payouts", {"export": "csv"}, "text/csv"),
+            ("hq_merchant_payouts", {"export": "pdf"}, "application/pdf"),
+            ("hq_devices", {"export": "csv"}, "text/csv"),
+            ("hq_devices", {"export": "pdf"}, "application/pdf"),
+            ("hq_payment_collections", {"export": "csv"}, "text/csv"),
+            ("hq_payment_collections", {"export": "pdf"}, "application/pdf"),
+            ("hq_reconciliation", {"export": "csv"}, "text/csv"),
+            ("hq_reconciliation", {"export": "pdf"}, "application/pdf"),
+        ]
+        for url_name, params, content_type in export_urls:
+            with self.subTest(url_name=url_name, export=params["export"]):
+                response = self.client.get(reverse(url_name), params)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response["Content-Type"], content_type)
+                self.assertIn("attachment;", response["Content-Disposition"])
+
     def test_hq_repossession_resale_loads_and_records_recovery_costs(self):
         from decimal import Decimal
         from portal.models import PaymentContract, RecoveryCost
@@ -1017,6 +1066,30 @@ class HQPhase10ETests(TestCase):
         self.assertEqual(response.status_code, 200)
         from deals.models import DeviceDeal
         self.assertTrue(DeviceDeal.objects.filter(model_name="Test Model X").exists())
+
+    def test_hq_deals_catalog_orders_brands_and_shows_guided_modal(self):
+        from deals.models import DeviceBrand, DeviceDeal
+
+        for brand_name in ["TECNO", "ITEL", "SAMSUNG", "REDMI"]:
+            brand, _ = DeviceBrand.objects.get_or_create(name=brand_name)
+            DeviceDeal.objects.create(
+                brand=brand,
+                model_name=f"{brand_name} Model",
+                specs="128GB",
+                cash_price=300000,
+                deposit_percent=13,
+                is_active=True,
+            )
+
+        response = self.client.get(reverse("hq_deals"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        brand_positions = [content.index(f'data-brand="{brand}"') for brand in ["TECNO", "ITEL", "SAMSUNG", "REDMI"]]
+        self.assertEqual(brand_positions, sorted(brand_positions))
+        self.assertContains(response, "Step 1")
+        self.assertContains(response, "Brand &amp; model")
+        self.assertContains(response, "Deposit unlock days")
+        self.assertContains(response, "Save device/deal")
 
     def test_hq_can_toggle_deal(self):
         from deals.models import DeviceBrand, DeviceDeal

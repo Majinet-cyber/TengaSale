@@ -12,6 +12,9 @@ from support.models import (
     SupportMessage,
     SupportTicket,
     TicketComment,
+    WhatsAppContact,
+    WhatsAppConversation,
+    WhatsAppMessage,
 )
 from support.chatbot import (
     process_message,
@@ -317,3 +320,157 @@ class SupportConversationModelTest(TestCase):
         SupportConversation.get_or_create_for_phone("+265444444444", "Carol")
         conv.refresh_from_db()
         self.assertEqual(conv.whatsapp_name, "Carol")
+
+
+class WhatsAppSupportOperationsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.hq_user = User.objects.create_superuser(
+            username="wa_hq", email="wa_hq@test.com", password="testpass123"
+        )
+        self.staff_user = User.objects.create_user(
+            username="wa_staff", email="wa_staff@test.com", password="testpass123"
+        )
+
+    def login_hq(self):
+        self.client.login(username="wa_hq", password="testpass123")
+
+    def test_simulate_get_works_and_does_not_404(self):
+        self.login_hq()
+        resp = self.client.get(reverse("whatsapp_simulate"), {"phone": "265883596135", "message": "Hi"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertTrue(WhatsAppContact.objects.filter(phone_e164="+265883596135").exists())
+        self.assertTrue(WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_INBOUND).exists())
+
+    def test_simulate_post_creates_ticket_from_numeric_menu_selection(self):
+        self.login_hq()
+        resp = self.client.post(reverse("whatsapp_simulate"), {"phone": "265883596135", "message": "2"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["ticket_number"].startswith("TS-"))
+        ticket = SupportTicket.objects.get(pk=data["ticket_id"])
+        self.assertEqual(ticket.category, SupportTicket.CAT_PAYMENT_NOT_REFLECTING)
+        self.assertEqual(ticket.priority, SupportTicket.PRI_HIGH)
+        self.assertIsNotNone(ticket.sla_due_at)
+
+    def test_twilio_webhook_post_creates_inbound_message_and_unknown_contact(self):
+        resp = self.client.post(reverse("whatsapp_webhook"), {
+            "From": "whatsapp:+265883596135",
+            "To": "whatsapp:+15558359870",
+            "Body": "payment not reflecting",
+            "MessageSid": "SM123",
+            "ProfileName": "Alice",
+            "WaId": "265883596135",
+            "NumMedia": "0",
+        })
+        self.assertEqual(resp.status_code, 200)
+        contact = WhatsAppContact.objects.get(phone_e164="+265883596135")
+        self.assertEqual(contact.sender_type, WhatsAppContact.SENDER_UNKNOWN)
+        message = WhatsAppMessage.objects.get(provider_message_sid="SM123")
+        self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_RECEIVED)
+        self.assertIsNotNone(message.ticket)
+
+    def test_existing_open_ticket_receives_new_message(self):
+        contact = WhatsAppContact.objects.create(phone_e164="+265883596136")
+        conversation = WhatsAppConversation.objects.create(contact=contact)
+        ticket = SupportTicket.objects.create(
+            title="Existing",
+            description="Existing",
+            source="whatsapp",
+            linked_contact=contact,
+            sender_phone=contact.phone_e164,
+            status=SupportTicket.STATUS_IN_PROGRESS,
+            created_by=None,
+        )
+        conversation.active_ticket = ticket
+        conversation.save()
+        resp = self.client.post(reverse("whatsapp_webhook"), {
+            "From": "whatsapp:+265883596136",
+            "Body": "More details",
+            "MessageSid": "SM124",
+            "NumMedia": "0",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(WhatsAppMessage.objects.filter(ticket=ticket, body="More details").exists())
+
+    def test_waiting_for_customer_moves_to_in_progress_on_reply(self):
+        contact = WhatsAppContact.objects.create(phone_e164="+265883596137")
+        conversation = WhatsAppConversation.objects.create(contact=contact)
+        ticket = SupportTicket.objects.create(
+            title="Waiting",
+            description="Waiting",
+            source="whatsapp",
+            linked_contact=contact,
+            sender_phone=contact.phone_e164,
+            status=SupportTicket.STATUS_WAITING_CUSTOMER,
+            created_by=None,
+        )
+        conversation.active_ticket = ticket
+        conversation.save()
+        self.client.post(reverse("whatsapp_webhook"), {
+            "From": "whatsapp:+265883596137",
+            "Body": "Here is the receipt",
+            "MessageSid": "SM125",
+            "NumMedia": "0",
+        })
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, SupportTicket.STATUS_IN_PROGRESS)
+
+    def test_legal_and_fraud_keywords_create_urgent_escalation(self):
+        self.client.post(reverse("whatsapp_webhook"), {
+            "From": "whatsapp:+265883596138",
+            "Body": "I will report you to police for fraud",
+            "MessageSid": "SM126",
+            "NumMedia": "0",
+        })
+        ticket = SupportTicket.objects.get(sender_phone="+265883596138")
+        self.assertEqual(ticket.priority, SupportTicket.PRI_URGENT)
+        self.assertTrue(ticket.escalation_reason)
+
+    def test_staff_reply_saves_outbound_message_in_mock_mode(self):
+        self.login_hq()
+        contact = WhatsAppContact.objects.create(phone_e164="+265883596139")
+        ticket = SupportTicket.objects.create(
+            title="Reply",
+            description="Reply",
+            source="whatsapp",
+            linked_contact=contact,
+            sender_phone=contact.phone_e164,
+            status=SupportTicket.STATUS_NEW,
+            created_by=None,
+        )
+        WhatsAppConversation.objects.create(contact=contact, active_ticket=ticket)
+        resp = self.client.post(reverse("whatsapp_ticket_reply", args=[ticket.pk]), {"message": "We are checking this."})
+        self.assertEqual(resp.status_code, 200)
+        msg = WhatsAppMessage.objects.get(ticket=ticket, direction=WhatsAppMessage.DIRECTION_OUTBOUND)
+        self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_DELIVERED)
+        ticket.refresh_from_db()
+        self.assertIsNotNone(ticket.first_response_at)
+
+    def test_status_callback_updates_outbound_message_status(self):
+        contact = WhatsAppContact.objects.create(phone_e164="+265883596140")
+        conversation = WhatsAppConversation.objects.create(contact=contact)
+        msg = WhatsAppMessage.objects.create(
+            conversation=conversation,
+            direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+            provider=WhatsAppMessage.PROVIDER_TWILIO,
+            provider_message_sid="SMSTATUS",
+            provider_status=WhatsAppMessage.STATUS_QUEUED,
+        )
+        resp = self.client.post(reverse("whatsapp_status"), {"MessageSid": "SMSTATUS", "MessageStatus": "delivered"})
+        self.assertEqual(resp.status_code, 200)
+        msg.refresh_from_db()
+        self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_DELIVERED)
+
+    def test_permission_prevents_unauthorized_simulation(self):
+        self.client.login(username="wa_staff", password="testpass123")
+        resp = self.client.get(reverse("whatsapp_simulate"), {"phone": "265883596135", "message": "Hi"})
+        self.assertEqual(resp.status_code, 403)
+
+    def test_hq_page_renders_whatsapp_support_dashboard(self):
+        self.login_hq()
+        resp = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "WhatsApp Support Operations")

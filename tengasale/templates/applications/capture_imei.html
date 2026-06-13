@@ -88,6 +88,43 @@
 .imei-compare th { color:#64748b; font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; }
 .imei-compare .is-bad { color:#b42318; font-weight:900; background:#fef2f2; }
 .imei-compare .is-good { color:#166534; font-weight:900; background:#f0fdf4; }
+.contract-progress-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15,23,42,.52);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.contract-progress-overlay.is-active { display: flex; }
+.contract-progress-card {
+  width: min(520px, 100%);
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(15,23,42,.34);
+  padding: 22px;
+}
+.contract-progress-card h2 { margin:0 0 6px; color:#0f172a; font-size:1.2rem; }
+.contract-progress-card p { margin:0 0 16px; color:#64748b; font-size:.86rem; }
+.contract-progress-bar { height:8px; border-radius:999px; background:#e2e8f0; overflow:hidden; margin-bottom:16px; }
+.contract-progress-fill { height:100%; width:12%; background:#ff5a00; border-radius:999px; transition:width .35s ease; }
+.contract-progress-steps { display:grid; gap:8px; }
+.contract-progress-step {
+  display:flex; align-items:center; gap:10px; padding:9px 10px;
+  border:1px solid #e2e8f0; border-radius:12px; color:#64748b; font-size:.82rem; font-weight:800;
+}
+.contract-progress-step::before {
+  content:"";
+  width:12px; height:12px; border-radius:50%; border:2px solid #cbd5e1; flex:0 0 auto;
+}
+.contract-progress-step.is-active { color:#c2410c; background:#fff7ed; border-color:#fed7aa; }
+.contract-progress-step.is-active::before { border-color:#ff5a00; box-shadow:0 0 0 4px rgba(255,90,0,.12); }
+.contract-progress-step.is-done { color:#166534; background:#f0fdf4; border-color:#bbf7d0; }
+.contract-progress-step.is-done::before { border-color:#16a34a; background:#16a34a; }
 </style>
 {% endblock %}
 
@@ -222,6 +259,21 @@
     </div>
   </form>
 </div>
+
+<div class="contract-progress-overlay" id="contract-progress-overlay" role="status" aria-live="polite" aria-hidden="true">
+  <div class="contract-progress-card">
+    <h2>Generating final contract</h2>
+    <p>Keep this page open while TengaSale validates the device details and prepares the contract records.</p>
+    <div class="contract-progress-bar" aria-hidden="true"><div class="contract-progress-fill" id="contract-progress-fill"></div></div>
+    <div class="contract-progress-steps" id="contract-progress-steps">
+      <div class="contract-progress-step is-active">Validating customer and application details</div>
+      <div class="contract-progress-step">Confirming device, deal, and IMEI match</div>
+      <div class="contract-progress-step">Preparing payment and deposit readiness</div>
+      <div class="contract-progress-step">Preparing device locking profile</div>
+      <div class="contract-progress-step">Saving records and opening contract terms</div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -241,6 +293,33 @@
       scannerMount: document.getElementById('imei-scanner-mount'),
       scannerFallback: document.getElementById('scanner-fallback'),
       technicalDetails: technical
+    });
+  }
+
+  var form = document.getElementById('imei-capture-form');
+  var overlay = document.getElementById('contract-progress-overlay');
+  var fill = document.getElementById('contract-progress-fill');
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.contract-progress-step'));
+  var submitBtn = document.getElementById('btn-submit-imei');
+  if (form && overlay && steps.length) {
+    form.addEventListener('submit', function () {
+      overlay.classList.add('is-active');
+      overlay.setAttribute('aria-hidden', 'false');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Preparing contract...';
+      }
+      var idx = 0;
+      fill.style.width = '12%';
+      window.setInterval(function () {
+        if (idx < steps.length - 1) {
+          steps[idx].classList.remove('is-active');
+          steps[idx].classList.add('is-done');
+          idx += 1;
+          steps[idx].classList.add('is-active');
+          fill.style.width = Math.min(88, 12 + idx * 18) + '%';
+        }
+      }, 650);
     });
   }
 })();
