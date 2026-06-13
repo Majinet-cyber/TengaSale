@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import timedelta
 from typing import Any
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -21,6 +22,9 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+WHATSAPP_WEBHOOK_DEFAULT = "/tengasale/support/whatsapp/webhook/"
+WHATSAPP_STATUS_CALLBACK_DEFAULT = "/tengasale/support/whatsapp/status/"
 
 SUPPORT_MENU = (
     "Welcome to TengaSale Support. How can we help you today?\n\n"
@@ -125,6 +129,37 @@ def provider_is_twilio() -> bool:
     return provider_mode() in {"twilio_sandbox", "twilio_production"}
 
 
+def whatsapp_webhook_path() -> str:
+    return getattr(settings, "WHATSAPP_WEBHOOK_URL", WHATSAPP_WEBHOOK_DEFAULT) or WHATSAPP_WEBHOOK_DEFAULT
+
+
+def whatsapp_status_callback_path() -> str:
+    return getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", WHATSAPP_STATUS_CALLBACK_DEFAULT) or WHATSAPP_STATUS_CALLBACK_DEFAULT
+
+
+def site_url() -> str:
+    return (getattr(settings, "SITE_URL", "") or "").strip().rstrip("/")
+
+
+def display_whatsapp_url(url_or_path: str) -> str:
+    """Return a relative path for HQ display when possible."""
+    value = (url_or_path or "").strip()
+    if value.startswith("http://") or value.startswith("https://"):
+        path = urlparse(value).path
+        return path or value
+    return value
+
+
+def absolute_whatsapp_status_callback_url() -> str:
+    configured = whatsapp_status_callback_path().strip()
+    if configured.startswith("http://") or configured.startswith("https://"):
+        return configured
+    base = site_url()
+    if not base:
+        return ""
+    return f"{base}/{configured.lstrip('/')}"
+
+
 def provider_config_status() -> dict[str, Any]:
     mode = provider_mode()
     required = []
@@ -139,6 +174,11 @@ def provider_config_status() -> dict[str, Any]:
             required.append("TWILIO_AUTH_TOKEN")
         if not messaging_service_sid and not sender:
             required.append("TWILIO_MESSAGING_SERVICE_SID or TWILIO_WHATSAPP_FROM")
+        if not absolute_whatsapp_status_callback_url():
+            if not site_url() and not whatsapp_status_callback_path().startswith("http"):
+                required.append("SITE_URL")
+            else:
+                required.append("WHATSAPP status callback URL")
     return {
         "mode": mode,
         "label": provider_label(),
@@ -568,6 +608,20 @@ def send_whatsapp_message(
             "status": message.provider_status,
         }
 
+    status_callback = absolute_whatsapp_status_callback_url()
+    if not status_callback:
+        message.provider_status = WhatsAppMessage.STATUS_FAILED
+        message.error_message = "Missing SITE_URL config: required for Twilio status callback URL"
+        message.save(update_fields=["provider_status", "error_message", "updated_at"])
+        return {
+            "ok": False,
+            "provider": provider_mode(),
+            "to": to_whatsapp,
+            "error": message.error_message,
+            "message_id": message.pk,
+            "status": message.provider_status,
+        }
+
     try:
         from twilio.rest import Client  # type: ignore
 
@@ -575,7 +629,7 @@ def send_whatsapp_message(
         kwargs = {
             "to": to_whatsapp,
             "body": body,
-            "status_callback": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", ""),
+            "status_callback": status_callback,
         }
         if getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", ""):
             kwargs["messaging_service_sid"] = settings.TWILIO_MESSAGING_SERVICE_SID

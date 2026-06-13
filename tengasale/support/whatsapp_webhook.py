@@ -15,6 +15,7 @@ from accounts.utils import is_hq, is_hq_or_tech_support
 from .models import SupportTicket, WhatsAppMessage
 from .whatsapp_ops import (
     SUPPORT_MENU,
+    display_whatsapp_url,
     mask_secret,
     process_inbound,
     provider_config_status,
@@ -22,6 +23,8 @@ from .whatsapp_ops import (
     send_whatsapp_message,
     send_staff_reply,
     update_message_status,
+    whatsapp_status_callback_path,
+    whatsapp_webhook_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -150,8 +153,8 @@ def whatsapp_health(request):
             "missing": config["missing"],
             "messaging_service_sid": mask_secret(config["messaging_service_sid"]),
             "sender": mask_secret(config["sender"]),
-            "webhook_url": getattr(settings, "WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/"),
-            "status_callback_url": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/"),
+            "webhook_url": display_whatsapp_url(whatsapp_webhook_path()),
+            "status_callback_url": display_whatsapp_url(whatsapp_status_callback_path()),
             "last_inbound": last_inbound.created_at.isoformat() if last_inbound else None,
             "last_outbound": last_outbound.created_at.isoformat() if last_outbound else None,
         },
