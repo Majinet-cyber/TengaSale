@@ -73,7 +73,9 @@ def whatsapp_webhook(request):
     except Exception as exc:
         logger.exception("WhatsApp webhook processing failed: %s", exc)
         return _twiml_response()
-    return _twiml_response(result.get("reply") or "")
+    if not result.get("send_ok") and result.get("send_error"):
+        logger.warning("WhatsApp auto-reply send failed: %s", result.get("send_error"))
+    return _twiml_response()
 
 
 @csrf_exempt

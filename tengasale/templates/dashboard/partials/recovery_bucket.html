@@ -56,7 +56,7 @@
         {% endif %}
       </div>
     {% empty %}
-      <div class="card">No records in this section.</div>
+      {% include "partials/empty_state.html" with icon="📦" title="No records in this section" message="Cases will appear here when contracts enter this recovery stage." %}
     {% endfor %}
   </div>
 </section>

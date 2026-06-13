@@ -455,13 +455,21 @@ def bug_to_ticket(request, bug_id):
 @login_required
 @tech_support_required
 def conversation_list(request):
-    """HQ view of all WhatsApp chatbot conversations."""
+    """HQ view of all WhatsApp conversations."""
+    from .models import WhatsAppConversation, WhatsAppMessage
+
     conversations = (
-        SupportConversation.objects
-        .select_related("linked_user", "active_ticket")
-        .order_by("-last_message_at")[:200]
+        WhatsAppConversation.objects
+        .select_related("contact", "active_ticket")
+        .order_by("-last_message_at", "-updated_at")[:200]
     )
+    conversation_count = WhatsAppConversation.objects.count()
+    open_conversations = WhatsAppConversation.objects.filter(
+        status=WhatsAppConversation.STATUS_OPEN
+    ).count()
     return render(request, "support/conversation_list.html", {
         "conversations": conversations,
+        "conversation_count": conversation_count,
+        "open_conversations": open_conversations,
         "page_title": "WhatsApp Conversations",
     })

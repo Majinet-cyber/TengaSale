@@ -1,0 +1,5 @@
+<div class="ts-kpi-card ts-card-hover" data-testid="kpi-card">
+  <div class="ts-kpi-card__value">{{ value|default:"—" }}</div>
+  <div class="ts-kpi-card__label">{{ label }}</div>
+  {% if sublabel %}<div class="ts-kpi-card__sub">{{ sublabel }}</div>{% endif %}
+</div>

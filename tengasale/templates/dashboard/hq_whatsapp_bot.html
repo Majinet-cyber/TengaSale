@@ -411,6 +411,7 @@
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound status</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_status|default:"None" }}</span></div>
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound error</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_error|default:"None" }}</span></div>
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last inbound webhook</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last inbound sender</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound_sender|default:"—" }}{% else %}None{% endif %}</span></div>
       <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last status callback</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_status_callback %}{{ whatsapp_diagnostics.last_status_callback.updated_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
     </div>
   </div>
@@ -608,7 +609,7 @@ document.addEventListener("DOMContentLoaded", function () {
     event.preventDefault();
     submitForm(simulateForm, "Simulating inbound WhatsApp message...", function (data) {
       return data.ticket_number
-        ? `Created ${data.ticket_number}.`
+        ? `Simulated inbound created ticket ${data.ticket_number}.`
         : "Simulated inbound message received.";
     });
   });

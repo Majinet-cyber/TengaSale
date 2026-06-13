@@ -319,19 +319,46 @@ def _ticket_confirmation(ticket: SupportTicket) -> str:
     )
 
 
-def _save_auto_reply(conversation: WhatsAppConversation, ticket: SupportTicket | None, body: str) -> WhatsAppMessage:
-    provider = WhatsAppMessage.PROVIDER_TWILIO if provider_is_twilio() else WhatsAppMessage.PROVIDER_MOCK
-    status = WhatsAppMessage.STATUS_SENT if provider_is_twilio() else WhatsAppMessage.STATUS_DELIVERED
-    return WhatsAppMessage.objects.create(
+def _save_mock_auto_reply(conversation: WhatsAppConversation, ticket: SupportTicket | None, body: str) -> WhatsAppMessage:
+    message = WhatsAppMessage.objects.create(
         conversation=conversation,
         ticket=ticket,
         direction=WhatsAppMessage.DIRECTION_OUTBOUND,
-        provider=provider,
-        provider_status=status,
+        provider=WhatsAppMessage.PROVIDER_MOCK,
+        provider_status=WhatsAppMessage.STATUS_DELIVERED,
+        provider_message_sid=f"mock-outbound-{timezone.now().timestamp()}",
         from_phone=getattr(settings, "TWILIO_WHATSAPP_FROM", ""),
         to_phone=conversation.contact.phone_e164,
         body=body,
     )
+    conversation.last_message_at = timezone.now()
+    conversation.last_message_preview = body[:240]
+    conversation.save(update_fields=["last_message_at", "last_message_preview", "updated_at"])
+    return message
+
+
+def _send_auto_reply(
+    conversation: WhatsAppConversation,
+    ticket: SupportTicket | None,
+    body: str,
+    *,
+    simulated: bool = False,
+) -> dict[str, Any]:
+    """Send outbound auto-reply via Twilio REST API (or mock when simulating)."""
+    if simulated or not provider_is_twilio():
+        _save_mock_auto_reply(conversation, ticket, body)
+        return {"ok": True, "simulated": True, "reply": body}
+    result = send_whatsapp_message(
+        to_phone=conversation.contact.phone_e164,
+        body=body,
+        ticket=ticket,
+        conversation=conversation,
+    )
+    if result.get("ok"):
+        conversation.last_message_at = timezone.now()
+        conversation.last_message_preview = body[:240]
+        conversation.save(update_fields=["last_message_at", "last_message_preview", "updated_at"])
+    return result
 
 
 @transaction.atomic
@@ -370,6 +397,7 @@ def process_inbound(payload: dict[str, Any], *, provider: str | None = None, sim
     ticket = open_ticket
     category = ""
     lower_body = body.lower()
+    send_result: dict[str, Any] = {}
 
     if ticket:
         from_status = ticket.status
@@ -388,22 +416,16 @@ def process_inbound(payload: dict[str, Any], *, provider: str | None = None, sim
             note=body[:500],
             metadata={"message_id": inbound.pk},
         )
-    elif lower_body in GREETING_WORDS or not body:
-        reply = SUPPORT_MENU
-        _save_auto_reply(conversation, None, reply)
-    else:
-        category = _category_from_message(body) or SupportTicket.CAT_GENERAL_SUPPORT
+    elif lower_body in MENU_CATEGORIES:
+        category = MENU_CATEGORIES[lower_body]
         priority = _priority_for(category, body)
         escalation_reason = ""
         if category == SupportTicket.CAT_FRAUD_REPORT:
             escalation_reason = "Immediate fraud report escalation"
-        elif any(keyword in lower_body for keyword in LEGAL_KEYWORDS):
-            escalation_reason = "Legal threat keyword detected"
-            priority = SupportTicket.PRI_URGENT
 
         ticket = SupportTicket.objects.create(
             title=_ticket_title(category),
-            description=body or "WhatsApp support request",
+            description=f"WhatsApp menu selection: {body}",
             category=category,
             priority=priority,
             status=SupportTicket.STATUS_NEW,
@@ -432,7 +454,13 @@ def process_inbound(payload: dict[str, Any], *, provider: str | None = None, sim
             metadata={"category": category, "message_id": inbound.pk, "simulated": simulated},
         )
         reply = _ticket_confirmation(ticket)
-        _save_auto_reply(conversation, ticket, reply)
+        send_result = _send_auto_reply(conversation, ticket, reply, simulated=simulated)
+    elif lower_body in GREETING_WORDS or not body:
+        reply = SUPPORT_MENU
+        send_result = _send_auto_reply(conversation, None, reply, simulated=simulated)
+    else:
+        reply = SUPPORT_MENU
+        send_result = _send_auto_reply(conversation, None, reply, simulated=simulated)
 
     conversation.last_message_at = timezone.now()
     conversation.last_message_preview = body[:240]
@@ -449,6 +477,10 @@ def process_inbound(payload: dict[str, Any], *, provider: str | None = None, sim
         "category": category,
         "reply": reply,
         "state": conversation.status,
+        "send_ok": send_result.get("ok", False),
+        "message_sid": send_result.get("message_sid", ""),
+        "send_error": send_result.get("error", ""),
+        "send_status": send_result.get("status", ""),
     }
 
 
