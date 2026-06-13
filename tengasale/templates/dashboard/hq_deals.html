@@ -145,12 +145,14 @@
 /* ── Modal overlay ── */
 .dc-modal {
   display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
-  z-index:1000; align-items:center; justify-content:center; padding:16px;
+  z-index:1100; align-items:flex-start; justify-content:center; padding:24px 16px;
+  overflow-y:auto;
 }
+.dc-modal.is-open { display:flex; }
 .dc-modal-box {
   background:rgba(255,255,255,.96); border:1px solid rgba(255,255,255,.8); border-radius:20px; max-width:760px; width:100%;
-  max-height:92vh; overflow-y:auto; box-shadow:0 25px 60px rgba(15,23,42,.3);
-  backdrop-filter:blur(16px);
+  max-height:calc(100vh - 48px); overflow:hidden; box-shadow:0 25px 60px rgba(15,23,42,.3);
+  backdrop-filter:blur(16px); display:flex; flex-direction:column;
 }
 .dc-modal-hdr {
   display:flex; align-items:center; justify-content:space-between;
@@ -161,7 +163,7 @@
   background:none; border:none; cursor:pointer; font-size:1.5rem;
   color:#94a3b8; line-height:1; padding:0 4px;
 }
-.dc-modal-body { padding:20px 22px; }
+.dc-modal-body { padding:20px 22px; flex:1; overflow-y:auto; }
 .dc-stepper { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0 0 18px; }
 .dc-step {
   background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:9px 10px;
@@ -185,8 +187,9 @@
 .dc-modal-body .dc-field input:focus,
 .dc-modal-body .dc-field select:focus { outline:none; border-color:var(--primary); }
 .dc-field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.dc-modal-footer { display:flex; gap:10px; justify-content:flex-end; padding:14px 22px; border-top:1px solid #f1f5f9; }
-.dc-modal-footer button[type=submit] { background:var(--primary); color:#fff; border:none; padding:9px 22px; border-radius:9px; font-weight:800; cursor:pointer; }
+.dc-modal-footer { display:flex; gap:10px; justify-content:flex-end; padding:14px 22px; border-top:1px solid #f1f5f9; position:sticky; bottom:0; background:#fff; z-index:2; box-shadow:0 -4px 12px rgba(15,23,42,.06); }
+.dc-modal-footer button[type=submit] { background:var(--primary,#FF4D00); color:#fff; border:none; padding:9px 22px; border-radius:9px; font-weight:800; cursor:pointer; }
+.dc-modal-footer button[type=submit]:disabled { opacity:.55; cursor:not-allowed; }
 .dc-modal-footer .dc-cancel { background:#f8fafc; color:#475569; border:1.5px solid #e2e8f0; padding:9px 16px; border-radius:9px; font-weight:700; cursor:pointer; }
 
 .dc-empty {
@@ -266,7 +269,7 @@
     <div class="dc-actions">
       <button class="dc-btn-ghost"
               data-testid="dc-add-brand-btn"
-              onclick="document.getElementById('add-brand-modal').style.display='flex'">
+              onclick="openDCModal('add-brand-modal')">
         + Add Brand
       </button>
       <button class="dc-btn-primary add-device-btn btn-add-device"
@@ -421,7 +424,7 @@
   <div class="dc-modal-box">
     <div class="dc-modal-hdr">
       <h2 class="dc-modal-title">Add Device Deal</h2>
-      <button class="dc-modal-close" onclick="document.getElementById('add-deal-modal').style.display='none'">&times;</button>
+      <button class="dc-modal-close" type="button" data-modal-close>&times;</button>
     </div>
     <div class="dc-modal-body">
       <form method="post">
@@ -510,7 +513,7 @@
           </div>
         </section>
         <div class="dc-modal-footer">
-          <button type="button" class="dc-cancel" onclick="document.getElementById('add-deal-modal').style.display='none'">Cancel</button>
+          <button type="button" class="dc-cancel">Cancel</button>
           <button type="submit">Save device/deal</button>
         </div>
       </form>
@@ -523,7 +526,7 @@
   <div class="dc-modal-box">
     <div class="dc-modal-hdr">
       <h2 class="dc-modal-title">Edit Device Deal</h2>
-      <button class="dc-modal-close" onclick="document.getElementById('edit-deal-modal').style.display='none'">&times;</button>
+      <button class="dc-modal-close" type="button">&times;</button>
     </div>
     <div class="dc-modal-body">
       <form method="post" id="edit-deal-form">
@@ -595,7 +598,7 @@
           </label>
         </div>
         <div class="dc-modal-footer">
-          <button type="button" class="dc-cancel" onclick="document.getElementById('edit-deal-modal').style.display='none'">Cancel</button>
+          <button type="button" class="dc-cancel">Cancel</button>
           <button type="submit">Save device/deal</button>
         </div>
       </form>
@@ -608,7 +611,7 @@
   <div class="dc-modal-box" style="max-width:380px;">
     <div class="dc-modal-hdr">
       <h2 class="dc-modal-title">Add Brand</h2>
-      <button class="dc-modal-close" onclick="document.getElementById('add-brand-modal').style.display='none'">&times;</button>
+      <button class="dc-modal-close" type="button">&times;</button>
     </div>
     <div class="dc-modal-body">
       <form method="post" id="add-brand-form">
@@ -616,7 +619,7 @@
         <input type="hidden" name="action" value="add_brand">
         <div class="dc-field"><label>Brand Name</label><input type="text" name="brand_name" required autofocus placeholder="e.g. Samsung"></div>
         <div class="dc-modal-footer">
-          <button type="button" class="dc-cancel" onclick="document.getElementById('add-brand-modal').style.display='none'">Cancel</button>
+          <button type="button" class="dc-cancel">Cancel</button>
           <button type="submit" class="dc-create-brand-btn">Create Brand</button>
         </div>
       </form>
@@ -661,11 +664,29 @@ function toggleDCFilters() {
   applyLayout(mq);
 })();
 
+function openDCModal(modalId) {
+  var modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.classList.add('is-open');
+  document.body.classList.add('dc-modal-open');
+  var body = modal.querySelector('.dc-modal-body');
+  if (body) body.scrollTop = 0;
+  var focusTarget = modal.querySelector('input, select, textarea, button');
+  if (focusTarget) window.setTimeout(function () { focusTarget.focus(); }, 50);
+}
+
+function closeDCModal(modal) {
+  if (!modal) return;
+  modal.classList.remove('is-open');
+  if (!document.querySelector('.dc-modal.is-open')) {
+    document.body.classList.remove('dc-modal-open');
+  }
+}
+
 function openAddDealModal(brandId) {
-  var modal = document.getElementById('add-deal-modal');
   var brandSelect = document.getElementById('add-deal-brand-id');
   if (brandId && brandSelect) brandSelect.value = brandId;
-  modal.style.display = 'flex';
+  openDCModal('add-deal-modal');
 }
 
 function openEditModal(btn) {
@@ -687,13 +708,24 @@ function openEditModal(btn) {
   document.getElementById('edit-stock-status').value = d.stock;
   document.getElementById('edit-lock-provider').value = d.lock;
   document.getElementById('edit-country').value = d.country;
-  document.getElementById('edit-deal-modal').style.display = 'flex';
+  openDCModal('edit-deal-modal');
 }
-// Close modals on backdrop click
+
+document.querySelectorAll('.dc-modal-close, .dc-cancel').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    closeDCModal(btn.closest('.dc-modal'));
+  });
+});
+
 document.querySelectorAll('.dc-modal').forEach(function(m) {
   m.addEventListener('click', function(e) {
-    if (e.target === m) m.style.display = 'none';
+    if (e.target === m) closeDCModal(m);
   });
+});
+
+document.addEventListener('keydown', function (event) {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('.dc-modal.is-open').forEach(closeDCModal);
 });
 
 var addBrandForm = document.getElementById('add-brand-form');

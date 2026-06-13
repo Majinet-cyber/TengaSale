@@ -2,7 +2,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 
 from . import views
-from support.whatsapp_webhook import whatsapp_ticket_reply
+from support.whatsapp_webhook import whatsapp_send_real_test, whatsapp_ticket_reply
 
 urlpatterns = [
     path("home/", views.home, name="home"),
@@ -67,6 +67,7 @@ urlpatterns = [
     path("tengasale/hq/merchant-agreements/<int:agreement_id>/require-resign/", views.hq_agreement_require_resign, name="hq_agreement_require_resign"),
     path("tengasale/hq/merchant-agreements/<int:agreement_id>/pdf/", views.hq_agreement_pdf, name="hq_agreement_pdf"),
     path("tengasale/hq/whatsapp-bot/", views.hq_whatsapp_bot, name="hq_whatsapp_bot"),
+    path("tengasale/hq/whatsapp-support/send-real-test/", whatsapp_send_real_test, name="whatsapp_send_real_test"),
     path("tengasale/hq/whatsapp-support/tickets/<int:ticket_id>/reply/", whatsapp_ticket_reply, name="whatsapp_ticket_reply"),
     path("tengasale/hq/emergency-payouts/", views.hq_emergency_payouts, name="hq_emergency_payouts"),
     path("tengasale/hq/emergency-payouts/<int:payout_id>/action/", views.hq_emergency_payout_action, name="hq_emergency_payout_action"),

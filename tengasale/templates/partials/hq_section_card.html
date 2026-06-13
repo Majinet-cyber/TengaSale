@@ -1,0 +1,11 @@
+<section class="ts-card ts-section-card" data-testid="hq-section-card">
+  {% if title %}
+  <div class="ts-section-card__header">
+    <h2 class="ts-section-card__title">{{ title }}</h2>
+    {% if header_extra %}{{ header_extra }}{% endif %}
+  </div>
+  {% endif %}
+  <div class="ts-section-card__body">
+    {{ content }}
+  </div>
+</section>

@@ -23,6 +23,11 @@
   border:1px solid #e2e8f0; border-radius:14px;
   overflow:hidden; box-shadow:0 2px 8px rgba(15,23,42,0.04); margin-bottom:16px;
 }
+.mpo-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.mpo-table-wrap table { width:100%; min-width:960px; border-collapse:collapse; font-size:0.83rem; }
+.mpo-contract-id { max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:bottom; }
+.mpo-actions-wrap { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; min-width:240px; }
+.status-badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:99px; font-size:0.68rem; font-weight:800; white-space:nowrap; }
 .mpo-filter { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
 .mpo-filter input, .mpo-filter select { min-height:40px; padding:8px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:0.85rem; background:#fff; }
 .mpo-filter button { min-height:40px; background:#ff5a00; color:#fff; border:none; padding:8px 16px; border-radius:10px; font-weight:800; cursor:pointer; font-size:0.85rem; }
@@ -106,9 +111,9 @@
     <a href="{% url 'hq_merchant_payouts' %}" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">Reset</a>
   </form>
 
-  <div class="mpo-card">
-    <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+  <div class="mpo-card ts-card">
+    <div class="mpo-table-wrap ts-table-wrapper">
+      <table>
         <thead>
           <tr style="background:#fafafa;border-bottom:2px solid var(--border);">
             <th style="padding:10px 8px;text-align:left;">Merchant</th>
@@ -131,7 +136,7 @@
                 <div style="font-size:0.7rem;color:#64748b;font-weight:600;">{{ p.get_payout_method_display }} · {{ p.created_at|date:"d M Y" }}</div>
               </td>
               <td style="padding:8px;color:var(--primary);">
-                {% if p.contract %}{{ p.contract.contract_number }}{% else %}—{% endif %}
+                {% if p.contract %}<span class="mpo-contract-id" title="{{ p.contract.contract_number }}">{{ p.contract.contract_number }}</span>{% else %}—{% endif %}
               </td>
               <td style="padding:8px;text-align:right;">{{ p.cash_price|mwk }}</td>
               <td style="padding:8px;text-align:right;color:var(--primary);">{{ p.merchant_commission_amount|mwk }}</td>
@@ -159,7 +164,7 @@
                 {% if p.provider_reference %}<div><strong>Ref:</strong> {{ p.provider_reference }}</div>{% endif %}
               </td>
               <td style="padding:8px;text-align:center;">
-                <div class="mpo-mini-form">
+                <div class="mpo-actions-wrap mpo-mini-form">
                   {% if p.status == 'pending' or p.status == 'blocked' %}
                   <form method="post">{% csrf_token %}
                     <input type="hidden" name="action" value="approve_payout">

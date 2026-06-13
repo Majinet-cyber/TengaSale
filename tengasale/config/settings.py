@@ -439,8 +439,12 @@ REQUIRE_HQ_MERCHANT_APPROVAL = True
 # ── Messaging / WhatsApp delivery settings ────────────────────────────────────
 MESSAGING_ENABLED = os.environ.get("MESSAGING_ENABLED", "True").lower() in ("true", "1", "yes")
 WHATSAPP_DELIVERY_ENABLED = os.environ.get("WHATSAPP_DELIVERY_ENABLED", "True").lower() in ("true", "1", "yes")
-# Provider: mock | twilio | meta_whatsapp
-WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "mock")
+# Provider: mock | twilio_sandbox | twilio_production
+WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "mock").strip().lower()
+if WHATSAPP_PROVIDER not in {"mock", "twilio_sandbox", "twilio_production"}:
+    WHATSAPP_PROVIDER = "mock"
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
 TWILIO_WHATSAPP_FROM = os.environ.get("TWILIO_WHATSAPP_FROM", os.environ.get("WHATSAPP_FROM_NUMBER", ""))
 TWILIO_VALIDATE_SIGNATURE = os.environ.get("TWILIO_VALIDATE_SIGNATURE", "False").lower() in ("true", "1", "yes")

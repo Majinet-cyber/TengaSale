@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -17,6 +18,8 @@ from .whatsapp_ops import (
     mask_secret,
     process_inbound,
     provider_config_status,
+    provider_mode,
+    send_whatsapp_message,
     send_staff_reply,
     update_message_status,
 )
@@ -70,7 +73,9 @@ def whatsapp_webhook(request):
     except Exception as exc:
         logger.exception("WhatsApp webhook processing failed: %s", exc)
         return _twiml_response()
-    return _twiml_response(result.get("reply") or "")
+    if not result.get("send_ok") and result.get("send_error"):
+        logger.warning("WhatsApp auto-reply send failed: %s", result.get("send_error"))
+    return _twiml_response()
 
 
 @csrf_exempt
@@ -105,6 +110,29 @@ def whatsapp_simulate(request):
     }
     result = process_inbound(payload, provider="mock", simulated=True)
     return JsonResponse(result, status=200)
+
+
+@login_required
+@require_POST
+def whatsapp_send_real_test(request):
+    if not _has_support_permission(request.user):
+        return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
+    if provider_mode() == "mock":
+        return JsonResponse(
+            {"ok": False, "error": "Provider is mock. Real WhatsApp sending is disabled."},
+            status=400,
+        )
+    if request.content_type == "application/json":
+        try:
+            data = json.loads(request.body.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"ok": False, "error": "Invalid JSON payload."}, status=400)
+    else:
+        data = request.POST
+    phone = (data.get("phone") or "").strip()
+    message = (data.get("message") or data.get("body") or "").strip()
+    result = send_whatsapp_message(phone, message or "Hi from TengaSale Support", sent_by=request.user)
+    return JsonResponse(result, status=200 if result.get("ok") else 400)
 
 
 @login_required

@@ -3,9 +3,11 @@ Tests for the TengaSale support chatbot, WhatsApp state machine,
 CEO e-signature permissions, and support ticket workflows.
 """
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock, patch
 
 from support.models import (
     SupportConversation,
@@ -27,6 +29,7 @@ from support.chatbot import (
     HUMAN_TRANSFER,
     UNRECOGNISED,
 )
+from support.whatsapp_ops import format_whatsapp_to, process_inbound, send_whatsapp_message, SUPPORT_MENU
 
 User = get_user_model()
 
@@ -335,6 +338,106 @@ class WhatsAppSupportOperationsTest(TestCase):
     def login_hq(self):
         self.client.login(username="wa_hq", password="testpass123")
 
+    def fake_twilio_modules(self, create_mock):
+        twilio_module = ModuleType("twilio")
+        rest_module = ModuleType("twilio.rest")
+        client_class = Mock()
+        client_class.return_value.messages.create = create_mock
+        rest_module.Client = client_class
+        return {"twilio": twilio_module, "twilio.rest": rest_module}, client_class
+
+    def test_phone_formatting_always_uses_whatsapp_prefix(self):
+        self.assertEqual(format_whatsapp_to("265883596135"), "whatsapp:+265883596135")
+        self.assertEqual(format_whatsapp_to("0883596135"), "whatsapp:+265883596135")
+        self.assertEqual(format_whatsapp_to("+265883596135"), "whatsapp:+265883596135")
+        self.assertEqual(format_whatsapp_to("whatsapp:+265883596135"), "whatsapp:+265883596135")
+
+    @override_settings(WHATSAPP_PROVIDER="mock")
+    def test_mock_send_saves_message_without_calling_twilio(self):
+        create_mock = Mock(side_effect=AssertionError("Twilio must not be called in mock mode."))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            result = send_whatsapp_message("265883596135", "Hi from mock", sent_by=self.hq_user)
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["simulated"])
+        self.assertEqual(result["to"], "whatsapp:+265883596135")
+        create_mock.assert_not_called()
+        message = WhatsAppMessage.objects.get(pk=result["message_id"])
+        self.assertEqual(message.provider, WhatsAppMessage.PROVIDER_MOCK)
+        self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_DELIVERED)
+
+    @override_settings(WHATSAPP_PROVIDER="twilio_production", TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_MESSAGING_SERVICE_SID="", TWILIO_WHATSAPP_FROM="")
+    def test_twilio_provider_missing_credentials_gives_clear_error(self):
+        result = send_whatsapp_message("265883596135", "Hi from Twilio", sent_by=self.hq_user)
+        self.assertFalse(result["ok"])
+        self.assertIn("Missing Twilio config", result["error"])
+        message = WhatsAppMessage.objects.get(pk=result["message_id"])
+        self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_FAILED)
+        self.assertIn("TWILIO_ACCOUNT_SID", message.error_message)
+
+    @override_settings(WHATSAPP_PROVIDER="mock")
+    def test_real_send_endpoint_rejects_mock_provider(self):
+        self.login_hq()
+        resp = self.client.post(
+            reverse("whatsapp_send_real_test"),
+            {"phone": "265883596135", "message": "Hi from TengaSale Support"},
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])
+        self.assertIn("Provider is mock", resp.json()["error"])
+
+    @override_settings(
+        WHATSAPP_PROVIDER="twilio_production",
+        TWILIO_ACCOUNT_SID="AC123",
+        TWILIO_AUTH_TOKEN="secret-token",
+        TWILIO_MESSAGING_SERVICE_SID="MG1e20610613b85a734116e75f60d0b524",
+        TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+        WHATSAPP_STATUS_CALLBACK_URL="/tengasale/support/whatsapp/status/",
+    )
+    def test_real_send_endpoint_saves_twilio_message_sid(self):
+        self.login_hq()
+        create_mock = Mock(return_value=SimpleNamespace(sid="SMREAL123", status="queued"))
+        modules, client_class = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            resp = self.client.post(
+                reverse("whatsapp_send_real_test"),
+                {"phone": "0883596135", "message": "Hi from TengaSale Support"},
+            )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["to"], "whatsapp:+265883596135")
+        self.assertEqual(data["message_sid"], "SMREAL123")
+        client_class.assert_called_once_with("AC123", "secret-token")
+        create_mock.assert_called_once()
+        kwargs = create_mock.call_args.kwargs
+        self.assertEqual(kwargs["to"], "whatsapp:+265883596135")
+        self.assertEqual(kwargs["messaging_service_sid"], "MG1e20610613b85a734116e75f60d0b524")
+        message = WhatsAppMessage.objects.get(provider_message_sid="SMREAL123")
+        self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_QUEUED)
+
+    @override_settings(
+        WHATSAPP_PROVIDER="twilio_sandbox",
+        TWILIO_ACCOUNT_SID="AC123",
+        TWILIO_AUTH_TOKEN="secret-token",
+        TWILIO_MESSAGING_SERVICE_SID="MGTEST",
+        TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+    )
+    def test_twilio_send_failure_is_stored_safely(self):
+        class FakeTwilioRestException(Exception):
+            code = 63016
+            msg = "Destination is not joined to sandbox"
+
+        create_mock = Mock(side_effect=FakeTwilioRestException("Destination is not joined to sandbox"))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            result = send_whatsapp_message("265883596135", "Hi from Twilio", sent_by=self.hq_user)
+        self.assertFalse(result["ok"])
+        self.assertIn("Twilio error 63016", result["error"])
+        message = WhatsAppMessage.objects.get(pk=result["message_id"])
+        self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_FAILED)
+        self.assertIn("Destination is not joined to sandbox", message.error_message)
+
     def test_simulate_get_works_and_does_not_404(self):
         self.login_hq()
         resp = self.client.get(reverse("whatsapp_simulate"), {"phone": "265883596135", "message": "Hi"})
@@ -355,22 +458,143 @@ class WhatsAppSupportOperationsTest(TestCase):
         self.assertEqual(ticket.priority, SupportTicket.PRI_HIGH)
         self.assertIsNotNone(ticket.sla_due_at)
 
-    def test_twilio_webhook_post_creates_inbound_message_and_unknown_contact(self):
-        resp = self.client.post(reverse("whatsapp_webhook"), {
-            "From": "whatsapp:+265883596135",
-            "To": "whatsapp:+15558359870",
-            "Body": "payment not reflecting",
-            "MessageSid": "SM123",
-            "ProfileName": "Alice",
-            "WaId": "265883596135",
-            "NumMedia": "0",
-        })
+    def test_twilio_webhook_post_creates_inbound_message_and_sends_menu_for_free_text(self):
+        create_mock = Mock(return_value=SimpleNamespace(sid="SMMENU123", status="queued"))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            with override_settings(
+                WHATSAPP_PROVIDER="twilio_production",
+                TWILIO_ACCOUNT_SID="AC123",
+                TWILIO_AUTH_TOKEN="secret-token",
+                TWILIO_MESSAGING_SERVICE_SID="MGTEST",
+                TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+            ):
+                resp = self.client.post(reverse("whatsapp_webhook"), {
+                    "From": "whatsapp:+265883596135",
+                    "To": "whatsapp:+15558359870",
+                    "Body": "payment not reflecting",
+                    "MessageSid": "SM123",
+                    "ProfileName": "Alice",
+                    "WaId": "265883596135",
+                    "NumMedia": "0",
+                })
         self.assertEqual(resp.status_code, 200)
         contact = WhatsAppContact.objects.get(phone_e164="+265883596135")
         self.assertEqual(contact.sender_type, WhatsAppContact.SENDER_UNKNOWN)
         message = WhatsAppMessage.objects.get(provider_message_sid="SM123")
         self.assertEqual(message.provider_status, WhatsAppMessage.STATUS_RECEIVED)
-        self.assertIsNotNone(message.ticket)
+        self.assertIsNone(message.ticket)
+        outbound = WhatsAppMessage.objects.filter(
+            conversation__contact=contact,
+            direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+        ).latest("created_at")
+        self.assertIn("Welcome to TengaSale Support", outbound.body)
+        create_mock.assert_called_once()
+
+    @override_settings(
+        WHATSAPP_PROVIDER="twilio_production",
+        TWILIO_ACCOUNT_SID="AC123",
+        TWILIO_AUTH_TOKEN="secret-token",
+        TWILIO_MESSAGING_SERVICE_SID="MGTEST",
+        TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+    )
+    def test_inbound_hi_triggers_outbound_menu_send(self):
+        create_mock = Mock(return_value=SimpleNamespace(sid="SMMENUHI", status="queued"))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            resp = self.client.post(reverse("whatsapp_webhook"), {
+                "From": "whatsapp:+265883596200",
+                "Body": "Hi",
+                "MessageSid": "SMHI001",
+                "NumMedia": "0",
+            })
+        self.assertEqual(resp.status_code, 200)
+        outbound = WhatsAppMessage.objects.get(provider_message_sid="SMMENUHI")
+        self.assertEqual(outbound.body, SUPPORT_MENU)
+        self.assertEqual(outbound.provider_status, WhatsAppMessage.STATUS_QUEUED)
+        create_mock.assert_called_once()
+
+    def test_numeric_reply_creates_mapped_ticket_with_confirmation(self):
+        self.login_hq()
+        self.client.post(reverse("whatsapp_simulate"), {"phone": "265883596201", "message": "Hi"})
+        create_mock = Mock(return_value=SimpleNamespace(sid="SMTICKET2", status="queued"))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            with override_settings(
+                WHATSAPP_PROVIDER="twilio_production",
+                TWILIO_ACCOUNT_SID="AC123",
+                TWILIO_AUTH_TOKEN="secret-token",
+                TWILIO_MESSAGING_SERVICE_SID="MGTEST",
+                TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+            ):
+                resp = self.client.post(reverse("whatsapp_webhook"), {
+                    "From": "whatsapp:+265883596201",
+                    "Body": "2",
+                    "MessageSid": "SMNUM002",
+                    "NumMedia": "0",
+                })
+        self.assertEqual(resp.status_code, 200)
+        ticket = SupportTicket.objects.get(sender_phone="+265883596201")
+        self.assertEqual(ticket.category, SupportTicket.CAT_PAYMENT_NOT_REFLECTING)
+        outbound = WhatsAppMessage.objects.filter(ticket=ticket, direction=WhatsAppMessage.DIRECTION_OUTBOUND).latest("created_at")
+        self.assertIn(ticket.ticket_number, outbound.body)
+
+    def test_conversations_page_shows_whatsapp_conversation_records(self):
+        self.login_hq()
+        self.client.post(reverse("whatsapp_simulate"), {"phone": "265883596202", "message": "Hi"})
+        conv_count = WhatsAppConversation.objects.count()
+        resp = self.client.get(reverse("conversation_list"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "+265883596202")
+        self.assertContains(resp, f"{conv_count} total")
+
+    def test_hq_whatsapp_count_matches_conversations_page(self):
+        self.login_hq()
+        self.client.post(reverse("whatsapp_simulate"), {"phone": "265883596203", "message": "Hi"})
+        hq_resp = self.client.get(reverse("hq_whatsapp_bot"))
+        conv_resp = self.client.get(reverse("conversation_list"))
+        self.assertEqual(hq_resp.status_code, 200)
+        self.assertEqual(conv_resp.status_code, 200)
+        hq_count = WhatsAppConversation.objects.count()
+        self.assertContains(hq_resp, f"{hq_count} total")
+        self.assertContains(conv_resp, f"{hq_count} total")
+
+    @override_settings(
+        WHATSAPP_PROVIDER="twilio_production",
+        TWILIO_ACCOUNT_SID="AC123",
+        TWILIO_AUTH_TOKEN="secret-token",
+        TWILIO_MESSAGING_SERVICE_SID="MGTEST",
+        TWILIO_WHATSAPP_FROM="whatsapp:+15558359870",
+    )
+    def test_send_real_whatsapp_does_not_create_ticket(self):
+        self.login_hq()
+        before_tickets = SupportTicket.objects.count()
+        before_conversations = WhatsAppConversation.objects.count()
+        create_mock = Mock(return_value=SimpleNamespace(sid="SMREALONLY", status="queued"))
+        modules, _ = self.fake_twilio_modules(create_mock)
+        with patch.dict("sys.modules", modules):
+            resp = self.client.post(
+                reverse("whatsapp_send_real_test"),
+                {"phone": "265883596204", "message": "Hi from TengaSale Support"},
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(SupportTicket.objects.count(), before_tickets)
+        self.assertGreaterEqual(WhatsAppConversation.objects.count(), before_conversations)
+        self.assertTrue(WhatsAppMessage.objects.filter(provider_message_sid="SMREALONLY").exists())
+
+    def test_legal_keyword_first_message_sends_menu_not_ticket(self):
+        self.client.post(reverse("whatsapp_webhook"), {
+            "From": "whatsapp:+265883596138",
+            "Body": "I will report you to police for fraud",
+            "MessageSid": "SM126",
+            "NumMedia": "0",
+        })
+        self.assertFalse(SupportTicket.objects.filter(sender_phone="+265883596138").exists())
+        outbound = WhatsAppMessage.objects.filter(
+            conversation__contact__phone_e164="+265883596138",
+            direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+        ).latest("created_at")
+        self.assertIn("Welcome to TengaSale Support", outbound.body)
 
     def test_existing_open_ticket_receives_new_message(self):
         contact = WhatsAppContact.objects.create(phone_e164="+265883596136")
@@ -418,16 +642,16 @@ class WhatsAppSupportOperationsTest(TestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, SupportTicket.STATUS_IN_PROGRESS)
 
-    def test_legal_and_fraud_keywords_create_urgent_escalation(self):
+    def test_fraud_menu_selection_creates_urgent_ticket(self):
         self.client.post(reverse("whatsapp_webhook"), {
             "From": "whatsapp:+265883596138",
-            "Body": "I will report you to police for fraud",
-            "MessageSid": "SM126",
+            "Body": "8",
+            "MessageSid": "SMFRAUD8",
             "NumMedia": "0",
         })
         ticket = SupportTicket.objects.get(sender_phone="+265883596138")
+        self.assertEqual(ticket.category, SupportTicket.CAT_FRAUD_REPORT)
         self.assertEqual(ticket.priority, SupportTicket.PRI_URGENT)
-        self.assertTrue(ticket.escalation_reason)
 
     def test_staff_reply_saves_outbound_message_in_mock_mode(self):
         self.login_hq()
@@ -464,6 +688,27 @@ class WhatsAppSupportOperationsTest(TestCase):
         msg.refresh_from_db()
         self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_DELIVERED)
 
+    def test_status_callback_stores_failed_delivery_error(self):
+        contact = WhatsAppContact.objects.create(phone_e164="+265883596141")
+        conversation = WhatsAppConversation.objects.create(contact=contact)
+        msg = WhatsAppMessage.objects.create(
+            conversation=conversation,
+            direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+            provider=WhatsAppMessage.PROVIDER_TWILIO,
+            provider_message_sid="SMFAILSTATUS",
+            provider_status=WhatsAppMessage.STATUS_QUEUED,
+        )
+        resp = self.client.post(reverse("whatsapp_status"), {
+            "MessageSid": "SMFAILSTATUS",
+            "MessageStatus": "failed",
+            "ErrorCode": "63016",
+            "ErrorMessage": "Destination is not joined to sandbox",
+        })
+        self.assertEqual(resp.status_code, 200)
+        msg.refresh_from_db()
+        self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_FAILED)
+        self.assertEqual(msg.error_message, "Destination is not joined to sandbox")
+
     def test_permission_prevents_unauthorized_simulation(self):
         self.client.login(username="wa_staff", password="testpass123")
         resp = self.client.get(reverse("whatsapp_simulate"), {"phone": "265883596135", "message": "Hi"})
@@ -474,3 +719,5 @@ class WhatsAppSupportOperationsTest(TestCase):
         resp = self.client.get(reverse("hq_whatsapp_bot"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "WhatsApp Support Operations")
+        self.assertContains(resp, "Simulate Inbound")
+        self.assertContains(resp, "Send Real WhatsApp")

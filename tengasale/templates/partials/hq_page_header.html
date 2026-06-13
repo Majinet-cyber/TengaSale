@@ -1,0 +1,8 @@
+<header class="ts-page-header" data-testid="hq-page-header">
+  <div class="ts-page-header__main">
+    {% if back_url %}<a href="{{ back_url }}" class="ts-page-header__back">{{ back_label|default:"← Back" }}</a>{% endif %}
+    <h1 class="ts-page-header__title">{{ title }}</h1>
+    {% if subtitle %}<p class="ts-page-header__subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if actions %}<div class="ts-page-header__actions">{{ actions }}</div>{% endif %}
+</header>

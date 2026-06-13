@@ -1,0 +1,8 @@
+<div class="ts-empty-state" data-testid="empty-state">
+  {% if icon %}<div class="ts-empty-state__icon" aria-hidden="true">{{ icon }}</div>{% endif %}
+  <div class="ts-empty-state__title">{{ title|default:"Nothing here yet" }}</div>
+  {% if message %}<p class="ts-empty-state__message">{{ message }}</p>{% endif %}
+  {% if action_url and action_label %}
+  <a href="{{ action_url }}" class="ts-button-primary ts-empty-state__action">{{ action_label }}</a>
+  {% endif %}
+</div>

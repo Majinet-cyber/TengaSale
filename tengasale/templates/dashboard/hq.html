@@ -1352,27 +1352,34 @@ body {
 }
 
 .hq-sidebar {
-  width: 220px;
+  width: var(--hq-sidebar-width, 248px);
   flex-shrink: 0;
   background: var(--hq-surface);
   border-right: 1px solid var(--hq-border);
-  position: sticky;
-  top: 62px;
-  height: calc(100vh - 62px);
+  position: fixed;
+  left: 0;
+  top: var(--hq-topbar-height, 64px);
+  height: calc(100vh - var(--hq-topbar-height, 64px));
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 14px 0 24px;
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
+  z-index: 40;
 }
 
 @media (min-width: 861px) {
   .hq-sidebar {
-    position: relative;
-    top: auto;
-    height: 100%;
-    max-height: 100%;
+    position: fixed;
+    top: var(--hq-topbar-height, 64px);
+    height: calc(100vh - var(--hq-topbar-height, 64px));
+    max-height: none;
+  }
+  .hq-dash.hq-main {
+    margin-left: var(--hq-sidebar-width, 248px);
+    min-height: calc(100vh - var(--hq-topbar-height, 64px));
+    overflow-x: hidden;
   }
 }
 
