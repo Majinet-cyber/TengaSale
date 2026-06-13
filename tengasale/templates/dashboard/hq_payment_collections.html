@@ -41,10 +41,15 @@
       <h1 class="col-title">Payment Collections</h1>
       <p class="col-sub">Track and monitor all payment activity across the platform.</p>
     </div>
-    <a href="?export=csv" class="col-export">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="?export=csv&status={{ status_filter|urlencode }}&provider={{ provider_filter|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}" class="col-export">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Export CSV
     </a>
+    <a href="?export=pdf&status={{ status_filter|urlencode }}&provider={{ provider_filter|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}" class="col-export" style="color:#334155;border-color:#cbd5e1;background:#fff;">
+      Export PDF
+    </a>
+    </div>
   </div>
 
   {# ── Live operations KPI strip ──────────────────────────────── #}

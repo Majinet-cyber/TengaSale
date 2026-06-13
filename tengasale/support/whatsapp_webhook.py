@@ -1,181 +1,149 @@
-"""
-WhatsApp inbound webhook for TengaSale Support Chatbot.
-
-Receives Twilio WhatsApp sandbox messages, runs them through the
-chatbot state machine, saves messages, and sends replies via Twilio.
-
-In development (missing credentials) it logs bot replies to console
-and returns an XML stub so the Twilio sandbox still acknowledges.
-"""
+from __future__ import annotations
 
 import logging
+
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
+
+from accounts.utils import is_hq, is_hq_or_tech_support
+
+from .models import SupportTicket, WhatsAppMessage
+from .whatsapp_ops import (
+    SUPPORT_MENU,
+    mask_secret,
+    process_inbound,
+    provider_config_status,
+    send_staff_reply,
+    update_message_status,
+)
 
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Twilio helper — optional; gracefully degrades if library missing
-# ─────────────────────────────────────────────────────────────────────────────
+def _twiml_response(body: str = "") -> HttpResponse:
+    if body:
+        escaped = body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        content = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{escaped}</Message></Response>'
+    else:
+        content = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
+    return HttpResponse(content, content_type="text/xml", status=200)
 
-def _send_whatsapp_reply(to_number: str, body: str) -> bool:
-    """Send a WhatsApp message via Twilio.  Returns True on success."""
-    sid   = getattr(settings, "TWILIO_ACCOUNT_SID", "")
-    token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
-    from_number = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
 
-    if not (sid and token and from_number):
-        logger.warning("Twilio credentials not configured — bot reply (console only):\n%s", body)
-        print(f"\n[BOT REPLY to {to_number}]\n{body}\n")
-        return False
+def _form_payload(request) -> dict:
+    return {key: request.POST.get(key, "") for key in request.POST.keys()}
 
-    try:
-        from twilio.rest import Client  # type: ignore
-        client = Client(sid, token)
-        client.messages.create(
-            from_=f"whatsapp:{from_number}",
-            to=f"whatsapp:{to_number}",
-            body=body,
-        )
+
+def _has_support_permission(user) -> bool:
+    return user.is_authenticated and (user.is_superuser or is_hq(user) or is_hq_or_tech_support(user))
+
+
+def _validate_twilio_signature(request) -> bool:
+    if not getattr(settings, "TWILIO_VALIDATE_SIGNATURE", False):
         return True
-    except ImportError:
-        logger.warning("twilio library not installed — bot reply (console only):\n%s", body)
-        print(f"\n[BOT REPLY to {to_number}]\n{body}\n")
+    token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
+    if not token:
+        logger.warning("TWILIO_VALIDATE_SIGNATURE is enabled but TWILIO_AUTH_TOKEN is missing.")
         return False
-    except Exception as exc:
-        logger.error("Failed to send WhatsApp reply to %s: %s", to_number, exc)
+    signature = request.headers.get("X-Twilio-Signature", "")
+    if not signature:
         return False
+    try:
+        from twilio.request_validator import RequestValidator  # type: ignore
+    except Exception:
+        logger.warning("twilio package is not installed; cannot validate Twilio signature.")
+        return False
+    validator = RequestValidator(token)
+    return validator.validate(request.build_absolute_uri(), request.POST, signature)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Webhook endpoint
-# ─────────────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
 @require_POST
 def whatsapp_webhook(request):
-    """
-    POST /api/support/whatsapp/webhook/
-
-    Receives inbound WhatsApp messages from Twilio.
-    Returns TwiML <Response/> for Twilio compatibility.
-    """
-    # Import here to avoid circular imports at module load
-    from support.models import SupportConversation, SupportMessage
-    from support.chatbot import process_message
-
-    # Parse Twilio POST params
-    from_number  = request.POST.get("From", "")    # e.g. "whatsapp:+265..."
-    body         = request.POST.get("Body", "").strip()
-    profile_name = request.POST.get("ProfileName", "")
-
-    # Strip "whatsapp:" prefix Twilio adds
-    phone = from_number.replace("whatsapp:", "").strip()
-
-    if not phone:
-        logger.warning("WhatsApp webhook received request with no From number.")
-        return _twiml_empty()
-
-    logger.info("WhatsApp inbound from %s: %r", phone, body[:200])
-
+    if not _validate_twilio_signature(request):
+        return HttpResponse("Invalid Twilio signature", status=403)
     try:
-        # Get or create conversation
-        conv, created = SupportConversation.get_or_create_for_phone(phone, profile_name)
-
-        # Save inbound message
-        SupportMessage.objects.create(
-            conversation=conv,
-            sender=SupportMessage.SENDER_USER,
-            message=body,
-            raw_payload={
-                "From": from_number,
-                "Body": body,
-                "ProfileName": profile_name,
-            },
-        )
-
-        # Update last seen
-        conv.last_message_at = timezone.now()
-        conv.save(update_fields=["last_message_at", "updated_at"])
-
-        # Run state machine
-        reply = process_message(conv, body)
-
-        # Save bot reply
-        SupportMessage.objects.create(
-            conversation=conv,
-            sender=SupportMessage.SENDER_BOT,
-            message=reply,
-        )
-
-        # Send reply via Twilio (or log to console in dev)
-        _send_whatsapp_reply(phone, reply)
-
+        result = process_inbound(_form_payload(request), provider="twilio", simulated=False)
     except Exception as exc:
-        logger.exception("Error processing WhatsApp message from %s: %s", phone, exc)
-        # Still return 200 so Twilio does not keep retrying
-        return _twiml_empty()
-
-    return _twiml_empty()
+        logger.exception("WhatsApp webhook processing failed: %s", exc)
+        return _twiml_response()
+    return _twiml_response(result.get("reply") or "")
 
 
-def _twiml_empty() -> HttpResponse:
-    """Return a minimal TwiML response (empty — bot replies are sent separately)."""
-    return HttpResponse(
-        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-        content_type="text/xml",
+@csrf_exempt
+@require_POST
+def whatsapp_status(request):
+    if not _validate_twilio_signature(request):
+        return HttpResponse("Invalid Twilio signature", status=403)
+    try:
+        result = update_message_status(_form_payload(request))
+    except Exception as exc:
+        logger.exception("WhatsApp status callback failed: %s", exc)
+        return JsonResponse({"ok": False, "error": "status_callback_failed"}, status=200)
+    return JsonResponse(result, status=200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def whatsapp_simulate(request):
+    if not _has_support_permission(request.user):
+        return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
+    data = request.POST if request.method == "POST" else request.GET
+    phone = data.get("phone", "").strip() or "+265883596135"
+    message = data.get("message") or data.get("body") or data.get("Body") or "Hi"
+    payload = {
+        "From": f"whatsapp:{phone}",
+        "To": getattr(settings, "TWILIO_WHATSAPP_FROM", "whatsapp:+15558359870"),
+        "Body": message,
+        "ProfileName": data.get("profile_name", "Test User"),
+        "WaId": phone.replace("+", "").replace("whatsapp:", ""),
+        "MessageSid": f"mock-inbound-{int(timezone.now().timestamp())}",
+        "NumMedia": "0",
+    }
+    result = process_inbound(payload, provider="mock", simulated=True)
+    return JsonResponse(result, status=200)
+
+
+@login_required
+def whatsapp_health(request):
+    if not _has_support_permission(request.user):
+        return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
+    config = provider_config_status()
+    last_inbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_INBOUND).order_by("-created_at").first()
+    last_outbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_OUTBOUND).order_by("-created_at").first()
+    return JsonResponse(
+        {
+            "ok": True,
+            "provider": config["label"],
+            "ready": config["ready"],
+            "missing": config["missing"],
+            "messaging_service_sid": mask_secret(config["messaging_service_sid"]),
+            "sender": mask_secret(config["sender"]),
+            "webhook_url": getattr(settings, "WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/"),
+            "status_callback_url": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/"),
+            "last_inbound": last_inbound.created_at.isoformat() if last_inbound else None,
+            "last_outbound": last_outbound.created_at.isoformat() if last_outbound else None,
+        },
         status=200,
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Simulation endpoint for development / testing
-# ─────────────────────────────────────────────────────────────────────────────
+@login_required
+@require_POST
+def whatsapp_ticket_reply(request, ticket_id):
+    if not _has_support_permission(request.user):
+        return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
+    try:
+        ticket = SupportTicket.objects.get(pk=ticket_id, source="whatsapp")
+    except SupportTicket.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ticket not found."}, status=404)
+    message = request.POST.get("message", "")
+    result = send_staff_reply(ticket, request.user, message)
+    return JsonResponse(result, status=200 if result.get("ok") else 400)
 
-def whatsapp_simulate(request):
-    """
-    GET/POST /api/support/whatsapp/simulate/?phone=+265...&body=1
 
-    Development-only endpoint to simulate WhatsApp messages without Twilio.
-    Returns JSON {reply: "..."} for easy testing.
-    """
-    if not settings.DEBUG:
-        from django.http import Http404
-        raise Http404
-
-    from support.models import SupportConversation, SupportMessage
-    from support.chatbot import process_message
-
-    if request.method == "POST":
-        phone = request.POST.get("phone", "+265000000000")
-        body  = request.POST.get("body", "")
-    else:
-        phone = request.GET.get("phone", "+265000000000")
-        body  = request.GET.get("body", "")
-
-    conv, _ = SupportConversation.get_or_create_for_phone(phone, "Test User")
-    SupportMessage.objects.create(
-        conversation=conv,
-        sender=SupportMessage.SENDER_USER,
-        message=body,
-    )
-    conv.last_message_at = timezone.now()
-    conv.save(update_fields=["last_message_at", "updated_at"])
-
-    reply = process_message(conv, body)
-    SupportMessage.objects.create(
-        conversation=conv,
-        sender=SupportMessage.SENDER_BOT,
-        message=reply,
-    )
-
-    return JsonResponse({
-        "phone": phone,
-        "input": body,
-        "state": conv.current_state,
-        "reply": reply,
-    })
+def support_menu_text() -> str:
+    return SUPPORT_MENU

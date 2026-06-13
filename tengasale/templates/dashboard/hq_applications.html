@@ -55,7 +55,11 @@ table.app-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
       <h1 class="app-title">Applications</h1>
       <p class="app-sub">All financing applications across the platform.</p>
     </div>
-    <a href="{% url 'hq_audit_trail' %}" style="font-size:0.78rem;color:#64748b;text-decoration:none;padding:8px 14px;border:1.5px solid #e2e8f0;border-radius:8px;">Audit Trail</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="?export=csv&search={{ search|urlencode }}&status={{ status_filter|urlencode }}&merchant={{ merchant_filter|urlencode }}&dup_risk={{ dup_filter|urlencode }}" style="font-size:0.78rem;color:#334155;text-decoration:none;padding:8px 14px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:800;">Export CSV</a>
+      <a href="?export=pdf&search={{ search|urlencode }}&status={{ status_filter|urlencode }}&merchant={{ merchant_filter|urlencode }}&dup_risk={{ dup_filter|urlencode }}" style="font-size:0.78rem;color:#334155;text-decoration:none;padding:8px 14px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:800;">Export PDF</a>
+      <a href="{% url 'hq_audit_trail' %}" style="font-size:0.78rem;color:#64748b;text-decoration:none;padding:8px 14px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;">Audit Trail</a>
+    </div>
   </div>
 
   {% if msg %}

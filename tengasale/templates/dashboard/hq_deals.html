@@ -39,8 +39,8 @@
 
 .dc-filter-bar {
   display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;
-  margin-bottom:20px; background:#fff; border:1.5px solid #e2e8f0;
-  border-radius:12px; padding:14px 16px;
+  margin-bottom:20px; background:rgba(255,255,255,.86); border:1px solid rgba(226,232,240,.9);
+  border-radius:12px; padding:14px 16px; box-shadow:0 10px 30px rgba(15,23,42,.04);
 }
 .dc-filter-bar input, .dc-filter-bar select {
   padding:7px 10px; border:1.5px solid #e2e8f0; border-radius:8px;
@@ -52,8 +52,9 @@
 
 .dc-brand-groups { display:flex; flex-direction:column; gap:14px; }
 .dc-brand-group {
-  background:#fff; border:1.5px solid #e2e8f0; border-radius:16px;
-  box-shadow:0 1px 4px rgba(15,23,42,.05); overflow:hidden;
+  background:rgba(255,255,255,.88); border:1px solid rgba(226,232,240,.88); border-radius:16px;
+  box-shadow:0 14px 40px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.78); overflow:hidden;
+  backdrop-filter:blur(14px);
 }
 .dc-brand-summary {
   list-style:none; cursor:pointer; display:flex; align-items:center;
@@ -80,11 +81,11 @@
 .dc-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr)); gap:16px; min-width:0; }
 
 .dc-card {
-  background:#fff; border:2px solid #e2e8f0; border-radius:16px;
+  background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); border-radius:16px;
   overflow:hidden; transition:box-shadow .15s, border-color .15s;
-  box-shadow:0 1px 4px rgba(15,23,42,.05);
+  box-shadow:0 10px 26px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.8);
 }
-.dc-card:hover { box-shadow:0 4px 20px rgba(15,23,42,.10); border-color:#cbd5e1; }
+.dc-card:hover { box-shadow:0 16px 38px rgba(15,23,42,.10); border-color:#cbd5e1; transform:translateY(-1px); }
 .dc-card--inactive { opacity:.6; }
 .dc-card--inactive .dc-card-top { background:#f8fafc; }
 
@@ -147,8 +148,9 @@
   z-index:1000; align-items:center; justify-content:center; padding:16px;
 }
 .dc-modal-box {
-  background:#fff; border-radius:20px; max-width:560px; width:100%;
+  background:rgba(255,255,255,.96); border:1px solid rgba(255,255,255,.8); border-radius:20px; max-width:760px; width:100%;
   max-height:92vh; overflow-y:auto; box-shadow:0 25px 60px rgba(15,23,42,.3);
+  backdrop-filter:blur(16px);
 }
 .dc-modal-hdr {
   display:flex; align-items:center; justify-content:space-between;
@@ -160,6 +162,18 @@
   color:#94a3b8; line-height:1; padding:0 4px;
 }
 .dc-modal-body { padding:20px 22px; }
+.dc-stepper { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0 0 18px; }
+.dc-step {
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:9px 10px;
+  font-size:.72rem; font-weight:900; color:#475569;
+}
+.dc-step span { display:block; color:#ff5a00; font-size:.62rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px; }
+.dc-step-section { border:1px solid #e2e8f0; border-radius:14px; padding:14px; margin-bottom:14px; background:#fbfdff; }
+.dc-step-section h3 { margin:0 0 10px; font-size:.78rem; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:.05em; }
+.dc-review-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+.dc-review-pill { background:#fff7ed; border:1px solid rgba(255,90,0,.18); border-radius:12px; padding:9px 10px; }
+.dc-review-pill span { display:block; color:#9a3412; font-size:.66rem; font-weight:900; text-transform:uppercase; }
+.dc-review-pill strong { display:block; color:#0f172a; margin-top:3px; font-size:.86rem; }
 .dc-modal-body .dc-field { margin-bottom:14px; }
 .dc-modal-body .dc-field label { font-size:0.72rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px; }
 .dc-modal-body .dc-field input,
@@ -191,11 +205,11 @@
   margin-bottom:20px;
 }
 .dc-stat-card {
-  background:#fff;
-  border:1.5px solid #e5e7eb;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(226,232,240,.9);
   border-radius:14px;
   padding:14px 16px;
-  box-shadow:0 1px 4px rgba(15,23,42,0.04);
+  box-shadow:0 10px 30px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,.8);
 }
 .dc-stat-label { font-size:0.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em; }
 .dc-stat-value { font-size:1.5rem;font-weight:900;color:#0f172a;line-height:1;margin-top:4px; }
@@ -362,6 +376,7 @@
             <span class="dc-brand-stats">
               <span class="dc-brand-stat">{{ group.active_count }} active</span>
               <span class="dc-brand-stat">{{ group.in_stock_count }} in stock</span>
+              <span class="dc-brand-stat">{{ group.inactive_count }} inactive</span>
             </span>
           </div>
           <div class="dc-brand-actions">
@@ -412,6 +427,14 @@
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_deal">
+        <div class="dc-stepper" aria-label="Device deal setup progress">
+          <div class="dc-step"><span>Step 1</span>Brand &amp; model</div>
+          <div class="dc-step"><span>Step 2</span>Pricing ready</div>
+          <div class="dc-step"><span>Step 3</span>Availability</div>
+          <div class="dc-step"><span>Step 4</span>Review &amp; save</div>
+        </div>
+        <section class="dc-step-section">
+          <h3>Step 1: Brand &amp; Model</h3>
         <div class="dc-field">
           <label>Brand</label>
           <select name="brand_id" id="add-deal-brand-id" required>
@@ -422,6 +445,9 @@
           <div class="dc-field"><label>Model Name</label><input type="text" name="model_name" required placeholder="e.g. Galaxy A15"></div>
           <div class="dc-field"><label>Specs</label><input type="text" name="specs" placeholder="e.g. 4GB/128GB"></div>
         </div>
+        </section>
+        <section class="dc-step-section">
+          <h3>Step 2: Pricing</h3>
         <div class="dc-field-row">
           <div class="dc-field"><label>Cash Price (MWK)</label><input type="number" name="cash_price" min="0" step="1000" value="400000"></div>
           <div class="dc-field"><label>Default Cash Price (MWK)</label><input type="number" name="default_cash_price" min="0" step="1000" value="400000"></div>
@@ -436,6 +462,12 @@
         </div>
         <div class="dc-field-row">
           <div class="dc-field"><label>Term (months)</label><input type="number" name="term_months" min="1" value="12"></div>
+          <div class="dc-field"><label>Deposit unlock days</label><input type="number" name="unlock_days" min="1" value="7"></div>
+        </div>
+        </section>
+        <section class="dc-step-section">
+          <h3>Step 3: Availability</h3>
+        <div class="dc-field-row">
           <div class="dc-field"><label>Stock Status</label>
             <select name="stock_status">
               <option value="in_stock">In Stock</option>
@@ -468,9 +500,18 @@
           </label>
         </div>
         <div class="dc-field"><label>Notes</label><textarea name="notes" rows="2" style="resize:vertical;"></textarea></div>
+        </section>
+        <section class="dc-step-section">
+          <h3>Step 4: Review &amp; Save</h3>
+          <div class="dc-review-strip">
+            <div class="dc-review-pill"><span>Status</span><strong>Deal ready to publish</strong></div>
+            <div class="dc-review-pill"><span>Validation</span><strong>Required fields checked</strong></div>
+            <div class="dc-review-pill"><span>Pricing</span><strong>Calculated on save</strong></div>
+          </div>
+        </section>
         <div class="dc-modal-footer">
           <button type="button" class="dc-cancel" onclick="document.getElementById('add-deal-modal').style.display='none'">Cancel</button>
-          <button type="submit">Create Deal</button>
+          <button type="submit">Save device/deal</button>
         </div>
       </form>
     </div>
@@ -489,6 +530,12 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="edit_deal">
         <input type="hidden" name="deal_id" id="edit-deal-id">
+        <div class="dc-stepper" aria-label="Edit device deal progress">
+          <div class="dc-step"><span>Step 1</span>Brand &amp; model</div>
+          <div class="dc-step"><span>Step 2</span>Pricing ready</div>
+          <div class="dc-step"><span>Step 3</span>Availability</div>
+          <div class="dc-step"><span>Step 4</span>Review &amp; save</div>
+        </div>
         <div class="dc-field">
           <label>Brand</label>
           <select name="brand_id" id="edit-brand-id" required>
@@ -513,6 +560,9 @@
         </div>
         <div class="dc-field-row">
           <div class="dc-field"><label>Term (months)</label><input type="number" name="term_months" id="edit-term-months" min="1"></div>
+          <div class="dc-field"><label>Deposit unlock days</label><input type="number" name="unlock_days" id="edit-unlock-days" min="1"></div>
+        </div>
+        <div class="dc-field-row">
           <div class="dc-field"><label>Stock Status</label>
             <select name="stock_status" id="edit-stock-status">
               <option value="in_stock">In Stock</option>
@@ -546,7 +596,7 @@
         </div>
         <div class="dc-modal-footer">
           <button type="button" class="dc-cancel" onclick="document.getElementById('edit-deal-modal').style.display='none'">Cancel</button>
-          <button type="submit">Save Changes</button>
+          <button type="submit">Save device/deal</button>
         </div>
       </form>
     </div>
@@ -631,6 +681,7 @@ function openEditModal(btn) {
   document.getElementById('edit-deposit-pct').value = d.depositPct;
   document.getElementById('edit-loan-multiplier').value = d.multiplier;
   document.getElementById('edit-term-months').value = d.term;
+  document.getElementById('edit-unlock-days').value = d.unlockDays || '7';
   document.getElementById('edit-is-active').checked = d.active === 'true';
   document.getElementById('edit-is-featured').checked = d.featured === 'true';
   document.getElementById('edit-stock-status').value = d.stock;

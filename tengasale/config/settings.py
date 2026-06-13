@@ -441,6 +441,12 @@ MESSAGING_ENABLED = os.environ.get("MESSAGING_ENABLED", "True").lower() in ("tru
 WHATSAPP_DELIVERY_ENABLED = os.environ.get("WHATSAPP_DELIVERY_ENABLED", "True").lower() in ("true", "1", "yes")
 # Provider: mock | twilio | meta_whatsapp
 WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "mock")
+TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
+TWILIO_WHATSAPP_FROM = os.environ.get("TWILIO_WHATSAPP_FROM", os.environ.get("WHATSAPP_FROM_NUMBER", ""))
+TWILIO_VALIDATE_SIGNATURE = os.environ.get("TWILIO_VALIDATE_SIGNATURE", "False").lower() in ("true", "1", "yes")
+TWILIO_WEBHOOK_SECRET = os.environ.get("TWILIO_WEBHOOK_SECRET", "")
+WHATSAPP_WEBHOOK_URL = os.environ.get("WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/")
+WHATSAPP_STATUS_CALLBACK_URL = os.environ.get("WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/")
 # Hours after contract completion to send the PDF
 WHATSAPP_SEND_CONTRACT_AFTER_HOURS = int(os.environ.get("WHATSAPP_SEND_CONTRACT_AFTER_HOURS", "24"))
 # Twilio WhatsApp credentials

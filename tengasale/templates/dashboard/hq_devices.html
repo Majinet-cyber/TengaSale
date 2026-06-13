@@ -350,7 +350,11 @@
         <p class="de-sub">Manage device lock and enrollment status across all contracts.</p>
       </div>
     </div>
-    <span class="de-live-badge" data-testid="de-live-badge">Live lock operations</span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <a href="?export=csv&enrollment={{ enroll_filter|urlencode }}&lock={{ lock_filter|urlencode }}&provider={{ provider_filter|urlencode }}&search={{ search|urlencode }}" class="de-back" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;color:#334155;font-weight:800;">Export CSV</a>
+      <a href="?export=pdf&enrollment={{ enroll_filter|urlencode }}&lock={{ lock_filter|urlencode }}&provider={{ provider_filter|urlencode }}&search={{ search|urlencode }}" class="de-back" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;color:#334155;font-weight:800;">Export PDF</a>
+      <span class="de-live-badge" data-testid="de-live-badge">Provider-gated lock operations</span>
+    </div>
   </div>
 
   {# ── Alert message ─────────────────────────────────────────────────── #}

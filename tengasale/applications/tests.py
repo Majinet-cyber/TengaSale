@@ -1961,6 +1961,31 @@ class ApplicationPageLoadTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_capture_imei_shows_real_submission_progress_overlay(self):
+        brand = DeviceBrand.objects.create(name="TECNO")
+        deal = DeviceDeal.objects.create(
+            brand=brand,
+            model_name="Spark 20",
+            specs="128GB",
+            cash_price=Decimal("350000.00"),
+            deposit_percent=Decimal("13.00"),
+        )
+        self.app.customer_name = "Jane Banda"
+        self.app.customer_phone = "0999000000"
+        self.app.national_id = "PL123456"
+        self.app.status = "approved"
+        self.app.deal = deal
+        self.app.save(update_fields=["customer_name", "customer_phone", "national_id", "status", "deal"])
+
+        self._login(self.merchant)
+        response = self.client.get(reverse("capture_imei", args=[self.app.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="contract-progress-overlay"')
+        self.assertContains(response, "Generating final contract")
+        self.assertContains(response, "Preparing device locking profile")
+        self.assertContains(response, "Saving records and opening contract terms")
+        self.assertNotContains(response, "successfully locked")
+
     def test_underwriter_review_summary_loads(self):
         self.app.claimed_by = self.underwriter
         self.app.status = "under_review"
