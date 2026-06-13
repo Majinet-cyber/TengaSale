@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
     <link rel="stylesheet" href="{% static 'css/motion.css' %}?v=1.0.1">
     <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=2.0.0">
-    <link rel="stylesheet" href="{% static 'css/hq-shell.css' %}?v=1.0.0">
+    <link rel="stylesheet" href="{% static 'css/hq-shell.css' %}?v=1.0.2">
     {% block extra_head %}{% endblock %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
@@ -99,6 +99,7 @@
     <div class="hq-page-shell" data-testid="hq-persistent-shell">
         {% include "dashboard/partials/hq_sidebar.html" %}
         <main class="content page-enter hq-page-content">
+        <div class="hq-content">
     {% else %}
     <main class="content page-enter">
     {% endif %}
@@ -116,6 +117,9 @@
         {% endif %}
 
         {% block content %}{% endblock %}
+    {% if current_tengasale_role == "hq" and current_url != "hq_dashboard" %}
+        </div>
+    {% endif %}
     </main>
     {% if current_tengasale_role == "hq" and current_url != "hq_dashboard" %}
     </div>

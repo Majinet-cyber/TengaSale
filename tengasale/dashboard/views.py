@@ -4502,7 +4502,14 @@ def hq_agreement_pdf(request, agreement_id):
 @hq_required
 def hq_whatsapp_bot(request):
     from support.models import SupportTicket, WhatsAppConversation, WhatsAppMessage
-    from support.whatsapp_ops import mask_secret, provider_config_status, provider_label
+    from support.whatsapp_ops import (
+        display_whatsapp_url,
+        mask_secret,
+        provider_config_status,
+        provider_label,
+        whatsapp_status_callback_path,
+        whatsapp_webhook_path,
+    )
 
     now = timezone.now()
     today = now.date()
@@ -4602,8 +4609,8 @@ def hq_whatsapp_bot(request):
         },
         "twilio_wa_number": mask_secret(config["sender"]),
         "messaging_service_sid": mask_secret(config["messaging_service_sid"]),
-        "webhook_url": getattr(settings, "WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/"),
-        "status_callback_url": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/"),
+        "webhook_url": display_whatsapp_url(whatsapp_webhook_path()),
+        "status_callback_url": display_whatsapp_url(whatsapp_status_callback_path()),
         "wa_sent_today": wa_sent_today,
         "wa_failed_today": wa_failed_today,
         "wa_queued": wa_queued,

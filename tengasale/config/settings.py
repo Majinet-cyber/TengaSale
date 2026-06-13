@@ -449,6 +449,7 @@ TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", ""
 TWILIO_WHATSAPP_FROM = os.environ.get("TWILIO_WHATSAPP_FROM", os.environ.get("WHATSAPP_FROM_NUMBER", ""))
 TWILIO_VALIDATE_SIGNATURE = os.environ.get("TWILIO_VALIDATE_SIGNATURE", "False").lower() in ("true", "1", "yes")
 TWILIO_WEBHOOK_SECRET = os.environ.get("TWILIO_WEBHOOK_SECRET", "")
+SITE_URL = os.environ.get("SITE_URL", "https://tengasale.onrender.com").strip().rstrip("/")
 WHATSAPP_WEBHOOK_URL = os.environ.get("WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/")
 WHATSAPP_STATUS_CALLBACK_URL = os.environ.get("WHATSAPP_STATUS_CALLBACK_URL", "/tengasale/support/whatsapp/status/")
 # Hours after contract completion to send the PDF

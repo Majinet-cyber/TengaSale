@@ -926,12 +926,13 @@ class HQPhase10ETests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_hq_subpages_render_persistent_sidebar_shell(self):
-        for url_name in ["hq_applications", "hq_deals", "hq_devices", "hq_merchant_payouts"]:
+        for url_name in ["hq_applications", "hq_deals", "hq_devices", "hq_merchant_payouts", "hq_whatsapp_bot"]:
             with self.subTest(url_name=url_name):
                 response = self.client.get(reverse(url_name))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'data-testid="hq-persistent-shell"')
                 self.assertContains(response, 'id="hq-shell-sidebar"')
+                self.assertContains(response, 'class="hq-content"')
                 self.assertContains(response, "Deals Catalog")
 
     def test_hq_applications_exports_filtered_csv_and_pdf(self):

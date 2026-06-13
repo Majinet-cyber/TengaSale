@@ -6,7 +6,20 @@
 {% block extra_head %}
 <style>
 /* WhatsApp Bot Operations Dashboard */
-.wa-bot-page { max-width: 1040px; margin: 0 auto; padding: 0 16px 60px; }
+.wa-bot-page {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 40px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.wa-bot-page input,
+.wa-bot-page textarea,
+.wa-bot-page .wa-webhook-row__val {
+  user-select: text;
+  -webkit-user-select: text;
+}
 
 .wa-bot-hero {
   background: linear-gradient(135deg, #0A5C36 0%, #128C7E 100%);
@@ -226,14 +239,43 @@
 
 .wa-webhook-row:last-child { border-bottom: none; }
 .wa-webhook-row__label { color: #64748B; font-weight: 600; }
-.wa-webhook-row__val   { color: #0F172A; font-weight: 700; font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; text-align: right; max-width: 60%; }
+.wa-webhook-row__val   { color: #0F172A; font-weight: 700; font-family: ui-monospace, monospace; font-size: 11px; word-break: break-word; overflow-wrap: anywhere; text-align: right; max-width: 58%; }
 
 .wa-test-form {
   padding: 16px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: flex-end;
 }
+.wa-test-section {
+  border-top: 1px solid #F1F5F9;
+}
+.wa-test-section:first-of-type { border-top: 0; }
+.wa-test-section__label {
+  padding: 12px 16px 0;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+.wa-test-section--simulate .wa-test-section__label { color: #128C7E; }
+.wa-test-section--real .wa-test-section__label { color: #C2410C; }
+.wa-test-result {
+  margin: 0 16px 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748B;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.wa-test-result.is-success { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
+.wa-test-result.is-error { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
 
 .wa-test-input {
   flex: 1;
@@ -451,45 +493,51 @@
         Real send is enabled for {{ provider_label }} when Twilio accepts the request.
       {% endif %}
     </div>
-    <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-simulate-form" id="wa-simulate-form">
-      {% csrf_token %}
-      <input
-        type="tel"
-        name="phone"
-        placeholder="Phone: 265998XXXXXX"
-        class="wa-test-input"
-        data-testid="wa-simulate-phone"
-      >
-      <input
-        type="text"
-        name="message"
-        value="Hi"
-        aria-label="Simulated inbound WhatsApp message"
-        class="wa-test-input"
-        data-testid="wa-simulate-message"
-      >
-      <button type="submit" class="wa-test-btn" data-testid="wa-simulate-submit">Simulate Inbound</button>
-    </form>
-    <form method="post" action="{% url 'whatsapp_send_real_test' %}" class="wa-test-form" data-testid="wa-real-send-form" id="wa-real-send-form">
-      {% csrf_token %}
-      <input
-        type="tel"
-        name="phone"
-        placeholder="Phone: 265998XXXXXX"
-        class="wa-test-input"
-        data-testid="wa-real-phone"
-      >
-      <input
-        type="text"
-        name="message"
-        value="Hi from TengaSale Support"
-        aria-label="Real WhatsApp message"
-        class="wa-test-input"
-        data-testid="wa-real-message"
-      >
-      <button type="submit" class="wa-test-btn wa-test-btn--real" data-testid="wa-real-submit">Send Real WhatsApp</button>
-    </form>
-    <p id="wa-test-result" style="padding:0 16px 12px;font-size:12px;color:#64748B;" aria-live="polite"></p>
+    <div class="wa-test-section wa-test-section--simulate">
+      <div class="wa-test-section__label">Simulate Inbound (creates ticket from menu selection)</div>
+      <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-simulate-form" id="wa-simulate-form">
+        {% csrf_token %}
+        <input
+          type="tel"
+          name="phone"
+          placeholder="Phone: 265998XXXXXX"
+          class="wa-test-input"
+          data-testid="wa-simulate-phone"
+        >
+        <input
+          type="text"
+          name="message"
+          value="Hi"
+          aria-label="Simulated inbound WhatsApp message"
+          class="wa-test-input"
+          data-testid="wa-simulate-message"
+        >
+        <button type="submit" class="wa-test-btn" data-testid="wa-simulate-submit">Simulate Inbound</button>
+      </form>
+    </div>
+    <div class="wa-test-section wa-test-section--real">
+      <div class="wa-test-section__label">Send Real WhatsApp (outbound test only, no ticket)</div>
+      <form method="post" action="{% url 'whatsapp_send_real_test' %}" class="wa-test-form" data-testid="wa-real-send-form" id="wa-real-send-form">
+        {% csrf_token %}
+        <input
+          type="tel"
+          name="phone"
+          placeholder="Phone: 265998XXXXXX"
+          class="wa-test-input"
+          data-testid="wa-real-phone"
+        >
+        <input
+          type="text"
+          name="message"
+          value="Hi from TengaSale Support"
+          aria-label="Real WhatsApp message"
+          class="wa-test-input"
+          data-testid="wa-real-message"
+        >
+        <button type="submit" class="wa-test-btn wa-test-btn--real" data-testid="wa-real-submit">Send Real WhatsApp</button>
+      </form>
+    </div>
+    <div id="wa-test-result" class="wa-test-result" aria-live="polite" hidden></div>
   </div>
 
   <div class="ts-panel" data-testid="wa-ticket-list">
@@ -580,8 +628,9 @@ document.addEventListener("DOMContentLoaded", function () {
   async function submitForm(form, pendingText, successFormatter) {
     const button = form.querySelector("button[type='submit']");
     if (button) button.disabled = true;
+    result.hidden = false;
+    result.className = "wa-test-result";
     result.textContent = pendingText;
-    result.style.color = "#64748B";
     try {
       const response = await fetch(form.action, {
         method: "POST",
@@ -591,15 +640,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       if (!response.ok || !data.ok) {
         result.textContent = data.error || "WhatsApp action failed.";
-        result.style.color = "#DC2626";
+        result.className = "wa-test-result is-error";
         return;
       }
       result.textContent = successFormatter(data);
-      result.style.color = "#128C7E";
-      window.setTimeout(function () { window.location.reload(); }, 900);
+      result.className = "wa-test-result is-success";
+      window.setTimeout(function () { window.location.reload(); }, 1200);
     } catch (error) {
       result.textContent = "WhatsApp action failed.";
-      result.style.color = "#DC2626";
+      result.className = "wa-test-result is-error";
     } finally {
       if (button) button.disabled = false;
     }
@@ -617,7 +666,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (realForm) realForm.addEventListener("submit", function (event) {
     event.preventDefault();
     submitForm(realForm, "Sending real WhatsApp through Twilio...", function (data) {
-      return `Twilio ${data.status || "queued"} · ${data.message_sid || "no MessageSid returned"}`;
+      return [
+        "Real WhatsApp queued",
+        "MessageSid: " + (data.message_sid || "—"),
+        "To: " + (data.to || "—"),
+        "Status: " + (data.status || "queued"),
+      ].join("\n");
     });
   });
 });
