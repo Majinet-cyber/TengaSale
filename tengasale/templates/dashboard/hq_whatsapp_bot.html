@@ -259,6 +259,43 @@
 }
 
 .wa-test-btn:hover { background: #128C7E; }
+.wa-test-btn--real { background:#FF4D00; }
+.wa-test-btn--real:hover { background:#D93F00; }
+.wa-test-btn:disabled { opacity:.55; cursor:not-allowed; }
+.wa-mode-note {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #FFF7ED;
+  color: #9A3412;
+  border: 1px solid #FED7AA;
+  font-size: 12px;
+  font-weight: 800;
+}
+.wa-mode-note--ok {
+  background:#ECFDF5;
+  color:#047857;
+  border-color:#A7F3D0;
+}
+.wa-diagnostics-grid {
+  display:grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0;
+}
+@media (min-width: 720px) { .wa-diagnostics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wa-pill {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width: 42px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.wa-pill--yes { background:#DCFCE7; color:#166534; }
+.wa-pill--no { background:#FEE2E2; color:#991B1B; }
 </style>
 {% endblock %}
 
@@ -282,7 +319,7 @@
         Ready · {{ provider_label }}
       {% elif messaging_provider == "mock" %}
         <span class="wa-status-dot wa-status-dot--mock"></span>
-        {{ provider_label }}
+        Mock only · no real WhatsApp will be sent
       {% else %}
         <span class="wa-status-dot wa-status-dot--offline"></span>
         Configuration Required
@@ -358,6 +395,26 @@
   </div>
 
   {# ── Last Messages ─────────────────────────────────────────────── #}
+  <div class="ts-panel" data-testid="wa-diagnostics-panel">
+    <div class="ts-panel__header">
+      <span class="ts-panel__title">Outbound Diagnostics</span>
+    </div>
+    <div class="ts-panel__body wa-diagnostics-grid">
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider mode</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.provider_mode }}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_ACCOUNT_SID configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.account_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.account_sid_configured %}yes{% else %}no{% endif %}</span></span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_AUTH_TOKEN configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.auth_token_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.auth_token_configured %}yes{% else %}no{% endif %}</span></span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_MESSAGING_SERVICE_SID configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.messaging_service_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.messaging_service_sid_configured %}yes{% else %}no{% endif %}</span></span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_WHATSAPP_FROM configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.sender_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.sender_configured %}yes{% else %}no{% endif %}</span></span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_VALIDATE_SIGNATURE enabled</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.validate_signature %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.validate_signature %}yes{% else %}no{% endif %}</span></span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound attempt</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_outbound_attempt %}{{ whatsapp_diagnostics.last_outbound_attempt.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound MessageSid</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_sid|default:"None" }}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound status</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_status|default:"None" }}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound error</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_error|default:"None" }}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last inbound webhook</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
+      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last status callback</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_status_callback %}{{ whatsapp_diagnostics.last_status_callback.updated_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
+    </div>
+  </div>
+
   <div class="ts-panel">
     <div class="ts-panel__header">
       <span class="ts-panel__title">
@@ -383,28 +440,53 @@
     <div class="ts-panel__header">
       <span class="ts-panel__title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
-        Test Message
+        WhatsApp Test Actions
       </span>
     </div>
-    <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-test-form" id="wa-test-form">
+    <div class="wa-mode-note {% if messaging_provider != 'mock' %}wa-mode-note--ok{% endif %}">
+      {% if messaging_provider == "mock" %}
+        Mock mode does not send WhatsApp to phones.
+      {% else %}
+        Real send is enabled for {{ provider_label }} when Twilio accepts the request.
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-simulate-form" id="wa-simulate-form">
       {% csrf_token %}
       <input
         type="tel"
         name="phone"
         placeholder="Phone: 265998XXXXXX"
         class="wa-test-input"
-        pattern="[0-9]{12,14}"
-        data-testid="wa-test-phone"
+        data-testid="wa-simulate-phone"
       >
       <input
         type="text"
         name="message"
         value="Hi"
-        aria-label="Test WhatsApp message"
+        aria-label="Simulated inbound WhatsApp message"
         class="wa-test-input"
-        data-testid="wa-test-message"
+        data-testid="wa-simulate-message"
       >
-      <button type="submit" class="wa-test-btn" data-testid="wa-test-submit">Send Test</button>
+      <button type="submit" class="wa-test-btn" data-testid="wa-simulate-submit">Simulate Inbound</button>
+    </form>
+    <form method="post" action="{% url 'whatsapp_send_real_test' %}" class="wa-test-form" data-testid="wa-real-send-form" id="wa-real-send-form">
+      {% csrf_token %}
+      <input
+        type="tel"
+        name="phone"
+        placeholder="Phone: 265998XXXXXX"
+        class="wa-test-input"
+        data-testid="wa-real-phone"
+      >
+      <input
+        type="text"
+        name="message"
+        value="Hi from TengaSale Support"
+        aria-label="Real WhatsApp message"
+        class="wa-test-input"
+        data-testid="wa-real-message"
+      >
+      <button type="submit" class="wa-test-btn wa-test-btn--real" data-testid="wa-real-submit">Send Real WhatsApp</button>
     </form>
     <p id="wa-test-result" style="padding:0 16px 12px;font-size:12px;color:#64748B;" aria-live="polite"></p>
   </div>
@@ -489,12 +571,16 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const form = document.getElementById("wa-test-form");
+  const simulateForm = document.getElementById("wa-simulate-form");
+  const realForm = document.getElementById("wa-real-send-form");
   const result = document.getElementById("wa-test-result");
-  if (!form || !result) return;
-  form.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    result.textContent = "Sending test message...";
+  if (!result) return;
+
+  async function submitForm(form, pendingText, successFormatter) {
+    const button = form.querySelector("button[type='submit']");
+    if (button) button.disabled = true;
+    result.textContent = pendingText;
+    result.style.color = "#64748B";
     try {
       const response = await fetch(form.action, {
         method: "POST",
@@ -503,19 +589,35 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       const data = await response.json();
       if (!response.ok || !data.ok) {
-        result.textContent = data.error || "Test message failed.";
+        result.textContent = data.error || "WhatsApp action failed.";
         result.style.color = "#DC2626";
         return;
       }
-      result.textContent = data.ticket_number
-        ? `Created ${data.ticket_number}.`
-        : "Simulated inbound message received.";
+      result.textContent = successFormatter(data);
       result.style.color = "#128C7E";
       window.setTimeout(function () { window.location.reload(); }, 900);
     } catch (error) {
-      result.textContent = "Test message failed.";
+      result.textContent = "WhatsApp action failed.";
       result.style.color = "#DC2626";
+    } finally {
+      if (button) button.disabled = false;
     }
+  }
+
+  if (simulateForm) simulateForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    submitForm(simulateForm, "Simulating inbound WhatsApp message...", function (data) {
+      return data.ticket_number
+        ? `Created ${data.ticket_number}.`
+        : "Simulated inbound message received.";
+    });
+  });
+
+  if (realForm) realForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    submitForm(realForm, "Sending real WhatsApp through Twilio...", function (data) {
+      return `Twilio ${data.status || "queued"} · ${data.message_sid || "no MessageSid returned"}`;
+    });
   });
 });
 </script>

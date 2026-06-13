@@ -4545,6 +4545,12 @@ def hq_whatsapp_bot(request):
     delivery_rate = round((wa_sent_today - wa_failed_today) / wa_sent_today * 100, 1) if wa_sent_today else None
     last_inbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_INBOUND).order_by("-created_at").first()
     last_outbound = WhatsAppMessage.objects.filter(direction=WhatsAppMessage.DIRECTION_OUTBOUND).order_by("-created_at").first()
+    last_status_callback = None
+    for message in WhatsAppMessage.objects.order_by("-updated_at")[:100]:
+        raw_payload = message.raw_payload or {}
+        if isinstance(raw_payload, dict) and raw_payload.get("status_callback"):
+            last_status_callback = message
+            break
     conversation_count = WhatsAppConversation.objects.count()
     open_conversations = WhatsAppConversation.objects.filter(status=WhatsAppConversation.STATUS_OPEN).count()
     recent_messages = WhatsAppMessage.objects.select_related("conversation__contact", "ticket").order_by("-created_at")[:8]
@@ -4578,7 +4584,21 @@ def hq_whatsapp_bot(request):
         "provider_label": provider_label(),
         "provider_ready": config["ready"],
         "provider_missing": config["missing"],
-        "channel_healthy": config["ready"],
+        "channel_healthy": config["ready"] and config["mode"] != "mock",
+        "whatsapp_diagnostics": {
+            "provider_mode": config["mode"],
+            "account_sid_configured": config["account_sid_configured"],
+            "auth_token_configured": config["auth_token_configured"],
+            "messaging_service_sid_configured": config["messaging_service_sid_configured"],
+            "sender_configured": config["sender_configured"],
+            "validate_signature": config["validate_signature"],
+            "last_outbound_attempt": last_outbound,
+            "last_twilio_sid": last_outbound.provider_message_sid if last_outbound else "",
+            "last_twilio_status": last_outbound.provider_status if last_outbound else "",
+            "last_twilio_error": last_outbound.error_message if last_outbound else "",
+            "last_inbound": last_inbound,
+            "last_status_callback": last_status_callback,
+        },
         "twilio_wa_number": mask_secret(config["sender"]),
         "messaging_service_sid": mask_secret(config["messaging_service_sid"]),
         "webhook_url": getattr(settings, "WHATSAPP_WEBHOOK_URL", "/tengasale/support/whatsapp/webhook/"),

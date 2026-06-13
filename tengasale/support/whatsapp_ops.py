@@ -108,43 +108,49 @@ def normalize_whatsapp_phone(raw_phone: str) -> str:
 
 
 def provider_mode() -> str:
-    return getattr(settings, "WHATSAPP_PROVIDER", "mock") or "mock"
+    mode = (getattr(settings, "WHATSAPP_PROVIDER", "mock") or "mock").strip().lower()
+    return mode if mode in {"mock", "twilio_sandbox", "twilio_production"} else "mock"
 
 
 def provider_label() -> str:
     mode = provider_mode()
     return {
         "mock": "Mock",
-        "twilio": "Twilio Production",
         "twilio_sandbox": "Twilio Sandbox",
         "twilio_production": "Twilio Production",
     }.get(mode, mode.replace("_", " ").title())
 
 
 def provider_is_twilio() -> bool:
-    return provider_mode() in {"twilio", "twilio_sandbox", "twilio_production"}
+    return provider_mode() in {"twilio_sandbox", "twilio_production"}
 
 
 def provider_config_status() -> dict[str, Any]:
     mode = provider_mode()
     required = []
+    account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
+    auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
+    messaging_service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "")
+    sender = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
     if provider_is_twilio():
-        if not getattr(settings, "TWILIO_ACCOUNT_SID", ""):
+        if not account_sid:
             required.append("TWILIO_ACCOUNT_SID")
-        if not getattr(settings, "TWILIO_AUTH_TOKEN", ""):
+        if not auth_token:
             required.append("TWILIO_AUTH_TOKEN")
-        if not (
-            getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "")
-            or getattr(settings, "TWILIO_WHATSAPP_FROM", "")
-        ):
+        if not messaging_service_sid and not sender:
             required.append("TWILIO_MESSAGING_SERVICE_SID or TWILIO_WHATSAPP_FROM")
     return {
         "mode": mode,
         "label": provider_label(),
         "ready": not required,
         "missing": required,
-        "messaging_service_sid": getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", ""),
-        "sender": getattr(settings, "TWILIO_WHATSAPP_FROM", ""),
+        "account_sid_configured": bool(account_sid),
+        "auth_token_configured": bool(auth_token),
+        "messaging_service_sid_configured": bool(messaging_service_sid),
+        "sender_configured": bool(sender),
+        "validate_signature": bool(getattr(settings, "TWILIO_VALIDATE_SIGNATURE", False)),
+        "messaging_service_sid": messaging_service_sid,
+        "sender": sender,
     }
 
 
@@ -447,7 +453,135 @@ def process_inbound(payload: dict[str, Any], *, provider: str | None = None, sim
 
 
 def format_whatsapp_to(phone_e164: str) -> str:
-    return phone_e164 if phone_e164.startswith("whatsapp:") else f"whatsapp:{phone_e164}"
+    normalized = normalize_whatsapp_phone(phone_e164)
+    return normalized if normalized.startswith("whatsapp:") else f"whatsapp:{normalized}"
+
+
+def safe_twilio_error(exc: Exception) -> str:
+    code = getattr(exc, "code", "") or getattr(exc, "status", "")
+    msg = getattr(exc, "msg", "") or str(exc) or "Twilio request failed"
+    if code:
+        return f"Twilio error {code}: {msg}"
+    return f"Twilio error: {msg}"
+
+
+def _conversation_for_outbound(to_phone: str, ticket: SupportTicket | None, conversation: WhatsAppConversation | None):
+    if conversation:
+        return conversation
+    if ticket:
+        linked = ticket.whatsapp_conversations.select_related("contact").first()
+        if linked:
+            return linked
+        if ticket.linked_contact_id:
+            return WhatsAppConversation.objects.get_or_create(contact=ticket.linked_contact)[0]
+    contact, _ = match_or_create_contact(to_phone)
+    return WhatsAppConversation.objects.get_or_create(contact=contact)[0]
+
+
+def send_whatsapp_message(
+    to_phone: str,
+    body: str,
+    ticket: SupportTicket | None = None,
+    conversation: WhatsAppConversation | None = None,
+    sent_by=None,
+) -> dict[str, Any]:
+    body = (body or "").strip()
+    if not body:
+        return {"ok": False, "error": "Message is required."}
+
+    to_e164 = normalize_whatsapp_phone(to_phone)
+    to_whatsapp = format_whatsapp_to(to_e164)
+    provider = WhatsAppMessage.PROVIDER_TWILIO if provider_is_twilio() else WhatsAppMessage.PROVIDER_MOCK
+    outbound_conversation = _conversation_for_outbound(to_e164, ticket, conversation)
+    from_phone = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
+    message = WhatsAppMessage.objects.create(
+        conversation=outbound_conversation,
+        ticket=ticket or outbound_conversation.active_ticket,
+        direction=WhatsAppMessage.DIRECTION_OUTBOUND,
+        provider=provider,
+        provider_status=WhatsAppMessage.STATUS_QUEUED,
+        from_phone=format_whatsapp_to(from_phone) if from_phone else "",
+        to_phone=to_whatsapp,
+        body=body,
+        sent_by_user=sent_by,
+        raw_payload={"provider_mode": provider_mode(), "to": to_whatsapp},
+    )
+
+    if provider == WhatsAppMessage.PROVIDER_MOCK:
+        message.provider_status = WhatsAppMessage.STATUS_DELIVERED
+        message.provider_message_sid = f"mock-{message.pk}"
+        message.raw_payload = {**(message.raw_payload or {}), "simulated": True}
+        message.save(update_fields=["provider_status", "provider_message_sid", "raw_payload", "updated_at"])
+        return {
+            "ok": True,
+            "simulated": True,
+            "provider": provider_mode(),
+            "to": to_whatsapp,
+            "message_id": message.pk,
+            "message_sid": message.provider_message_sid,
+            "status": message.provider_status,
+        }
+
+    config = provider_config_status()
+    if not config["ready"]:
+        message.provider_status = WhatsAppMessage.STATUS_FAILED
+        message.error_message = "Missing Twilio config: " + ", ".join(config["missing"])
+        message.save(update_fields=["provider_status", "error_message", "updated_at"])
+        return {
+            "ok": False,
+            "provider": provider_mode(),
+            "to": to_whatsapp,
+            "error": message.error_message,
+            "message_id": message.pk,
+            "status": message.provider_status,
+        }
+
+    try:
+        from twilio.rest import Client  # type: ignore
+
+        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        kwargs = {
+            "to": to_whatsapp,
+            "body": body,
+            "status_callback": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", ""),
+        }
+        if getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", ""):
+            kwargs["messaging_service_sid"] = settings.TWILIO_MESSAGING_SERVICE_SID
+        else:
+            kwargs["from_"] = format_whatsapp_to(settings.TWILIO_WHATSAPP_FROM)
+        sent = client.messages.create(**kwargs)
+        message.provider_message_sid = getattr(sent, "sid", "") or ""
+        message.provider_status = getattr(sent, "status", WhatsAppMessage.STATUS_QUEUED) or WhatsAppMessage.STATUS_QUEUED
+        message.raw_payload = {
+            **(message.raw_payload or {}),
+            "twilio_response": {
+                "sid": message.provider_message_sid,
+                "status": message.provider_status,
+            },
+        }
+        message.save(update_fields=["provider_message_sid", "provider_status", "raw_payload", "updated_at"])
+        return {
+            "ok": True,
+            "simulated": False,
+            "provider": provider_mode(),
+            "to": to_whatsapp,
+            "message_id": message.pk,
+            "message_sid": message.provider_message_sid,
+            "status": message.provider_status,
+        }
+    except Exception as exc:
+        logger.exception("Twilio WhatsApp outbound failed")
+        message.provider_status = WhatsAppMessage.STATUS_FAILED
+        message.error_message = safe_twilio_error(exc)
+        message.save(update_fields=["provider_status", "error_message", "updated_at"])
+        return {
+            "ok": False,
+            "provider": provider_mode(),
+            "to": to_whatsapp,
+            "error": message.error_message,
+            "message_id": message.pk,
+            "status": message.provider_status,
+        }
 
 
 def send_staff_reply(ticket: SupportTicket, user, body: str) -> dict[str, Any]:
@@ -459,54 +593,10 @@ def send_staff_reply(ticket: SupportTicket, user, body: str) -> dict[str, Any]:
         conversation, _ = WhatsAppConversation.objects.get_or_create(contact=ticket.linked_contact)
     if not conversation:
         return {"ok": False, "error": "Ticket is not linked to a WhatsApp conversation."}
-
-    provider = WhatsAppMessage.PROVIDER_TWILIO if provider_is_twilio() else WhatsAppMessage.PROVIDER_MOCK
-    message = WhatsAppMessage.objects.create(
-        conversation=conversation,
-        ticket=ticket,
-        direction=WhatsAppMessage.DIRECTION_OUTBOUND,
-        provider=provider,
-        provider_status=WhatsAppMessage.STATUS_QUEUED,
-        from_phone=getattr(settings, "TWILIO_WHATSAPP_FROM", ""),
-        to_phone=conversation.contact.phone_e164,
-        body=body,
-        sent_by_user=user,
-    )
-
-    if provider == WhatsAppMessage.PROVIDER_MOCK:
-        message.provider_status = WhatsAppMessage.STATUS_DELIVERED
-        message.provider_message_sid = f"mock-{message.pk}"
-        message.save(update_fields=["provider_status", "provider_message_sid", "updated_at"])
-    else:
-        config = provider_config_status()
-        if not config["ready"]:
-            message.provider_status = WhatsAppMessage.STATUS_FAILED
-            message.error_message = "Missing Twilio config: " + ", ".join(config["missing"])
-            message.save(update_fields=["provider_status", "error_message", "updated_at"])
-            return {"ok": False, "error": message.error_message, "message_id": message.pk}
-        try:
-            from twilio.rest import Client  # type: ignore
-
-            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-            kwargs = {
-                "to": format_whatsapp_to(conversation.contact.phone_e164),
-                "body": body,
-                "status_callback": getattr(settings, "WHATSAPP_STATUS_CALLBACK_URL", ""),
-            }
-            if getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", ""):
-                kwargs["messaging_service_sid"] = settings.TWILIO_MESSAGING_SERVICE_SID
-            else:
-                kwargs["from_"] = format_whatsapp_to(settings.TWILIO_WHATSAPP_FROM)
-            sent = client.messages.create(**kwargs)
-            message.provider_message_sid = sent.sid
-            message.provider_status = getattr(sent, "status", WhatsAppMessage.STATUS_QUEUED) or WhatsAppMessage.STATUS_QUEUED
-            message.save(update_fields=["provider_message_sid", "provider_status", "updated_at"])
-        except Exception as exc:
-            logger.exception("Twilio WhatsApp support reply failed for ticket %s", ticket.pk)
-            message.provider_status = WhatsAppMessage.STATUS_FAILED
-            message.error_message = str(exc)
-            message.save(update_fields=["provider_status", "error_message", "updated_at"])
-            return {"ok": False, "error": message.error_message, "message_id": message.pk}
+    result = send_whatsapp_message(conversation.contact.phone_e164, body, ticket=ticket, conversation=conversation, sent_by=user)
+    if not result.get("ok"):
+        return result
+    message = WhatsAppMessage.objects.get(pk=result["message_id"])
 
     from_status = ticket.status
     update_fields = ["status", "last_message_preview", "last_message_at", "updated_at"]
