@@ -7,6 +7,31 @@
   --ts-bg: #f8fafc;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CRITICAL: Override narrow mobile app-shell for HQ subpages.
+   The base app-shell has max-width:520px which breaks the fixed
+   240px sidebar layout on desktop. These rules unshackle it.
+   ═══════════════════════════════════════════════════════════════════ */
+.app-shell:has(.hq-page-shell),
+.app-shell.ts-hq-shell-active {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  box-shadow: none !important;
+  background: var(--ts-bg) !important;
+  border-radius: 0 !important;
+}
+
+/* Topbar must render above the fixed sidebar on HQ subpages */
+.app-shell:has(.hq-page-shell) .app-topbar,
+.app-shell.ts-hq-shell-active .app-topbar {
+  z-index: 60 !important; /* above sidebar z-index 40 */
+  position: sticky !important;
+  top: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 .hq-page-shell {
   min-height: 100vh;
   background: var(--ts-bg);

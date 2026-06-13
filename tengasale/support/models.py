@@ -670,6 +670,8 @@ class WhatsAppMessage(models.Model):
     media_json = models.JSONField(default=list, blank=True)
     raw_payload = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True, default="")
+    error_code = models.CharField(max_length=20, blank=True, default="")
+    last_status_callback_at = models.DateTimeField(null=True, blank=True)
     sent_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

@@ -220,7 +220,35 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/home/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# ── Email configuration ────────────────────────────────────────────────────────
+# Development: console backend (prints to terminal, no real sending).
+# Production: set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# in the environment and configure SendGrid SMTP credentials below.
+#
+# Required env vars for SendGrid production:
+#   EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+#   EMAIL_HOST=smtp.sendgrid.net
+#   EMAIL_PORT=587
+#   EMAIL_USE_TLS=True
+#   EMAIL_HOST_USER=apikey
+#   EMAIL_HOST_PASSWORD=<your_sendgrid_api_key>
+#   DEFAULT_FROM_EMAIL=TengaSale Support <support@tengasale.africa>
+#
+_email_backend_from_env = os.environ.get("EMAIL_BACKEND", "")
+if _email_backend_from_env:
+    EMAIL_BACKEND = _email_backend_from_env
+elif DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    # In production with no explicit backend, fall back to console to avoid
+    # sending nothing silently. Set EMAIL_BACKEND in environment for real mail.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.sendgrid.net")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "apikey")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")  # SendGrid API key
 
 TENGASALE_WHATSAPP_NUMBER = os.environ.get("TENGASALE_WHATSAPP_NUMBER", "+265883596135")
 TENGASALE_WHATSAPP_LINK = f"https://wa.me/{''.join(char for char in TENGASALE_WHATSAPP_NUMBER if char.isdigit())}"
@@ -329,8 +357,17 @@ DEFAULT_SMS_LANGUAGE = os.getenv("DEFAULT_SMS_LANGUAGE", "ny")
 
 # SendGrid Email
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@tengasale.com")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "TengaSale Support <support@tengasale.africa>")
 ADMIN_ALERT_EMAIL = os.environ.get("ADMIN_ALERT_EMAIL", "admin@tengasale.com")
+
+# ── Device Telemetry (Connectivity Intelligence) ──────────────────────────────
+# PayTrigger MDM telemetry
+PAYTRIGGER_API_KEY = os.environ.get("PAYTRIGGER_API_KEY", "")
+PAYTRIGGER_BASE_URL = os.environ.get("PAYTRIGGER_BASE_URL", "")
+
+# Upya MDM telemetry
+UPYA_API_KEY = os.environ.get("UPYA_API_KEY", "")
+UPYA_BASE_URL = os.environ.get("UPYA_BASE_URL", "")
 
 # File upload security
 MAX_UPLOAD_SIZE_MB = int(os.environ.get("MAX_UPLOAD_SIZE_MB", "5"))

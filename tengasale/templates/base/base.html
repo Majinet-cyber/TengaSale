@@ -22,8 +22,77 @@
     <link rel="stylesheet" href="{% static 'css/hq-shell.css' %}?v=1.0.2">
     {% block extra_head %}{% endblock %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+    /* ── Global top progress bar ─────────────────────────────────── */
+    #ts-top-loader {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, #FF4D00, #ff7a3d, #FF4D00);
+      background-size: 200% 100%;
+      z-index: 9999;
+      transition: width 0.22s ease, opacity 0.4s ease;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 0 3px 3px 0;
+    }
+    #ts-top-loader.is-loading {
+      opacity: 1;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      #ts-top-loader.is-loading {
+        animation: ts-loader-pulse 1.6s ease infinite;
+      }
+    }
+    @keyframes ts-loader-pulse {
+      0%, 100% { background-position: 200% 0; }
+      50% { background-position: 0% 0; }
+    }
+
+    /* ── Toast container ─────────────────────────────────────────── */
+    #ts-toast-container {
+      position: fixed;
+      bottom: calc(72px + env(safe-area-inset-bottom, 12px));
+      right: 16px;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+      width: calc(100vw - 32px);
+      pointer-events: none;
+    }
+    .ts-toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.14);
+      pointer-events: all;
+      animation: ts-toast-in 0.26s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ts-toast { animation: none; }
+    }
+    @keyframes ts-toast-in {
+      from { opacity: 0; transform: translateY(16px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .ts-toast--success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .ts-toast--error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .ts-toast--info    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .ts-toast--warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    </style>
 </head>
 <body>
+
+<div id="ts-top-loader" aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+<div id="ts-toast-container" aria-live="polite" aria-atomic="false"></div>
 
 <div class="app-shell">
     {% block topbar %}
@@ -215,6 +284,11 @@
 <script src="{% static 'js/premium-animations.js' %}?v=2.0.0" defer></script>
 <script>
   (function () {
+    /* HQ shell: add fallback class for browsers without :has() support */
+    if (document.querySelector('.hq-page-shell')) {
+      var shell = document.querySelector('.app-shell');
+      if (shell) shell.classList.add('ts-hq-shell-active');
+    }
     var openBtn = document.querySelector('[data-hq-shell-open]');
     var closeBtn = document.querySelector('[data-hq-shell-close]');
     var overlay = document.querySelector('[data-hq-shell-overlay]');
@@ -236,6 +310,104 @@
       navigator.serviceWorker.register('/static/sw.js').catch(() => {});
     });
   }
+</script>
+<script>
+/* ── TengaSale global top loader ──────────────────────────────── */
+(function () {
+  var loader = document.getElementById('ts-top-loader');
+  if (!loader) return;
+
+  var width = 0;
+  var raf = null;
+  var timer = null;
+
+  function startLoader() {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    width = 15;
+    loader.style.width = width + '%';
+    loader.classList.add('is-loading');
+    loader.style.transition = 'width 0.22s ease';
+    function grow() {
+      if (width < 80) {
+        width += (80 - width) * 0.04;
+        loader.style.width = width + '%';
+        raf = requestAnimationFrame(grow);
+      }
+    }
+    raf = requestAnimationFrame(grow);
+  }
+
+  function finishLoader() {
+    cancelAnimationFrame(raf);
+    loader.style.transition = 'width 0.22s ease';
+    loader.style.width = '100%';
+    timer = setTimeout(function () {
+      loader.classList.remove('is-loading');
+      loader.style.transition = 'none';
+      loader.style.width = '0%';
+    }, 350);
+  }
+
+  /* HTMX events */
+  document.body.addEventListener('htmx:beforeRequest', startLoader);
+  document.body.addEventListener('htmx:afterRequest', finishLoader);
+  document.body.addEventListener('htmx:responseError', finishLoader);
+
+  /* Expose for manual use */
+  window.tsLoader = { start: startLoader, finish: finishLoader };
+})();
+
+/* ── TengaSale toast system ───────────────────────────────────── */
+(function () {
+  var container = document.getElementById('ts-toast-container');
+  function showToast(msg, type, durationMs) {
+    if (!container || !msg) return;
+    var toast = document.createElement('div');
+    toast.className = 'ts-toast ts-toast--' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function () {
+      toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(function () { toast.remove(); }, 350);
+    }, durationMs || 4000);
+  }
+  window.tsToast = showToast;
+
+  /* HTMX error → friendly toast */
+  document.body.addEventListener('htmx:responseError', function (evt) {
+    var status = evt.detail && evt.detail.xhr ? evt.detail.xhr.status : '';
+    showToast('Request failed' + (status ? ' (' + status + ')' : '') + '. Please try again.', 'error');
+  });
+})();
+
+/* ── Button loading state ─────────────────────────────────────── */
+(function () {
+  document.addEventListener('htmx:beforeRequest', function (evt) {
+    var trigger = evt.detail && evt.detail.elt;
+    if (trigger && trigger.classList.contains('ts-loading-btn')) {
+      trigger.classList.add('is-loading');
+      trigger.setAttribute('aria-busy', 'true');
+    }
+  });
+  document.addEventListener('htmx:afterRequest', function (evt) {
+    var trigger = evt.detail && evt.detail.elt;
+    if (trigger && trigger.classList.contains('ts-loading-btn')) {
+      trigger.classList.remove('is-loading');
+      trigger.removeAttribute('aria-busy');
+    }
+  });
+  /* Also handle plain form submit buttons */
+  document.addEventListener('submit', function (evt) {
+    var btn = evt.target.querySelector('[type=submit].ts-loading-btn');
+    if (btn) {
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    }
+  });
+})();
 </script>
 </body>
 </html>

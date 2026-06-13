@@ -729,6 +729,7 @@ class WhatsAppSupportOperationsTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         msg.refresh_from_db()
         self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_DELIVERED)
+        self.assertIsNotNone(msg.last_status_callback_at)
 
     def test_status_callback_stores_failed_delivery_error(self):
         contact = WhatsAppContact.objects.create(phone_e164="+265883596141")
@@ -750,6 +751,8 @@ class WhatsAppSupportOperationsTest(TestCase):
         msg.refresh_from_db()
         self.assertEqual(msg.provider_status, WhatsAppMessage.STATUS_FAILED)
         self.assertEqual(msg.error_message, "Destination is not joined to sandbox")
+        self.assertEqual(msg.error_code, "63016")
+        self.assertIsNotNone(msg.last_status_callback_at)
 
     def test_permission_prevents_unauthorized_simulation(self):
         self.client.login(username="wa_staff", password="testpass123")
