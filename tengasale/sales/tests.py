@@ -238,7 +238,8 @@ class SalesPageSmokeTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "kyc-smart-card__frame--id_front")
-        self.assertContains(res, "kyc-smart-card__img--contain")
+        self.assertContains(res, "kyc-smart-card__frame--id_back")
+        self.assertContains(res, "Missing photo")
 
     def test_queue_rules_page_renders(self):
         self.client.login(username="testsalesrep", password="testpass123")
@@ -281,3 +282,101 @@ class SalesPageSmokeTest(TestCase):
         self.assertContains(detail_res, "Completed Application")
         self.assertContains(detail_res, "readonly-detail-card")
         self.assertNotContains(detail_res, "Review &amp; Send Back")
+
+
+class ClaimToReviewFlowTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.underwriter = User.objects.create_user(
+            username="uw-flow",
+            password="testpass123",
+        )
+        from accounts.models import UserProfile
+        UserProfile.objects.filter(user=self.underwriter).update(role="underwriter")
+        self.merchant = User.objects.create_user(username="merchant-flow", password="testpass123")
+
+    def _pending_app(self, **kwargs):
+        defaults = {
+            "created_by": self.merchant,
+            "status": "pending_review",
+            "customer_name": "Flow Customer",
+            "customer_phone": "990870630",
+            "national_id": "FLOW1234",
+            "submitted_at": timezone.now(),
+        }
+        defaults.update(kwargs)
+        return FinancingApplication.objects.create(**defaults)
+
+    def test_claim_get_redirects_home(self):
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_claim_next"))
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, reverse("sales_home"))
+
+    def test_legacy_review_url_opens_modern_review_page(self):
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("underwriter_review_application", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'data-testid="review-application-body"')
+        self.assertContains(res, "Flow Customer")
+
+    def test_review_direct_url_renders_step_one_content(self):
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'data-testid="review-application-body"')
+        self.assertContains(res, "Flow Customer")
+        self.assertContains(res, "CALL PRIMARY")
+        self.assertContains(res, "Continue to Identity Check")
+
+    def test_review_missing_app_shows_error_card(self):
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[999999]))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'data-testid="review-state-error"')
+        self.assertContains(res, "couldn't load this application")
+
+    def test_review_page_has_loading_markup(self):
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertContains(res, "Loading application review")
+
+    def test_queue_status_returns_cooldown_expires_at(self):
+        app = self._pending_app(
+            status="under_review",
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+        )
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_queue_status"))
+        data = res.json()
+        self.assertIn("cooldown_expires_at", data)
+        self.assertIsNotNone(data["cooldown_expires_at"])
+        self.assertGreater(data["cooldown_remaining"], 0)
+
+    def test_home_shows_cooldown_expires_at_attribute(self):
+        self._pending_app(
+            status="under_review",
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+        )
+        self._pending_app()
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertContains(res, "data-cooldown-expires-at")
+
+    def test_my_active_links_open_review(self):
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get(reverse("sales_applications"), {"tab": "active"})
+        self.assertContains(res, reverse("sales_review_summary", args=[app.id]))
+
+    def test_home_claim_button_has_merchant_sized_height(self):
+        self._pending_app()
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertContains(res, "min-height: 68px")
+        self.assertContains(res, 'data-testid="claim-next-btn"')

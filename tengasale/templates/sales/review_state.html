@@ -1,0 +1,37 @@
+{% extends "sales/base.html" %}
+
+{% block page_title %}{{ page_heading|default:"Review Application" }}{% endblock %}
+
+{% block content %}
+<div class="sales-main">
+  <div class="ts-review-state" data-review-state="{{ state }}" data-testid="review-state-{{ state }}">
+    {% if state == "loading" %}
+      <div class="ts-review-loading__card" role="status" aria-live="polite">
+        <span class="ts-spinner" aria-hidden="true"></span>
+        <p>Loading application review…</p>
+      </div>
+      <div class="ts-review-skeleton" aria-hidden="true">
+        <div class="ts-review-skeleton__card"></div>
+        <div class="ts-review-skeleton__card"></div>
+        <div class="ts-review-skeleton__card ts-review-skeleton__card--short"></div>
+      </div>
+    {% elif state == "missing" %}
+      <div class="ts-review-state__card">
+        <h2>No application selected.</h2>
+        <p>Choose an active review from your list to continue.</p>
+        <a href="{% url 'sales_applications' %}?tab=active" class="ts-btn-primary ts-btn-full uw-action-btn">Back to Active Reviews</a>
+      </div>
+    {% else %}
+      <div class="ts-review-state__card ts-review-state__card--error">
+        <h2>We couldn't load this application.</h2>
+        <p>{{ message|default:"The application may have been reassigned, completed, or removed." }}</p>
+        <div class="ts-review-state__actions">
+          <a href="{{ retry_url|default:request.path }}" class="ts-btn-primary ts-btn-full uw-action-btn">Retry</a>
+          <a href="{% url 'sales_applications' %}?tab=active" class="ts-btn-secondary ts-btn-full uw-action-btn">Back to Reviews</a>
+          <a href="{% url 'sales_home' %}" class="ts-btn-secondary ts-btn-full uw-action-btn">Back Home</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -60,14 +60,14 @@ def _queue_rule():
 
 
 def _cooldown_state(user):
-    """Return (cooldown_remaining_seconds, can_claim_now) for the given user."""
+    """Return (cooldown_remaining_seconds, can_claim_now, cooldown_expires_at_ms)."""
     rule = _queue_rule()
     active_count = FinancingApplication.objects.filter(
         claimed_by=user, status="under_review"
     ).count()
 
     if active_count >= rule.max_active_applications:
-        return 0, False
+        return 0, False, None
 
     last_claim = (
         FinancingApplication.objects.filter(claimed_by=user)
@@ -80,9 +80,33 @@ def _cooldown_state(user):
         cooldown_seconds = rule.cooldown_minutes * 60
         remaining = max(0, cooldown_seconds - elapsed)
         if remaining > 0:
-            return remaining, False
+            expires_at = last_claim.claimed_at + timedelta(seconds=cooldown_seconds)
+            expires_ms = int(expires_at.timestamp() * 1000)
+            return remaining, False, expires_ms
 
-    return 0, True
+    return 0, True, None
+
+
+def _secondary_phone(app):
+    """Secondary contact number used in review UI (next of kin / guarantor)."""
+    return (app.next_of_kin_1_phone or "").strip()
+
+
+def _income_multiple_for_app(app):
+    monthly_income = Decimal(app.exact_monthly_income or app.monthly_income or 0)
+    monthly_payment = Decimal(app.calculated_monthly_payment or 0)
+    if monthly_payment:
+        return (monthly_income / monthly_payment).quantize(Decimal("0.1"))
+    return Decimal("0")
+
+
+def _render_review_error(request, *, message="", retry_url=""):
+    return render(request, "sales/review_state.html", {
+        "page_heading": "Review Application",
+        "state": "error",
+        "message": message or "We couldn't load this application.",
+        "retry_url": retry_url or request.path,
+    })
 
 
 def _audit(user, action, obj_type="", obj_id="", detail=None, request=None):
@@ -249,7 +273,7 @@ def sales_home(request):
         sum(review_durations) / len(review_durations) if review_durations else None
     )
 
-    cooldown_remaining, can_claim = _cooldown_state(request.user)
+    cooldown_remaining, can_claim, cooldown_expires_at = _cooldown_state(request.user)
     at_max_capacity = active_count >= rule.max_active_applications
     in_cooldown = cooldown_remaining > 0 and not at_max_capacity
 
@@ -270,6 +294,7 @@ def sales_home(request):
         "completed_count": completed_count,
         "reviewed_count": reviewed_count,
         "cooldown_remaining": int(cooldown_remaining),
+        "cooldown_expires_at": cooldown_expires_at,
         "can_claim": can_claim and pending_count > 0,
         "at_max_capacity": at_max_capacity,
         "in_cooldown": in_cooldown,
@@ -288,12 +313,13 @@ def sales_queue_status(request):
     pending_count = FinancingApplication.objects.filter(
         status="pending_review", claimed_by__isnull=True
     ).count()
-    cooldown_remaining, can_claim = _cooldown_state(request.user)
+    cooldown_remaining, can_claim, cooldown_expires_at = _cooldown_state(request.user)
     return JsonResponse({
         "active_count": active_count,
         "max_active": rule.max_active_applications,
         "pending_count": pending_count,
         "cooldown_remaining": int(cooldown_remaining),
+        "cooldown_expires_at": cooldown_expires_at,
         "can_claim": can_claim and pending_count > 0,
     })
 
@@ -303,8 +329,10 @@ def sales_queue_status(request):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
-@require_POST
 def sales_claim_next(request):
+    if request.method != "POST":
+        messages.info(request, "Tap CLAIM NEXT on the home screen to claim an application.")
+        return redirect("sales_home")
     rule = _queue_rule()
     active_count = FinancingApplication.objects.filter(
         claimed_by=request.user, status="under_review"
@@ -314,7 +342,7 @@ def sales_claim_next(request):
         messages.error(request, f"You already have {active_count} active applications. Complete one before claiming more.")
         return redirect("sales_home")
 
-    _, can_claim = _cooldown_state(request.user)
+    _, can_claim, _ = _cooldown_state(request.user)
     if not can_claim:
         messages.error(request, "Please wait before claiming another application.")
         return redirect("sales_home")
@@ -383,7 +411,7 @@ def sales_applications(request):
     pending_count = FinancingApplication.objects.filter(
         status="pending_review", claimed_by__isnull=True
     ).count()
-    cooldown_remaining, can_claim = _cooldown_state(request.user)
+    cooldown_remaining, can_claim, cooldown_expires_at = _cooldown_state(request.user)
 
     return render(request, "sales/applications_list.html", {
         "page_heading": "Applications",
@@ -393,6 +421,7 @@ def sales_applications(request):
         "active_count": active_count,
         "max_active": rule.max_active_applications,
         "cooldown_remaining": int(cooldown_remaining),
+        "cooldown_expires_at": cooldown_expires_at,
         "can_claim": can_claim and pending_count > 0,
     })
 
@@ -418,6 +447,21 @@ def sales_application_detail(request, app_id):
 @underwriter_required
 def sales_review_summary(request, app_id):
     from applications.services.duplicate_check import check_duplicate_customer
+
+    if not app_id:
+        return render(request, "sales/review_state.html", {
+            "page_heading": "Review Application",
+            "state": "missing",
+        })
+
+    app_exists = FinancingApplication.objects.filter(id=app_id).exists()
+    if not app_exists:
+        return _render_review_error(
+            request,
+            message="This application was not found. It may have been removed or the link is incorrect.",
+            retry_url=reverse("sales_applications") + "?tab=active",
+        )
+
     read_only_app = (
         FinancingApplication.objects.select_related("deal", "deal__brand", "created_by", "claimed_by", "reviewed_by", "contract")
         .filter(id=app_id, status__in=UNDERWRITER_READ_ONLY_STATUSES)
@@ -444,10 +488,14 @@ def sales_review_summary(request, app_id):
         review.summary_clear = bool_from_post(request, "summary_clear")
         review.save(update_fields=["summary_clear", "updated_at"])
         return redirect("sales_identity_check", app_id=app.id)
+    income_multiple = _income_multiple_for_app(app)
+    secondary_phone = _secondary_phone(app)
     return render(request, "sales/review_summary.html", {
         "page_heading": "Review Application",
         "app": app, "review": review, "step": 1, "total_steps": 6,
         "dup_result": dup_result,
+        "income_multiple": income_multiple,
+        "secondary_phone": secondary_phone,
         **correction_context(app),
     })
 

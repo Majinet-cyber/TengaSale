@@ -134,17 +134,20 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
+  min-height: 68px;
   padding: 14px 20px;
   background: #ff5a00;
   color: #fff;
   border: none;
-  border-radius: 14px;
-  font-size: 15px;
+  border-radius: 17px;
+  font-size: 16px;
   font-weight: 900;
   cursor: pointer;
   text-decoration: none;
   transition: background .15s, transform .1s;
   box-shadow: 0 4px 14px rgba(255,90,0,.28);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 .uw-claim-btn:hover { background: #e64d00; }
 .uw-claim-btn:active { transform: scale(.98); }
@@ -156,6 +159,15 @@
   box-shadow: none !important;
   cursor: not-allowed;
   transform: none !important;
+  min-height: 68px;
+}
+.uw-claim-btn__hint {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.35;
 }
 .uw-claim-btn--available,
 .uw-primary-action--queue {
@@ -396,7 +408,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="uw-home uw-home-simple ts-motion-page" data-queue-status-url="{% url 'sales_queue_status' %}" data-poll-interval="{{ queue_rule.polling_interval_seconds|default:30 }}">
+<div class="uw-home uw-home-simple ts-motion-page" data-queue-status-url="{% url 'sales_queue_status' %}" data-poll-interval="{{ queue_rule.polling_interval_seconds|default:30 }}"{% if cooldown_expires_at %} data-cooldown-expires-at="{{ cooldown_expires_at }}"{% endif %}>
 
   {# ── Greeting ──────────────────────────────────────────────────── #}
   <div class="uw-greeting ts-motion-slide">
@@ -439,7 +451,7 @@
       {% if can_claim %}
       <form method="post" action="{% url 'sales_claim_next' %}" data-claim-next-form>
         {% csrf_token %}
-        <button type="submit" class="uw-claim-btn uw-claim-btn--available uw-primary-action uw-primary-action--queue ts-motion-tap" data-ts-sound="claim" data-testid="claim-next-btn">
+        <button type="submit" class="uw-claim-btn uw-claim-btn--available ts-motion-tap" data-ts-sound="claim" data-testid="claim-next-btn">
           <span class="uw-claim-btn__dot" aria-hidden="true"></span>
           <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
           <span data-claim-label>CLAIM NEXT</span>
@@ -450,6 +462,7 @@
       <button type="button" class="uw-claim-btn uw-claim-btn--disabled" disabled data-testid="claim-max-active">
         MAX ACTIVE REACHED
       </button>
+      <p class="uw-claim-btn__hint">Complete a review to claim another.</p>
       {% elif in_cooldown %}
       <button type="button" class="uw-claim-btn uw-claim-btn--disabled" disabled data-cooldown-btn data-cooldown-remaining="{{ cooldown_remaining }}" data-testid="claim-cooldown-btn">
         <span data-cooldown-label>NEXT CLAIM IN {{ cooldown_remaining|floatformat:0 }}s</span>
@@ -479,7 +492,7 @@
   {% endif %}
 
   {# ── My Active Card ────────────────────────────────────────────── #}
-  <a href="{% url 'sales_applications' %}?tab=active" class="uw-active-card active-reviews-card uw-primary-action uw-primary-action--active-reviews ts-motion-slide ts-motion-tap" data-testid="my-active-card">
+  <a href="{% url 'sales_applications' %}?tab=active" class="uw-active-card active-reviews-card ts-motion-slide ts-motion-tap" data-testid="my-active-card">
     <div class="uw-active-card__icon">
       <i class="bi bi-file-earmark-check-fill" aria-hidden="true"></i>
     </div>

@@ -27,32 +27,62 @@
 
   <div class="ts-app-num">{{ app.application_number }} &nbsp;·&nbsp; {{ app.submitted_at|date:"d M Y"|default:"Not submitted" }}</div>
 
-  <div class="ts-review-card" style="border-top:3px solid #ffd600;background:#fffdf0;">
-    <div class="ts-review-card__title">Customer Verification Call</div>
-    <div class="ts-review-row" style="align-items:center;">
-      <span>Structured call questionnaire for identity, work, income, pricing and payment understanding.</span>
-      <a href="{% url 'sales_call_questionnaire' app.id %}" class="ts-btn-orange" style="text-decoration:none;white-space:nowrap;">Customer Call Questionnaire</a>
-    </div>
-  </div>
-
   <div class="ts-review-card" style="border-top:3px solid #ff5a00;margin-top:8px;">
     <div class="ts-review-card__title">Customer</div>
     <div class="ts-review-row"><span>Full Name</span><strong>{{ app.customer_name|default:"Not captured" }}</strong></div>
+    <div class="ts-review-row"><span>Application #</span><strong>{{ app.application_number|default:"Not captured" }}</strong></div>
     <div class="ts-review-row"><span>National ID</span><strong>{{ app.national_id|default:"Not captured" }}</strong></div>
-    {% if app.date_of_birth %}
-    <div class="ts-review-row"><span>Date of Birth</span><strong>{{ app.date_of_birth|date:"d M Y" }}</strong></div>
-    {% endif %}
-    {% if app.gender %}
-    <div class="ts-review-row"><span>Gender</span><strong>{{ app.get_gender_display }}</strong></div>
-    {% endif %}
+    <div class="ts-review-row"><span>Date of Birth</span><strong>{% if app.date_of_birth %}{{ app.date_of_birth|date:"d M Y" }}{% else %}<span class="ts-missing-field">Not captured</span>{% endif %}</strong></div>
+    <div class="ts-review-row"><span>Gender</span><strong>{% if app.gender %}{{ app.get_gender_display }}{% else %}<span class="ts-missing-field">Not captured</span>{% endif %}</strong></div>
     <div class="ts-review-row">
       <span>Phone</span>
       {% if app.customer_phone %}
         <strong><a href="tel:+265{{ app.customer_phone }}" style="color:#ff5a00;text-decoration:none;font-weight:800;">+265 {{ app.customer_phone }}</a></strong>
       {% else %}
-        <strong>Not captured</strong>
+        <strong><span class="ts-missing-field">Not captured</span></strong>
       {% endif %}
     </div>
+    <div class="ts-review-row">
+      <span>Secondary Phone</span>
+      {% if secondary_phone %}
+        <strong><a href="tel:+265{{ secondary_phone }}" style="color:#ff5a00;text-decoration:none;font-weight:800;">+265 {{ secondary_phone }}</a></strong>
+      {% else %}
+        <strong><span class="ts-missing-field">Not captured</span></strong>
+      {% endif %}
+    </div>
+    {% if app.deal %}
+    <div class="ts-review-row"><span>Device / Deal</span><strong>{{ app.deal }}</strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money">{{ app.calculated_deposit_amount|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Monthly Repayment</span><strong class="ts-money">{{ app.calculated_monthly_payment|mwk }}</strong></div>
+    {% else %}
+    <div class="ts-review-row"><span>Device / Deal</span><strong><span class="ts-missing-field">Not selected</span></strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong><span class="ts-missing-field">Pending</span></strong></div>
+    <div class="ts-review-row"><span>Monthly Repayment</span><strong><span class="ts-missing-field">Pending</span></strong></div>
+    {% endif %}
+  </div>
+
+  <div class="ts-review-card ts-mb-16">
+    <div class="ts-review-card__title">Customer Verification Call</div>
+    <p class="ts-review-call-copy">Call the customer to verify identity, income, device, deposit, and repayment understanding before continuing.</p>
+    <div class="ts-review-call-actions">
+      {% if app.customer_phone %}
+      <a href="tel:+265{{ app.customer_phone }}" class="action-btn-large primary uw-action-btn" data-testid="call-primary-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.81.3 1.6.57 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.14a2 2 0 0 1 2.11-.45c.74.27 1.53.45 2.34.57A2 2 0 0 1 22 16.92z"/></svg>
+        <span class="btn-label">CALL PRIMARY</span>
+      </a>
+      {% else %}
+      <span class="action-btn-large outline uw-action-btn uw-action-btn--disabled" aria-disabled="true">CALL PRIMARY</span>
+      {% endif %}
+      {% if secondary_phone %}
+      <a href="tel:+265{{ secondary_phone }}" class="action-btn-large outline uw-action-btn" data-testid="call-secondary-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.81.3 1.6.57 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.14a2 2 0 0 1 2.11-.45c.74.27 1.53.45 2.34.57A2 2 0 0 1 22 16.92z"/></svg>
+        <span class="btn-label">CALL SECONDARY</span>
+      </a>
+      {% else %}
+      <span class="action-btn-large outline uw-action-btn uw-action-btn--disabled" aria-disabled="true">CALL SECONDARY</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'sales_call_questionnaire' app.id %}" class="ts-btn-secondary ts-btn-full uw-action-btn" style="margin-top:10px;">Customer Call Questionnaire</a>
   </div>
 
   <div class="ts-review-card">
@@ -150,8 +180,8 @@
       </div>
       <div class="ts-risk-signal">
         <span class="ts-risk-signal-label">Contact</span>
-        <span class="ts-risk-signal-val {% if app.customer_phone and app.secondary_phone %}ts-signal--green{% elif app.customer_phone %}ts-signal--amber{% else %}ts-signal--red{% endif %}">
-          {% if app.customer_phone and app.secondary_phone %}Strong{% elif app.customer_phone %}Primary only{% else %}Missing{% endif %}
+        <span class="ts-risk-signal-val {% if app.customer_phone and secondary_phone %}ts-signal--green{% elif app.customer_phone %}ts-signal--amber{% else %}ts-signal--red{% endif %}">
+          {% if app.customer_phone and secondary_phone %}Strong{% elif app.customer_phone %}Primary only{% else %}Missing{% endif %}
         </span>
         <span class="ts-risk-signal-hint">Primary + secondary phone</span>
       </div>
@@ -278,7 +308,7 @@
       <div class="ts-review-card__title">Summary Check</div>
       {% include "sales/_yes_no.html" with field_name="summary_clear" label="Is all summary information clear and correct?" current_value=review.summary_clear %}
     </div>
-    <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">Continue to Identity Check</button>
+    <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16 uw-action-btn" data-testid="review-continue-btn">Continue to Identity Check</button>
   </form>
 
 </div>
