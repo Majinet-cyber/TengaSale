@@ -399,15 +399,16 @@
                 var button = form.querySelector('button[type="submit"]');
                 var label = form.querySelector('[data-claim-label]');
                 var sub = form.querySelector('[data-claim-sub]');
-                var skeleton = document.querySelector('[data-claim-skeleton]');
                 form.classList.add('is-claiming');
                 if (button) {
                     button.disabled = true;
                     button.setAttribute('aria-busy', 'true');
+                    /* Grey out the card visually while claiming */
+                    button.classList.remove('uw-action-card--green');
+                    button.classList.add('uw-action-card--disabled');
                 }
-                if (label) label.textContent = 'CLAIMING…';
-                if (sub) sub.textContent = 'Assigning application';
-                if (skeleton) skeleton.hidden = false;
+                if (label) label.textContent = 'CLAIMING\u2026';
+                if (sub) sub.textContent = 'Assigning application\u2026';
                 var expiresAt = Date.now() + (5 * 60 * 1000);
                 writeCooldownExpiresAt(expiresAt);
                 devLog('claim response', { status: 'submitting', cooldownExpiresAt: expiresAt });
@@ -415,7 +416,7 @@
                     window.sessionStorage.setItem('tengasale.lastAction', 'claim');
                     window.sessionStorage.setItem('tengasale.reviewLoading', '1');
                 } catch (e) {}
-                showToast('Claiming next application...', { type: 'info', duration: 1800 });
+                showToast('Claiming next application\u2026', { type: 'info', duration: 1800 });
             });
         });
     }
@@ -427,13 +428,12 @@
         }
         var mins = Math.floor(total / 60);
         var secs = total % 60;
-        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        return mins + 'M ' + (secs < 10 ? '0' : '') + secs + 'S';
     }
 
     function renderCooldownLabel(el, seconds) {
         if (!el) return;
-        var prefix = seconds < 60 ? 'NEXT CLAIM IN ' : 'NEXT CLAIM IN ';
-        el.textContent = prefix + formatCooldown(seconds);
+        el.textContent = 'NEXT CLAIM IN ' + formatCooldown(seconds);
     }
 
     function resolveCooldownExpiresAt(home, cooldownBtn) {
@@ -513,6 +513,35 @@
         var loading = document.querySelector('[data-review-loading]');
         if (!reviewBody && !loading) return;
 
+        /* Always ensure the review body is visible — never hide it. */
+        if (loading) loading.hidden = true;
+        if (reviewBody) reviewBody.hidden = false;
+
+        /* On first load after a claim, show a brief overlay (non-blocking). */
+        var pending = false;
+        try {
+            pending = window.sessionStorage.getItem('tengasale.reviewLoading') === '1';
+            window.sessionStorage.removeItem('tengasale.reviewLoading');
+        } catch (e) {}
+
+        if (pending && loading) {
+            /* Show spinner overlay but KEEP body visible underneath */
+            loading.style.position = 'fixed';
+            loading.style.top = '0';
+            loading.style.left = '0';
+            loading.style.right = '0';
+            loading.style.bottom = '0';
+            loading.style.zIndex = '999';
+            loading.style.background = 'rgba(255,255,255,.85)';
+            loading.style.display = 'flex';
+            loading.style.alignItems = 'center';
+            loading.style.justifyContent = 'center';
+            loading.hidden = false;
+            window.setTimeout(function () {
+                if (loading) loading.hidden = true;
+            }, 400);
+        }
+
         var reviewId = null;
         var parts = window.location.pathname.split('/').filter(Boolean);
         if (parts.length >= 3 && parts[0] === 'sales' && parts[1] === 'applications') {
@@ -520,30 +549,6 @@
         }
         devLog('review id used', reviewId);
         devLog('review route', window.location.pathname);
-
-        var pending = false;
-        try {
-            pending = window.sessionStorage.getItem('tengasale.reviewLoading') === '1';
-            window.sessionStorage.removeItem('tengasale.reviewLoading');
-        } catch (e) {}
-
-        if (loading) loading.hidden = true;
-        if (reviewBody) reviewBody.hidden = false;
-
-        if (pending && loading) {
-            loading.hidden = false;
-            if (reviewBody) reviewBody.hidden = true;
-            window.setTimeout(function () {
-                loading.hidden = true;
-                if (reviewBody) {
-                    reviewBody.hidden = false;
-                    var hasContent = reviewBody.textContent && reviewBody.textContent.trim().length > 0;
-                    if (!hasContent) {
-                        devLog('review page empty after load');
-                    }
-                }
-            }, 350);
-        }
     }
 
     function initMessageFeedback() {
