@@ -5,7 +5,7 @@
 
 {% block content %}
 {% include "sales/_sticky_summary.html" %}
-<div class="sales-main">
+<div class="ts-review-page">
 
   <div class="ts-review-loading" data-review-loading hidden role="status" aria-live="polite">
     <div class="ts-review-loading__card">
@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <div data-review-application-body data-testid="review-application-body">
+  <div data-review-application-body data-testid="review-application-body" style="display:block">
 
   <div class="ts-back-row">
     <a href="{% url 'sales_home' %}" class="ts-back-btn">

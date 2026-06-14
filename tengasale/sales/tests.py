@@ -555,3 +555,39 @@ class UnderwriterButtonSizeTest(TestCase):
         # Should show "Not captured" for missing fields, not blank
         self.assertContains(res, "Not captured")
         self.assertContains(res, 'data-testid="review-application-body"')
+
+    def test_underwriter_review_page_renders_step_one_body(self):
+        """
+        /sales/applications/<id>/ must render Step 1 body content immediately.
+        Must show Customer Verification Call section, customer fields, and
+        action buttons. Must NOT show only the stepper shell without content.
+        """
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode()
+
+        # Step 1 body content MUST be present
+        self.assertContains(res, "Customer Verification Call",
+                            msg_prefix="Step 1 must show Customer Verification Call section")
+        self.assertContains(res, "Full Name",
+                            msg_prefix="Step 1 must show Full Name field")
+        self.assertContains(res, "National ID",
+                            msg_prefix="Step 1 must show National ID field")
+        self.assertContains(res, "CALL PRIMARY",
+                            msg_prefix="Step 1 must show CALL PRIMARY button")
+        self.assertContains(res, "Continue to Identity Check",
+                            msg_prefix="Step 1 must show Continue to Identity Check button")
+
+        # The review body wrapper must be present and not hidden
+        self.assertIn('data-review-application-body', content,
+                      "Page must contain [data-review-application-body] wrapper")
+        self.assertNotIn('data-review-application-body hidden', content,
+                         "Review body must NOT have hidden attribute")
+        self.assertNotIn('data-review-application-body" hidden', content,
+                         "Review body must NOT have hidden attribute")
+
+        # Step 1 content must use ts-review-page class (desktop centering)
+        self.assertIn('ts-review-page', content,
+                      "Review shell must use ts-review-page for max-width centering")
