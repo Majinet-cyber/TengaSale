@@ -2007,6 +2007,17 @@ class FraudConsoleFlagshipTests(TestCase):
         self.assertIn("Connectivity Support Intelligence", content)
         self.assertIn("connectivity anomaly", content.lower())
 
+    def test_fraud_workflow_panel_renders(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, 'data-testid="fraud-workflow-panel"')
+        self.assertContains(response, "Investigation Workflow")
+        self.assertContains(response, "Evidence checklist")
+
+    def test_fraud_kpi_tiles_always_include_third_party_and_fraud_marked(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, "3rd-party phone flags")
+        self.assertContains(response, "Fraud-marked apps")
+
 
 class WhatsAppFlagshipTests(TestCase):
     """Flagship tests for the WhatsApp Support Operations page."""

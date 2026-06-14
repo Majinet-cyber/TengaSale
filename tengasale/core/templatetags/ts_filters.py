@@ -142,6 +142,15 @@ def get_item(dictionary, key):
     return dictionary.get(key)
 
 
+@register.filter(name="sub")
+def subtract(value, arg):
+    """Subtract arg from value. Usage: {{ total|sub:paid }}"""
+    try:
+        return _to_decimal(value) - _to_decimal(arg)
+    except (TypeError, ValueError):
+        return value
+
+
 PAYMENT_STATUS_BADGE_CLASSES = {
     "pending": "badge-pending",
     "tenga_processing": "badge-tenga-processing",

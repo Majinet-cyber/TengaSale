@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/premium.css' %}">
+<link rel="stylesheet" href="{% static 'css/hq-flagship.css' %}">
 <style>
 /* ── Repossession Console ─────────────────────────────────────────────── */
 .repo-page {
@@ -340,7 +341,7 @@ html, body { overflow-x: hidden; }
 {% endblock %}
 
 {% block content %}
-<div class="repo-page" data-testid="hq-repossession-resale">
+<div class="repo-page hq-flagship-page" data-testid="hq-repossession-resale">
 
   {# ── Hero ────────────────────────────────────────────────────────── #}
   <div class="repo-hero">
@@ -474,9 +475,7 @@ html, body { overflow-x: hidden; }
 
   </div>
 
-  {# ══════════════════════════════════════════════════════════════════
-     PIPELINE SECTIONS
-  ══════════════════════════════════════════════════════════════════ #}
+  {# PIPELINE SECTIONS #}
 
   {# ── 1. Repossession Eligible ─────────────────────────────────── #}
   <div class="repo-section" data-testid="repo-section-eligible">
@@ -924,9 +923,7 @@ html, body { overflow-x: hidden; }
   </div>
   {% endif %}
 
-  {# ══════════════════════════════════════════════════════════════════
-     RECOVERY COSTS
-  ══════════════════════════════════════════════════════════════════ #}
+  {# RECOVERY COSTS #}
   <div class="repo-section" data-testid="repo-section-costs">
     <div class="repo-section-hdr">
       <h2>

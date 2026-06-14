@@ -4178,11 +4178,18 @@ def hq_fraud_checks(request):
         third_party_phone_user_risk_flagged=True,
         status__in=["pending_review", "under_review", "submitted"],
     ).select_related("created_by").order_by("-created_at")[:20]
+    third_party_flags_count = FinancingApplication.objects.filter(
+        third_party_phone_user_risk_flagged=True,
+        status__in=["pending_review", "under_review", "submitted"],
+    ).count()
 
     # Applications with blocked/fraud notes
     fraud_marked = FinancingApplication.objects.filter(
         manager_comment__startswith="[FRAUD"
     ).select_related("created_by").order_by("-created_at")[:30]
+    fraud_marked_count = FinancingApplication.objects.filter(
+        manager_comment__startswith="[FRAUD"
+    ).count()
 
     # ── Device mismatch (IMEI verification) ──────────────────────────────────
     from django.db.models import Q as DQ
@@ -4319,13 +4326,20 @@ def hq_fraud_checks(request):
     )
     telemetry_connected = paytrigger_configured or upya_configured
 
+    open_fraud_reviews = (
+        third_party_flags_count + imei_mismatch_count + imei_possible_count
+    )
+
     return render(request, "dashboard/hq_fraud_checks.html", {
         "dup_ids": list(dup_ids),
         "dup_phones": list(dup_phones),
         "dup_guarantors": list(dup_guarantors),
         "dup_imei": list(dup_imei),
         "third_party_flags": third_party_flags,
+        "third_party_flags_count": third_party_flags_count,
         "fraud_marked": fraud_marked,
+        "fraud_marked_count": fraud_marked_count,
+        "open_fraud_reviews": open_fraud_reviews,
         "msg": msg,
         "msg_type": msg_type,
         # IMEI mismatch
