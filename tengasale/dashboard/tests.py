@@ -560,6 +560,53 @@ class HomePageTests(TestCase):
         self.assertContains(response, 'Merchant Admin')
         self.assertContains(response, 'Tech Support')
 
+    def test_hq_dashboard_main_content_not_hidden_behind_sidebar(self):
+        """Desktop HQ layout must reserve sidebar width so main content is not covered."""
+        self.create_user("hq-layout", "HQ")
+        self.client.login(username="hq-layout", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="hq-dash hq-main"')
+        self.assertContains(response, 'data-testid="hq-dashboard"')
+        self.assertContains(response, "grid-template-columns")
+        self.assertContains(response, "--hq-sidebar-width: 260px")
+
+    def test_hq_dashboard_overview_cards_render(self):
+        self.create_user("hq-cards", "HQ")
+        self.client.login(username="hq-cards", password="test-pass-123")
+
+        response = self.client.get(reverse("hq_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Command Center")
+        self.assertContains(response, 'data-testid="hq-hero-row"')
+        self.assertContains(response, "Portfolio Value")
+
+    def test_merchant_header_renders_logo_and_home_title(self):
+        self.create_user("merchant-hdr", "Merchant")
+        self.client.login(username="merchant-hdr", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "merchant-brand-icon")
+        self.assertContains(response, 'data-testid="merchant-page-title"')
+        self.assertContains(response, ">Home<")
+
+    def test_merchant_header_does_not_render_truncated_brand_text(self):
+        self.create_user("merchant-hdr2", "Merchant")
+        self.client.login(username="merchant-hdr2", password="test-pass-123")
+
+        response = self.client.get(reverse("merchant_dashboard"))
+
+        content = response.content.decode()
+        self.assertNotIn("Ten...", content)
+        self.assertNotIn('class="merchant-brand-name">TengaSale</span>', content)
+        self.assertContains(response, 'data-testid="topbar-whatsapp"')
+        self.assertContains(response, 'data-testid="topbar-logout"')
+
     def test_hq_dashboard_uses_responsive_chart_frames_and_recovery_links(self):
         self.create_user("hq-chart-responsive", "HQ")
         self.client.login(username="hq-chart-responsive", password="test-pass-123")
@@ -1899,3 +1946,337 @@ class LayoutRegressionTests(TestCase):
         self.client.login(username="reg_hq", password="pass123")
         response = self.client.get(reverse("hq_devices"))
         self.assertEqual(response.status_code, 200)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HQ Flagship Page Tests — Fraud, WhatsApp, Repossession
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class FraudConsoleFlagshipTests(TestCase):
+    """Flagship tests for the Fraud Investigation Console."""
+
+    def setUp(self):
+        call_command("seed_roles")
+        self.hq_user = get_user_model().objects.create_user(
+            username="fraud-flagship-hq", password="test-pass-123"
+        )
+        assign_role(self.hq_user, "hq")
+        self.client.login(username="fraud-flagship-hq", password="test-pass-123")
+
+    def test_fraud_page_loads_with_hero(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Fraud Investigation Console")
+
+    def test_fraud_hero_shows_intelligence_eyebrow(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, "HQ Command Center")
+
+    def test_fraud_kpi_risk_meter_renders(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, 'data-testid="fraud-risk-meter"')
+
+    def test_fraud_signal_grid_renders(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, 'data-testid="fraud-signal-grid"')
+
+    def test_fraud_connectivity_section_renders(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, "Connectivity Support Intelligence")
+
+    def test_fraud_telemetry_disconnected_banner_renders_when_not_connected(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, 'data-testid="telemetry-disconnected-banner"')
+
+    def test_fraud_empty_states_are_premium_not_raw_text(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "{#")
+        self.assertNotContains(response, "Empty state partial")
+        self.assertContains(response, "No duplicate national IDs found")
+
+    def test_fraud_page_has_connectivity_kpi_tiles(self):
+        response = self.client.get(reverse("hq_fraud_checks"))
+        self.assertContains(response, "Offline Devices")
+        self.assertContains(response, "Sync Pending")
+
+    def test_fraud_principle_wording_is_careful(self):
+        """Offline signals must not be called fraud directly."""
+        response = self.client.get(reverse("hq_fraud_checks"))
+        content = response.content.decode()
+        self.assertIn("Connectivity Support Intelligence", content)
+        self.assertIn("connectivity anomaly", content.lower())
+
+
+class WhatsAppFlagshipTests(TestCase):
+    """Flagship tests for the WhatsApp Support Operations page."""
+
+    def setUp(self):
+        call_command("seed_roles")
+        self.hq_user = get_user_model().objects.create_user(
+            username="wa-flagship-hq", password="test-pass-123"
+        )
+        assign_role(self.hq_user, "hq")
+        self.client.login(username="wa-flagship-hq", password="test-pass-123")
+
+    def test_whatsapp_page_loads(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_whatsapp_hero_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, "WhatsApp Support Operations")
+        self.assertContains(response, "Ticket intake")
+
+    def test_whatsapp_bot_status_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-bot-status"')
+
+    def test_whatsapp_kpi_grid_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-kpi-grid"')
+        self.assertContains(response, "Open Tickets")
+        self.assertContains(response, "Overdue SLA")
+
+    def test_whatsapp_diagnostics_panel_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-diagnostics-panel"')
+        self.assertContains(response, "Outbound Diagnostics")
+
+    def test_whatsapp_config_panel_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-config-panel"')
+        self.assertContains(response, "Webhook &amp; Channel Configuration")
+
+    def test_whatsapp_test_panel_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-test-panel"')
+        self.assertContains(response, "WhatsApp Test Actions")
+
+    def test_whatsapp_simulate_form_renders_with_phone_input(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-simulate-form"')
+        self.assertContains(response, 'data-testid="wa-simulate-phone"')
+        self.assertContains(response, "265998XXXXXX")
+
+    def test_whatsapp_real_send_form_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-real-send-form"')
+        self.assertContains(response, 'data-testid="wa-real-submit"')
+
+    def test_whatsapp_ticket_list_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-ticket-list"')
+
+    def test_whatsapp_escalations_section_renders(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertContains(response, 'data-testid="wa-escalations"')
+        self.assertContains(response, "Management Escalations")
+
+    def test_whatsapp_no_raw_template_text(self):
+        response = self.client.get(reverse("hq_whatsapp_bot"))
+        self.assertNotContains(response, "{#")
+
+
+class RepossessionFlagshipTests(TestCase):
+    """Flagship tests for the Repossession & Resale page."""
+
+    def setUp(self):
+        call_command("seed_roles")
+        self.hq_user = get_user_model().objects.create_user(
+            username="repo-flagship-hq", password="test-pass-123"
+        )
+        assign_role(self.hq_user, "hq")
+        self.client.login(username="repo-flagship-hq", password="test-pass-123")
+
+    def _make_contract(self, status=None, total=None, paid=None, **kwargs):
+        from portal.models import PaymentContract
+        status = status or PaymentContract.STATUS_LOCKED
+        return PaymentContract.objects.create(
+            customer_name=kwargs.pop("customer_name", "Test Customer"),
+            customer_phone=kwargs.pop("customer_phone", "+265881234567"),
+            total_amount=Decimal(str(total or "1100000.00")),
+            amount_paid=Decimal(str(paid or "220000.00")),
+            status=status,
+            **kwargs,
+        )
+
+    def test_repossession_page_loads(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_repossession_hero_renders(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertContains(response, "Repossession &amp; Resale")
+        self.assertContains(response, "Recovery Operations")
+
+    def test_repossession_no_raw_template_text(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertNotContains(response, "{#")
+        self.assertNotContains(response, "Empty state partial")
+
+    def test_repossession_kpi_grid_renders(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertContains(response, 'data-testid="repo-kpi-grid"')
+        self.assertContains(response, "Repossession Eligible")
+        self.assertContains(response, "Recovered Devices")
+
+    def test_repossession_compliance_banner_renders(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertContains(response, 'data-testid="repo-compliance-banner"')
+        self.assertContains(response, "not refunded")
+
+    def test_repossession_empty_states_are_polished(self):
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertContains(response, 'data-testid="repo-empty-eligible"')
+        self.assertContains(response, 'data-testid="repo-empty-pending"')
+        self.assertContains(response, 'data-testid="repo-empty-ready"')
+
+    def test_reassignment_base_value_computes_correctly(self):
+        """Reassignment base = total_amount - amount_paid."""
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00"
+        )
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("data-testid=\"repo-reassign-panel-{}\"".format(contract.pk), content)
+        self.assertIn("data-testid=\"repo-base-value-{}\"".format(contract.pk), content)
+        self.assertIn("880,000", content)
+
+    def test_new_deposit_13pct_computed_for_ready_contracts(self):
+        """New deposit = 13% of reassignment base value = 13% × 880,000 = 114,400."""
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00"
+        )
+        response = self.client.get(reverse("hq_repossession_resale"))
+        content = response.content.decode()
+        self.assertIn("114,400", content)
+
+    def test_new_financed_balance_correct(self):
+        """New financed balance = base - deposit = 880,000 - 114,400 = 765,600."""
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00"
+        )
+        response = self.client.get(reverse("hq_repossession_resale"))
+        content = response.content.decode()
+        self.assertIn("765,600", content)
+
+    def test_initiate_reassignment_creates_new_contract(self):
+        """Reassignment must create a new PaymentContract for the new customer."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(
+            status="ready_for_resale",
+            total="1100000.00", paid="220000.00",
+            device_model="TECNO Pop 10C", imei_number="123456789012345",
+        )
+        initial_count = PaymentContract.objects.count()
+        response = self.client.post(reverse("hq_repossession_resale"), {
+            "action": "initiate_reassignment",
+            "contract_id": contract.pk,
+            "new_customer_name": "Grace Phiri",
+            "new_customer_phone": "265991234567",
+            "term_months": "12",
+        })
+        self.assertRedirects(response, reverse("hq_repossession_resale"))
+        self.assertEqual(PaymentContract.objects.count(), initial_count + 1)
+        new_contract = PaymentContract.objects.order_by("-created_at").first()
+        self.assertEqual(new_contract.customer_name, "Grace Phiri")
+        self.assertEqual(new_contract.total_amount, Decimal("880000.00"))
+        self.assertEqual(new_contract.deposit_required, Decimal("114400.00"))
+
+    def test_reassignment_marks_old_contract_resold(self):
+        """Old contract must be marked as resold after reassignment."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00",
+        )
+        self.client.post(reverse("hq_repossession_resale"), {
+            "action": "initiate_reassignment",
+            "contract_id": contract.pk,
+            "new_customer_name": "John Banda",
+            "new_customer_phone": "265881111111",
+            "term_months": "6",
+        })
+        contract.refresh_from_db()
+        self.assertEqual(contract.status, PaymentContract.STATUS_RESOLD)
+
+    def test_reassignment_audit_trail_preserved(self):
+        """Reassignment must record old/new contract linkage in provider_metadata."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00",
+        )
+        self.client.post(reverse("hq_repossession_resale"), {
+            "action": "initiate_reassignment",
+            "contract_id": contract.pk,
+            "new_customer_name": "Mary Chirwa",
+            "new_customer_phone": "265992222222",
+            "term_months": "12",
+        })
+        contract.refresh_from_db()
+        meta = contract.provider_metadata
+        self.assertIn("reassigned_to_contract", meta)
+        self.assertIn("reassigned_to_customer", meta)
+        self.assertEqual(meta["reassigned_to_customer"], "Mary Chirwa")
+
+    def test_reassignment_requires_customer_name(self):
+        """Reassignment without name should not create a new contract."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00",
+        )
+        initial_count = PaymentContract.objects.count()
+        response = self.client.post(reverse("hq_repossession_resale"), {
+            "action": "initiate_reassignment",
+            "contract_id": contract.pk,
+            "new_customer_name": "",
+            "new_customer_phone": "265991234567",
+            "term_months": "12",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PaymentContract.objects.count(), initial_count)
+
+    def test_repossession_pipeline_post_actions(self):
+        """All pipeline status transitions work correctly."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(status=PaymentContract.STATUS_LOCKED)
+
+        for action, expected_status in [
+            ("mark_repossession_pending", PaymentContract.STATUS_REPOSSESSION_PENDING),
+            ("mark_repossessed", PaymentContract.STATUS_REPOSSESSED),
+            ("mark_ready_for_resale", PaymentContract.STATUS_READY_FOR_RESALE),
+        ]:
+            response = self.client.post(reverse("hq_repossession_resale"), {
+                "action": action,
+                "contract_id": contract.pk,
+            })
+            self.assertEqual(response.status_code, 200, f"Action {action} failed")
+            contract.refresh_from_db()
+            self.assertEqual(contract.status, expected_status, f"After {action}")
+
+    def test_no_refund_language_in_page(self):
+        """Policy must state no refund to old customer."""
+        response = self.client.get(reverse("hq_repossession_resale"))
+        self.assertContains(response, "not refunded")
+
+    def test_reassignment_device_model_and_imei_transferred(self):
+        """New contract must inherit device model and IMEI from old contract."""
+        from portal.models import PaymentContract
+        contract = self._make_contract(
+            status="ready_for_resale", total="1100000.00", paid="220000.00",
+            device_model="Samsung A15", imei_number="359999000000001",
+        )
+        self.client.post(reverse("hq_repossession_resale"), {
+            "action": "initiate_reassignment",
+            "contract_id": contract.pk,
+            "new_customer_name": "Peter Tembo",
+            "new_customer_phone": "265993333333",
+            "term_months": "12",
+        })
+        new_contract = PaymentContract.objects.filter(
+            customer_name="Peter Tembo"
+        ).first()
+        self.assertIsNotNone(new_contract)
+        self.assertEqual(new_contract.device_model, "Samsung A15")
+        self.assertEqual(new_contract.imei_number, "359999000000001")

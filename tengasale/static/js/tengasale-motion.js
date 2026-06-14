@@ -359,16 +359,101 @@
                 var sub = form.querySelector('[data-claim-sub]');
                 var skeleton = document.querySelector('[data-claim-skeleton]');
                 form.classList.add('is-claiming');
-                if (button) button.disabled = true;
+                if (button) {
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                }
                 if (label) label.textContent = 'Claiming...';
                 if (sub) sub.textContent = 'Assigning application';
                 if (skeleton) skeleton.hidden = false;
                 try {
                     window.sessionStorage.setItem('tengasale.lastAction', 'claim');
+                    window.sessionStorage.setItem('tengasale.reviewLoading', '1');
                 } catch (e) {}
                 showToast('Claiming next application...', { type: 'info', duration: 1800 });
             });
         });
+    }
+
+    function formatCooldown(seconds) {
+        var total = Math.max(0, parseInt(seconds, 10) || 0);
+        var mins = Math.floor(total / 60);
+        var secs = total % 60;
+        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    function renderCooldownLabel(el, seconds) {
+        if (!el) return;
+        el.textContent = 'NEXT CLAIM IN ' + formatCooldown(seconds);
+    }
+
+    function initQueueCooldown() {
+        var home = document.querySelector('.uw-home[data-queue-status-url]');
+        if (!home) return;
+
+        var cooldownBtn = home.querySelector('[data-cooldown-btn]');
+        var cooldownLabel = home.querySelector('[data-cooldown-label]');
+        var remaining = cooldownBtn
+            ? parseInt(cooldownBtn.getAttribute('data-cooldown-remaining') || '0', 10)
+            : 0;
+
+        if (cooldownBtn && remaining > 0) {
+            renderCooldownLabel(cooldownLabel, remaining);
+            var timer = window.setInterval(function () {
+                remaining -= 1;
+                cooldownBtn.setAttribute('data-cooldown-remaining', String(remaining));
+                if (remaining <= 0) {
+                    window.clearInterval(timer);
+                    window.location.reload();
+                    return;
+                }
+                renderCooldownLabel(cooldownLabel, remaining);
+            }, 1000);
+        }
+
+        var pollUrl = home.getAttribute('data-queue-status-url');
+        var pollInterval = parseInt(home.getAttribute('data-poll-interval') || '30', 10) * 1000;
+        if (!pollUrl || pollInterval <= 0) return;
+
+        window.setInterval(function () {
+            fetch(pollUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (res) { return res.ok ? res.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    var countEl = home.querySelector('.uw-active-card__count');
+                    if (countEl && typeof data.active_count === 'number' && typeof data.max_active === 'number') {
+                        countEl.textContent = data.active_count + '/' + data.max_active;
+                    }
+                    if (data.can_claim && cooldownBtn) {
+                        window.location.reload();
+                    }
+                })
+                .catch(function () {});
+        }, pollInterval);
+    }
+
+    function initReviewLoadingState() {
+        var reviewBody = document.querySelector('[data-review-application-body]');
+        var loading = document.querySelector('[data-review-loading]');
+        if (!reviewBody && !loading) return;
+
+        var pending = false;
+        try {
+            pending = window.sessionStorage.getItem('tengasale.reviewLoading') === '1';
+            window.sessionStorage.removeItem('tengasale.reviewLoading');
+        } catch (e) {}
+
+        if (loading) loading.hidden = true;
+        if (reviewBody) reviewBody.hidden = false;
+
+        if (pending && loading) {
+            loading.hidden = false;
+            if (reviewBody) reviewBody.hidden = true;
+            window.setTimeout(function () {
+                loading.hidden = true;
+                if (reviewBody) reviewBody.hidden = false;
+            }, 350);
+        }
     }
 
     function initMessageFeedback() {
@@ -399,6 +484,8 @@
         initKpiCards();
         initAudioFeedback();
         initClaimForms();
+        initQueueCooldown();
+        initReviewLoadingState();
         initMessageFeedback();
     }
 

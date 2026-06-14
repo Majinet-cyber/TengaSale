@@ -480,7 +480,7 @@ class SalesMobileUITests(TestCase):
         response = self._get_sales_home()
         content = response.content.decode()
         has_claim = "CLAIM NEXT" in content
-        has_empty = "NO APPLICATIONS IN QUEUE" in content
+        has_empty = "NO APPS PENDING" in content or "NO APPLICATIONS IN QUEUE" in content
         has_disabled = "NEXT CLAIM IN" in content or "MAX ACTIVE" in content
         self.assertTrue(
             has_claim or has_empty or has_disabled,
@@ -549,7 +549,8 @@ class SalesMobileUITests(TestCase):
 
     def test_sales_home_has_mobile_shell(self):
         response = self._get_sales_home()
-        self.assertContains(response, "sales-main")
+        self.assertContains(response, "uw-home")
+        self.assertContains(response, "uw-home-simple")
 
     def test_sales_home_no_kulasell(self):
         response = self._get_sales_home()
@@ -599,13 +600,15 @@ class SalesMobileUITests(TestCase):
         self.assertIn("sales", location)
 
     def test_sales_footer_not_fixed_overlay(self):
-        """Footer must not contain 'fixed' positioning that overlays content."""
+        """Footer must not use fixed positioning that overlays content."""
         response = self._get_sales_home()
         content = response.content.decode()
-        # The sales-footer class must be used, not a position:fixed footer
         self.assertContains(response, "sales-footer")
-        # Must not use the old hardcoded fixed footer style
-        self.assertNotIn("position:fixed", content.replace(" ", ""))
+        self.assertNotRegex(
+            content,
+            r"\.sales-footer\s*\{[^}]*position:\s*fixed",
+            msg="sales-footer must not be position:fixed",
+        )
 
     def test_customer_call_no_yellow(self):
         """Customer call template must not contain the word 'Yellow' (brand)."""

@@ -7,6 +7,15 @@
 {% include "sales/_sticky_summary.html" %}
 <div class="sales-main">
 
+  <div class="ts-review-loading" data-review-loading hidden role="status" aria-live="polite">
+    <div class="ts-review-loading__card">
+      <span class="ts-spinner" aria-hidden="true"></span>
+      <p>Loading application review…</p>
+    </div>
+  </div>
+
+  <div data-review-application-body data-testid="review-application-body">
+
   <div class="ts-back-row">
     <a href="{% url 'sales_home' %}" class="ts-back-btn">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -272,5 +281,6 @@
     <button type="submit" class="ts-btn-primary ts-btn-full ts-mt-16">Continue to Identity Check</button>
   </form>
 
+</div>
 </div>
 {% endblock %}

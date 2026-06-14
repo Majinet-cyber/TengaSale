@@ -250,6 +250,8 @@ def sales_home(request):
     )
 
     cooldown_remaining, can_claim = _cooldown_state(request.user)
+    at_max_capacity = active_count >= rule.max_active_applications
+    in_cooldown = cooldown_remaining > 0 and not at_max_capacity
 
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
     active_app_cards = [_active_app_card(app) for app in active_apps[:5]]
@@ -269,6 +271,8 @@ def sales_home(request):
         "reviewed_count": reviewed_count,
         "cooldown_remaining": int(cooldown_remaining),
         "can_claim": can_claim and pending_count > 0,
+        "at_max_capacity": at_max_capacity,
+        "in_cooldown": in_cooldown,
         "queue_rule": rule,
         "wallet": wallet,
     })

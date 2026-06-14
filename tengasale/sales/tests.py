@@ -11,6 +11,7 @@ Coverage:
 - Sales queue rules page renders (200)
 """
 
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -132,7 +133,7 @@ class SalesPageSmokeTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "uw-claim-btn--available")
-        self.assertContains(res, "Claim next application")
+        self.assertContains(res, "CLAIM NEXT")
 
     def test_sales_home_no_green_claim_button_when_queue_empty(self):
         self.client.login(username="testsalesrep", password="testpass123")
@@ -141,7 +142,103 @@ class SalesPageSmokeTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "No Applications in Queue")
+        self.assertContains(res, "NO APPS PENDING")
         self.assertNotContains(res, 'class="uw-claim-btn uw-claim-btn--available')
+
+    def test_sales_home_renders_cooldown_button_when_in_cooldown(self):
+        merchant = User.objects.create_user(username="merchant-cooldown", password="testpass123")
+        FinancingApplication.objects.create(
+            created_by=merchant,
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+            status="under_review",
+            customer_name="Cooldown Customer",
+            customer_phone="990870617",
+            national_id="ABCD1235",
+        )
+        FinancingApplication.objects.create(
+            created_by=merchant,
+            status="pending_review",
+            customer_name="Waiting Customer",
+            customer_phone="990870618",
+            national_id="ABCD1236",
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        res = self.client.get("/sales/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "data-cooldown-btn")
+        self.assertContains(res, "NEXT CLAIM IN")
+
+    def test_sales_home_max_active_reached_disables_claim(self):
+        merchant = User.objects.create_user(username="merchant-max", password="testpass123")
+        for i in range(5):
+            FinancingApplication.objects.create(
+                created_by=merchant,
+                claimed_by=self.underwriter,
+                claimed_at=timezone.now() - timedelta(hours=1),
+                status="under_review",
+                customer_name=f"Active {i}",
+                customer_phone=f"9908706{i:02d}",
+                national_id=f"ABCD{i:04d}",
+            )
+        FinancingApplication.objects.create(
+            created_by=merchant,
+            status="pending_review",
+            customer_name="Waiting",
+            customer_phone="990870699",
+            national_id="ABCD9999",
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        res = self.client.get("/sales/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "MAX ACTIVE REACHED")
+        self.assertNotContains(res, 'data-testid="claim-next-btn"')
+
+    def test_claim_next_navigates_to_review_summary(self):
+        merchant = User.objects.create_user(username="merchant-claim", password="testpass123")
+        app = FinancingApplication.objects.create(
+            created_by=merchant,
+            status="pending_review",
+            customer_name="Claim Me",
+            customer_phone="990870620",
+            national_id="ABCD2000",
+            submitted_at=timezone.now(),
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        claim_res = self.client.post(reverse("sales_claim_next"))
+
+        self.assertEqual(claim_res.status_code, 302)
+        self.assertEqual(claim_res.url, reverse("sales_review_summary", args=[app.id]))
+
+        review_res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+
+        self.assertEqual(review_res.status_code, 200)
+        self.assertContains(review_res, 'data-testid="review-application-body"')
+        self.assertContains(review_res, "Customer")
+        self.assertContains(review_res, "Loading application review")
+
+    def test_review_summary_kyc_id_frames_use_landscape_ratio(self):
+        merchant = User.objects.create_user(username="merchant-kyc", password="testpass123")
+        app = FinancingApplication.objects.create(
+            created_by=merchant,
+            claimed_by=self.underwriter,
+            status="under_review",
+            customer_name="KYC Customer",
+            customer_phone="990870621",
+            national_id="ABCD2001",
+        )
+        self.client.login(username="testsalesrep", password="testpass123")
+
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "kyc-smart-card__frame--id_front")
+        self.assertContains(res, "kyc-smart-card__img--contain")
 
     def test_queue_rules_page_renders(self):
         self.client.login(username="testsalesrep", password="testpass123")
