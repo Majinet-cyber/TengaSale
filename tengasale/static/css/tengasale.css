@@ -613,6 +613,20 @@ img.ts-logo-wordmark {
   padding: 0 0 80px;
 }
 
+/* ── Review page desktop centering ───────────────────────────────── */
+.ts-review-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* Guarantee review body is never invisible regardless of JS/CSS state */
+[data-review-application-body] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .ts-review-loading {
   padding: 24px 16px;
 }
