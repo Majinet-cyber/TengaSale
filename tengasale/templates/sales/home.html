@@ -66,147 +66,114 @@
 }
 .uw-report-pill:hover { border-color: #ff5a00; color: #ff5a00; }
 
-/* ── Queue Card ─────────────────────────────────────────────────── */
-.uw-queue-card {
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 20px;
-  box-shadow: 0 2px 12px rgba(15,23,42,.06);
-  margin-bottom: 14px;
-  overflow: hidden;
-  transition: box-shadow .2s;
-}
-.uw-queue-card--empty {
-  border-style: dashed;
-  background: #fafafa;
-}
-.uw-queue-card__body {
-  padding: 20px;
+/* ── Unified Action Cards (Claim + My Active as matching siblings) ── */
+.uw-action-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #1d4ed8;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(29,78,216,.25);
+  transition: background .15s, box-shadow .15s, transform .1s;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
 }
-.uw-queue-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: rgba(255,90,0,.09);
+.uw-action-card:hover  { filter: brightness(1.08); }
+.uw-action-card:active { transform: scale(.98); }
+.uw-action-card--green {
+  background: #16a34a;
+  box-shadow: 0 4px 18px rgba(22,163,74,.25);
+}
+.uw-action-card--blue {
+  background: #1d4ed8;
+  box-shadow: 0 4px 18px rgba(29,78,216,.25);
+}
+.uw-action-card--disabled {
+  background: #e5e7eb;
+  color: #64748b;
+  box-shadow: none;
+  cursor: default;
+}
+.uw-action-card--disabled:hover,
+.uw-action-card--disabled:active { filter: none; transform: none; }
+.uw-action-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255,255,255,.15);
   display: grid;
   place-items: center;
-  font-size: 22px;
-  color: #ff5a00;
+  font-size: 20px;
   flex-shrink: 0;
 }
-.uw-queue-card--empty .uw-queue-card__icon {
-  background: #f1f5f9;
+.uw-action-card--disabled .uw-action-card__icon {
+  background: rgba(0,0,0,.07);
   color: #94a3b8;
 }
-.uw-queue-card__text { flex: 1; min-width: 0; }
-.uw-queue-card__label {
-  font-size: 11px;
+.uw-action-card__body { flex: 1; min-width: 0; }
+.uw-action-card__label {
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #667085;
-  margin: 0 0 3px;
+  letter-spacing: .08em;
+  opacity: .75;
+  margin: 0 0 2px;
 }
-.uw-queue-card__title {
-  font-size: 17px;
+.uw-action-card__title {
+  font-size: 15px;
   font-weight: 900;
-  color: #101828;
-  margin: 0 0 4px;
+  margin: 0 0 1px;
   line-height: 1.2;
-}
-.uw-queue-card__sub {
-  font-size: 13px;
-  color: #667085;
-  margin: 0;
-  line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.uw-queue-card__action {
-  padding: 12px 20px;
-  border-top: 1px solid #f0f0f0;
+.uw-action-card__sub {
+  font-size: 12px;
+  opacity: .75;
+  margin: 0;
 }
-.uw-claim-btn {
+.uw-action-card__count {
+  font-size: 22px;
+  font-weight: 900;
+  flex-shrink: 0;
+  line-height: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 68px;
-  padding: 14px 20px;
-  background: #ff5a00;
-  color: #fff;
-  border: none;
-  border-radius: 17px;
-  font-size: 16px;
-  font-weight: 900;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background .15s, transform .1s;
-  box-shadow: 0 4px 14px rgba(255,90,0,.28);
-  box-sizing: border-box;
-  max-width: 100%;
+  gap: 4px;
 }
-.uw-claim-btn:hover { background: #e64d00; }
-.uw-claim-btn:active { transform: scale(.98); }
-.uw-claim-btn .bi { font-size: 18px; }
-.uw-claim-btn--disabled,
-.uw-claim-btn:disabled {
-  background: #e5e7eb !important;
-  color: #64748b !important;
-  box-shadow: none !important;
-  cursor: not-allowed;
-  transform: none !important;
-  min-height: 68px;
-}
-.uw-claim-btn__hint {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.uw-claim-btn--available,
-.uw-primary-action--queue {
-  background: #16a34a;
-  box-shadow: 0 4px 14px rgba(22,163,74,.28);
-}
-.uw-claim-btn--available:hover { background: #15803d; }
-.uw-claim-btn__dot {
+.uw-action-card__arrow { opacity: .6; font-size: 18px; flex-shrink: 0; }
+.uw-action-card--disabled .uw-action-card__arrow { opacity: .25; }
+
+/* Claim-ready pulse dot */
+.uw-claim-pulse {
   width: 8px;
   height: 8px;
   border-radius: 99px;
-  background: #dcfce7;
-  box-shadow: 0 0 0 0 rgba(220,252,231,.58);
-  animation: uw-claim-ready-pulse 2.2s ease-out infinite;
-  flex-shrink: 0;
+  background: rgba(220,252,231,.8);
+  box-shadow: 0 0 0 0 rgba(220,252,231,.5);
+  animation: uw-ready-pulse 2.2s ease-out infinite;
+  display: inline-block;
 }
-@keyframes uw-claim-ready-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(220,252,231,.58); }
-  70% { box-shadow: 0 0 0 8px rgba(220,252,231,0); }
+@keyframes uw-ready-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(220,252,231,.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(220,252,231,0); }
   100% { box-shadow: 0 0 0 0 rgba(220,252,231,0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .uw-claim-btn__dot { animation: none; }
+  .uw-claim-pulse { animation: none; }
 }
-.uw-queue-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 99px;
-  font-size: 12px;
-  font-weight: 900;
-  background: rgba(255,90,0,.10);
-  color: #ff5a00;
-  flex-shrink: 0;
-}
-.uw-queue-badge--none {
-  background: #f1f5f9;
-  color: #94a3b8;
-}
+
+/* Form wrapper — transparent so submit button IS the card */
+.uw-action-form { display: block; margin-bottom: 14px; }
+.uw-action-form .uw-action-card { margin-bottom: 0; }
 
 /* ── Urgent alert ───────────────────────────────────────────────── */
 .uw-urgent-banner {
@@ -225,7 +192,7 @@
 .uw-urgent-banner strong { font-weight: 900; display: block; margin-bottom: 1px; }
 .uw-urgent-banner p { margin: 0; font-size: 12px; color: #b45309; }
 
-/* ── My Active Card ─────────────────────────────────────────────── */
+/* ── My Active Card (alias for uw-action-card--blue) ────────────── */
 .uw-active-card {
   display: flex;
   align-items: center;
@@ -241,36 +208,6 @@
 }
 .uw-active-card:hover { background: #1e40af; box-shadow: 0 6px 24px rgba(29,78,216,.35); }
 .uw-active-card:active { transform: scale(.98); }
-.uw-active-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  background: rgba(255,255,255,.15);
-  display: grid;
-  place-items: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.uw-active-card__body { flex: 1; min-width: 0; }
-.uw-active-card__label {
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .75;
-  margin: 0 0 2px;
-}
-.uw-active-card__title {
-  font-size: 15px;
-  font-weight: 900;
-  margin: 0 0 1px;
-  line-height: 1.2;
-}
-.uw-active-card__sub {
-  font-size: 12px;
-  opacity: .75;
-  margin: 0;
-}
 .uw-active-card__count {
   font-size: 22px;
   font-weight: 900;
@@ -393,11 +330,9 @@
   .uw-greeting__sub { font-size: 13px; }
   .uw-greeting__pills { gap: 5px; }
   .uw-report-pill { padding: 5px 8px; font-size: 10px; }
-  .uw-queue-card__body { padding: 16px; gap: 12px; }
-  .uw-queue-card__icon,
-  .uw-active-card__icon { width: 42px; height: 42px; }
-  .uw-active-card { padding: 16px; gap: 11px; border-radius: 17px; }
-  .uw-active-card__count { font-size: 19px; }
+  .uw-action-card { padding: 15px 16px; gap: 11px; border-radius: 17px; }
+  .uw-action-card__icon { width: 40px; height: 40px; font-size: 18px; }
+  .uw-action-card__count { font-size: 19px; }
   .uw-list-row { padding: 13px 12px; gap: 10px; }
   .uw-list-row__icon { width: 36px; height: 36px; }
   .uw-list-row__right { gap: 5px; }
@@ -425,60 +360,59 @@
     </div>
   </div>
 
-  {# ── Queue Card ────────────────────────────────────────────────── #}
-  <div class="uw-queue-card uw-queue-status-card {% if not pending_count %}uw-queue-card--empty uw-queue-status-card--empty{% endif %} ts-motion-slide" data-testid="uw-queue-card">
-    <div class="uw-queue-card__body">
-      <div class="uw-queue-card__icon">
-        <i class="bi {% if pending_count %}bi-inbox-fill{% else %}bi-inbox{% endif %}" aria-hidden="true"></i>
+  {# ── Claim / Status Card ──────────────────────────────────────── #}
+  {% if can_claim %}
+  <form method="post" action="{% url 'sales_claim_next' %}" class="uw-action-form ts-motion-slide" data-claim-next-form>
+    {% csrf_token %}
+    <button type="submit" class="uw-action-card uw-action-card--green ts-motion-tap" data-ts-sound="claim" data-testid="claim-next-btn">
+      <div class="uw-action-card__icon">
+        <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
       </div>
-      <div class="uw-queue-card__text">
-        <p class="uw-queue-card__label">Application Queue</p>
-        {% if pending_count %}
-          <h2 class="uw-queue-card__title">{{ pending_count }} Application{{ pending_count|pluralize }} Waiting</h2>
-          <p class="uw-queue-card__sub" data-claim-sub>{% if can_claim %}Ready to claim. Oldest will be assigned to you.{% elif at_max_capacity %}Complete an active review before claiming more.{% elif in_cooldown %}Wait for cooldown before claiming again.{% else %}Finish your active review or wait for cooldown.{% endif %}</p>
-        {% else %}
-          <h2 class="uw-queue-card__title">No Applications in Queue</h2>
-          <p class="uw-queue-card__sub">New applications will appear here when available.</p>
-        {% endif %}
+      <div class="uw-action-card__body">
+        <p class="uw-action-card__label">CLAIM QUEUE</p>
+        <p class="uw-action-card__title" data-claim-label>CLAIM NEXT</p>
+        <p class="uw-action-card__sub" data-claim-sub>{{ pending_count }} application{{ pending_count|pluralize }} waiting</p>
       </div>
-      {% if pending_count %}
-        <span class="uw-queue-badge">{{ pending_count }}</span>
-      {% else %}
-        <span class="uw-queue-badge uw-queue-badge--none">Clear</span>
-      {% endif %}
+      <span class="uw-action-card__count">
+        <span class="uw-claim-pulse" aria-hidden="true"></span>{{ pending_count }}
+      </span>
+      <i class="bi bi-chevron-right uw-action-card__arrow" aria-hidden="true"></i>
+    </button>
+  </form>
+  {% elif at_max_capacity %}
+  <div class="uw-action-card uw-action-card--disabled ts-motion-slide" data-testid="claim-max-active" role="status">
+    <div class="uw-action-card__icon"><i class="bi bi-slash-circle" aria-hidden="true"></i></div>
+    <div class="uw-action-card__body">
+      <p class="uw-action-card__label">CLAIM QUEUE</p>
+      <p class="uw-action-card__title">MAX ACTIVE REACHED</p>
+      <p class="uw-action-card__sub">Complete a review to claim more</p>
     </div>
-    <div class="uw-queue-card__action" data-claim-action>
-      {% if can_claim %}
-      <form method="post" action="{% url 'sales_claim_next' %}" data-claim-next-form>
-        {% csrf_token %}
-        <button type="submit" class="uw-claim-btn uw-claim-btn--available ts-motion-tap" data-ts-sound="claim" data-testid="claim-next-btn">
-          <span class="uw-claim-btn__dot" aria-hidden="true"></span>
-          <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
-          <span data-claim-label>CLAIM NEXT</span>
-          <span class="ts-spinner sm uw-claim-button__spinner" aria-hidden="true"></span>
-        </button>
-      </form>
-      {% elif at_max_capacity %}
-      <button type="button" class="uw-claim-btn uw-claim-btn--disabled" disabled data-testid="claim-max-active">
-        MAX ACTIVE REACHED
-      </button>
-      <p class="uw-claim-btn__hint">Complete a review to claim another.</p>
-      {% elif in_cooldown %}
-      <button type="button" class="uw-claim-btn uw-claim-btn--disabled" disabled data-cooldown-btn data-cooldown-remaining="{{ cooldown_remaining }}" data-testid="claim-cooldown-btn">
-        <span data-cooldown-label>NEXT CLAIM IN {{ cooldown_remaining|floatformat:0 }}s</span>
-      </button>
-      {% elif not pending_count %}
-      <button type="button" class="uw-claim-btn uw-claim-btn--disabled" disabled data-testid="claim-no-apps">
-        NO APPS PENDING
-      </button>
-      {% else %}
-      <a href="{% url 'sales_applications' %}?tab=queue" class="uw-claim-btn" style="background:#1d4ed8;box-shadow:0 4px 14px rgba(29,78,216,.25);">
-        <i class="bi bi-eye" aria-hidden="true"></i>
-        View Queue
-      </a>
-      {% endif %}
-    </div>
+    <span class="uw-action-card__count">{{ active_count }}/{{ max_active }}</span>
+    <i class="bi bi-chevron-right uw-action-card__arrow" aria-hidden="true"></i>
   </div>
+  {% elif in_cooldown %}
+  <div class="uw-action-card uw-action-card--disabled ts-motion-slide" data-cooldown-btn data-cooldown-remaining="{{ cooldown_remaining }}" data-testid="claim-cooldown-btn" role="status">
+    <div class="uw-action-card__icon"><i class="bi bi-clock" aria-hidden="true"></i></div>
+    <div class="uw-action-card__body">
+      <p class="uw-action-card__label">CLAIM QUEUE</p>
+      <p class="uw-action-card__title" data-cooldown-label>NEXT CLAIM IN {{ cooldown_label }}</p>
+      <p class="uw-action-card__sub">{{ pending_count }} application{{ pending_count|pluralize }} waiting</p>
+    </div>
+    <span class="uw-action-card__count">{{ pending_count }}</span>
+    <i class="bi bi-chevron-right uw-action-card__arrow" aria-hidden="true"></i>
+  </div>
+  {% else %}
+  <div class="uw-action-card uw-action-card--disabled ts-motion-slide" data-testid="claim-no-apps" role="status">
+    <div class="uw-action-card__icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+    <div class="uw-action-card__body">
+      <p class="uw-action-card__label">CLAIM QUEUE</p>
+      <p class="uw-action-card__title">NO APPS PENDING</p>
+      <p class="uw-action-card__sub">Queue is empty — check back soon</p>
+    </div>
+    <span class="uw-action-card__count">0</span>
+    <i class="bi bi-chevron-right uw-action-card__arrow" aria-hidden="true"></i>
+  </div>
+  {% endif %}
 
   {# ── Urgent alert ──────────────────────────────────────────────── #}
   {% if urgent_count %}
@@ -492,17 +426,17 @@
   {% endif %}
 
   {# ── My Active Card ────────────────────────────────────────────── #}
-  <a href="{% url 'sales_applications' %}?tab=active" class="uw-active-card active-reviews-card ts-motion-slide ts-motion-tap" data-testid="my-active-card">
-    <div class="uw-active-card__icon">
+  <a href="{% url 'sales_applications' %}?tab=active" class="uw-action-card uw-action-card--blue ts-motion-slide ts-motion-tap active-reviews-card" data-testid="my-active-card">
+    <div class="uw-action-card__icon">
       <i class="bi bi-file-earmark-check-fill" aria-hidden="true"></i>
     </div>
-    <div class="uw-active-card__body">
-      <p class="uw-active-card__label">MY ACTIVE</p>
-      <p class="uw-active-card__title">Active Reviews</p>
-      <p class="uw-active-card__sub">Tap to view and continue</p>
+    <div class="uw-action-card__body">
+      <p class="uw-action-card__label">MY ACTIVE</p>
+      <p class="uw-action-card__title">Active Reviews</p>
+      <p class="uw-action-card__sub">Tap to view and continue</p>
     </div>
-    <span class="uw-active-card__count">{{ active_count }}/{{ max_active }}</span>
-    <i class="bi bi-chevron-right uw-active-card__arrow" aria-hidden="true"></i>
+    <span class="uw-action-card__count uw-active-card__count">{{ active_count }}/{{ max_active }}</span>
+    <i class="bi bi-chevron-right uw-action-card__arrow" aria-hidden="true"></i>
   </a>
 
   {# ── Applications ─────────────────────────────────────────────── #}

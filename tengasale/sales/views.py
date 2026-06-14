@@ -181,6 +181,16 @@ def _format_review_duration(seconds):
     return f"{hours}h"
 
 
+def _format_cooldown_label(seconds):
+    """Format cooldown seconds as 'XM YYS' for display. E.g. 250 → '4M 10S'."""
+    total = max(0, int(seconds))
+    if total < 60:
+        return f"{total}S"
+    mins = total // 60
+    secs = total % 60
+    return f"{mins}M {secs:02d}S"
+
+
 def _active_app_card(app):
     deal = app.deal
     device_label = str(deal) if deal else "Device pending"
@@ -295,6 +305,7 @@ def sales_home(request):
         "reviewed_count": reviewed_count,
         "cooldown_remaining": int(cooldown_remaining),
         "cooldown_expires_at": cooldown_expires_at,
+        "cooldown_label": _format_cooldown_label(cooldown_remaining) if in_cooldown else "",
         "can_claim": can_claim and pending_count > 0,
         "at_max_capacity": at_max_capacity,
         "in_cooldown": in_cooldown,
@@ -422,6 +433,7 @@ def sales_applications(request):
         "max_active": rule.max_active_applications,
         "cooldown_remaining": int(cooldown_remaining),
         "cooldown_expires_at": cooldown_expires_at,
+        "cooldown_label": _format_cooldown_label(cooldown_remaining) if cooldown_remaining > 0 else "",
         "can_claim": can_claim and pending_count > 0,
     })
 

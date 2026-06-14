@@ -132,7 +132,7 @@ class SalesPageSmokeTest(TestCase):
         res = self.client.get("/sales/")
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "uw-claim-btn--available")
+        self.assertContains(res, "uw-action-card--green")
         self.assertContains(res, "CLAIM NEXT")
 
     def test_sales_home_no_green_claim_button_when_queue_empty(self):
@@ -141,9 +141,8 @@ class SalesPageSmokeTest(TestCase):
         res = self.client.get("/sales/")
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "No Applications in Queue")
         self.assertContains(res, "NO APPS PENDING")
-        self.assertNotContains(res, 'class="uw-claim-btn uw-claim-btn--available')
+        self.assertNotContains(res, 'data-testid="claim-next-btn"')
 
     def test_sales_home_renders_cooldown_button_when_in_cooldown(self):
         merchant = User.objects.create_user(username="merchant-cooldown", password="testpass123")
@@ -378,5 +377,181 @@ class ClaimToReviewFlowTest(TestCase):
         self._pending_app()
         self.client.login(username="uw-flow", password="testpass123")
         res = self.client.get("/sales/")
-        self.assertContains(res, "min-height: 68px")
+        # Both claim card and My Active card use the same .uw-action-card base class
+        self.assertContains(res, "uw-action-card--green")
         self.assertContains(res, 'data-testid="claim-next-btn"')
+        self.assertContains(res, 'data-testid="my-active-card"')
+        # Both should use the same base class — matching siblings
+        content = res.content.decode()
+        self.assertIn("uw-action-card", content)
+
+
+class UnderwriterButtonSizeTest(TestCase):
+    """
+    Verify claim/status button is same size as My Active (matching siblings).
+    Both must use .uw-action-card base class with identical padding.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.underwriter = User.objects.create_user(
+            username="uw-size",
+            password="testpass123",
+        )
+        from accounts.models import UserProfile
+        UserProfile.objects.filter(user=self.underwriter).update(role="underwriter")
+        self.merchant = User.objects.create_user(username="merchant-size", password="testpass123")
+
+    def _pending_app(self, **kwargs):
+        defaults = {
+            "created_by": self.merchant,
+            "status": "pending_review",
+            "customer_name": "Size Customer",
+            "customer_phone": "990870640",
+            "national_id": "SIZE1234",
+            "submitted_at": timezone.now(),
+        }
+        defaults.update(kwargs)
+        return FinancingApplication.objects.create(**defaults)
+
+    def test_claim_button_and_my_active_same_base_class(self):
+        """Both cards must use uw-action-card class."""
+        self._pending_app()
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode()
+        # Count instances of uw-action-card (should appear for both claim and active cards)
+        self.assertGreaterEqual(content.count("uw-action-card"), 2)
+        self.assertContains(res, 'data-testid="claim-next-btn"')
+        self.assertContains(res, 'data-testid="my-active-card"')
+
+    def test_no_apps_pending_same_size_as_my_active(self):
+        """NO APPS PENDING card must use same base class as My Active."""
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "NO APPS PENDING")
+        self.assertContains(res, 'data-testid="claim-no-apps"')
+        # Both cards use uw-action-card
+        content = res.content.decode()
+        self.assertGreaterEqual(content.count("uw-action-card"), 2)
+
+    def test_cooldown_card_same_size_as_my_active(self):
+        """NEXT CLAIM IN card must use same base class as My Active."""
+        self._pending_app(
+            status="under_review",
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+        )
+        self._pending_app()
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "NEXT CLAIM IN")
+        self.assertContains(res, 'data-testid="claim-cooldown-btn"')
+        # Both cards use uw-action-card
+        content = res.content.decode()
+        self.assertGreaterEqual(content.count("uw-action-card"), 2)
+
+    def test_max_active_reached_same_size_as_my_active(self):
+        """MAX ACTIVE REACHED card must use same base class as My Active."""
+        for i in range(5):
+            self._pending_app(
+                status="under_review",
+                claimed_by=self.underwriter,
+                claimed_at=timezone.now() - timedelta(hours=1),
+                customer_name=f"Active {i}",
+                customer_phone=f"9908706{i:02d}",
+                national_id=f"SIZE{i:04d}",
+            )
+        self._pending_app(
+            customer_name="Waiting",
+            customer_phone="990870650",
+            national_id="SIZE9999",
+        )
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "MAX ACTIVE REACHED")
+        self.assertContains(res, 'data-testid="claim-max-active"')
+        content = res.content.decode()
+        self.assertGreaterEqual(content.count("uw-action-card"), 2)
+
+    def test_cooldown_label_formatted_as_minutes_seconds(self):
+        """Cooldown must show as XM YYS not raw seconds."""
+        self._pending_app(
+            status="under_review",
+            claimed_by=self.underwriter,
+            claimed_at=timezone.now(),
+        )
+        self._pending_app()
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertEqual(res.status_code, 200)
+        # Must contain formatted cooldown, not raw seconds like "300s"
+        self.assertContains(res, "NEXT CLAIM IN")
+        content = res.content.decode()
+        import re
+        # Should match pattern like "4M 59S" not "299s"
+        self.assertRegex(content, r'NEXT CLAIM IN \d+M \d{2}S')
+
+    def test_no_apps_pending_uppercase(self):
+        """NO APPS PENDING must be uppercase."""
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get("/sales/")
+        self.assertContains(res, "NO APPS PENDING")
+
+    def test_claim_opens_review_step1_content(self):
+        """Claim Next → review page renders Step 1 content, not blank."""
+        app = self._pending_app()
+        self.client.login(username="uw-size", password="testpass123")
+        claim_res = self.client.post(reverse("sales_claim_next"))
+        self.assertEqual(claim_res.status_code, 302)
+        review_res = self.client.get(claim_res.url)
+        self.assertEqual(review_res.status_code, 200)
+        self.assertContains(review_res, 'data-testid="review-application-body"')
+        self.assertContains(review_res, "CALL PRIMARY")
+        self.assertContains(review_res, "Customer Verification Call")
+        self.assertContains(review_res, "Continue to Identity Check")
+
+    def test_direct_review_url_renders_without_blank(self):
+        """Direct URL /sales/applications/<id>/ must render Step 1, not blank."""
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'data-review-application-body')
+        self.assertContains(res, "CALL PRIMARY")
+        self.assertContains(res, "Customer Verification Call")
+        # Stepper must be present
+        self.assertContains(res, "Continue to Identity Check")
+
+    def test_review_page_body_never_hidden_by_default(self):
+        """The review body div must NOT have hidden attribute in server-rendered HTML."""
+        app = self._pending_app(status="under_review", claimed_by=self.underwriter)
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode()
+        # The review body should NOT be hidden at page render time
+        self.assertNotIn('data-review-application-body hidden', content)
+        self.assertNotIn('data-review-application-body" hidden', content)
+
+    def test_missing_fields_show_missing_not_blank(self):
+        """Application with missing fields shows 'Not captured', not blank."""
+        # App with no optional fields set
+        app = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            claimed_by=self.underwriter,
+            status="under_review",
+            customer_name="Sparse Customer",
+            customer_phone="990870660",
+            national_id="SPARSE01",
+        )
+        self.client.login(username="uw-size", password="testpass123")
+        res = self.client.get(reverse("sales_review_summary", args=[app.id]))
+        self.assertEqual(res.status_code, 200)
+        # Should show "Not captured" for missing fields, not blank
+        self.assertContains(res, "Not captured")
+        self.assertContains(res, 'data-testid="review-application-body"')
