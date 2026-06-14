@@ -28,34 +28,36 @@
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
   padding: 0 16px;
-  height: 60px;
-  display: flex;
+  padding-top: env(safe-area-inset-top, 0px);
+  min-height: 76px;
+  height: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 40;
-  gap: 8px;
+  gap: 12px;
+  box-sizing: border-box;
 }
 
 .merchant-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
   text-decoration: none;
-  min-width: 0;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 
 .merchant-brand-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ff5a00;
+  flex-shrink: 0;
 }
 
 .merchant-brand-icon--fallback::after {
@@ -68,34 +70,32 @@
 .merchant-brand-icon img { width: 100%; height: 100%; object-fit: cover; }
 
 .merchant-brand-name {
-  font-size: 16px;
-  font-weight: 900;
-  color: #101828;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
+  display: none;
 }
 
 .topbar-page-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #667085;
-  flex: 1;
+  font-size: 16px;
+  font-weight: 800;
+  color: #101828;
   text-align: center;
+  justify-self: center;
+  white-space: nowrap;
 }
 
 .merchant-header-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
+  justify-self: end;
 }
 
 .merchant-header-btn {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 12px;
   color: #667085;
   background: none;
   border: none;
@@ -582,10 +582,9 @@
 .bottom-nav__fab:active { transform: scale(.95); }
 
 @media (max-width: 380px) {
-  .merchant-header { padding: 0 10px; gap: 6px; }
-  .merchant-brand-name { display: none; }
-  .topbar-page-title { text-align: left; font-size: 12px; }
-  .merchant-header-btn { width: 34px; height: 34px; border-radius: 9px; }
+  .merchant-header { padding: 0 12px; gap: 8px; min-height: 72px; }
+  .topbar-page-title { font-size: 15px; }
+  .merchant-header-btn { width: 44px; height: 44px; border-radius: 11px; }
   .merchant-greeting { padding-left: 12px; padding-right: 12px; }
   .merchant-greeting-title { font-size: 20px; }
   .merchant-cta-wrap,
@@ -616,13 +615,12 @@
   <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
     <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
       <span class="merchant-brand-icon" aria-hidden="true">
-        <img src="{% static 'images/Tenga.png' %}" alt="" width="34" height="34"
+        <img src="{% static 'images/Tenga.png' %}" alt="TengaSale" width="40" height="40"
              onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
       </span>
-      <span class="merchant-brand-name">TengaSale</span>
     </a>
 
-    <span class="topbar-page-title">Home</span>
+    <span class="topbar-page-title" data-testid="merchant-page-title">Home</span>
 
     <div class="merchant-header-actions" style="flex-shrink:0;flex-wrap:nowrap;display:flex;align-items:center;gap:4px;">
       <a class="merchant-header-btn"

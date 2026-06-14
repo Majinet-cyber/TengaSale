@@ -1735,10 +1735,10 @@ img, video, canvas, svg {
   border-radius: 0 0 0 0;
 }
 
-/* ID front/back: landscape 16:10 */
+/* ID front/back: landscape Malawi ID ratio (~1.586:1) */
 .kyc-smart-card__frame--id_front,
 .kyc-smart-card__frame--id_back {
-  aspect-ratio: 16/10;
+  aspect-ratio: 1.586 / 1;
 }
 
 /* Signature: very wide 4:1 */
@@ -2935,6 +2935,191 @@ img, video, canvas, svg {
   .pay-feed-item { animation: none !important; }
   .application-progress-fill { transition: none !important; }
   .volts-formula-card::before { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   25. HQ FLAGSHIP PAGE SYSTEM — Shared styles for Fraud, WhatsApp, Repo
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Glass card foundation */
+.hq-glass-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 2px 16px rgba(15,23,42,0.07);
+  overflow: hidden;
+  transition: transform 0.18s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.18s cubic-bezier(0.16,1,0.3,1);
+}
+.hq-glass-card--hover:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 6px 24px rgba(15,23,42,0.11);
+}
+
+/* HQ flagship KPI tile */
+.hq-kpi-tile {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+  position: relative; overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.hq-kpi-tile:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(15,23,42,0.10); }
+.hq-kpi-tile__accent {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; border-radius: 18px 18px 0 0;
+}
+.hq-kpi-tile__val {
+  font-size: 28px; font-weight: 950;
+  letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px;
+  color: #0f172a;
+}
+.hq-kpi-tile__label {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: #64748b;
+}
+.hq-kpi-tile__chip {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 99px;
+  font-size: 9.5px; font-weight: 800;
+  margin-top: 4px; text-transform: uppercase;
+}
+
+/* HQ flagship hero gradient backgrounds */
+.hq-hero--fraud {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+}
+.hq-hero--whatsapp {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+}
+.hq-hero--recovery {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* Shared hero badge */
+.hq-hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 99px;
+  font-size: 12px; font-weight: 800;
+  color: #fff;
+}
+.hq-hero-badge__dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Shared status chips */
+.hq-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px; border-radius: 99px;
+  font-size: 11px; font-weight: 700;
+}
+.hq-chip--green  { background: #dcfce7; color: #15803d; }
+.hq-chip--amber  { background: #fef3c7; color: #d97706; }
+.hq-chip--red    { background: #fee2e2; color: #dc2626; }
+.hq-chip--blue   { background: #eff6ff; color: #2563eb; }
+.hq-chip--purple { background: #f3e8ff; color: #7c3aed; }
+.hq-chip--orange { background: rgba(255,90,0,0.10); color: #ff5a00; }
+.hq-chip--grey   { background: #f1f5f9; color: #475569; }
+.hq-chip--navy   { background: #e0e7ff; color: #3730a3; }
+
+/* Pulsing live dot */
+.hq-live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+}
+@keyframes hq-live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.45); }
+  50%       { box-shadow: 0 0 0 5px rgba(37,211,102,0); }
+}
+.hq-live-dot--green {
+  background: #25d366;
+  animation: hq-live-pulse 2s ease-in-out infinite;
+}
+@keyframes hq-live-pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.45); }
+  50%       { box-shadow: 0 0 0 5px rgba(220,38,38,0); }
+}
+.hq-live-dot--red {
+  background: #dc2626;
+  animation: hq-live-pulse-red 2s ease-in-out infinite;
+}
+
+/* Premium empty state */
+.hq-empty {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  padding: 40px 24px; text-align: center;
+}
+.hq-empty__icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: #f1f5f9;
+  display: grid; place-items: center; margin-bottom: 4px;
+}
+.hq-empty__icon svg {
+  width: 24px; height: 24px;
+  fill: none; stroke: #cbd5e1; stroke-width: 1.8; stroke-linecap: round;
+}
+.hq-empty h4 { font-size: 14px; font-weight: 800; color: #475569; margin: 0 0 4px; }
+.hq-empty p  { font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.5; max-width: 280px; }
+
+/* Compliance/policy rule banner */
+.hq-rule-banner {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(220,38,38,0.18);
+  border-left: 4px solid #dc2626;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 12.5px; color: #374151; line-height: 1.6;
+}
+.hq-rule-banner strong { color: #dc2626; }
+
+/* Diagnostic cell pair grid */
+.hq-diag-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) { .hq-diag-grid { grid-template-columns: 1fr 1fr; } }
+.hq-diag-cell {
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(241,245,249,0.9);
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 8px;
+}
+.hq-diag-cell-label { font-size: 12px; font-weight: 600; color: #64748b; flex: 1; }
+.hq-diag-cell-val   { font-size: 11.5px; font-weight: 700; font-family: ui-monospace,monospace; text-align: right; flex-shrink: 0; max-width: 55%; word-break: break-word; }
+
+/* HQ section header */
+.hq-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.hq-section-hdr h2 {
+  font-size: 15px; font-weight: 900; color: #0f172a; margin: 0;
+  display: flex; align-items: center; gap: 9px;
+}
+.hq-section-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.hq-section-icon svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round;
 }
 
 /* ── 24. PRINT STYLES ─────────────────────────────────────────────── */

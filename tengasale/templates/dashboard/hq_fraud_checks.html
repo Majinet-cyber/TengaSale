@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/premium.css' %}">
+<link rel="stylesheet" href="{% static 'css/hq-flagship.css' %}">
 <style>
 /* ── Investigation Console Shell ────────────────────────────────── */
 .frd-console {
@@ -12,7 +13,6 @@
   margin: 0 auto;
   padding: 20px 16px 80px;
   box-sizing: border-box;
-  background: #f8fafc;
   min-height: 100vh;
 }
 html, body { overflow-x: hidden; }
@@ -20,30 +20,49 @@ html, body { overflow-x: hidden; }
 .content    { padding: 0 !important; }
 .footer     { display: none !important; }
 
-/* Page header */
-.frd-console-hdr {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+/* Hero */
+.frd-hero {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+  border-radius: 24px;
+  padding: 28px 24px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
-  padding-bottom: 20px;
-  border-bottom: 1.5px solid #e2e8f0;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
 }
-.frd-console-hdr-left { display: flex; align-items: flex-start; gap: 14px; }
-.frd-console-icon {
+.frd-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -40px;
+  width: 200px; height: 200px;
+  background: rgba(220,38,38,0.08);
+  border-radius: 50%;
+}
+.frd-hero-inner { position: relative; z-index: 1; }
+.frd-hero-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+.frd-hero-icon {
   width: 48px; height: 48px;
-  background: linear-gradient(135deg,#dc2626,#b91c1c);
+  background: rgba(220,38,38,0.20);
   border-radius: 14px;
   display: grid; place-items: center;
-  color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(220,38,38,0.30);
 }
-.frd-console-icon svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
-.frd-console-title { font-size: 1.5rem; font-weight: 900; margin: 0 0 3px; color: #0f172a; letter-spacing: -0.02em; }
-.frd-console-sub   { font-size: 0.80rem; color: #64748b; margin: 0; }
+.frd-hero-icon svg { width: 22px; height: 22px; fill: none; stroke: #fca5a5; stroke-width: 2; stroke-linecap: round; }
+.frd-hero h1 { font-size: clamp(1.3rem,3vw,1.9rem); font-weight: 950; margin: 0 0 4px; letter-spacing: -0.03em; }
+.frd-hero p { font-size: 12.5px; color: rgba(255,255,255,0.65); margin: 0; }
+.frd-hero-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.frd-hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 99px;
+  font-size: 12px; font-weight: 800;
+}
+.frd-hero-badge__dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* Page header (legacy compat — now hidden, hero replaces it) */
+.frd-console-hdr { display: none; }
 
 /* Alert banner */
 .frd-alert {
@@ -72,10 +91,12 @@ html, body { overflow-x: hidden; }
 @media (max-width: 768px) { .frd-top-row { grid-template-columns: 1fr; } }
 
 .frd-risk-card {
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(15,23,42,0.06);
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 22px;
+  box-shadow: 0 4px 24px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04);
   overflow: hidden;
 }
 .frd-risk-card__title {
@@ -139,6 +160,77 @@ html, body { overflow-x: hidden; }
 .frd-risk-level--critical { background: #fce7f3; color: #9d174d; }
 .frd-risk-desc { font-size: 11px; color: #64748b; text-align: center; line-height: 1.4; padding: 0 12px 12px; }
 
+/* Signal KPI cards */
+.frd-signal-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 2px 14px rgba(15,23,42,0.06);
+  transition: transform 0.15s cubic-bezier(0.16,1,0.3,1), box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.frd-signal-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 18px 18px 0 0;
+  background: #16a34a;
+}
+.frd-signal-card--ok::before       { background: #16a34a; }
+.frd-signal-card--medium::before   { background: #f59e0b; }
+.frd-signal-card--high::before     { background: #ea580c; }
+.frd-signal-card--critical::before { background: #dc2626; }
+.frd-signal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(15,23,42,0.10); }
+.frd-signal-card__icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  margin-bottom: 8px;
+  background: rgba(241,245,249,0.9);
+}
+.frd-signal-card__icon svg { width: 14px; height: 14px; fill: none; stroke: #64748b; stroke-width: 2; stroke-linecap: round; }
+.frd-signal-card--critical .frd-signal-card__icon { background: #fee2e2; }
+.frd-signal-card--critical .frd-signal-card__icon svg { stroke: #dc2626; }
+.frd-signal-card--high .frd-signal-card__icon { background: #ffedd5; }
+.frd-signal-card--high .frd-signal-card__icon svg { stroke: #ea580c; }
+.frd-signal-card--medium .frd-signal-card__icon { background: #fef3c7; }
+.frd-signal-card--medium .frd-signal-card__icon svg { stroke: #d97706; }
+.frd-signal-card--ok .frd-signal-card__icon { background: #dcfce7; }
+.frd-signal-card--ok .frd-signal-card__icon svg { stroke: #15803d; }
+.frd-signal-card__value {
+  font-size: 26px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: #0f172a;
+}
+.frd-signal-card__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  line-height: 1.3;
+}
+.frd-signal-card__trend {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.frd-signal-card__trend--up   { background: #fef3c7; color: #d97706; }
+.frd-signal-card__trend--down { background: #dcfce7; color: #15803d; }
+
 /* Signal grid */
 .frd-signal-grid-wrap {
   display: grid;
@@ -175,17 +267,18 @@ html, body { overflow-x: hidden; }
 
 /* Panel cards */
 .frd-panel {
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(255,255,255,0.80);
-  border-radius: 14px;
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.40);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(15,23,42,0.06);
+  box-shadow: 0 4px 20px rgba(15,23,42,0.06);
 }
 .frd-panel-head {
   padding: 12px 16px 10px;
-  background: linear-gradient(135deg,#fff8f0,#fff);
-  border-bottom: 1.5px solid #f1f5f9;
+  background: rgba(255,255,255,0.45);
+  border-bottom: 1px solid rgba(226,232,240,0.6);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -335,18 +428,49 @@ html, body { overflow-x: hidden; }
 {% endblock %}
 
 {% block content %}
-<div class="frd-console" data-testid="hq-dashboard">
+<div class="frd-console hq-flagship-page" data-testid="hq-dashboard">
 
-  {# ── Page header ──────────────────────────────────────────────── #}
-  <div class="frd-console-hdr">
-    <div class="frd-console-hdr-left">
-      <div class="frd-console-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  {# ── Hero ─────────────────────────────────────────────────────── #}
+  <div class="frd-hero">
+    <div class="frd-hero-inner">
+      <div class="frd-hero-top">
+        <div class="frd-hero-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:rgba(252,165,165,0.9);margin-bottom:5px;">HQ Command Center · Intelligence</div>
+          <h1>Fraud Investigation Console</h1>
+          <p>Duplicate detection · risk intelligence · IMEI forensics · device fraud</p>
+        </div>
       </div>
-      <div>
-        <div style="margin-bottom:4px;"><a href="{% url 'hq_dashboard' %}" style="color:#ff5a00;text-decoration:none;font-size:0.82rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;">← HQ Command Center</a></div>
-        <h1 class="frd-console-title">Fraud Investigation Console</h1>
-        <p class="frd-console-sub">Duplicate detection · risk intelligence · IMEI forensics · device fraud</p>
+      <div class="frd-hero-badges">
+        {% with open_reviews=open_fraud_reviews %}
+        <div class="frd-hero-badge">
+          <span class="frd-hero-badge__dot" style="background:{% if open_reviews > 0 %}#fbbf24{% else %}#86efac{% endif %};"></span>
+          <span>{{ open_reviews }} Open Fraud Review{{ open_reviews|pluralize }}</span>
+        </div>
+        {% endwith %}
+        <div class="frd-hero-badge">
+          <span class="frd-hero-badge__dot" style="background:{% if fraud_marked %}#f87171{% else %}#86efac{% endif %};"></span>
+          <span>{{ fraud_marked_count }} Blocked Application{{ fraud_marked_count|pluralize }}</span>
+        </div>
+        <div class="frd-hero-badge">
+          <span class="frd-hero-badge__dot" style="background:{% if conn_offline_total > 0 %}#93c5fd{% else %}#86efac{% endif %};"></span>
+          <span>{{ conn_offline_total }} Connectivity Anomal{{ conn_offline_total|pluralize:"y,ies" }}</span>
+        </div>
+        <div class="frd-hero-badge">
+          <span class="frd-hero-badge__dot" style="background:{% if imei_mismatch_count > 0 %}#f87171{% else %}#86efac{% endif %};"></span>
+          <span>{{ imei_mismatch_count }} IMEI Mismatch{% if imei_mismatch_count != 1 %}es{% endif %}</span>
+        </div>
+        <div class="frd-hero-badge" style="background:rgba(255,255,255,0.06);">
+          {% if telemetry_connected %}
+          <span class="frd-hero-badge__dot hq-chip__pulse" style="background:#86efac;"></span>
+          <span>System Live · Telemetry Connected</span>
+          {% else %}
+          <span class="frd-hero-badge__dot" style="background:#fde68a;"></span>
+          <span>Manual Review Mode</span>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
@@ -468,27 +592,23 @@ html, body { overflow-x: hidden; }
         {% if imei_error_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ errors</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
 
-      {% if third_party_flags %}
-      <div class="frd-signal-card frd-signal-card--high ts-stagger-item">
+      <div class="frd-signal-card frd-signal-card--{% if third_party_flags_count %}high{% else %}ok{% endif %} ts-stagger-item">
         <div class="frd-signal-card__icon">
           <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <div class="frd-signal-card__value" data-count-up="{{ third_party_flags|length }}">{{ third_party_flags|length }}</div>
+        <div class="frd-signal-card__value" data-count-up="{{ third_party_flags_count }}">{{ third_party_flags_count }}</div>
         <div class="frd-signal-card__label">3rd-party phone flags</div>
-        <span class="frd-signal-card__trend frd-signal-card__trend--up">↑ review</span>
+        {% if third_party_flags_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ review</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% endif %}
 
-      {% if fraud_marked %}
-      <div class="frd-signal-card frd-signal-card--critical ts-stagger-item">
+      <div class="frd-signal-card frd-signal-card--{% if fraud_marked_count %}critical{% else %}ok{% endif %} ts-stagger-item">
         <div class="frd-signal-card__icon">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         </div>
-        <div class="frd-signal-card__value">{{ fraud_marked|length }}</div>
+        <div class="frd-signal-card__value" data-count-up="{{ fraud_marked_count }}">{{ fraud_marked_count }}</div>
         <div class="frd-signal-card__label">Fraud-marked apps</div>
-        <span class="frd-signal-card__trend frd-signal-card__trend--up">↑ blocked</span>
+        {% if fraud_marked_count %}<span class="frd-signal-card__trend frd-signal-card__trend--up">↑ blocked</span>{% else %}<span class="frd-signal-card__trend frd-signal-card__trend--down">✓ clear</span>{% endif %}
       </div>
-      {% endif %}
 
     </div>{# /frd-signal-grid-wrap #}
   </div>{# /frd-top-row #}
@@ -923,9 +1043,7 @@ html, body { overflow-x: hidden; }
   </div>
   {% endif %}
 
-  {# ═══════════════════════════════════════════════════════════════════════
-     CONNECTIVITY SUPPORT INTELLIGENCE
-     ═══════════════════════════════════════════════════════════════════════ #}
+  {# CONNECTIVITY SUPPORT INTELLIGENCE #}
   <div class="frd-section" style="margin-top:32px;" id="connectivity-intelligence">
 
     {# Section header #}
@@ -947,9 +1065,26 @@ html, body { overflow-x: hidden; }
 
     {# Telemetry notice if not connected #}
     {% if not telemetry_connected %}
-    <div class="frd-alert frd-alert--info" style="margin-bottom:18px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span>Telemetry provider not connected. Showing available manual signals. Set <code>PAYTRIGGER_API_KEY</code> or <code>UPYA_API_KEY</code> in environment to connect live device telemetry.</span>
+    <div style="background:rgba(255,255,255,0.88);backdrop-filter:blur(14px);border:1px solid rgba(245,158,11,0.25);border-left:4px solid #f59e0b;border-radius:14px;padding:16px 18px;margin-bottom:18px;" data-testid="telemetry-disconnected-banner">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#d97706;margin-bottom:4px;">Telemetry Not Connected</div>
+          <p style="font-size:12.5px;color:#78350f;margin:0 0 10px;line-height:1.55;">
+            Live device telemetry is not active. Showing available manual signals only. To connect live telemetry, set <code style="background:rgba(217,119,6,0.12);padding:1px 5px;border-radius:4px;font-family:monospace;">PAYTRIGGER_API_KEY</code> or <code style="background:rgba(217,119,6,0.12);padding:1px 5px;border-radius:4px;font-family:monospace;">UPYA_API_KEY</code> in your environment.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{% url 'hq_safe_operations' %}" class="frd-btn" style="font-size:11.5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Integration Guide
+            </a>
+            <a href="{% url 'hq_fraud_checks' %}" class="frd-btn">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Retry Connectivity
+            </a>
+            <span class="frd-btn" style="background:#f8fafc;cursor:default;color:#64748b;font-size:11.5px;">Continue with Manual Review</span>
+          </div>
+        </div>
+      </div>
     </div>
     {% endif %}
 
@@ -959,55 +1094,58 @@ html, body { overflow-x: hidden; }
       <span><strong>Principle:</strong> Offline days are a risk/support signal — not automatic proof of fraud. Reasons may include network issues, travel, power outages, poverty, or deliberate evasion. Use wording "connectivity anomaly", "sync pending", "possible evasion". Only use "fraud" after HQ review.</span>
     </div>
 
-    {# KPI cards grid #}
+    {# Connectivity KPI glass tiles #}
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr));gap:10px;margin-bottom:20px;">
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #3b82f6;">
-        <div class="ts-kpi-card__value" style="color:#1d4ed8;">{{ conn_offline_total }}</div>
-        <div class="ts-kpi-card__label">Offline Devices</div>
-        <div class="ts-kpi-card__sub">≥1 day offline</div>
+      {% with conn_tiles="conn_offline_total,conn_high_risk,conn_critical,conn_paid_offline,conn_arrears_offline,conn_sync_pending,conn_needs_internet,conn_escalated" %}
+      {% endwith %}
+
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #3b82f6;">
+        <div style="font-size:26px;font-weight:950;color:#1d4ed8;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_offline_total }}">{{ conn_offline_total }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Offline Devices</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">≥1 day offline</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #f59e0b;">
-        <div class="ts-kpi-card__value" style="color:#d97706;">{{ conn_high_risk }}</div>
-        <div class="ts-kpi-card__label">High-Risk Offline</div>
-        <div class="ts-kpi-card__sub">High or Critical band</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #f59e0b;">
+        <div style="font-size:26px;font-weight:950;color:#d97706;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_high_risk }}">{{ conn_high_risk }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">High-Risk Offline</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">High or Critical band</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #dc2626;">
-        <div class="ts-kpi-card__value" style="color:#dc2626;">{{ conn_critical }}</div>
-        <div class="ts-kpi-card__label">Critical Offline</div>
-        <div class="ts-kpi-card__sub">21+ days offline</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #dc2626;">
+        <div style="font-size:26px;font-weight:950;color:#dc2626;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_critical }}">{{ conn_critical }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Critical Offline</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">21+ days offline</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #16a34a;">
-        <div class="ts-kpi-card__value" style="color:#15803d;">{{ conn_paid_offline }}</div>
-        <div class="ts-kpi-card__label">Paid but Offline</div>
-        <div class="ts-kpi-card__sub">Sync help needed</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #16a34a;">
+        <div style="font-size:26px;font-weight:950;color:#15803d;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_paid_offline }}">{{ conn_paid_offline }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Paid but Offline</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">Sync help needed</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #ea580c;">
-        <div class="ts-kpi-card__value" style="color:#c2410c;">{{ conn_arrears_offline }}</div>
-        <div class="ts-kpi-card__label">Offline + Arrears</div>
-        <div class="ts-kpi-card__sub">Monitor closely</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #ea580c;">
+        <div style="font-size:26px;font-weight:950;color:#c2410c;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_arrears_offline }}">{{ conn_arrears_offline }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Offline + Arrears</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">Monitor closely</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #8b5cf6;">
-        <div class="ts-kpi-card__value" style="color:#7c3aed;">{{ conn_sync_pending }}</div>
-        <div class="ts-kpi-card__label">Sync Pending</div>
-        <div class="ts-kpi-card__sub">Command queued</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #8b5cf6;">
+        <div style="font-size:26px;font-weight:950;color:#7c3aed;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_sync_pending }}">{{ conn_sync_pending }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Sync Pending</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">Command queued</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #0ea5e9;">
-        <div class="ts-kpi-card__value" style="color:#0284c7;">{{ conn_needs_internet }}</div>
-        <div class="ts-kpi-card__label">Needs Internet</div>
-        <div class="ts-kpi-card__sub">Send sync instruction</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #0ea5e9;">
+        <div style="font-size:26px;font-weight:950;color:#0284c7;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_needs_internet }}">{{ conn_needs_internet }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Needs Internet</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">Send sync instruction</div>
       </div>
 
-      <div class="ts-kpi-card ts-card-hover" style="border-left:3px solid #9d174d;">
-        <div class="ts-kpi-card__value" style="color:#9d174d;">{{ conn_escalated }}</div>
-        <div class="ts-kpi-card__label">Recovery Escalated</div>
-        <div class="ts-kpi-card__sub">Recovery desk</div>
+      <div style="background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.55);border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,0.07);border-top:3px solid #9d174d;">
+        <div style="font-size:26px;font-weight:950;color:#9d174d;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;" data-count-up="{{ conn_escalated }}">{{ conn_escalated }}</div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Recovery Escalated</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;">Recovery desk</div>
       </div>
 
     </div>
@@ -1115,7 +1253,8 @@ html, body { overflow-x: hidden; }
                     <span style="font-size:10px;color:#64748b;">Sent {{ sig.sync_instruction_sent_at|date:"d M" }}</span>
                   {% endif %}
 
-                  {% if sig.risk_band in "high,critical" and not sig.escalated_at %}
+                  {% if sig.risk_band == "high" or sig.risk_band == "critical" %}
+                  {% if not sig.escalated_at %}
                   <form method="post" style="display:inline;">
                     {% csrf_token %}
                     <input type="hidden" name="signal_id" value="{{ sig.pk }}">
@@ -1123,7 +1262,9 @@ html, body { overflow-x: hidden; }
                       Escalate
                     </button>
                   </form>
-                  {% elif sig.escalated_at %}
+                  {% endif %}
+                  {% endif %}
+                  {% if sig.escalated_at %}
                     <span style="font-size:10px;color:#9d174d;font-weight:700;">↑ Escalated</span>
                   {% endif %}
 
@@ -1228,6 +1369,82 @@ html, body { overflow-x: hidden; }
 
   </div>{# /connectivity-intelligence section #}
 
+  {# ── Investigation Workflow Panel ─────────────────────────────── #}
+  <div class="hq-workflow-panel ts-stagger-item" data-testid="fraud-workflow-panel" id="frd-investigation-workflow">
+    <div class="hq-workflow-panel__hdr">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5a00" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Investigation Workflow
+      </h2>
+      <span class="hq-chip hq-chip--blue">HQ Review Desk</span>
+    </div>
+    <div class="hq-workflow-grid">
+      <div class="hq-workflow-field">
+        <label for="frd-case-select">Select case for review</label>
+        <select id="frd-case-select" class="frd-workflow-select">
+          <option value="">— Choose a flagged case —</option>
+          {% for app in third_party_flags %}
+          <option value="app-{{ app.pk }}" data-type="application" data-id="{{ app.pk }}" data-label="{{ app.application_number }} · {{ app.customer_name }}">App {{ app.application_number }} — 3rd-party phone flag</option>
+          {% endfor %}
+          {% for app in imei_mismatches %}
+          <option value="app-{{ app.pk }}" data-type="application" data-id="{{ app.pk }}" data-label="{{ app.application_number }} · IMEI mismatch">App {{ app.application_number }} — IMEI mismatch</option>
+          {% endfor %}
+          {% for sig in connectivity_signals|slice:":15" %}
+          <option value="sig-{{ sig.pk }}" data-type="connectivity" data-id="{{ sig.pk }}" data-label="{{ sig.customer_name|default:sig.imei }} · connectivity">Signal {{ sig.imei|truncatechars:8 }} — connectivity anomaly</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="hq-workflow-field">
+        <label for="frd-reviewer">Assign reviewer</label>
+        <input type="text" id="frd-reviewer" placeholder="HQ staff name or username" autocomplete="off">
+      </div>
+      <div class="hq-workflow-field" style="grid-column:1/-1;">
+        <label for="frd-investigation-notes">Investigation notes</label>
+        <textarea id="frd-investigation-notes" rows="3" placeholder="Document findings, customer contact attempts, and evidence reviewed…"></textarea>
+      </div>
+      <div class="hq-workflow-field" style="grid-column:1/-1;">
+        <label>Evidence checklist</label>
+        <div class="hq-workflow-checklist">
+          <label><input type="checkbox" name="evidence" value="nid"> National ID verified</label>
+          <label><input type="checkbox" name="evidence" value="phone"> Phone ownership confirmed</label>
+          <label><input type="checkbox" name="evidence" value="imei"> IMEI / device forensics reviewed</label>
+          <label><input type="checkbox" name="evidence" value="connectivity"> Connectivity telemetry reviewed</label>
+          <label><input type="checkbox" name="evidence" value="payment"> Payment history reviewed</label>
+        </div>
+      </div>
+    </div>
+    <div id="frd-workflow-case-summary" style="display:none;margin-top:14px;padding:12px 14px;background:rgba(255,248,240,0.8);border-radius:12px;font-size:12.5px;color:#475569;border:1px solid rgba(255,90,0,0.15);">
+      <strong style="color:#ff5a00;">Selected:</strong> <span id="frd-workflow-case-label"></span>
+    </div>
+    <div class="hq-workflow-actions">
+      <form method="post" id="frd-form-clear" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="app_id" id="frd-clear-app-id">
+        <input type="hidden" name="note" id="frd-clear-note">
+        <button type="submit" name="action" value="mark_cleared" class="frd-btn frd-btn--green">Mark Clear</button>
+      </form>
+      <form method="post" id="frd-form-block" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="app_id" id="frd-block-app-id">
+        <input type="hidden" name="note" id="frd-block-note">
+        <button type="submit" name="action" value="mark_blocked" class="frd-btn frd-btn--danger">Block Application</button>
+      </form>
+      <form method="post" id="frd-form-fp" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="signal_id" id="frd-fp-signal-id">
+        <button type="submit" name="conn_action" value="mark_false_positive" class="frd-btn frd-btn--green">Mark False Positive</button>
+      </form>
+      <form method="post" id="frd-form-escalate" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="signal_id" id="frd-escalate-signal-id">
+        <button type="submit" name="conn_action" value="escalate_recovery" class="frd-btn frd-btn--danger">Escalate to Recovery</button>
+      </form>
+      <button type="button" class="frd-btn" id="frd-btn-watchlist" disabled title="Select a case first">Add to Watchlist</button>
+      <button type="button" class="frd-btn" id="frd-btn-request-evidence" disabled title="Select a case first">Request More Evidence</button>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin:12px 0 0;line-height:1.5;">Decisions are logged to the audit trail. Offline connectivity signals are support indicators — confirm fraud only after HQ review.</p>
+  </div>
+
 </div>{# /frd-console #}
 
 <script>
@@ -1265,6 +1482,75 @@ html, body { overflow-x: hidden; }
     }
     requestAnimationFrame(step);
   });
+})();
+
+/* ── Investigation workflow panel ─────────────────────────────────── */
+(function () {
+  var select = document.getElementById('frd-case-select');
+  if (!select) return;
+  var summary = document.getElementById('frd-workflow-case-summary');
+  var labelEl = document.getElementById('frd-workflow-case-label');
+  var notes = document.getElementById('frd-investigation-notes');
+  var formClear = document.getElementById('frd-form-clear');
+  var formBlock = document.getElementById('frd-form-block');
+  var formFp = document.getElementById('frd-form-fp');
+  var formEsc = document.getElementById('frd-form-escalate');
+  var btnWatch = document.getElementById('frd-btn-watchlist');
+  var btnEvidence = document.getElementById('frd-btn-request-evidence');
+
+  function buildNote() {
+    var reviewer = document.getElementById('frd-reviewer');
+    var parts = [];
+    if (reviewer && reviewer.value.trim()) parts.push('[Reviewer: ' + reviewer.value.trim() + ']');
+    if (notes && notes.value.trim()) parts.push(notes.value.trim());
+    var checked = [];
+    document.querySelectorAll('.hq-workflow-checklist input:checked').forEach(function (cb) {
+      checked.push(cb.value);
+    });
+    if (checked.length) parts.push('[Evidence: ' + checked.join(', ') + ']');
+    return parts.join(' ');
+  }
+
+  select.addEventListener('change', function () {
+    var opt = select.options[select.selectedIndex];
+    var type = opt.getAttribute('data-type');
+    var id = opt.getAttribute('data-id');
+    var hasCase = !!(type && id);
+    summary.style.display = hasCase ? 'block' : 'none';
+    labelEl.textContent = opt.getAttribute('data-label') || '';
+    formClear.style.display = type === 'application' ? 'inline' : 'none';
+    formBlock.style.display = type === 'application' ? 'inline' : 'none';
+    formFp.style.display = type === 'connectivity' ? 'inline' : 'none';
+    formEsc.style.display = type === 'connectivity' ? 'inline' : 'none';
+    if (btnWatch) btnWatch.disabled = !hasCase;
+    if (btnEvidence) btnEvidence.disabled = !hasCase;
+    if (type === 'application') {
+      document.getElementById('frd-clear-app-id').value = id;
+      document.getElementById('frd-block-app-id').value = id;
+    } else if (type === 'connectivity') {
+      document.getElementById('frd-fp-signal-id').value = id;
+      document.getElementById('frd-escalate-signal-id').value = id;
+    }
+  });
+
+  [formClear, formBlock].forEach(function (form) {
+    if (!form) return;
+    form.addEventListener('submit', function () {
+      var noteField = form.querySelector('input[name="note"]');
+      if (noteField) noteField.value = buildNote();
+    });
+  });
+
+  if (btnWatch) {
+    btnWatch.addEventListener('click', function () {
+      if (notes) notes.value = (notes.value ? notes.value + '\n' : '') + '[WATCHLIST] Added for ongoing monitoring.';
+    });
+  }
+  if (btnEvidence) {
+    btnEvidence.addEventListener('click', function () {
+      if (notes) notes.value = (notes.value ? notes.value + '\n' : '') + '[EVIDENCE REQUESTED] Awaiting additional documentation from merchant/customer.';
+    });
+  }
 })();
 </script>
 {% endblock %}

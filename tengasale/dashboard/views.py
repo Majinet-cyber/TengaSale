@@ -2988,11 +2988,13 @@ def hq_devices(request):
 
 @hq_required
 def hq_repossession_resale(request):
-    """HQ recovery operations for repossession, resale, and recovery costs."""
-    from decimal import Decimal, InvalidOperation
+    """HQ recovery operations for repossession, resale, reassignment, and recovery costs."""
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
     from core.models import AuditLog
     from portal.models import PaymentContract, RecoveryCost
+
+    NEW_DEPOSIT_RATE = Decimal("0.13")  # 13% of reassignment base value
 
     msg = None
     msg_type = "info"
@@ -3029,6 +3031,94 @@ def hq_repossession_resale(request):
             elif action == "write_off":
                 contract.status = PaymentContract.STATUS_WRITTEN_OFF
                 msg = f"Contract written off for {contract.contract_number}."
+            elif action == "initiate_reassignment":
+                # Business rule:
+                # Reassignment Base Value = Original Total Loan Cost - Total Paid by Old Customer
+                # New Deposit = 13% × Reassignment Base Value
+                # No refund to old customer
+                total_paid = contract.amount_paid or Decimal("0")
+                total_loan = contract.total_amount or Decimal("0")
+                reassignment_base = max(total_loan - total_paid, Decimal("0"))
+                new_deposit = (reassignment_base * NEW_DEPOSIT_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                new_financed_balance = reassignment_base - new_deposit
+
+                new_customer_name = request.POST.get("new_customer_name", "").strip()
+                new_customer_phone = request.POST.get("new_customer_phone", "").strip()
+                term_months_raw = request.POST.get("term_months", "12")
+                try:
+                    term_months = int(term_months_raw)
+                    if term_months not in (3, 6, 9, 12):
+                        term_months = 12
+                except (ValueError, TypeError):
+                    term_months = 12
+
+                if not new_customer_name:
+                    raise ValueError("New customer name is required for reassignment.")
+                if not new_customer_phone:
+                    raise ValueError("New customer phone number is required for reassignment.")
+
+                monthly_installment = (
+                    new_financed_balance / Decimal(term_months)
+                ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+                new_contract = PaymentContract.objects.create(
+                    customer_name=new_customer_name,
+                    customer_phone=new_customer_phone,
+                    device_model=contract.device_model,
+                    imei_number=contract.imei_number,
+                    total_amount=reassignment_base,
+                    deposit_required=new_deposit,
+                    cash_price=contract.cash_price,
+                    thirty_day_price=monthly_installment,
+                    term_months=term_months,
+                    status=PaymentContract.STATUS_ACTIVE,
+                    provider_metadata={
+                        "reassignment_from_contract": contract.contract_number,
+                        "original_contract_pk": str(contract.pk),
+                        "reassignment_base_value": str(reassignment_base),
+                        "old_customer_name": contract.customer_name,
+                        "old_customer_phone": contract.customer_phone,
+                        "old_total_paid": str(total_paid),
+                        "original_total_loan": str(total_loan),
+                        "new_deposit_13pct": str(new_deposit),
+                        "reassigned_by": request.user.username,
+                        "reassignment_date": timezone.now().isoformat(),
+                    },
+                )
+
+                old_metadata = contract.provider_metadata or {}
+                old_metadata["reassigned_to_contract"] = new_contract.contract_number
+                old_metadata["reassigned_to_customer"] = new_customer_name
+                old_metadata["reassignment_date"] = timezone.now().isoformat()
+                contract.provider_metadata = old_metadata
+                contract.status = PaymentContract.STATUS_RESOLD
+
+                audit_detail.update({
+                    "new_contract_id": str(new_contract.pk),
+                    "new_contract_number": new_contract.contract_number,
+                    "reassignment_base_value": str(reassignment_base),
+                    "new_deposit_required": str(new_deposit),
+                    "new_customer_name": new_customer_name,
+                    "old_total_paid": str(total_paid),
+                    "original_total_loan": str(total_loan),
+                    "no_refund_to_old_customer": True,
+                })
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="hq_device_reassignment",
+                    object_type="PaymentContract",
+                    object_id=str(contract.pk),
+                    detail=audit_detail,
+                )
+                contract.save(update_fields=["status", "provider_metadata", "updated_at"])
+                messages.success(
+                    request,
+                    f"Device reassigned to {new_customer_name}. "
+                    f"New contract: {new_contract.contract_number} | "
+                    f"Base value: MWK {reassignment_base:,.0f} | "
+                    f"Deposit: MWK {new_deposit:,.0f}",
+                )
+                return redirect("hq_repossession_resale")
             elif action == "add_recovery_cost":
                 amount = Decimal(request.POST.get("amount") or "0")
                 if amount <= 0:
@@ -3070,7 +3160,8 @@ def hq_repossession_resale(request):
             else:
                 raise ValueError("Unknown recovery action.")
 
-            contract.save(update_fields=["status", "amount_paid", "updated_at"])
+            if action not in ("initiate_reassignment",):
+                contract.save(update_fields=["status", "amount_paid", "updated_at"])
             audit_detail["new_status"] = contract.status
             AuditLog.objects.create(
                 user=request.user,
@@ -3090,15 +3181,35 @@ def hq_repossession_resale(request):
     contracts = PaymentContract.objects.order_by("-created_at")
     costs = RecoveryCost.objects.select_related("contract", "recorded_by", "approved_by")[:50]
 
+    # Enrich ready_for_resale contracts with reassignment financial computations
+    ready_for_resale_qs = list(contracts.filter(status=PaymentContract.STATUS_READY_FOR_RESALE)[:25])
+    for c in ready_for_resale_qs:
+        total_loan = c.total_amount or Decimal("0")
+        total_paid = c.amount_paid or Decimal("0")
+        base = max(total_loan - total_paid, Decimal("0"))
+        c.reassignment_base_value = base
+        c.new_deposit_13pct = (base * NEW_DEPOSIT_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        c.new_financed_balance = base - c.new_deposit_13pct
+
+    # Reassigned devices (resold contracts with reassignment metadata)
+    resold_qs = contracts.filter(status=PaymentContract.STATUS_RESOLD)
+    reassigned_devices = [
+        c for c in resold_qs[:50]
+        if c.provider_metadata and c.provider_metadata.get("reassigned_to_contract")
+    ]
+
     return render(request, "dashboard/hq_repossession_resale.html", {
         "msg": msg,
         "msg_type": msg_type,
         "cost_type_choices": RecoveryCost.COST_TYPE_CHOICES,
-        "repossession_eligible": contracts.filter(status__in=[PaymentContract.STATUS_OVERDUE, PaymentContract.STATUS_LOCKED])[:25],
+        "repossession_eligible": contracts.filter(
+            status__in=[PaymentContract.STATUS_OVERDUE, PaymentContract.STATUS_LOCKED]
+        )[:25],
         "repossession_pending": contracts.filter(status=PaymentContract.STATUS_REPOSSESSION_PENDING)[:25],
         "repossessed_devices": contracts.filter(status=PaymentContract.STATUS_REPOSSESSED)[:25],
-        "ready_for_resale": contracts.filter(status=PaymentContract.STATUS_READY_FOR_RESALE)[:25],
+        "ready_for_resale": ready_for_resale_qs,
         "resold_devices": contracts.filter(status=PaymentContract.STATUS_RESOLD)[:25],
+        "reassigned_devices": reassigned_devices,
         "written_off": contracts.filter(status=PaymentContract.STATUS_WRITTEN_OFF)[:25],
         "recovery_costs": costs,
         "recovery_cost_total": RecoveryCost.objects.aggregate(t=Sum("amount"))["t"] or Decimal("0"),
@@ -3106,6 +3217,16 @@ def hq_repossession_resale(request):
             RecoveryCost.objects.filter(approved_at__isnull=False, is_chargeable_to_customer=True)
             .aggregate(t=Sum("amount"))["t"] or Decimal("0")
         ),
+        # KPI counts for hero
+        "eligible_count": contracts.filter(
+            status__in=[PaymentContract.STATUS_OVERDUE, PaymentContract.STATUS_LOCKED]
+        ).count(),
+        "pending_count": contracts.filter(status=PaymentContract.STATUS_REPOSSESSION_PENDING).count(),
+        "repossessed_count": contracts.filter(status=PaymentContract.STATUS_REPOSSESSED).count(),
+        "ready_count": contracts.filter(status=PaymentContract.STATUS_READY_FOR_RESALE).count(),
+        "resold_count": contracts.filter(status=PaymentContract.STATUS_RESOLD).count(),
+        "written_off_count": contracts.filter(status=PaymentContract.STATUS_WRITTEN_OFF).count(),
+        "new_deposit_rate_pct": int(NEW_DEPOSIT_RATE * 100),
     })
 
 
@@ -4057,11 +4178,18 @@ def hq_fraud_checks(request):
         third_party_phone_user_risk_flagged=True,
         status__in=["pending_review", "under_review", "submitted"],
     ).select_related("created_by").order_by("-created_at")[:20]
+    third_party_flags_count = FinancingApplication.objects.filter(
+        third_party_phone_user_risk_flagged=True,
+        status__in=["pending_review", "under_review", "submitted"],
+    ).count()
 
     # Applications with blocked/fraud notes
     fraud_marked = FinancingApplication.objects.filter(
         manager_comment__startswith="[FRAUD"
     ).select_related("created_by").order_by("-created_at")[:30]
+    fraud_marked_count = FinancingApplication.objects.filter(
+        manager_comment__startswith="[FRAUD"
+    ).count()
 
     # ── Device mismatch (IMEI verification) ──────────────────────────────────
     from django.db.models import Q as DQ
@@ -4198,13 +4326,20 @@ def hq_fraud_checks(request):
     )
     telemetry_connected = paytrigger_configured or upya_configured
 
+    open_fraud_reviews = (
+        third_party_flags_count + imei_mismatch_count + imei_possible_count
+    )
+
     return render(request, "dashboard/hq_fraud_checks.html", {
         "dup_ids": list(dup_ids),
         "dup_phones": list(dup_phones),
         "dup_guarantors": list(dup_guarantors),
         "dup_imei": list(dup_imei),
         "third_party_flags": third_party_flags,
+        "third_party_flags_count": third_party_flags_count,
         "fraud_marked": fraud_marked,
+        "fraud_marked_count": fraud_marked_count,
+        "open_fraud_reviews": open_fraud_reviews,
         "msg": msg,
         "msg_type": msg_type,
         # IMEI mismatch

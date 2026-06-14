@@ -1,73 +1,1035 @@
 {% extends "base/base.html" %}
-{% load ts_filters %}
+{% load static ts_filters %}
 
-{% block page_title %}Repossession & Resale - TengaSale HQ{% endblock %}
+{% block page_title %}Repossession & Resale — TengaSale HQ{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
+<link rel="stylesheet" href="{% static 'css/hq-flagship.css' %}">
+<style>
+/* ── Repossession Console ─────────────────────────────────────────────── */
+.repo-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+  box-sizing: border-box;
+}
+html, body { overflow-x: hidden; }
+.app-shell { max-width: 100% !important; box-shadow: none !important; }
+.content    { padding: 0 !important; }
+.footer     { display: none !important; }
+
+/* Hero */
+.repo-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  border-radius: 24px;
+  padding: 28px 24px;
+  margin-bottom: 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.repo-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: rgba(255,90,0,0.08);
+  border-radius: 50%;
+}
+.repo-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px;
+  width: 160px; height: 160px;
+  background: rgba(255,90,0,0.05);
+  border-radius: 50%;
+}
+.repo-hero-content { position: relative; z-index: 1; }
+.repo-hero-eyebrow {
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,90,0,0.9); margin-bottom: 6px;
+}
+.repo-hero-title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 950; margin: 0 0 6px;
+  letter-spacing: -0.03em;
+}
+.repo-hero-sub {
+  font-size: 13px; color: rgba(255,255,255,0.65);
+  margin: 0 0 20px;
+}
+.repo-hero-badges {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.repo-hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 12px; font-weight: 800;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.repo-hero-badge__dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+
+/* Alert */
+.repo-alert {
+  padding: 12px 16px; border-radius: 12px;
+  font-size: 13px; margin-bottom: 18px;
+  display: flex; align-items: flex-start; gap: 9px;
+  line-height: 1.5;
+}
+.repo-alert--success { background:#f0fdf4; color:#15803d; border:1px solid rgba(22,163,74,0.25); }
+.repo-alert--error   { background:#fef2f2; color:#dc2626; border:1px solid rgba(220,38,38,0.25); }
+.repo-alert--info    { background:#eff6ff; color:#2563eb; border:1px solid rgba(37,99,235,0.2); }
+.repo-alert--warning { background:#fffbeb; color:#d97706; border:1px solid rgba(217,119,6,0.2); }
+
+/* KPI grid */
+.repo-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(160px,100%), 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.repo-kpi-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 2px 16px rgba(15,23,42,0.07);
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: default;
+}
+.repo-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(15,23,42,0.11); }
+.repo-kpi-card__icon {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: grid; place-items: center;
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.repo-kpi-card__icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.repo-kpi-card__val {
+  font-size: 28px; font-weight: 950;
+  letter-spacing: -0.03em; line-height: 1;
+  margin-bottom: 4px;
+}
+.repo-kpi-card__label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+/* Compliance rule banner */
+.repo-rule-banner {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(220,38,38,0.20);
+  border-left: 4px solid #dc2626;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  font-size: 12.5px;
+  color: #374151;
+  line-height: 1.6;
+}
+.repo-rule-banner strong { color: #dc2626; }
+
+/* Section */
+.repo-section { margin-bottom: 28px; }
+.repo-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.repo-section-hdr h2 {
+  font-size: 15px; font-weight: 900; color: #0f172a; margin: 0;
+  display: flex; align-items: center; gap: 9px;
+}
+.repo-section-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.repo-section-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.repo-section-count {
+  font-size: 11px; font-weight: 800;
+  padding: 3px 10px; border-radius: 99px;
+}
+
+/* Glass panel */
+.repo-glass {
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 14px rgba(15,23,42,0.07);
+}
+
+/* Contract card */
+.repo-contract-card {
+  border-bottom: 1px solid rgba(226,232,240,0.8);
+  padding: 16px 18px;
+  transition: background 0.12s;
+}
+.repo-contract-card:last-child { border-bottom: none; }
+.repo-contract-card:hover { background: rgba(248,250,252,0.9); }
+.repo-contract-card-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+}
+.repo-contract-info h3 {
+  font-size: 14px; font-weight: 800; color: #0f172a;
+  margin: 0 0 4px;
+}
+.repo-contract-meta {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  font-size: 11.5px; color: #64748b;
+  margin-bottom: 10px;
+}
+.repo-contract-meta span {
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.repo-contract-actions {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 10px; align-items: center;
+}
+
+/* Reassignment panel */
+.repo-reassign-panel {
+  background: rgba(248,250,252,0.9);
+  border-top: 1px solid rgba(226,232,240,0.8);
+  padding: 16px 18px;
+}
+.repo-reassign-formula {
+  background: rgba(15,23,42,0.04);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: #334155;
+  margin-bottom: 14px;
+  line-height: 1.7;
+}
+.repo-reassign-formula .formula-line {
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.repo-reassign-formula .formula-line + .formula-line {
+  border-top: 1px solid rgba(226,232,240,0.8);
+  padding-top: 6px; margin-top: 6px;
+}
+.repo-reassign-formula .formula-result {
+  font-weight: 900; font-size: 14px; color: #0f172a;
+}
+.repo-reassign-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px,100%),1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.repo-form-group label {
+  display: block; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: #64748b; margin-bottom: 5px;
+}
+.repo-form-control {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px; font-size: 13px;
+  background: rgba(255,255,255,0.9);
+  box-sizing: border-box; outline: none;
+}
+.repo-form-control:focus { border-color: #ff5a00; }
+.repo-form-select {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px; font-size: 13px;
+  background: rgba(255,255,255,0.9);
+  box-sizing: border-box; outline: none;
+  -webkit-appearance: none;
+}
+
+/* Buttons */
+.repo-btn {
+  padding: 8px 16px; border-radius: 10px;
+  font-size: 12.5px; font-weight: 800;
+  border: 1.5px solid #e5e7eb;
+  background: #fff; color: #374151;
+  cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: all 0.12s; white-space: nowrap;
+}
+.repo-btn:hover { background: #f8fafc; transform: translateY(-1px); }
+.repo-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.repo-btn--primary { background: #ff5a00; border-color: #ff5a00; color: #fff; }
+.repo-btn--primary:hover { background: #e64d00; }
+.repo-btn--green { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+.repo-btn--danger { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+.repo-btn--amber { background: #fef3c7; border-color: #fde68a; color: #d97706; }
+.repo-btn--blue { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.repo-btn--orange { background: rgba(255,90,0,0.10); border-color: rgba(255,90,0,0.25); color: #ff5a00; }
+
+/* Status chips */
+.repo-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 99px;
+  font-size: 11px; font-weight: 700;
+}
+.repo-chip--green  { background: #dcfce7; color: #15803d; }
+.repo-chip--amber  { background: #fef3c7; color: #d97706; }
+.repo-chip--red    { background: #fee2e2; color: #dc2626; }
+.repo-chip--blue   { background: #eff6ff; color: #2563eb; }
+.repo-chip--purple { background: #f3e8ff; color: #7c3aed; }
+.repo-chip--orange { background: rgba(255,90,0,0.10); color: #ff5a00; }
+.repo-chip--navy   { background: #e0e7ff; color: #3730a3; }
+.repo-chip--grey   { background: #f1f5f9; color: #475569; }
+
+/* Empty state */
+.repo-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 40px 24px; text-align: center;
+  color: #94a3b8;
+}
+.repo-empty__icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: #f1f5f9;
+  display: grid; place-items: center;
+  margin-bottom: 4px;
+}
+.repo-empty__icon svg { width: 24px; height: 24px; fill: none; stroke: #cbd5e1; stroke-width: 1.8; stroke-linecap: round; }
+.repo-empty h4 { font-size: 14px; font-weight: 800; color: #475569; margin: 0 0 4px; }
+.repo-empty p  { font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.5; max-width: 280px; }
+
+/* Recovery cost table */
+.repo-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.repo-table th {
+  text-align: left; padding: 9px 16px;
+  color: #64748b; font-size: 0.70rem; font-weight: 700;
+  background: rgba(248,250,252,0.9);
+  border-bottom: 1.5px solid rgba(226,232,240,0.8);
+  white-space: nowrap;
+}
+.repo-table td { padding: 10px 16px; border-bottom: 1px solid rgba(241,245,249,0.9); }
+.repo-table tr:last-child td { border-bottom: none; }
+.repo-table tr:hover td { background: rgba(248,250,252,0.8); }
+
+/* Reassignment table */
+.repo-reassign-table th:first-child,
+.repo-reassign-table td:first-child { padding-left: 18px; }
+
+/* Add cost form */
+.repo-cost-form {
+  border-top: 1px solid rgba(226,232,240,0.8);
+  padding: 14px 18px;
+  background: rgba(248,250,252,0.6);
+}
+.repo-cost-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px,100%), 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .repo-hero { padding: 20px 16px; }
+  .repo-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .repo-reassign-inputs { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="ts-page-header">
-  <div>
-    <span class="page-kicker">Recovery Operations</span>
-    <h1 class="ts-page-header__title">Repossession &amp; Resale</h1>
-  </div>
-  <a href="{% url 'hq_dashboard' %}" class="btn btn-outline">Back to HQ</a>
-</div>
+<div class="repo-page hq-flagship-page" data-testid="hq-repossession-resale">
 
-{% if msg %}
-  <div class="alert alert-{{ msg_type|default:'info' }}">{{ msg }}</div>
-{% endif %}
-
-<section class="ts-grid ts-grid--kpis">
-  <div class="ts-stat-card">
-    <div class="ts-stat-card__body">
-      <div class="ts-stat-card__val">{{ recovery_cost_total|mwk }}</div>
-      <div class="ts-stat-card__label">Recovery Costs Recorded</div>
-    </div>
-  </div>
-  <div class="ts-stat-card">
-    <div class="ts-stat-card__body">
-      <div class="ts-stat-card__val">{{ approved_recovery_cost_total|mwk }}</div>
-      <div class="ts-stat-card__label">Approved Chargeable Costs</div>
-    </div>
-  </div>
-</section>
-
-{% include "dashboard/partials/recovery_bucket.html" with title="Repossession Eligible" rows=repossession_eligible action="mark_repossession_pending" action_label="Mark Pending" %}
-{% include "dashboard/partials/recovery_bucket.html" with title="Repossession Pending" rows=repossession_pending action="mark_repossessed" action_label="Mark Repossessed" secondary_action="cancel_repossession" secondary_label="Cancel" %}
-{% include "dashboard/partials/recovery_bucket.html" with title="Repossessed Devices" rows=repossessed_devices action="mark_ready_for_resale" action_label="Ready for Resale" %}
-{% include "dashboard/partials/recovery_bucket.html" with title="Ready for Resale" rows=ready_for_resale action="record_resale" action_label="Record Resale" resale=True %}
-{% include "dashboard/partials/recovery_bucket.html" with title="Resold Devices" rows=resold_devices %}
-{% include "dashboard/partials/recovery_bucket.html" with title="Written Off / Shortfall" rows=written_off %}
-
-<section class="menu-list">
-  <h2>Recovery Costs</h2>
-  {% for cost in recovery_costs %}
-    <div class="application-card">
-      <div class="application-card-main">
-        <div class="application-card-header">
-          <h3>{{ cost.contract.contract_number }} - {{ cost.get_cost_type_display }}</h3>
-          <span class="status-pill {% if cost.approved_at %}status-approved{% else %}status-pending_review{% endif %}">
-            {% if cost.approved_at %}Approved{% else %}Pending{% endif %}
-          </span>
+  {# ── Hero ────────────────────────────────────────────────────────── #}
+  <div class="repo-hero">
+    <div class="repo-hero-content">
+      <div class="repo-hero-eyebrow">HQ Command Center · Recovery Operations</div>
+      <h1 class="repo-hero-title">Repossession &amp; Resale</h1>
+      <p class="repo-hero-sub">Recovery workflow · chargeable costs · device reassignment · resale tracking</p>
+      <div class="repo-hero-badges">
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#f59e0b;"></span>
+          <span>{{ eligible_count }} Eligible</span>
         </div>
-        <div class="application-meta">
-          <span>{{ cost.amount|mwk }}</span>
-          <span>{{ cost.incurred_at|date:"Y/m/d, H:i" }}</span>
-          <span>{% if cost.is_chargeable_to_customer %}Chargeable{% else %}Internal{% endif %}</span>
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#3b82f6;"></span>
+          <span>{{ pending_count }} Pending</span>
         </div>
-        {% if cost.description %}<p>{{ cost.description }}</p>{% endif %}
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#8b5cf6;"></span>
+          <span>{{ repossessed_count }} Recovered</span>
+        </div>
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#25d366;"></span>
+          <span>{{ ready_count }} Ready for Reassignment</span>
+        </div>
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#ff5a00;"></span>
+          <span>{{ resold_count }} Reassigned/Resold</span>
+        </div>
+        <div class="repo-hero-badge">
+          <span class="repo-hero-badge__dot" style="background:#dc2626;"></span>
+          <span>{{ written_off_count }} Written Off</span>
+        </div>
       </div>
-      {% if not cost.approved_at %}
-        <form method="post" class="application-card-side">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="approve_recovery_cost">
-          <input type="hidden" name="contract_id" value="{{ cost.contract_id }}">
-          <input type="hidden" name="cost_id" value="{{ cost.id }}">
-          <button type="submit" class="btn btn-outline btn-sm">Approve</button>
-        </form>
+    </div>
+  </div>
+
+  {# ── Flash / Action message ───────────────────────────────────────── #}
+  {% if msg %}
+  <div class="repo-alert repo-alert--{{ msg_type }}">
+    {% if msg_type == 'success' %}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    {% else %}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {% endif %}
+    {{ msg }}
+  </div>
+  {% endif %}
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="repo-alert repo-alert--{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}info{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {# ── Compliance Rule Banner ──────────────────────────────────────── #}
+  <div class="repo-rule-banner" data-testid="repo-compliance-banner">
+    <strong>Policy:</strong> Amounts previously paid by the defaulting customer are <strong>not refunded</strong> upon lawful repossession unless separately approved by management. &nbsp;·&nbsp;
+    <strong>Reassignment Base Value</strong> = Original Total Loan Cost − Total Paid by Old Customer. &nbsp;·&nbsp;
+    New deposit required: <strong>{{ new_deposit_rate_pct }}%</strong> of Reassignment Base Value. &nbsp;·&nbsp;
+    Device reassignment creates a fresh contract and a new active customer-device relationship. The prior contract remains historical for audit and recovery reporting.
+  </div>
+
+  {# ── KPI Zone ────────────────────────────────────────────────────── #}
+  <div class="repo-kpi-grid" data-testid="repo-kpi-grid">
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#fef3c7;color:#d97706;">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#d97706;" data-counter="{{ eligible_count }}">{{ eligible_count }}</div>
+      <div class="repo-kpi-card__label">Repossession Eligible</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#eff6ff;color:#2563eb;">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#2563eb;" data-counter="{{ pending_count }}">{{ pending_count }}</div>
+      <div class="repo-kpi-card__label">Pending Retrieval</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#f3e8ff;color:#7c3aed;">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#7c3aed;" data-counter="{{ repossessed_count }}">{{ repossessed_count }}</div>
+      <div class="repo-kpi-card__label">Recovered Devices</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#dcfce7;color:#15803d;">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#15803d;" data-counter="{{ ready_count }}">{{ ready_count }}</div>
+      <div class="repo-kpi-card__label">Ready for Reassignment</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:rgba(255,90,0,0.10);color:#ff5a00;">
+        <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#ff5a00;" data-counter="{{ resold_count }}">{{ resold_count }}</div>
+      <div class="repo-kpi-card__label">Reassigned / Resold</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#fee2e2;color:#dc2626;">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#dc2626;" data-counter="{{ written_off_count }}">{{ written_off_count }}</div>
+      <div class="repo-kpi-card__label">Written Off</div>
+    </div>
+
+    <div class="repo-kpi-card" style="grid-column: span 1;">
+      <div class="repo-kpi-card__icon" style="background:#fef3c7;color:#d97706;">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#d97706;font-size:18px;">{{ recovery_cost_total|mwk }}</div>
+      <div class="repo-kpi-card__label">Recovery Costs</div>
+    </div>
+
+    <div class="repo-kpi-card">
+      <div class="repo-kpi-card__icon" style="background:#dcfce7;color:#15803d;">
+        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <div class="repo-kpi-card__val" style="color:#15803d;font-size:18px;">{{ approved_recovery_cost_total|mwk }}</div>
+      <div class="repo-kpi-card__label">Approved Chargeable</div>
+    </div>
+
+  </div>
+
+  {# PIPELINE SECTIONS #}
+
+  {# ── 1. Repossession Eligible ─────────────────────────────────── #}
+  <div class="repo-section" data-testid="repo-section-eligible">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#fef3c7;color:#d97706;">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </span>
+        Repossession Eligible
+      </h2>
+      {% if repossession_eligible %}
+      <span class="repo-section-count" style="background:#fef3c7;color:#d97706;">{{ repossession_eligible|length }}</span>
       {% endif %}
     </div>
-  {% empty %}
-    <div class="card">No recovery costs recorded.</div>
-  {% endfor %}
-</section>
+    <div class="repo-glass">
+      {% for contract in repossession_eligible %}
+      <div class="repo-contract-card">
+        <div class="repo-contract-card-top">
+          <div class="repo-contract-info">
+            <h3>{{ contract.customer_name|default:"Unknown Customer" }}</h3>
+            <div class="repo-contract-meta">
+              <span>Contract: <strong>{{ contract.contract_number }}</strong></span>
+              <span>·</span>
+              <span>Balance: <strong>{{ contract.remaining_amount|mwk }}</strong></span>
+              {% if contract.imei_number %}<span>·</span><span class="frd-mono" style="font-family:monospace;font-size:11px;">{{ contract.imei_number }}</span>{% endif %}
+              {% if contract.device_model %}<span>·</span><span>{{ contract.device_model }}</span>{% endif %}
+            </div>
+            <span class="repo-chip repo-chip--amber">{{ contract.get_status_display }}</span>
+          </div>
+          <div class="repo-contract-actions">
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="contract_id" value="{{ contract.id }}">
+              <input type="hidden" name="action" value="mark_repossession_pending">
+              <button type="submit" class="repo-btn repo-btn--amber">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Mark Pending
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="repo-cost-form">
+          <form method="post" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+            {% csrf_token %}
+            <input type="hidden" name="contract_id" value="{{ contract.id }}">
+            <input type="hidden" name="action" value="add_recovery_cost">
+            <div class="repo-form-group" style="min-width:130px;flex:1;">
+              <label>Cost Type</label>
+              <select name="cost_type" class="repo-form-select">
+                {% for val, label in cost_type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="repo-form-group" style="min-width:120px;flex:1;">
+              <label>Amount (MWK)</label>
+              <input name="amount" type="number" min="0" step="0.01" placeholder="0.00" class="repo-form-control">
+            </div>
+            <div class="repo-form-group" style="min-width:160px;flex:2;">
+              <label>Description</label>
+              <input name="description" placeholder="Cost description..." class="repo-form-control">
+            </div>
+            <div class="repo-form-group">
+              <label>Chargeable</label>
+              <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;padding-top:2px;">
+                <input type="checkbox" name="is_chargeable_to_customer" checked style="accent-color:#ff5a00;"> Yes
+              </label>
+            </div>
+            <button type="submit" class="repo-btn" style="margin-bottom:1px;">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Cost
+            </button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div class="repo-empty" data-testid="repo-empty-eligible">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h4>No eligible contracts</h4>
+        <p>Overdue or locked contracts that meet recovery thresholds will appear here.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── 2. Repossession Pending ───────────────────────────────────── #}
+  <div class="repo-section" data-testid="repo-section-pending">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#eff6ff;color:#2563eb;">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        Repossession Pending
+      </h2>
+      {% if repossession_pending %}
+      <span class="repo-section-count" style="background:#eff6ff;color:#2563eb;">{{ repossession_pending|length }}</span>
+      {% endif %}
+    </div>
+    <div class="repo-glass">
+      {% for contract in repossession_pending %}
+      <div class="repo-contract-card">
+        <div class="repo-contract-card-top">
+          <div class="repo-contract-info">
+            <h3>{{ contract.customer_name|default:"Unknown Customer" }}</h3>
+            <div class="repo-contract-meta">
+              <span>Contract: <strong>{{ contract.contract_number }}</strong></span>
+              <span>·</span>
+              <span>Balance: <strong>{{ contract.remaining_amount|mwk }}</strong></span>
+              {% if contract.customer_phone %}<span>·</span><span>{{ contract.customer_phone }}</span>{% endif %}
+              {% if contract.device_model %}<span>·</span><span>{{ contract.device_model }}</span>{% endif %}
+            </div>
+            <span class="repo-chip repo-chip--blue">Field Retrieval In Progress</span>
+          </div>
+          <div class="repo-contract-actions">
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="contract_id" value="{{ contract.id }}">
+              <input type="hidden" name="action" value="mark_repossessed">
+              <button type="submit" class="repo-btn repo-btn--primary">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Mark Repossessed
+              </button>
+            </form>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="contract_id" value="{{ contract.id }}">
+              <input type="hidden" name="action" value="cancel_repossession">
+              <button type="submit" class="repo-btn">Cancel</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="repo-empty" data-testid="repo-empty-pending">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h4>No active retrievals</h4>
+        <p>Cases marked for field repossession will appear here during the retrieval process.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── 3. Recovered Devices ─────────────────────────────────────── #}
+  <div class="repo-section" data-testid="repo-section-repossessed">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#f3e8ff;color:#7c3aed;">
+          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </span>
+        Recovered Devices
+      </h2>
+      {% if repossessed_devices %}
+      <span class="repo-section-count" style="background:#f3e8ff;color:#7c3aed;">{{ repossessed_devices|length }}</span>
+      {% endif %}
+    </div>
+    <div class="repo-glass">
+      {% for contract in repossessed_devices %}
+      <div class="repo-contract-card">
+        <div class="repo-contract-card-top">
+          <div class="repo-contract-info">
+            <h3>{{ contract.customer_name|default:"Unknown Customer" }}</h3>
+            <div class="repo-contract-meta">
+              <span>Contract: <strong>{{ contract.contract_number }}</strong></span>
+              {% if contract.imei_number %}<span>·</span><span class="frd-mono" style="font-family:monospace;font-size:11px;">{{ contract.imei_number }}</span>{% endif %}
+              {% if contract.device_model %}<span>·</span><span>{{ contract.device_model }}</span>{% endif %}
+              <span>·</span>
+              <span>Total: <strong>{{ contract.total_amount|mwk }}</strong></span>
+              <span>·</span>
+              <span>Paid: <strong>{{ contract.amount_paid|mwk }}</strong></span>
+            </div>
+            <span class="repo-chip repo-chip--purple">Device Physically Recovered</span>
+          </div>
+          <div class="repo-contract-actions">
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="contract_id" value="{{ contract.id }}">
+              <input type="hidden" name="action" value="mark_ready_for_resale">
+              <button type="submit" class="repo-btn repo-btn--green">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Ready for Reassignment
+              </button>
+            </form>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="contract_id" value="{{ contract.id }}">
+              <input type="hidden" name="action" value="write_off">
+              <button type="submit" class="repo-btn repo-btn--danger" onclick="return confirm('Write off {{ contract.contract_number }}? This cannot be undone.')">Write Off</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="repo-empty" data-testid="repo-empty-repossessed">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </div>
+        <h4>No recovered devices</h4>
+        <p>Devices physically recovered from customers in default will appear here for inspection and conditioning.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── 4. Ready for Reassignment ────────────────────────────────── #}
+  <div class="repo-section" data-testid="repo-section-ready">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#dcfce7;color:#15803d;">
+          <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </span>
+        Ready for Reassignment
+      </h2>
+      {% if ready_for_resale %}
+      <span class="repo-section-count" style="background:#dcfce7;color:#15803d;">{{ ready_for_resale|length }}</span>
+      {% endif %}
+    </div>
+    <div class="repo-glass">
+      {% for contract in ready_for_resale %}
+      <div class="repo-contract-card">
+        <div class="repo-contract-card-top">
+          <div class="repo-contract-info">
+            <h3>{{ contract.customer_name|default:"Unknown Customer" }} <span style="font-size:11px;color:#64748b;font-weight:600;">— old customer</span></h3>
+            <div class="repo-contract-meta">
+              <span>Contract: <strong>{{ contract.contract_number }}</strong></span>
+              {% if contract.device_model %}<span>·</span><span>{{ contract.device_model }}</span>{% endif %}
+              {% if contract.imei_number %}<span>·</span><span class="frd-mono" style="font-family:monospace;font-size:11px;">{{ contract.imei_number }}</span>{% endif %}
+            </div>
+            <span class="repo-chip repo-chip--green">Ready for Reassignment</span>
+          </div>
+        </div>
+
+        {# Financial computation panel #}
+        <div class="repo-reassign-panel" data-testid="repo-reassign-panel-{{ contract.pk }}">
+          <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#ff5a00;margin-bottom:12px;">
+            Reassignment Financial Computation
+          </div>
+          <div class="repo-reassign-formula" data-testid="repo-reassign-formula-{{ contract.pk }}">
+            <div class="formula-line">
+              <span>Original Total Loan Cost</span>
+              <span style="font-weight:700;font-family:monospace;">{{ contract.total_amount|mwk }}</span>
+            </div>
+            <div class="formula-line">
+              <span>Total Paid by Old Customer</span>
+              <span style="font-weight:700;color:#dc2626;font-family:monospace;">− {{ contract.amount_paid|mwk }}</span>
+            </div>
+            <div class="formula-line">
+              <span style="font-weight:800;">Reassignment Base Value</span>
+              <span class="formula-result" style="color:#ff5a00;" data-testid="repo-base-value-{{ contract.pk }}">= {{ contract.reassignment_base_value|mwk }}</span>
+            </div>
+            <div class="formula-line" style="margin-top:4px;">
+              <span>New Deposit Required ({{ new_deposit_rate_pct }}%)</span>
+              <span style="font-weight:700;color:#0f172a;font-family:monospace;" data-testid="repo-new-deposit-{{ contract.pk }}">{{ contract.new_deposit_13pct|mwk }}</span>
+            </div>
+            <div class="formula-line">
+              <span>New Financed Balance</span>
+              <span style="font-weight:700;color:#0f172a;font-family:monospace;" data-testid="repo-financed-balance-{{ contract.pk }}">{{ contract.new_financed_balance|mwk }}</span>
+            </div>
+          </div>
+
+          {# Reassignment form #}
+          <form method="post" data-testid="repo-reassign-form-{{ contract.pk }}">
+            {% csrf_token %}
+            <input type="hidden" name="contract_id" value="{{ contract.id }}">
+            <input type="hidden" name="action" value="initiate_reassignment">
+            <div class="repo-reassign-inputs">
+              <div class="repo-form-group">
+                <label>New Customer Name</label>
+                <input name="new_customer_name" type="text" placeholder="Full name" class="repo-form-control" required>
+              </div>
+              <div class="repo-form-group">
+                <label>New Customer Phone</label>
+                <input name="new_customer_phone" type="tel" placeholder="265998XXXXXX" class="repo-form-control" required>
+              </div>
+              <div class="repo-form-group">
+                <label>New Repayment Term</label>
+                <select name="term_months" class="repo-form-select">
+                  <option value="3">3 months</option>
+                  <option value="6">6 months</option>
+                  <option value="9">9 months</option>
+                  <option value="12" selected>12 months</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="repo-btn repo-btn--primary" onclick="return confirm('Reassign this device to the new customer? This will create a new contract. No refund will be made to the old customer.')">
+                <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                Initiate Reassignment
+              </button>
+              <span style="font-size:11px;color:#64748b;">Creates a new contract. Old contract remains in history. No refund to old customer.</span>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div class="repo-empty" data-testid="repo-empty-ready">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <h4>No devices ready for reassignment</h4>
+        <p>Recovered and inspected devices with confirmed financials will appear here ready for new customer assignment.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── 5. Reassigned / Resold Devices ──────────────────────────── #}
+  <div class="repo-section" data-testid="repo-section-resold">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:rgba(255,90,0,0.12);color:#ff5a00;">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        Reassigned &amp; Resold Devices
+      </h2>
+      {% if reassigned_devices %}
+      <span class="repo-section-count" style="background:rgba(255,90,0,0.12);color:#ff5a00;">{{ reassigned_devices|length }} reassignments</span>
+      {% endif %}
+    </div>
+    <div class="repo-glass">
+      {% if reassigned_devices %}
+      <div style="overflow-x:auto;">
+        <table class="repo-table repo-reassign-table" data-testid="repo-reassignment-table">
+          <thead>
+            <tr>
+              <th>Old Customer</th>
+              <th>New Customer</th>
+              <th>Device</th>
+              <th>Old Contract</th>
+              <th>New Contract</th>
+              <th>Base Value</th>
+              <th>New Deposit</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contract in reassigned_devices %}
+            <tr>
+              <td>
+                <div style="font-weight:700;">{{ contract.customer_name|default:"—" }}</div>
+                <div style="font-size:11px;color:#64748b;">{{ contract.customer_phone }}</div>
+              </td>
+              <td>
+                <div style="font-weight:700;">{{ contract.provider_metadata.reassigned_to_customer|default:"—" }}</div>
+                <div style="font-size:11px;color:#64748b;">New contract created</div>
+              </td>
+              <td>
+                <div style="font-size:13px;">{{ contract.device_model|default:"—" }}</div>
+                {% if contract.imei_number %}<div style="font-size:10.5px;font-family:monospace;color:#64748b;">{{ contract.imei_number }}</div>{% endif %}
+              </td>
+              <td style="font-family:monospace;font-size:12px;color:#64748b;">{{ contract.contract_number }}</td>
+              <td style="font-family:monospace;font-size:12px;font-weight:700;color:#ff5a00;">{{ contract.provider_metadata.reassigned_to_contract|default:"—" }}</td>
+              <td style="font-weight:700;">{{ contract.provider_metadata.reassignment_base_value|default:"—" }}</td>
+              <td>{{ contract.provider_metadata.new_deposit_13pct|default:"—" }}</td>
+              <td><span class="repo-chip repo-chip--orange">Reassigned</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif resold_devices %}
+      <div style="overflow-x:auto;">
+        <table class="repo-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Contract</th>
+              <th>Device</th>
+              <th>Total Amount</th>
+              <th>Amount Recovered</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contract in resold_devices %}
+            <tr>
+              <td style="font-weight:700;">{{ contract.customer_name|default:"—" }}</td>
+              <td style="font-family:monospace;font-size:12px;">{{ contract.contract_number }}</td>
+              <td>{{ contract.device_model|default:"—" }}</td>
+              <td>{{ contract.total_amount|mwk }}</td>
+              <td>{{ contract.amount_paid|mwk }}</td>
+              <td><span class="repo-chip repo-chip--orange">Resold</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="repo-empty" data-testid="repo-empty-resold">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h4>No completed reassignments yet</h4>
+        <p>Devices that have been successfully reassigned to new customers will appear here with full audit trail.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── 6. Written Off / Shortfall ───────────────────────────────── #}
+  {% if written_off %}
+  <div class="repo-section" data-testid="repo-section-written-off">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#fee2e2;color:#dc2626;">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+        Written Off / Shortfall
+      </h2>
+      <span class="repo-section-count" style="background:#fee2e2;color:#dc2626;">{{ written_off|length }}</span>
+    </div>
+    <div class="repo-glass">
+      <div style="overflow-x:auto;">
+        <table class="repo-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Contract</th>
+              <th>Device</th>
+              <th>Original Loan</th>
+              <th>Total Paid</th>
+              <th>Shortfall</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contract in written_off %}
+            <tr>
+              <td style="font-weight:700;">{{ contract.customer_name|default:"—" }}</td>
+              <td style="font-family:monospace;font-size:12px;">{{ contract.contract_number }}</td>
+              <td>{{ contract.device_model|default:"—" }}</td>
+              <td>{{ contract.total_amount|mwk }}</td>
+              <td>{{ contract.amount_paid|mwk }}</td>
+              <td style="font-weight:700;color:#dc2626;">
+                {% with shortfall=contract.total_amount|sub:contract.amount_paid %}
+                  {% if shortfall > 0 %}{{ shortfall|mwk }}{% else %}—{% endif %}
+                {% endwith %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# RECOVERY COSTS #}
+  <div class="repo-section" data-testid="repo-section-costs">
+    <div class="repo-section-hdr">
+      <h2>
+        <span class="repo-section-icon" style="background:#fef3c7;color:#d97706;">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+        Recovery Costs
+      </h2>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#64748b;">Recorded: <strong style="color:#0f172a;">{{ recovery_cost_total|mwk }}</strong></span>
+        <span style="font-size:12px;color:#64748b;">Approved Chargeable: <strong style="color:#15803d;">{{ approved_recovery_cost_total|mwk }}</strong></span>
+      </div>
+    </div>
+    <div class="repo-glass">
+      {% if recovery_costs %}
+      <div style="overflow-x:auto;">
+        <table class="repo-table">
+          <thead>
+            <tr>
+              <th>Contract</th>
+              <th>Cost Type</th>
+              <th>Amount</th>
+              <th>Description</th>
+              <th>Chargeable</th>
+              <th>Date</th>
+              <th>Recorded By</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cost in recovery_costs %}
+            <tr>
+              <td style="font-family:monospace;font-size:12px;font-weight:700;">{{ cost.contract.contract_number }}</td>
+              <td>{{ cost.get_cost_type_display }}</td>
+              <td style="font-weight:700;">{{ cost.amount|mwk }}</td>
+              <td style="max-width:200px;font-size:12px;color:#475569;">{{ cost.description|default:"—"|truncatechars:60 }}</td>
+              <td>
+                {% if cost.is_chargeable_to_customer %}
+                <span class="repo-chip repo-chip--amber">Chargeable</span>
+                {% else %}
+                <span class="repo-chip repo-chip--grey">Internal</span>
+                {% endif %}
+              </td>
+              <td style="font-size:12px;color:#64748b;">{{ cost.incurred_at|date:"d M Y" }}</td>
+              <td style="font-size:12px;color:#64748b;">{{ cost.recorded_by.get_full_name|default:cost.recorded_by.username|default:"—" }}</td>
+              <td>
+                {% if cost.approved_at %}
+                <span class="repo-chip repo-chip--green">Approved</span>
+                {% else %}
+                <span class="repo-chip repo-chip--amber">Pending</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if not cost.approved_at %}
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve_recovery_cost">
+                  <input type="hidden" name="contract_id" value="{{ cost.contract_id }}">
+                  <input type="hidden" name="cost_id" value="{{ cost.id }}">
+                  <button type="submit" class="repo-btn repo-btn--green" style="font-size:11px;padding:5px 10px;">
+                    Approve
+                  </button>
+                </form>
+                {% else %}
+                <span style="font-size:11px;color:#94a3b8;">{{ cost.approved_at|date:"d M Y" }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="repo-empty">
+        <div class="repo-empty__icon">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h4>No recovery costs recorded</h4>
+        <p>Tracing, transport, legal, storage, and refurbishment costs can be recorded on each eligible contract above.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* Counter animations */
+(function () {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('[data-counter]').forEach(function (el) {
+    var to = parseInt(el.getAttribute('data-counter'), 10) || 0;
+    if (to === 0) return;
+    var start = null;
+    var dur = 800;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(to * eased);
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = to;
+    }
+    requestAnimationFrame(step);
+  });
+})();
+</script>
 {% endblock %}

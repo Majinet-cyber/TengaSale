@@ -1,687 +1,1011 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}WhatsApp Bot Operations — TengaSale HQ{% endblock %}
+{% block page_title %}WhatsApp Support Operations — TengaSale HQ{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/premium.css' %}">
+<link rel="stylesheet" href="{% static 'css/hq-flagship.css' %}">
 <style>
-/* WhatsApp Bot Operations Dashboard */
-.wa-bot-page {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0 0 40px;
-  user-select: none;
-  -webkit-user-select: none;
+/* ── WhatsApp Support Operations ─────────────────────────────────────── */
+.wa-ops-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+  box-sizing: border-box;
 }
-.wa-bot-page input,
-.wa-bot-page textarea,
-.wa-bot-page .wa-webhook-row__val {
-  user-select: text;
-  -webkit-user-select: text;
-}
+html, body { overflow-x: hidden; }
+.app-shell { max-width: 100% !important; box-shadow: none !important; }
+.content    { padding: 0 !important; }
+.footer     { display: none !important; }
 
-.wa-bot-hero {
-  background: linear-gradient(135deg, #0A5C36 0%, #128C7E 100%);
-  border-radius: 20px;
-  padding: 24px 20px;
+/* Hero */
+.wa-ops-hero {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+  border-radius: 24px;
+  padding: 28px 24px 22px;
   margin-bottom: 20px;
   color: #fff;
   position: relative;
   overflow: hidden;
 }
-
-.wa-bot-hero::after {
+.wa-ops-hero::before {
   content: '';
   position: absolute;
-  right: -20px;
-  bottom: -20px;
-  width: 120px;
-  height: 120px;
-  background: rgba(255,255,255,0.06);
+  top: -80px; right: -60px;
+  width: 240px; height: 240px;
+  background: rgba(255,255,255,0.04);
   border-radius: 50%;
 }
-
-.wa-bot-hero__title {
-  font-size: 20px;
-  font-weight: 900;
-  margin: 0 0 4px;
+.wa-ops-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: 20px;
+  width: 180px; height: 180px;
+  background: rgba(37,211,102,0.07);
+  border-radius: 50%;
 }
-
-.wa-bot-hero__sub {
-  font-size: 13px;
-  color: rgba(255,255,255,0.75);
-  margin: 0;
+.wa-ops-hero-inner { position: relative; z-index: 1; }
+.wa-ops-hero-top {
+  display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;
 }
-
-.wa-bot-hero__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 6px 12px;
+.wa-ops-hero-icon {
+  width: 48px; height: 48px;
   background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.wa-ops-hero h1 {
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+  font-weight: 950; margin: 0 0 4px;
+  letter-spacing: -0.03em;
+}
+.wa-ops-hero p {
+  font-size: 12.5px; color: rgba(255,255,255,0.72); margin: 0;
+}
+.wa-ops-hero-status {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.20);
   border-radius: 99px;
+  font-size: 12px; font-weight: 800;
+  margin-top: 12px;
+}
+.wa-ops-hero-status__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: wa-pulse 2s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(37,211,102,0); }
+}
+.wa-ops-hero-metrics {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 14px;
+}
+.wa-ops-hero-metric {
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 8px 14px;
   font-size: 12px;
-  font-weight: 800;
+}
+.wa-ops-hero-metric__val {
+  font-size: 18px; font-weight: 900; line-height: 1;
+  margin-bottom: 2px;
+}
+.wa-ops-hero-metric__lbl {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.65);
 }
 
-.wa-status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #25D366;
-  box-shadow: 0 0 0 3px rgba(37,211,102,0.3);
-}
-
-.wa-status-dot--offline { background: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.3); }
-.wa-status-dot--mock    { background: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.3); }
-
-.wa-stat-row {
+/* KPI grid */
+.wa-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(150px,100%),1fr));
   gap: 10px;
+  margin-bottom: 20px;
+}
+.wa-kpi-tile {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative; overflow: hidden;
+}
+.wa-kpi-tile:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(15,23,42,0.10); }
+.wa-kpi-tile__accent {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; border-radius: 16px 16px 0 0;
+}
+.wa-kpi-tile__val {
+  font-size: 26px; font-weight: 950;
+  letter-spacing: -0.03em; line-height: 1;
+  margin-bottom: 4px;
+}
+.wa-kpi-tile__lbl {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: #64748b;
+}
+.wa-kpi-tile__chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 99px;
+  font-size: 9.5px; font-weight: 800;
+  margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+/* Delivery strip */
+.wa-delivery-strip {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+}
+.wa-delivery-strip-inner {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.wa-delivery-label { font-size: 13px; font-weight: 800; color: #0f172a; }
+.wa-delivery-pct {
+  font-size: 28px; font-weight: 950;
+  letter-spacing: -0.04em;
+}
+.wa-delivery-bar-track {
+  height: 6px; border-radius: 99px;
+  background: #e2e8f0; overflow: hidden;
+}
+.wa-delivery-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 1s cubic-bezier(0.16,1,0.3,1);
+}
+.wa-delivery-sub { font-size: 11.5px; color: #64748b; margin-top: 6px; }
+
+/* Glass panel */
+.wa-glass-panel {
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 14px rgba(15,23,42,0.07);
   margin-bottom: 16px;
 }
-
-@media (min-width: 600px) { .wa-stat-row { grid-template-columns: repeat(4, 1fr); } }
-
-.wa-stat-card {
-  background: #fff;
-  border: 1.5px solid #E5E7EB;
-  border-radius: 14px;
-  padding: 14px 14px 12px;
-  position: relative;
-  overflow: hidden;
-}
-
-.wa-stat-card__val {
-  font-size: 26px;
-  font-weight: 900;
-  color: #0F172A;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.wa-stat-card__lbl {
-  font-size: 11px;
-  font-weight: 700;
-  color: #94A3B8;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  margin-top: 4px;
-}
-
-.wa-stat-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: #25D366;
-  border-radius: 14px 14px 0 0;
-}
-
-.wa-stat-card--failed::after { background: #EF4444; }
-.wa-stat-card--queued::after { background: #F59E0B; }
-.wa-stat-card--conv::after   { background: #2563EB; }
-
-.ts-panel {
-  background: #fff;
-  border: 1.5px solid #E5E7EB;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-
-.ts-panel__header {
-  padding: 14px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  display: flex;
-  align-items: center;
+.wa-glass-panel-hdr {
+  display: flex; align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(226,232,240,0.8);
 }
-
-.ts-panel__title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #0F172A;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.wa-glass-panel-title {
+  font-size: 13px; font-weight: 900; color: #0f172a;
+  display: flex; align-items: center; gap: 8px;
 }
+.wa-glass-panel-title svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
 
-.ts-panel__body { padding: 0; }
-
-.wa-template-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #F8FAFC;
-}
-
-.wa-template-item:last-child { border-bottom: none; }
-
-.wa-template-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #DCFCE7;
-  color: #16A34A;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.wa-template-icon--disabled { background: #F1F5F9; color: #94A3B8; }
-
-.wa-template-name {
-  font-size: 13px;
-  font-weight: 800;
-  color: #0F172A;
-}
-
-.wa-template-cat {
-  font-size: 11px;
-  color: #64748B;
-  margin-top: 1px;
-}
-
-.wa-template-badge {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 99px;
-  flex-shrink: 0;
-}
-
-.wa-template-badge--on  { background: #DCFCE7; color: #166534; }
-.wa-template-badge--off { background: #F1F5F9; color: #6B7280; }
-
-.wa-auto-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #F8FAFC;
-}
-
-.wa-auto-item:last-child { border-bottom: none; }
-
-.wa-auto-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: #25D366;
-  flex-shrink: 0;
-}
-
-.wa-auto-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0F172A;
-  flex: 1;
-}
-
-.wa-auto-trigger {
-  font-size: 11px;
-  color: #64748B;
-}
-
-.wa-webhook-row {
-  display: flex;
-  align-items: center;
+/* Config rows */
+.wa-config-row {
+  display: flex; align-items: center;
   justify-content: space-between;
-  padding: 11px 16px;
-  border-bottom: 1px solid #F8FAFC;
-  font-size: 13px;
-}
-
-.wa-webhook-row:last-child { border-bottom: none; }
-.wa-webhook-row__label { color: #64748B; font-weight: 600; }
-.wa-webhook-row__val   { color: #0F172A; font-weight: 700; font-family: ui-monospace, monospace; font-size: 11px; word-break: break-word; overflow-wrap: anywhere; text-align: right; max-width: 58%; }
-
-.wa-test-form {
-  padding: 16px;
-  display: flex;
-  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(248,250,252,0.9);
+  gap: 12px; font-size: 13px;
   flex-wrap: wrap;
-  align-items: flex-end;
 }
-.wa-test-section {
-  border-top: 1px solid #F1F5F9;
+.wa-config-row:last-child { border-bottom: none; }
+.wa-config-label { color: #64748b; font-weight: 600; font-size: 12.5px; min-width: 0; }
+.wa-config-val {
+  color: #0f172a; font-weight: 700;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 11px; word-break: break-all;
+  text-align: right; max-width: 60%;
+  display: flex; align-items: center; gap: 6px;
 }
-.wa-test-section:first-of-type { border-top: 0; }
-.wa-test-section__label {
-  padding: 12px 16px 0;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #64748B;
+.wa-copy-btn {
+  background: none; border: none; cursor: pointer;
+  color: #94a3b8; padding: 2px 4px; border-radius: 5px;
+  transition: color 0.12s;
+  display: inline-flex; align-items: center;
 }
-.wa-test-section--simulate .wa-test-section__label { color: #128C7E; }
-.wa-test-section--real .wa-test-section__label { color: #C2410C; }
-.wa-test-result {
-  margin: 0 16px 16px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #64748B;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-.wa-test-result.is-success { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
-.wa-test-result.is-error { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+.wa-copy-btn:hover { color: #ff5a00; }
+.wa-copy-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
-.wa-test-input {
-  flex: 1;
-  min-width: 200px;
-  padding: 10px 14px;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 10px;
-  font-size: 14px;
-  outline: none;
-}
-
-.wa-test-input:focus { border-color: #25D366; }
-
-.wa-test-btn {
-  padding: 10px 18px;
-  background: #25D366;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-weight: 800;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.wa-test-btn:hover { background: #128C7E; }
-.wa-test-btn--real { background:#FF4D00; }
-.wa-test-btn--real:hover { background:#D93F00; }
-.wa-test-btn:disabled { opacity:.55; cursor:not-allowed; }
-.wa-mode-note {
-  margin: 12px 16px 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #FFF7ED;
-  color: #9A3412;
-  border: 1px solid #FED7AA;
-  font-size: 12px;
-  font-weight: 800;
-}
-.wa-mode-note--ok {
-  background:#ECFDF5;
-  color:#047857;
-  border-color:#A7F3D0;
-}
-.wa-diagnostics-grid {
-  display:grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+/* Diagnostics grid */
+.wa-diag-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0;
 }
-@media (min-width: 720px) { .wa-diagnostics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.wa-pill {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width: 42px;
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
+@media (min-width: 720px) { .wa-diag-grid { grid-template-columns: 1fr 1fr; } }
+.wa-diag-cell {
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(241,245,249,0.9);
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 8px;
 }
-.wa-pill--yes { background:#DCFCE7; color:#166534; }
-.wa-pill--no { background:#FEE2E2; color:#991B1B; }
+.wa-diag-cell:last-child,
+.wa-diag-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+.wa-diag-cell-label { font-size: 12px; font-weight: 600; color: #64748b; flex: 1; }
+.wa-diag-cell-val { font-size: 11.5px; font-weight: 700; font-family: ui-monospace, monospace; text-align: right; flex-shrink: 0; max-width: 55%; word-break: break-word; }
+
+/* Status pills */
+.wa-pill {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; border-radius: 99px;
+  font-size: 10px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.wa-pill--yes { background: #dcfce7; color: #15803d; }
+.wa-pill--no  { background: #fee2e2; color: #991b1b; }
+.wa-pill--warn { background: #fef3c7; color: #92400e; }
+
+/* Error explanation box */
+.wa-error-box {
+  margin: 0 18px 14px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: #7f1d1d;
+  line-height: 1.55;
+}
+.wa-error-box__code { font-family: monospace; font-weight: 900; color: #dc2626; }
+.wa-suggested-next {
+  margin: 0 18px 16px;
+  padding: 12px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.6;
+}
+.wa-suggested-next__title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #2563eb; margin-bottom: 5px; }
+
+/* Test actions */
+.wa-test-section {
+  padding: 16px 18px;
+  border-top: 1px solid rgba(241,245,249,0.9);
+}
+.wa-test-section:first-of-type { border-top: none; }
+.wa-test-section__eyebrow {
+  font-size: 10.5px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.wa-test-section__desc {
+  font-size: 12px; color: #64748b; margin-bottom: 12px; line-height: 1.5;
+}
+.wa-test-inputs { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.wa-test-input {
+  flex: 1; min-width: 160px;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px; font-size: 13px;
+  outline: none; background: rgba(255,255,255,0.9);
+}
+.wa-test-input:focus { border-color: #25d366; }
+.wa-test-input--real:focus { border-color: #ff5a00; }
+.wa-test-btn {
+  padding: 9px 18px; border: none; border-radius: 10px;
+  font-weight: 800; font-size: 13px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.12s;
+}
+.wa-test-btn--green { background: #25d366; color: #fff; }
+.wa-test-btn--green:hover { background: #1aad54; }
+.wa-test-btn--real { background: #ff5a00; color: #fff; }
+.wa-test-btn--real:hover { background: #e64d00; }
+.wa-test-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.wa-test-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.wa-test-result {
+  margin-top: 10px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  font-size: 12.5px; line-height: 1.55;
+  color: #64748b; word-break: break-word;
+  white-space: pre-wrap;
+}
+.wa-test-result.is-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.wa-test-result.is-error   { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+
+/* Tickets list */
+.wa-ticket-row {
+  display: flex; align-items: flex-start;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(241,245,249,0.9);
+  gap: 12px; flex-wrap: wrap;
+}
+.wa-ticket-row:last-child { border-bottom: none; }
+.wa-ticket-row:hover { background: rgba(248,250,252,0.8); }
+.wa-ticket-row-main { flex: 1; min-width: 0; }
+.wa-ticket-row-main h4 {
+  font-size: 13px; font-weight: 800; color: #0f172a;
+  margin: 0 0 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wa-ticket-row-meta { font-size: 11px; color: #64748b; }
+.wa-ticket-row-actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+/* Chip */
+.wa-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2.5px 8px; border-radius: 99px;
+  font-size: 10.5px; font-weight: 700;
+}
+.wa-chip--green  { background: #dcfce7; color: #15803d; }
+.wa-chip--amber  { background: #fef3c7; color: #d97706; }
+.wa-chip--red    { background: #fee2e2; color: #dc2626; }
+.wa-chip--blue   { background: #eff6ff; color: #2563eb; }
+.wa-chip--grey   { background: #f1f5f9; color: #475569; }
+.wa-chip--orange { background: rgba(255,90,0,0.10); color: #ff5a00; }
+.wa-chip--purple { background: #f3e8ff; color: #7c3aed; }
+
+/* Mode note */
+.wa-mode-note {
+  margin: 0 18px 14px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #fff7ed; color: #9a3412;
+  border: 1px solid #fed7aa; font-size: 12px; font-weight: 700;
+}
+.wa-mode-note--ok { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+/* Empty states */
+.wa-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 32px 20px; text-align: center;
+}
+.wa-empty svg { width: 28px; height: 28px; fill: none; stroke: #cbd5e1; stroke-width: 1.8; stroke-linecap: round; margin-bottom: 4px; }
+.wa-empty h4 { font-size: 13px; font-weight: 800; color: #475569; margin: 0 0 2px; }
+.wa-empty p { font-size: 12px; color: #94a3b8; margin: 0; max-width: 240px; }
+
+/* Template & automation items */
+.wa-template-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(248,250,252,0.9);
+}
+.wa-template-item:last-child { border-bottom: none; }
+.wa-template-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: #dcfce7; color: #16a34a;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.wa-template-icon--off { background: #f1f5f9; color: #94a3b8; }
+.wa-template-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.wa-template-name { font-size: 13px; font-weight: 800; color: #0f172a; }
+.wa-template-cat { font-size: 11px; color: #64748b; }
+
+@media (max-width: 640px) {
+  .wa-ops-hero { padding: 20px 16px; }
+  .wa-kpi-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .wa-ops-hero-metrics { gap: 6px; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="wa-bot-page ts-fade-in">
+<div class="wa-ops-page hq-flagship-page" data-testid="hq-whatsapp-ops">
 
-  {# ── Hero ─────────────────────────────────────────────────────── #}
-  <div class="wa-bot-hero">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex-shrink:0;">
-        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
-      </svg>
-      <div>
-        <h1 class="wa-bot-hero__title">WhatsApp Support Operations</h1>
-        <p class="wa-bot-hero__sub">Ticket intake, staff replies, delivery health, and escalation oversight</p>
+  {# ── Hero ────────────────────────────────────────────────────────── #}
+  <div class="wa-ops-hero">
+    <div class="wa-ops-hero-inner">
+      <div class="wa-ops-hero-top">
+        <div class="wa-ops-hero-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 12.04 2Z"/>
+          </svg>
+        </div>
+        <div>
+          <h1>WhatsApp Support Operations</h1>
+          <p>Ticket intake · staff replies · delivery health · escalation oversight</p>
+        </div>
+      </div>
+
+      <div class="wa-ops-hero-status" data-testid="wa-bot-status">
+        {% if channel_healthy %}
+        <span class="wa-ops-hero-status__dot" style="background:#25d366;box-shadow:0 0 0 3px rgba(37,211,102,0.3);"></span>
+        Ready · {{ provider_label }}
+        {% elif messaging_provider == "mock" %}
+        <span class="wa-ops-hero-status__dot" style="background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.3);animation:none;"></span>
+        Mock Mode · No real WhatsApp sent
+        {% else %}
+        <span class="wa-ops-hero-status__dot" style="background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.3);animation:none;"></span>
+        Configuration Required
+        {% endif %}
+      </div>
+
+      <div class="wa-ops-hero-metrics">
+        <div class="wa-ops-hero-metric">
+          <div class="wa-ops-hero-metric__val">{{ open_tickets }}</div>
+          <div class="wa-ops-hero-metric__lbl">Open Tickets</div>
+        </div>
+        <div class="wa-ops-hero-metric">
+          <div class="wa-ops-hero-metric__val">{{ urgent_tickets }}</div>
+          <div class="wa-ops-hero-metric__lbl">Urgent</div>
+        </div>
+        <div class="wa-ops-hero-metric">
+          <div class="wa-ops-hero-metric__val">{{ wa_sent_today }}</div>
+          <div class="wa-ops-hero-metric__lbl">Outbound Today</div>
+        </div>
+        <div class="wa-ops-hero-metric">
+          <div class="wa-ops-hero-metric__val">{{ resolved_today }}</div>
+          <div class="wa-ops-hero-metric__lbl">Resolved Today</div>
+        </div>
+        {% if delivery_rate is not None %}
+        <div class="wa-ops-hero-metric">
+          <div class="wa-ops-hero-metric__val" style="color:{% if delivery_rate >= 90 %}#86efac{% elif delivery_rate >= 70 %}#fcd34d{% else %}#fca5a5{% endif %};">{{ delivery_rate }}%</div>
+          <div class="wa-ops-hero-metric__lbl">Delivery Rate</div>
+        </div>
+        {% endif %}
       </div>
     </div>
-    <div class="wa-bot-hero__status" data-testid="wa-bot-status">
-      {% if channel_healthy %}
-        <span class="wa-status-dot"></span>
-        Ready · {{ provider_label }}
-      {% elif messaging_provider == "mock" %}
-        <span class="wa-status-dot wa-status-dot--mock"></span>
-        Mock only · no real WhatsApp will be sent
-      {% else %}
-        <span class="wa-status-dot wa-status-dot--offline"></span>
-        Configuration Required
-      {% endif %}
-    </div>
   </div>
 
-  {# ── Stat cards ───────────────────────────────────────────────── #}
-  <div class="wa-stat-row">
-    <div class="wa-stat-card">
-      <div class="wa-stat-card__val">{{ open_tickets }}</div>
-      <div class="wa-stat-card__lbl">Open Tickets</div>
+  {# ── KPI Grid ─────────────────────────────────────────────────── #}
+  <div class="wa-kpi-grid" data-testid="wa-kpi-grid">
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#25d366;"></div>
+      <div class="wa-kpi-tile__val" style="color:#065f46;" data-counter="{{ open_tickets }}">{{ open_tickets }}</div>
+      <div class="wa-kpi-tile__lbl">Open Tickets</div>
+      {% if open_tickets %}<span class="wa-kpi-tile__chip" style="background:#dcfce7;color:#15803d;">Active</span>{% endif %}
     </div>
-    <div class="wa-stat-card wa-stat-card--failed">
-      <div class="wa-stat-card__val">{{ urgent_tickets }}</div>
-      <div class="wa-stat-card__lbl">Urgent Tickets</div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#ef4444;"></div>
+      <div class="wa-kpi-tile__val" style="color:#dc2626;" data-counter="{{ urgent_tickets }}">{{ urgent_tickets }}</div>
+      <div class="wa-kpi-tile__lbl">Urgent Tickets</div>
+      {% if urgent_tickets %}<span class="wa-kpi-tile__chip" style="background:#fee2e2;color:#dc2626;">Review</span>{% endif %}
     </div>
-    <div class="wa-stat-card wa-stat-card--queued">
-      <div class="wa-stat-card__val">{{ overdue_sla }}</div>
-      <div class="wa-stat-card__lbl">Overdue SLA</div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#f59e0b;"></div>
+      <div class="wa-kpi-tile__val" style="color:#d97706;" data-counter="{{ overdue_sla }}">{{ overdue_sla }}</div>
+      <div class="wa-kpi-tile__lbl">Overdue SLA</div>
+      {% if overdue_sla %}<span class="wa-kpi-tile__chip" style="background:#fef3c7;color:#d97706;">Breached</span>{% endif %}
     </div>
-    <div class="wa-stat-card wa-stat-card--conv">
-      <div class="wa-stat-card__val">{{ waiting_for_customer }}</div>
-      <div class="wa-stat-card__lbl">Waiting Customer</div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#3b82f6;"></div>
+      <div class="wa-kpi-tile__val" style="color:#2563eb;" data-counter="{{ waiting_for_customer }}">{{ waiting_for_customer }}</div>
+      <div class="wa-kpi-tile__lbl">Waiting Customer</div>
     </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#25d366;"></div>
+      <div class="wa-kpi-tile__val" style="color:#065f46;" data-counter="{{ resolved_today }}">{{ resolved_today }}</div>
+      <div class="wa-kpi-tile__lbl">Resolved Today</div>
+    </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#8b5cf6;"></div>
+      <div class="wa-kpi-tile__val" style="color:#7c3aed;">{% if avg_first_response %}{{ avg_first_response }}m{% else %}—{% endif %}</div>
+      <div class="wa-kpi-tile__lbl">Avg First Response</div>
+    </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#0ea5e9;"></div>
+      <div class="wa-kpi-tile__val" style="color:#0284c7;" data-counter="{{ wa_sent_today }}">{{ wa_sent_today }}</div>
+      <div class="wa-kpi-tile__lbl">Outbound Today</div>
+    </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#f59e0b;"></div>
+      <div class="wa-kpi-tile__val" style="color:#d97706;" data-counter="{{ wa_queued }}">{{ wa_queued }}</div>
+      <div class="wa-kpi-tile__lbl">Queued</div>
+    </div>
+
+    {% if delivery_rate is not None %}
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:{% if delivery_rate >= 90 %}#25d366{% elif delivery_rate >= 70 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+      <div class="wa-kpi-tile__val" style="color:{% if delivery_rate >= 90 %}#065f46{% elif delivery_rate >= 70 %}#d97706{% else %}#dc2626{% endif %};">{{ delivery_rate }}%</div>
+      <div class="wa-kpi-tile__lbl">Delivery Rate</div>
+      {% if delivery_rate >= 90 %}<span class="wa-kpi-tile__chip" style="background:#dcfce7;color:#15803d;">Healthy</span>
+      {% elif delivery_rate >= 70 %}<span class="wa-kpi-tile__chip" style="background:#fef3c7;color:#d97706;">Watch</span>
+      {% else %}<span class="wa-kpi-tile__chip" style="background:#fee2e2;color:#dc2626;">Low</span>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#ef4444;"></div>
+      <div class="wa-kpi-tile__val" style="color:#dc2626;">{{ whatsapp_diagnostics.last_twilio_error_code|default:"—" }}</div>
+      <div class="wa-kpi-tile__lbl">Last Error Code</div>
+      {% if whatsapp_diagnostics.last_twilio_error_code %}<span class="wa-kpi-tile__chip" style="background:#fee2e2;color:#dc2626;">Diagnose</span>{% endif %}
+    </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#3b82f6;"></div>
+      <div class="wa-kpi-tile__val" style="color:#2563eb;">{{ conversation_count }}</div>
+      <div class="wa-kpi-tile__lbl">Conversations</div>
+      <span class="wa-kpi-tile__chip" style="background:#eff6ff;color:#2563eb;">{{ open_conversations }} open</span>
+    </div>
+
+    <div class="wa-kpi-tile">
+      <div class="wa-kpi-tile__accent" style="background:#25d366;"></div>
+      <div class="wa-kpi-tile__val" style="color:#065f46;font-size:13px;">
+        {% if last_inbound %}{{ last_inbound.created_at|date:"H:i" }}{% else %}—{% endif %}
+      </div>
+      <div class="wa-kpi-tile__lbl">Last Inbound</div>
+    </div>
+
   </div>
 
-  <div class="wa-stat-row">
-    <div class="wa-stat-card">
-      <div class="wa-stat-card__val">{{ resolved_today }}</div>
-      <div class="wa-stat-card__lbl">Resolved Today</div>
-    </div>
-    <div class="wa-stat-card wa-stat-card--conv">
-      <div class="wa-stat-card__val">{% if avg_first_response %}{{ avg_first_response }}m{% else %}-{% endif %}</div>
-      <div class="wa-stat-card__lbl">Avg First Response</div>
-    </div>
-    <div class="wa-stat-card">
-      <div class="wa-stat-card__val">{{ wa_sent_today }}</div>
-      <div class="wa-stat-card__lbl">Outbound Today</div>
-    </div>
-    <div class="wa-stat-card wa-stat-card--queued">
-      <div class="wa-stat-card__val">{{ wa_queued }}</div>
-      <div class="wa-stat-card__lbl">Queued</div>
-    </div>
-  </div>
-
-  {# ── Delivery rate ────────────────────────────────────────────── #}
+  {# ── Delivery Rate Strip ─────────────────────────────────────── #}
   {% if delivery_rate is not None %}
-  <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-    <span style="font-size:13px;font-weight:700;color:#0F172A;">Delivery Rate Today</span>
-    <span style="font-size:20px;font-weight:900;color:{% if delivery_rate >= 90 %}#16A34A{% elif delivery_rate >= 70 %}#D97706{% else %}#DC2626{% endif %};">{{ delivery_rate }}%</span>
+  <div class="wa-delivery-strip" data-testid="wa-delivery-strip">
+    <div class="wa-delivery-strip-inner">
+      <div>
+        <div class="wa-delivery-label">Delivery Rate Today</div>
+        <div class="wa-delivery-sub">
+          {% if delivery_rate >= 90 %}Delivery callbacks confirm successful WhatsApp processing.
+          {% elif delivery_rate >= 70 %}Moderate delivery rate. Check for failed sends in diagnostics below.
+          {% else %}Low delivery rate. Review Twilio configuration and sender status.
+          {% endif %}
+        </div>
+      </div>
+      <div class="wa-delivery-pct" style="color:{% if delivery_rate >= 90 %}#065f46{% elif delivery_rate >= 70 %}#d97706{% else %}#dc2626{% endif %};">{{ delivery_rate }}%</div>
+    </div>
+    <div class="wa-delivery-bar-track">
+      <div class="wa-delivery-bar-fill"
+           style="width:{{ delivery_rate }}%;background:{% if delivery_rate >= 90 %}#25d366{% elif delivery_rate >= 70 %}#f59e0b{% else %}#ef4444{% endif %};"
+           id="wa-delivery-bar"></div>
+    </div>
   </div>
   {% endif %}
 
-  {# ── Webhook & Channel Config ──────────────────────────────────── #}
-  <div class="ts-panel">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Webhook &amp; Channel Config
+  {# ── Webhook & Channel Config ─────────────────────────────────── #}
+  <div class="wa-glass-panel" data-testid="wa-config-panel">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Webhook &amp; Channel Configuration
+      </span>
+      <span class="wa-chip {% if channel_healthy %}wa-chip--green{% elif messaging_provider == 'mock' %}wa-chip--amber{% else %}wa-chip--red{% endif %}">
+        {% if channel_healthy %}Connected{% elif messaging_provider == 'mock' %}Mock{% else %}Needs Config{% endif %}
       </span>
     </div>
-    <div class="ts-panel__body">
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider</span><span class="wa-webhook-row__val">{{ provider_label }}</span></div>
-      {% if messaging_service_sid %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Messaging Service SID</span><span class="wa-webhook-row__val">{{ messaging_service_sid }}</span></div>{% endif %}
-      {% if twilio_wa_number %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Sender</span><span class="wa-webhook-row__val">{{ twilio_wa_number }}</span></div>{% endif %}
-      {% if provider_missing %}<div class="wa-webhook-row"><span class="wa-webhook-row__label">Config Error</span><span class="wa-webhook-row__val">{{ provider_missing|join:", " }}</span></div>{% endif %}
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Webhook URL</span><span class="wa-webhook-row__val">{% if webhook_url %}{{ webhook_url }}{% else %}/tengasale/support/whatsapp/webhook/{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Status Callback URL</span><span class="wa-webhook-row__val">{{ status_callback_url }}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Simulate Endpoint</span><span class="wa-webhook-row__val">/tengasale/support/whatsapp/simulate/</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Conversations</span><span class="wa-webhook-row__val">{{ conversation_count }} total · {{ open_conversations }} open</span></div>
+    <div class="wa-config-row">
+      <span class="wa-config-label">Provider</span>
+      <span class="wa-config-val">{{ provider_label }}</span>
+    </div>
+    {% if messaging_service_sid %}
+    <div class="wa-config-row">
+      <span class="wa-config-label">Messaging Service SID</span>
+      <span class="wa-config-val">
+        {{ messaging_service_sid }}
+        <button class="wa-copy-btn" onclick="navigator.clipboard.writeText('{{ messaging_service_sid }}')" title="Copy">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </span>
+    </div>
+    {% endif %}
+    {% if twilio_wa_number %}
+    <div class="wa-config-row">
+      <span class="wa-config-label">Sender (WhatsApp From)</span>
+      <span class="wa-config-val">{{ twilio_wa_number }}</span>
+    </div>
+    {% endif %}
+    {% if provider_missing %}
+    <div class="wa-config-row" style="background:#fef2f2;">
+      <span class="wa-config-label" style="color:#dc2626;">Missing Configuration</span>
+      <span class="wa-config-val" style="color:#dc2626;">{{ provider_missing|join:", " }}</span>
+    </div>
+    {% endif %}
+    <div class="wa-config-row">
+      <span class="wa-config-label">Webhook URL</span>
+      <span class="wa-config-val">
+        {% if webhook_url %}{{ webhook_url }}{% else %}/tengasale/support/whatsapp/webhook/{% endif %}
+        <button class="wa-copy-btn" onclick="navigator.clipboard.writeText('{% if webhook_url %}{{ webhook_url }}{% else %}/tengasale/support/whatsapp/webhook/{% endif %}')" title="Copy webhook URL">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </span>
+    </div>
+    <div class="wa-config-row">
+      <span class="wa-config-label">Status Callback URL</span>
+      <span class="wa-config-val">
+        {{ status_callback_url }}
+        <button class="wa-copy-btn" onclick="navigator.clipboard.writeText('{{ status_callback_url }}')" title="Copy callback URL">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </span>
+    </div>
+    <div class="wa-config-row">
+      <span class="wa-config-label">Simulate Endpoint</span>
+      <span class="wa-config-val">/tengasale/support/whatsapp/simulate/</span>
+    </div>
+    <div class="wa-config-row">
+      <span class="wa-config-label">Conversations</span>
+      <span class="wa-config-val">{{ conversation_count }} total · {{ open_conversations }} open</span>
     </div>
   </div>
 
-  {# ── Last Messages ─────────────────────────────────────────────── #}
-  <div class="ts-panel" data-testid="wa-diagnostics-panel">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">Outbound Diagnostics</span>
+  {# ── Outbound Diagnostics ─────────────────────────────────────── #}
+  <div class="wa-glass-panel" data-testid="wa-diagnostics-panel">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Outbound Diagnostics
+      </span>
+      <span class="wa-chip {% if whatsapp_diagnostics.account_sid_configured and whatsapp_diagnostics.auth_token_configured and whatsapp_diagnostics.sender_configured %}wa-chip--green{% else %}wa-chip--amber{% endif %}">
+        {% if whatsapp_diagnostics.account_sid_configured and whatsapp_diagnostics.auth_token_configured and whatsapp_diagnostics.sender_configured %}Credentials OK{% else %}Incomplete Setup{% endif %}
+      </span>
     </div>
-    <div class="ts-panel__body wa-diagnostics-grid">
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Provider mode</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.provider_mode }}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_ACCOUNT_SID configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.account_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.account_sid_configured %}yes{% else %}no{% endif %}</span></span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_AUTH_TOKEN configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.auth_token_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.auth_token_configured %}yes{% else %}no{% endif %}</span></span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_MESSAGING_SERVICE_SID configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.messaging_service_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.messaging_service_sid_configured %}yes{% else %}no{% endif %}</span></span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_WHATSAPP_FROM configured</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.sender_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.sender_configured %}yes{% else %}no{% endif %}</span></span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">TWILIO_VALIDATE_SIGNATURE enabled</span><span class="wa-webhook-row__val"><span class="wa-pill {% if whatsapp_diagnostics.validate_signature %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.validate_signature %}yes{% else %}no{% endif %}</span></span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last Twilio outbound attempt</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_outbound_attempt %}{{ whatsapp_diagnostics.last_outbound_attempt.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last MessageSid</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_sid|default:"None" }}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Initial outbound status</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_status|default:"None" }}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Latest delivery status (callback)</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_status_callback_at %}{{ whatsapp_diagnostics.last_outbound_attempt.provider_status|default:"—" }}{% else %}<span style="color:#92400e;">awaiting callback</span>{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last callback received</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_status_callback_at %}{{ whatsapp_diagnostics.last_status_callback_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Error code</span><span class="wa-webhook-row__val">{{ whatsapp_diagnostics.last_twilio_error_code|default:"—" }}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Error message</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_twilio_error %}{{ whatsapp_diagnostics.last_twilio_error }}{% else %}—{% endif %}</span></div>
-      {% if whatsapp_diagnostics.last_twilio_status in "accepted,queued" and not whatsapp_diagnostics.last_status_callback_at %}
-      <div class="wa-webhook-row" style="grid-column:1/-1;background:#fef3c7;border-radius:8px;padding:10px 12px;">
-        <span style="font-size:12px;color:#78350f;">Twilio accepted the request but delivery is not confirmed yet. Check Twilio Messaging Logs for MessageSid: {{ whatsapp_diagnostics.last_twilio_sid }}</span>
+    <div class="wa-diag-grid">
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Provider mode</span>
+        <span class="wa-diag-cell-val">{{ whatsapp_diagnostics.provider_mode }}</span>
       </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">TWILIO_ACCOUNT_SID</span>
+        <span class="wa-diag-cell-val"><span class="wa-pill {% if whatsapp_diagnostics.account_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.account_sid_configured %}configured{% else %}missing{% endif %}</span></span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">TWILIO_AUTH_TOKEN</span>
+        <span class="wa-diag-cell-val"><span class="wa-pill {% if whatsapp_diagnostics.auth_token_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.auth_token_configured %}configured{% else %}missing{% endif %}</span></span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">TWILIO_MESSAGING_SERVICE_SID</span>
+        <span class="wa-diag-cell-val"><span class="wa-pill {% if whatsapp_diagnostics.messaging_service_sid_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.messaging_service_sid_configured %}configured{% else %}missing{% endif %}</span></span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">TWILIO_WHATSAPP_FROM</span>
+        <span class="wa-diag-cell-val"><span class="wa-pill {% if whatsapp_diagnostics.sender_configured %}wa-pill--yes{% else %}wa-pill--no{% endif %}">{% if whatsapp_diagnostics.sender_configured %}configured{% else %}missing{% endif %}</span></span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">TWILIO_VALIDATE_SIGNATURE</span>
+        <span class="wa-diag-cell-val"><span class="wa-pill {% if whatsapp_diagnostics.validate_signature %}wa-pill--yes{% else %}wa-pill--warn{% endif %}">{% if whatsapp_diagnostics.validate_signature %}enabled{% else %}disabled{% endif %}</span></span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Last outbound attempt</span>
+        <span class="wa-diag-cell-val">{% if whatsapp_diagnostics.last_outbound_attempt %}{{ whatsapp_diagnostics.last_outbound_attempt.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Last MessageSid</span>
+        <span class="wa-diag-cell-val" style="font-size:10.5px;">{{ whatsapp_diagnostics.last_twilio_sid|default:"—" }}</span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Initial outbound status</span>
+        <span class="wa-diag-cell-val">
+          {% if whatsapp_diagnostics.last_twilio_status %}
+          <span class="wa-pill {% if whatsapp_diagnostics.last_twilio_status == 'delivered' %}wa-pill--yes{% elif whatsapp_diagnostics.last_twilio_status in 'accepted,queued,sent' %}wa-pill--warn{% else %}wa-pill--no{% endif %}">{{ whatsapp_diagnostics.last_twilio_status }}</span>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Latest delivery callback</span>
+        <span class="wa-diag-cell-val">
+          {% if whatsapp_diagnostics.last_status_callback_at %}
+            {% if whatsapp_diagnostics.last_outbound_attempt %}{{ whatsapp_diagnostics.last_outbound_attempt.provider_status|default:"—" }}{% else %}—{% endif %}
+          {% else %}
+            <span style="color:#92400e;font-size:10.5px;">awaiting callback</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Last callback received</span>
+        <span class="wa-diag-cell-val">{% if whatsapp_diagnostics.last_status_callback_at %}{{ whatsapp_diagnostics.last_status_callback_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Error code</span>
+        <span class="wa-diag-cell-val">
+          {% if whatsapp_diagnostics.last_twilio_error_code %}
+          <span style="color:#dc2626;font-weight:900;">{{ whatsapp_diagnostics.last_twilio_error_code }}</span>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Last inbound</span>
+        <span class="wa-diag-cell-val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span>
+      </div>
+      <div class="wa-diag-cell">
+        <span class="wa-diag-cell-label">Last inbound sender</span>
+        <span class="wa-diag-cell-val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound_sender|default:"—" }}{% else %}None{% endif %}</span>
+      </div>
+    </div>
+
+    {# Twilio pending/accepted notice #}
+    {% if whatsapp_diagnostics.last_twilio_status in "accepted,queued" and not whatsapp_diagnostics.last_status_callback_at %}
+    <div style="margin:0 18px 14px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#78350f;">
+      Twilio accepted this request but delivery is not yet confirmed. Check Twilio Messaging Logs for MessageSid: <strong>{{ whatsapp_diagnostics.last_twilio_sid }}</strong>
+    </div>
+    {% endif %}
+
+    {# Error explanation #}
+    {% if whatsapp_diagnostics.last_twilio_error_code %}
+    <div class="wa-error-box" data-testid="wa-error-box">
+      <div style="font-weight:800;margin-bottom:4px;">Error <span class="wa-error-box__code">{{ whatsapp_diagnostics.last_twilio_error_code }}</span></div>
+      {% if whatsapp_diagnostics.last_twilio_error %}
+      <div>{{ whatsapp_diagnostics.last_twilio_error }}</div>
       {% endif %}
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last inbound webhook</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound.created_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last inbound sender</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_inbound %}{{ whatsapp_diagnostics.last_inbound_sender|default:"—" }}{% else %}None{% endif %}</span></div>
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">Last status callback</span><span class="wa-webhook-row__val">{% if whatsapp_diagnostics.last_status_callback %}{{ whatsapp_diagnostics.last_status_callback.updated_at|date:"d M Y H:i" }}{% else %}None{% endif %}</span></div>
+      {% if whatsapp_diagnostics.last_twilio_error_code == 21703 %}
+      <div style="margin-top:6px;color:#991b1b;">The Messaging Service does not currently have a valid sender for this outbound request. Verify that a WhatsApp sender is configured on your Twilio Messaging Service.</div>
+      {% endif %}
     </div>
+    <div class="wa-suggested-next" data-testid="wa-suggested-next">
+      <div class="wa-suggested-next__title">Suggested Next Step</div>
+      {% if not whatsapp_diagnostics.account_sid_configured or not whatsapp_diagnostics.auth_token_configured %}
+      Twilio credentials are missing. Add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to your environment settings.
+      {% elif not whatsapp_diagnostics.sender_configured and not whatsapp_diagnostics.messaging_service_sid_configured %}
+      Neither TWILIO_WHATSAPP_FROM nor TWILIO_MESSAGING_SERVICE_SID is configured. Set at least one of these for outbound WhatsApp to work.
+      {% elif whatsapp_diagnostics.last_twilio_error_code == 21703 %}
+      Verify that a WhatsApp-enabled sender is added to your Messaging Service in Twilio Console, or set TWILIO_WHATSAPP_FROM to a sandbox or registered number.
+      {% else %}
+      Check Twilio Console Messaging Logs and confirm the sender configuration matches your production/sandbox environment.
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 
-  <div class="ts-panel">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Recent Activity
-      </span>
-      <a href="{% url 'conversation_list' %}" style="font-size:12px;font-weight:800;color:#FF4D00;text-decoration:none;">View all →</a>
-    </div>
-    <div class="ts-panel__body">
-      <div class="wa-webhook-row">
-        <span class="wa-webhook-row__label">Last Inbound</span>
-        <span class="wa-webhook-row__val">{% if last_inbound %}{{ last_inbound.created_at|date:"d M Y H:i" }}{% else %}No messages yet{% endif %}</span>
-      </div>
-      <div class="wa-webhook-row">
-        <span class="wa-webhook-row__label">Last Outbound</span>
-        <span class="wa-webhook-row__val">{% if last_outbound %}{{ last_outbound.created_at|date:"d M Y H:i" }}{% else %}No messages yet{% endif %}</span>
-      </div>
-    </div>
-  </div>
-
-  {# ── Test Message ──────────────────────────────────────────────── #}
-  <div class="ts-panel">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+  {# ── WhatsApp Test Actions ────────────────────────────────────── #}
+  <div class="wa-glass-panel" data-testid="wa-test-panel">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
         WhatsApp Test Actions
       </span>
     </div>
     <div class="wa-mode-note {% if messaging_provider != 'mock' %}wa-mode-note--ok{% endif %}">
       {% if messaging_provider == "mock" %}
-        Mock mode does not send WhatsApp to phones.
+      Mock mode is active. No real WhatsApp messages will be sent to phones.
       {% else %}
-        Real send is enabled for {{ provider_label }} when Twilio accepts the request.
+      Real send is enabled for {{ provider_label }}. Outbound tests will attempt actual Twilio delivery.
       {% endif %}
     </div>
-    <div class="wa-test-section wa-test-section--simulate">
-      <div class="wa-test-section__label">Simulate Inbound (creates ticket from menu selection)</div>
-      <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-form" data-testid="wa-simulate-form" id="wa-simulate-form">
-        {% csrf_token %}
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone: 265998XXXXXX"
-          class="wa-test-input"
-          data-testid="wa-simulate-phone"
-        >
-        <input
-          type="text"
-          name="message"
-          value="Hi"
-          aria-label="Simulated inbound WhatsApp message"
-          class="wa-test-input"
-          data-testid="wa-simulate-message"
-        >
-        <button type="submit" class="wa-test-btn" data-testid="wa-simulate-submit">Simulate Inbound</button>
-      </form>
-    </div>
-    <div class="wa-test-section wa-test-section--real">
-      <div class="wa-test-section__label">Send Real WhatsApp (outbound test only, no ticket)</div>
-      <form method="post" action="{% url 'whatsapp_send_real_test' %}" class="wa-test-form" data-testid="wa-real-send-form" id="wa-real-send-form">
-        {% csrf_token %}
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone: 265998XXXXXX"
-          class="wa-test-input"
-          data-testid="wa-real-phone"
-        >
-        <input
-          type="text"
-          name="message"
-          value="Hi from TengaSale Support"
-          aria-label="Real WhatsApp message"
-          class="wa-test-input"
-          data-testid="wa-real-message"
-        >
-        <button type="submit" class="wa-test-btn wa-test-btn--real" data-testid="wa-real-submit">Send Real WhatsApp</button>
-      </form>
-    </div>
-    <div id="wa-test-result" class="wa-test-result" aria-live="polite" hidden></div>
-  </div>
 
-  <div class="ts-panel" data-testid="wa-ticket-list">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">Support Tickets</span>
+    {# Simulate Inbound #}
+    <div class="wa-test-section">
+      <div class="wa-test-section__eyebrow" style="color:#065f46;">Simulate Inbound</div>
+      <div class="wa-test-section__desc">Creates a support ticket from a simulated incoming WhatsApp message. Use to test the chatbot menu flow and ticket creation without a real phone.</div>
+      <form method="post" action="{% url 'whatsapp_simulate' %}" class="wa-test-inputs" data-testid="wa-simulate-form" id="wa-simulate-form">
+        {% csrf_token %}
+        <input type="tel" name="phone" placeholder="265998XXXXXX" class="wa-test-input" data-testid="wa-simulate-phone" maxlength="20">
+        <input type="text" name="message" value="Hi" class="wa-test-input" placeholder="Inbound message..." data-testid="wa-simulate-message">
+        <button type="submit" class="wa-test-btn wa-test-btn--green" data-testid="wa-simulate-submit">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.59 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+          Simulate Inbound
+        </button>
+      </form>
+      <div id="wa-simulate-result" class="wa-test-result" aria-live="polite" hidden></div>
     </div>
-    <div class="ts-panel__body">
-      {% for ticket in recent_tickets %}
-      <div class="wa-webhook-row">
-        <span class="wa-webhook-row__label">{{ ticket.ticket_number }} · {{ ticket.sender_name|default:ticket.sender_phone }}</span>
-        <span class="wa-webhook-row__val">{{ ticket.category }} · {{ ticket.status }} · {{ ticket.priority }}</span>
-      </div>
-      {% empty %}
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">No support tickets yet</span><span class="wa-webhook-row__val">Inbound WhatsApp messages will appear here.</span></div>
-      {% endfor %}
+
+    {# Send Real WhatsApp #}
+    <div class="wa-test-section">
+      <div class="wa-test-section__eyebrow" style="color:#c2410c;">Send Real WhatsApp</div>
+      <div class="wa-test-section__desc">Sends an actual WhatsApp message via Twilio. Outbound test only — does not create a ticket. Only use this to verify your channel configuration is working.</div>
+      <form method="post" action="{% url 'whatsapp_send_real_test' %}" class="wa-test-inputs" data-testid="wa-real-send-form" id="wa-real-send-form">
+        {% csrf_token %}
+        <input type="tel" name="phone" placeholder="265998XXXXXX" class="wa-test-input wa-test-input--real" data-testid="wa-real-phone" maxlength="20">
+        <input type="text" name="message" value="Hi from TengaSale Support" class="wa-test-input wa-test-input--real" data-testid="wa-real-message">
+        <button type="submit" class="wa-test-btn wa-test-btn--real" data-testid="wa-real-submit">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Real WhatsApp
+        </button>
+      </form>
+      <div id="wa-real-result" class="wa-test-result" aria-live="polite" hidden></div>
     </div>
   </div>
 
-  <div class="ts-panel" data-testid="wa-escalations">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">Management Escalations</span>
+  {# ── Support Tickets ──────────────────────────────────────────── #}
+  <div class="wa-glass-panel" data-testid="wa-ticket-list">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Support Tickets
+      </span>
+      <a href="{% url 'ticket_list' %}" style="font-size:12px;font-weight:800;color:#ff5a00;text-decoration:none;">View all →</a>
     </div>
-    <div class="ts-panel__body">
-      {% for ticket in escalations %}
-      <div class="wa-webhook-row">
-        <span class="wa-webhook-row__label">{{ ticket.ticket_number }} · {{ ticket.category }}</span>
-        <span class="wa-webhook-row__val">{{ ticket.priority }} · {% if ticket.sla_due_at %}SLA {{ ticket.sla_due_at|date:"d M H:i" }}{% else %}Needs review{% endif %}</span>
+    {% for ticket in recent_tickets %}
+    <div class="wa-ticket-row">
+      <div class="wa-ticket-row-main">
+        <h4>{{ ticket.ticket_number }} · {{ ticket.sender_name|default:ticket.sender_phone|default:"Unknown" }}</h4>
+        <div class="wa-ticket-row-meta">
+          {{ ticket.get_category_display|default:ticket.category }} · {{ ticket.created_at|date:"d M H:i" }}
+          {% if ticket.sla_due_at %} · SLA {{ ticket.sla_due_at|date:"d M H:i" }}{% endif %}
+        </div>
       </div>
-      {% empty %}
-      <div class="wa-webhook-row"><span class="wa-webhook-row__label">No escalation items</span><span class="wa-webhook-row__val">Urgent, fraud, legal, overdue, and complaint tickets will appear here.</span></div>
-      {% endfor %}
+      <div class="wa-ticket-row-actions">
+        <span class="wa-chip {% if ticket.status == 'resolved' %}wa-chip--green{% elif ticket.priority == 'urgent' or ticket.priority == 'critical' %}wa-chip--red{% elif ticket.status == 'open' %}wa-chip--amber{% else %}wa-chip--grey{% endif %}">
+          {{ ticket.get_status_display|default:ticket.status }}
+        </span>
+        <span class="wa-chip {% if ticket.priority == 'urgent' or ticket.priority == 'critical' %}wa-chip--red{% elif ticket.priority == 'high' %}wa-chip--amber{% else %}wa-chip--grey{% endif %}">
+          {{ ticket.get_priority_display|default:ticket.priority }}
+        </span>
+        <a href="{% url 'ticket_detail' ticket.pk %}" style="font-size:11.5px;font-weight:800;color:#ff5a00;text-decoration:none;">Open →</a>
+      </div>
     </div>
+    {% empty %}
+    <div class="wa-empty">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <h4>No support tickets yet</h4>
+      <p>Inbound WhatsApp messages will create tickets here automatically.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Management Escalations ───────────────────────────────────── #}
+  <div class="wa-glass-panel" data-testid="wa-escalations">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Management Escalations
+      </span>
+      {% if escalations %}
+      <span class="wa-chip wa-chip--red">{{ escalations|length }} waiting</span>
+      {% endif %}
+    </div>
+    {% for ticket in escalations %}
+    <div class="wa-ticket-row">
+      <div class="wa-ticket-row-main">
+        <h4>{{ ticket.ticket_number }} · {{ ticket.get_category_display|default:ticket.category }}</h4>
+        <div class="wa-ticket-row-meta">
+          {{ ticket.sender_name|default:ticket.sender_phone|default:"Unknown" }}
+          {% if ticket.sla_due_at %} · SLA {{ ticket.sla_due_at|date:"d M H:i" }}{% endif %}
+        </div>
+      </div>
+      <div class="wa-ticket-row-actions">
+        <span class="wa-chip wa-chip--red">{{ ticket.get_priority_display|default:ticket.priority }}</span>
+        {% if ticket.sla_due_at %}
+        <span class="wa-chip wa-chip--amber">SLA Due</span>
+        {% else %}
+        <span class="wa-chip wa-chip--grey">Needs Review</span>
+        {% endif %}
+        <a href="{% url 'ticket_detail' ticket.pk %}" style="font-size:11.5px;font-weight:800;color:#ff5a00;text-decoration:none;">Review →</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="wa-empty">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <h4>No escalation items</h4>
+      <p>Urgent, fraud, legal, overdue, and complaint tickets appear here for management attention.</p>
+    </div>
+    {% endfor %}
   </div>
 
   {# ── Message Templates ─────────────────────────────────────────── #}
-  <div class="ts-panel" data-testid="wa-templates">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+  {% if templates %}
+  <div class="wa-glass-panel" data-testid="wa-templates">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Message Templates ({{ templates|length }})
       </span>
     </div>
-    <div class="ts-panel__body">
-      {% for t in templates %}
-      <div class="wa-template-item">
-        <div class="wa-template-icon {% if not t.enabled %}wa-template-icon--disabled{% endif %}" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div class="wa-template-name">{{ t.name }}</div>
-          <div class="wa-template-cat">{{ t.category }}</div>
-        </div>
-        <span class="wa-template-badge {% if t.enabled %}wa-template-badge--on{% else %}wa-template-badge--off{% endif %}">
-          {% if t.enabled %}Active{% else %}Disabled{% endif %}
-        </span>
+    {% for t in templates %}
+    <div class="wa-template-item">
+      <div class="wa-template-icon {% if not t.enabled %}wa-template-icon--off{% endif %}" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </div>
-      {% endfor %}
+      <div style="flex:1;min-width:0;">
+        <div class="wa-template-name">{{ t.name }}</div>
+        <div class="wa-template-cat">{{ t.category }}</div>
+      </div>
+      <span class="wa-chip {% if t.enabled %}wa-chip--green{% else %}wa-chip--grey{% endif %}">
+        {% if t.enabled %}Active{% else %}Disabled{% endif %}
+      </span>
     </div>
+    {% endfor %}
   </div>
+  {% endif %}
 
-  {# ── Automation Flows ──────────────────────────────────────────── #}
-  <div class="ts-panel" data-testid="wa-automations">
-    <div class="ts-panel__header">
-      <span class="ts-panel__title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+  {# ── Automation Flows ─────────────────────────────────────────── #}
+  {% if automations %}
+  <div class="wa-glass-panel" data-testid="wa-automations">
+    <div class="wa-glass-panel-hdr">
+      <span class="wa-glass-panel-title">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         Automation Flows ({{ automations|length }})
       </span>
     </div>
-    <div class="ts-panel__body">
-      {% for a in automations %}
-      <div class="wa-auto-item">
-        <span class="wa-auto-dot{% if not a.active %}" style="background:#E5E7EB;{% endif %}"></span>
-        <span class="wa-auto-name">{{ a.name }}</span>
-        <span class="wa-auto-trigger">{{ a.trigger }}</span>
+    {% for a in automations %}
+    <div class="wa-template-item">
+      <div style="width:10px;height:10px;border-radius:50%;background:{% if a.active %}#25d366{% else %}#e5e7eb{% endif %};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="wa-template-name">{{ a.name }}</div>
+        <div class="wa-template-cat">{{ a.trigger }}</div>
       </div>
-      {% endfor %}
+      <span class="wa-chip {% if a.active %}wa-chip--green{% else %}wa-chip--grey{% endif %}">
+        {% if a.active %}Active{% else %}Paused{% endif %}
+      </span>
     </div>
+    {% endfor %}
   </div>
+  {% endif %}
 
 </div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const simulateForm = document.getElementById("wa-simulate-form");
-  const realForm = document.getElementById("wa-real-send-form");
-  const result = document.getElementById("wa-test-result");
-  if (!result) return;
-
-  async function submitForm(form, pendingText, successFormatter) {
-    const button = form.querySelector("button[type='submit']");
-    if (button) button.disabled = true;
-    result.hidden = false;
-    result.className = "wa-test-result";
-    result.textContent = pendingText;
-    try {
-      const response = await fetch(form.action, {
-        method: "POST",
-        body: new FormData(form),
-        headers: {"X-Requested-With": "XMLHttpRequest"}
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        result.textContent = data.error || "WhatsApp action failed.";
-        result.className = "wa-test-result is-error";
-        return;
+  /* KPI counter animations */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('[data-counter]').forEach(function (el) {
+      var to = parseInt(el.getAttribute('data-counter'), 10) || 0;
+      if (to === 0) return;
+      var start = null, dur = 800;
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(to * eased);
+        if (p < 1) requestAnimationFrame(step); else el.textContent = to;
       }
-      result.textContent = successFormatter(data);
-      result.className = "wa-test-result is-success";
-      window.setTimeout(function () { window.location.reload(); }, 1200);
-    } catch (error) {
-      result.textContent = "WhatsApp action failed.";
-      result.className = "wa-test-result is-error";
-    } finally {
-      if (button) button.disabled = false;
-    }
+      requestAnimationFrame(step);
+    });
   }
 
-  if (simulateForm) simulateForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    submitForm(simulateForm, "Simulating inbound WhatsApp message...", function (data) {
-      return data.ticket_number
-        ? `Simulated inbound created ticket ${data.ticket_number}.`
-        : "Simulated inbound message received.";
+  /* Test forms */
+  function submitTestForm(formId, resultId, pendingText, successFormatter) {
+    var form = document.getElementById(formId);
+    var resultEl = document.getElementById(resultId);
+    if (!form || !resultEl) return;
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var phoneInput = form.querySelector('input[name="phone"]');
+      if (phoneInput) {
+        var raw = phoneInput.value.replace(/\s+/g, '').replace(/^\+/, '');
+        phoneInput.value = raw;
+      }
+      var btn = form.querySelector("button[type='submit']");
+      if (btn) btn.disabled = true;
+      resultEl.hidden = false;
+      resultEl.className = "wa-test-result";
+      resultEl.textContent = pendingText;
+      fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: {"X-Requested-With": "XMLHttpRequest"},
+      }).then(function (res) {
+        return res.json().then(function (data) { return {ok: res.ok, data: data}; });
+      }).then(function (obj) {
+        if (!obj.ok || !obj.data.ok) {
+          resultEl.textContent = obj.data.error || "Action failed. Check diagnostics above.";
+          resultEl.className = "wa-test-result is-error";
+          return;
+        }
+        resultEl.textContent = successFormatter(obj.data);
+        resultEl.className = "wa-test-result is-success";
+        setTimeout(function () { window.location.reload(); }, 1500);
+      }).catch(function () {
+        resultEl.textContent = "Network error. Verify that the endpoint is available and try again.";
+        resultEl.className = "wa-test-result is-error";
+      }).finally(function () {
+        if (btn) btn.disabled = false;
+      });
     });
-  });
+  }
 
-  if (realForm) realForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    submitForm(realForm, "Sending real WhatsApp through Twilio...", function (data) {
+  submitTestForm("wa-simulate-form", "wa-simulate-result",
+    "Simulating inbound WhatsApp message...",
+    function (data) {
+      return data.ticket_number
+        ? "Simulated inbound created ticket " + data.ticket_number + "."
+        : "Simulated inbound message received.";
+    }
+  );
+
+  submitTestForm("wa-real-send-form", "wa-real-result",
+    "Sending real WhatsApp via Twilio...",
+    function (data) {
       return [
-        "Real WhatsApp queued",
+        "WhatsApp queued for delivery.",
         "MessageSid: " + (data.message_sid || "—"),
         "To: " + (data.to || "—"),
         "Status: " + (data.status || "queued"),
       ].join("\n");
-    });
-  });
+    }
+  );
 });
 </script>
 {% endblock %}

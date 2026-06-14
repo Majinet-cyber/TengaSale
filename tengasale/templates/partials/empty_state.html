@@ -1,16 +1,18 @@
-{#
-  Empty state partial.
-  Variables: icon (bootstrap icon class), title, message, action_url, action_label
-#}
-<div class="ts-empty-state" style="padding:40px 24px;">
-  <div class="ts-empty-state__icon" style="font-size:36px;color:#cbd5e1;margin-bottom:12px;">
-    <i class="bi {{ icon|default:'bi-inbox' }}" aria-hidden="true"></i>
+<div class="hq-empty-state ts-empty-state" style="padding:40px 24px;">
+  <div class="hq-empty-state__icon" aria-hidden="true">
+    {% if icon_svg %}
+      {{ icon_svg|safe }}
+    {% else %}
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    {% endif %}
   </div>
-  <h3 class="ts-empty-state__title">{{ title|default:"Nothing here yet" }}</h3>
-  <p class="ts-empty-state__message">{{ message|default:"No records to display." }}</p>
+  <h3 class="hq-empty-state__title">{{ title|default:"Nothing here yet" }}</h3>
+  <p class="hq-empty-state__message">{{ message|default:"No records to display." }}</p>
   {% if action_url and action_label %}
-  <a href="{{ action_url }}" class="ts-button-primary" style="margin-top:16px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-    {{ action_label }}
-  </a>
+  <div class="hq-empty-state__action">
+    <a href="{{ action_url }}" class="ts-button-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+      {{ action_label }}
+    </a>
+  </div>
   {% endif %}
 </div>

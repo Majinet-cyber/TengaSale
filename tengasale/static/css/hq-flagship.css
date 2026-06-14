@@ -1,0 +1,293 @@
+/* =====================================================================
+   TengaSale HQ Flagship Page System
+   Shared glass surfaces, KPI tiles, empty states, and motion for
+   Fraud Investigation · WhatsApp Support · Repossession & Resale
+   ===================================================================== */
+
+:root {
+  --hq-bg-start:     #eef2f7;
+  --hq-bg-end:       #f8fafc;
+  --hq-glass-bg:     rgba(255, 255, 255, 0.78);
+  --hq-glass-bg-strong: rgba(255, 255, 255, 0.86);
+  --hq-glass-border: rgba(255, 255, 255, 0.35);
+  --hq-glass-blur:   14px;
+  --hq-radius-lg:    22px;
+  --hq-radius-xl:    26px;
+  --hq-shadow-soft:    0 4px 24px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --hq-shadow-lift:    0 12px 40px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05);
+  --hq-ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Page shell — soft HQ neutral background */
+.hq-flagship-page {
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(255, 90, 0, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+    linear-gradient(165deg, var(--hq-bg-start) 0%, var(--hq-bg-end) 100%);
+  min-height: 100vh;
+}
+
+/* Glass card */
+.hq-glass-card,
+.hq-glass-panel {
+  background: var(--hq-glass-bg);
+  backdrop-filter: blur(var(--hq-glass-blur));
+  -webkit-backdrop-filter: blur(var(--hq-glass-blur));
+  border: 1px solid var(--hq-glass-border);
+  border-radius: var(--hq-radius-lg);
+  box-shadow: var(--hq-shadow-soft);
+  transition: transform 0.18s var(--hq-ease-out), box-shadow 0.18s var(--hq-ease-out);
+}
+
+@media (hover: hover) {
+  .hq-glass-card:hover,
+  .hq-kpi-glass:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hq-shadow-lift);
+  }
+}
+
+/* KPI glass tile */
+.hq-kpi-glass {
+  background: var(--hq-glass-bg-strong);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 18px;
+  padding: 16px 16px 14px;
+  box-shadow: var(--hq-shadow-soft);
+  transition: transform 0.15s var(--hq-ease-out), box-shadow 0.15s var(--hq-ease-out);
+  position: relative;
+  overflow: hidden;
+}
+
+.hq-kpi-glass__val {
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.hq-kpi-glass__lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.hq-kpi-glass__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 800;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hq-kpi-glass__chip--clear   { background: #dcfce7; color: #15803d; }
+.hq-kpi-glass__chip--review  { background: #fef3c7; color: #d97706; }
+.hq-kpi-glass__chip--blocked { background: #fee2e2; color: #dc2626; }
+.hq-kpi-glass__chip--info    { background: #eff6ff; color: #2563eb; }
+.hq-kpi-glass__chip--queued  { background: #f3e8ff; color: #7c3aed; }
+
+/* Status chips */
+.hq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hq-chip--green  { background: #dcfce7; color: #15803d; }
+.hq-chip--amber  { background: #fef3c7; color: #d97706; }
+.hq-chip--red    { background: #fee2e2; color: #dc2626; }
+.hq-chip--blue   { background: #eff6ff; color: #2563eb; }
+.hq-chip--purple { background: #f3e8ff; color: #7c3aed; }
+
+.hq-chip__pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: hq-pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes hq-pulse-live {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
+  50%       { box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
+}
+
+/* Premium empty state */
+.hq-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.hq-empty-state::before {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.12) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  pointer-events: none;
+}
+
+.hq-empty-state__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.9);
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.hq-empty-state__icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.hq-empty-state__title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #475569;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.hq-empty-state__message {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.55;
+  max-width: 300px;
+  position: relative;
+  z-index: 1;
+}
+
+.hq-empty-state__action {
+  margin-top: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Investigation workflow panel */
+.hq-workflow-panel {
+  background: var(--hq-glass-bg-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--hq-radius-xl);
+  box-shadow: var(--hq-shadow-lift);
+  padding: 22px 24px;
+  margin-top: 28px;
+}
+
+.hq-workflow-panel__hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.hq-workflow-panel__hdr h2 {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.hq-workflow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .hq-workflow-grid { grid-template-columns: 1fr; }
+}
+
+.hq-workflow-field label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.hq-workflow-field select,
+.hq-workflow-field textarea,
+.hq-workflow-field input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+}
+
+.hq-workflow-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.hq-workflow-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.hq-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hq-chip__pulse { animation: none; }
+  .hq-glass-card:hover,
+  .hq-kpi-glass:hover { transform: none; }
+}
