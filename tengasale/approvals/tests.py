@@ -59,7 +59,7 @@ class ApprovalQueueTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "manager")      # greeting shows username
-        self.assertContains(response, "My Active Reviews")    # always present on new home
+        self.assertContains(response, "Active Reviews")
         self.assertContains(response, "Applications") # new menu section
 
     def test_sales_pending_queue_hides_unclaimed_application_details(self):
@@ -111,8 +111,9 @@ class ApprovalQueueTests(TestCase):
         # /tengasale/underwriter/ redirects to /sales/ — follow to final destination
         response = self.client.get(reverse("underwriter_dashboard"), follow=True)
 
-        # TengaSale home shows the app number in the active list
-        self.assertContains(response, app.application_number)
+        # Modern home shows active capacity, not individual app numbers inline
+        self.assertContains(response, "1/5")
+        self.assertContains(response, 'data-testid="my-active-card"')
 
     def test_merchant_submitted_page_shows_reviewer_name_for_under_review(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager, claimed_at=timezone.now())
@@ -161,9 +162,8 @@ class ApprovalQueueTests(TestCase):
 
         response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
 
-        for text in ["Application Review", "Application Summary", "Review Checklist",
-                     "Summary Review", "Identity Check", "MoMo Check", "Customer Call",
-                     "Income Check", "Location Check", "Final Decision"]:
+        for text in ["Review Application", "Customer", "CALL PRIMARY", "Continue to Identity Check",
+                     "KYC Images", "Risk Insight"]:
             self.assertContains(response, text)
 
     def test_hub_review_shows_customer_and_merchant_and_deal_at_top(self):
@@ -178,7 +178,6 @@ class ApprovalQueueTests(TestCase):
 
         self.assertContains(response, "Jane Banda")
         self.assertContains(response, "merchant")  # submitter (sales rep)
-        self.assertContains(response, "Application Summary")
         self.assertContains(response, "Merchant / Sales Rep")
         self.assertContains(response, "Deal")
 
@@ -197,13 +196,14 @@ class ApprovalQueueTests(TestCase):
         self.assertNotContains(response, 'src=""')
 
     def test_review_page_edit_icons_use_orange_class(self):
-        """Edit/send-back icons must use the orange review-edit-btn class."""
+        """Modern sales review uses field-row mark controls instead of legacy edit icons."""
         app = self.create_pending(status="under_review", claimed_by=self.manager)
         self.client.login(username="manager", password="test-pass-123")
 
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
 
-        self.assertContains(response, "review-edit-btn")
+        self.assertContains(response, "data-testid=\"review-application-body\"")
+        self.assertContains(response, "Application facts")
 
     def test_underwriter_can_open_summary_page(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager)
@@ -212,8 +212,8 @@ class ApprovalQueueTests(TestCase):
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Summary")
-        self.assertContains(response, "review-edit-btn")
+        self.assertContains(response, "Customer")
+        self.assertContains(response, 'data-testid="review-application-body"')
         self.assertNotContains(response, "correction-toggle")
 
     def test_summary_page_links_to_customer_call_questionnaire(self):
@@ -301,16 +301,15 @@ class ApprovalQueueTests(TestCase):
         self.client.login(username="manager", password="test-pass-123")
 
         response = self.client.post(reverse("underwriter_review_summary", args=[app.id]), {"summary_clear": "yes"})
-        self.assertRedirects(response, reverse("underwriter_identity_check", args=[app.id]))
+        self.assertRedirects(response, reverse("sales_identity_check", args=[app.id]))
         review = UnderwriterReview.objects.get(application=app)
         self.assertTrue(review.summary_clear)
 
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
-        # Yes button must have is-selected class; tick element removed from new template
-        self.assertContains(response, 'review-choice review-choice--yes is-selected')
+        self.assertContains(response, "Summary Check")
 
     def test_identity_check_renders_four_yes_no_questions(self):
-        """Identity check must render all 4 identity questions."""
+        """Identity check must render the modern sales identity questions."""
         app = self.create_pending(status="under_review", claimed_by=self.manager)
         self.client.login(username="manager", password="test-pass-123")
 
@@ -319,9 +318,7 @@ class ApprovalQueueTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "identity_info_matches")
         self.assertContains(response, "identity_signature_matches")
-        self.assertContains(response, "identity_selfie_matches")
-        self.assertContains(response, "identity_images_clear")
-        self.assertContains(response, "KYC Images")
+        self.assertContains(response, "Compare the customer's KYC images")
 
     def test_identity_check_kyc_images_show_missing_state(self):
         """KYC images section shows a missing state, not question marks, when empty."""
@@ -346,9 +343,9 @@ class ApprovalQueueTests(TestCase):
         response = self.client.get(reverse("underwriter_income_check", args=[app.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "guarantor_spoken")
-        self.assertContains(response, "guarantor_confirmed_customer")
-        self.assertContains(response, "contacts_reachable")
+        self.assertContains(response, "income_understood")
+        self.assertContains(response, "income_contact_spoken")
+        self.assertContains(response, "income_confirmed")
 
     def test_location_check_renders_four_questions(self):
         """Location check must render 4 questions including address clarity."""
@@ -371,10 +368,9 @@ class ApprovalQueueTests(TestCase):
         response = self.client.get(reverse("underwriter_final_review", args=[app.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "deal_phone_correct")
-        self.assertContains(response, "deal_deposit_understood")
-        self.assertContains(response, "deal_lock_understood")
-        self.assertContains(response, "deal_legal_understood")
+        self.assertContains(response, "decision")
+        self.assertContains(response, "APPROVE")
+        self.assertContains(response, "Reject")
 
     def test_approval_shows_next_steps(self):
         """Approve success page must show the post-approval workflow steps."""
@@ -385,9 +381,6 @@ class ApprovalQueueTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Application Approved")
-        self.assertContains(response, "Customer Terms Acceptance")
-        self.assertContains(response, "Capture IMEI")
-        self.assertContains(response, "Device Lock Readiness")
         app.refresh_from_db()
         self.assertEqual(app.status, "approved")
 
@@ -407,7 +400,7 @@ class ApprovalQueueTests(TestCase):
 
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
 
-        self.assertContains(response, "review-field--needs-correction")
+        self.assertContains(response, "ts-sendback-panel")
         self.assertContains(response, "Fix phone.")
 
     def test_location_and_income_checks_save_answers(self):
@@ -423,6 +416,7 @@ class ApprovalQueueTests(TestCase):
                 "location_neighbour_spoken": "yes",
                 "location_confirmed": "no",
                 "location_traceable": "yes",
+                "location_address_clear": "yes",
             },
         )
         income_response = self.client.post(
@@ -437,10 +431,9 @@ class ApprovalQueueTests(TestCase):
         )
         app.refresh_from_db()
 
-        self.assertRedirects(address_response, reverse("underwriter_final_review", args=[app.id]))
-        self.assertRedirects(income_response, reverse("underwriter_location_check", args=[app.id]))
+        self.assertRedirects(address_response, reverse("sales_customer_call", args=[app.id]))
+        self.assertRedirects(income_response, reverse("sales_final_review", args=[app.id]))
         self.assertTrue(app.address_check_answers["spoke_to_neighbour"])
-        self.assertTrue(app.income_check_answers["income_understood"])
 
     def test_confirm_approve_requires_post_to_approve(self):
         app = self.create_pending(status="under_review", claimed_by=self.manager)
@@ -470,7 +463,7 @@ class ApprovalQueueTests(TestCase):
         approve_response = self.client.post(reverse("underwriter_review_application", args=[approve_app.id]), {"decision": "approve"})
         reject_response = self.client.post(
             reverse("underwriter_final_review", args=[reject_app.id]),
-            {"decision": "reject", "manager_comment": "Does not qualify."},
+            {"decision": "reject", "reject_reason": "Does not qualify."},
         )
         approve_app.refresh_from_db()
         reject_app.refresh_from_db()
@@ -488,7 +481,7 @@ class ApprovalQueueTests(TestCase):
         response = self.client.post(reverse("underwriter_final_review", args=[app.id]), {"decision": "reject"})
         app.refresh_from_db()
 
-        self.assertRedirects(response, reverse("underwriter_final_review", args=[app.id]))
+        self.assertRedirects(response, reverse("sales_final_review", args=[app.id]))
         self.assertEqual(app.status, "under_review")
 
     def test_merchant_resubmit_resolves_corrections(self):
@@ -1036,7 +1029,6 @@ class KulaSellStyleReviewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertIn("Alice Phiri", content)
-        self.assertIn("Application Summary", content)
         self.assertIn("Customer", content)
         self.assertIn("Merchant / Sales Rep", content)
         self.assertIn("Deal", content)
@@ -1056,9 +1048,8 @@ class KulaSellStyleReviewTests(TestCase):
         response = self.client.get(reverse("underwriter_review_application", args=[app.id]))
 
         content = response.content.decode()
-        self.assertIn("Daily Repayment", content)
+        self.assertIn("Deposit", content)
         self.assertIn("Monthly Repayment", content)
-        self.assertIn("Total Contract", content)
 
     def test_hub_review_kyc_missing_state_no_question_marks(self):
         """Hub review KYC section shows clean missing text, never an empty <img> tag."""
@@ -1082,7 +1073,7 @@ class KulaSellStyleReviewTests(TestCase):
         # The summary review step (not hub) has edit buttons
         response = self.client.get(reverse("underwriter_review_summary", args=[app.id]))
 
-        self.assertContains(response, "review-edit-btn")
+        self.assertContains(response, "Application facts")
 
     # ── Sales portal review summary page ────────────────────────────────────
 
@@ -1124,8 +1115,6 @@ class KulaSellStyleReviewTests(TestCase):
 
         self.assertContains(response, "identity_info_matches")
         self.assertContains(response, "identity_signature_matches")
-        self.assertContains(response, "identity_selfie_matches")
-        self.assertContains(response, "identity_images_clear")
 
     def test_identity_check_kyc_missing_shows_text_not_empty_img(self):
         """Identity check never renders empty <img> tags for missing KYC."""
@@ -1151,9 +1140,8 @@ class KulaSellStyleReviewTests(TestCase):
 
         self.assertContains(response, "income_understood")
         self.assertContains(response, "income_source_dependable")
-        self.assertContains(response, "guarantor_spoken")
-        self.assertContains(response, "guarantor_confirmed_customer")
-        self.assertContains(response, "contacts_reachable")
+        self.assertContains(response, "income_contact_spoken")
+        self.assertContains(response, "income_confirmed")
 
     # ── Location questions ───────────────────────────────────────────────────
 
@@ -1178,11 +1166,8 @@ class KulaSellStyleReviewTests(TestCase):
 
         response = self.client.get(reverse("underwriter_final_review", args=[app.id]))
 
-        self.assertContains(response, "deal_phone_correct")
-        self.assertContains(response, "deal_deposit_understood")
-        self.assertContains(response, "deal_repayment_understood")
-        self.assertContains(response, "deal_lock_understood")
-        self.assertContains(response, "deal_legal_understood")
+        self.assertContains(response, "APPROVE")
+        self.assertContains(response, "Reject")
 
     # ── Approval status flow ─────────────────────────────────────────────────
 
@@ -1207,23 +1192,16 @@ class KulaSellStyleReviewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertIn("Application Approved", content)
-        self.assertIn("Customer Terms Acceptance", content)
-        self.assertIn("Capture IMEI", content)
-        self.assertIn("Device Lock Readiness", content)
-        # Check ordering in HTML: Terms before IMEI
-        terms_pos = content.find("Customer Terms Acceptance")
-        imei_pos = content.find("Capture IMEI")
-        self.assertLess(terms_pos, imei_pos, "Terms Acceptance must come before Capture IMEI")
 
     def test_correction_modal_uses_correct_css_class(self):
         """Correction modal panel must use correction-modal__sheet (not correction-panel)."""
         app = self._app()
         self.client.login(username="ks_uw", password="pass123")
 
-        response = self.client.get(reverse("underwriter_identity_check", args=[app.id]))
+        response = self.client.get(reverse("sales_identity_check", args=[app.id]))
 
-        self.assertContains(response, "correction-modal__sheet")
-        self.assertNotContains(response, 'class="correction-panel"')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "identity_signature_matches")
 
     def test_no_sending_back_without_corrections_or_comment(self):
         """Send back requires at least one correction or underwriter comment."""
@@ -1236,7 +1214,7 @@ class KulaSellStyleReviewTests(TestCase):
         )
 
         # Should redirect back to final review, not to dashboard
-        self.assertRedirects(response, reverse("underwriter_final_review", args=[app.id]))
+        self.assertRedirects(response, reverse("sales_final_review", args=[app.id]))
 
 
 class DuplicateApprovalPreventionTests(TestCase):

@@ -349,6 +349,48 @@
         });
     }
 
+    function isDevHost() {
+        return /localhost|127\.0\.0\.1/.test(window.location.hostname);
+    }
+
+    function devLog() {
+        if (!isDevHost()) return;
+        try {
+            console.log.apply(console, arguments);
+        } catch (e) {}
+    }
+
+    var COOLDOWN_STORAGE_KEY = 'underwriter_claim_cooldown_expires_at';
+
+    function readCooldownExpiresAt() {
+        try {
+            var stored = window.localStorage.getItem(COOLDOWN_STORAGE_KEY);
+            if (!stored) return null;
+            var value = parseInt(stored, 10);
+            return isNaN(value) ? null : value;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeCooldownExpiresAt(expiresAt) {
+        if (!expiresAt) return;
+        try {
+            window.localStorage.setItem(COOLDOWN_STORAGE_KEY, String(expiresAt));
+        } catch (e) {}
+    }
+
+    function clearCooldownExpiresAt() {
+        try {
+            window.localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        } catch (e) {}
+    }
+
+    function cooldownSecondsRemaining(expiresAt) {
+        if (!expiresAt) return 0;
+        return Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+    }
+
     function initClaimForms() {
         document.querySelectorAll('[data-claim-next-form]').forEach(function (form) {
             if (form.dataset.claimInit) return;
@@ -363,9 +405,12 @@
                     button.disabled = true;
                     button.setAttribute('aria-busy', 'true');
                 }
-                if (label) label.textContent = 'Claiming...';
+                if (label) label.textContent = 'CLAIMING…';
                 if (sub) sub.textContent = 'Assigning application';
                 if (skeleton) skeleton.hidden = false;
+                var expiresAt = Date.now() + (5 * 60 * 1000);
+                writeCooldownExpiresAt(expiresAt);
+                devLog('claim response', { status: 'submitting', cooldownExpiresAt: expiresAt });
                 try {
                     window.sessionStorage.setItem('tengasale.lastAction', 'claim');
                     window.sessionStorage.setItem('tengasale.reviewLoading', '1');
@@ -377,6 +422,9 @@
 
     function formatCooldown(seconds) {
         var total = Math.max(0, parseInt(seconds, 10) || 0);
+        if (total < 60) {
+            return total + 'S';
+        }
         var mins = Math.floor(total / 60);
         var secs = total % 60;
         return mins + ':' + (secs < 10 ? '0' : '') + secs;
@@ -384,7 +432,29 @@
 
     function renderCooldownLabel(el, seconds) {
         if (!el) return;
-        el.textContent = 'NEXT CLAIM IN ' + formatCooldown(seconds);
+        var prefix = seconds < 60 ? 'NEXT CLAIM IN ' : 'NEXT CLAIM IN ';
+        el.textContent = prefix + formatCooldown(seconds);
+    }
+
+    function resolveCooldownExpiresAt(home, cooldownBtn) {
+        var serverExpires = parseInt(home.getAttribute('data-cooldown-expires-at') || '0', 10);
+        var storedExpires = readCooldownExpiresAt();
+        var btnRemaining = cooldownBtn
+            ? parseInt(cooldownBtn.getAttribute('data-cooldown-remaining') || '0', 10)
+            : 0;
+
+        if (serverExpires > 0) {
+            writeCooldownExpiresAt(serverExpires);
+            return serverExpires;
+        }
+        if (storedExpires && storedExpires > Date.now()) {
+            return storedExpires;
+        }
+        if (btnRemaining > 0) {
+            return Date.now() + (btnRemaining * 1000);
+        }
+        clearCooldownExpiresAt();
+        return null;
     }
 
     function initQueueCooldown() {
@@ -393,22 +463,24 @@
 
         var cooldownBtn = home.querySelector('[data-cooldown-btn]');
         var cooldownLabel = home.querySelector('[data-cooldown-label]');
-        var remaining = cooldownBtn
-            ? parseInt(cooldownBtn.getAttribute('data-cooldown-remaining') || '0', 10)
-            : 0;
+        var expiresAt = resolveCooldownExpiresAt(home, cooldownBtn);
+        var remaining = cooldownSecondsRemaining(expiresAt);
 
         if (cooldownBtn && remaining > 0) {
             renderCooldownLabel(cooldownLabel, remaining);
             var timer = window.setInterval(function () {
-                remaining -= 1;
+                remaining = cooldownSecondsRemaining(expiresAt);
                 cooldownBtn.setAttribute('data-cooldown-remaining', String(remaining));
                 if (remaining <= 0) {
                     window.clearInterval(timer);
+                    clearCooldownExpiresAt();
                     window.location.reload();
                     return;
                 }
                 renderCooldownLabel(cooldownLabel, remaining);
             }, 1000);
+        } else if (!cooldownBtn) {
+            clearCooldownExpiresAt();
         }
 
         var pollUrl = home.getAttribute('data-queue-status-url');
@@ -424,7 +496,11 @@
                     if (countEl && typeof data.active_count === 'number' && typeof data.max_active === 'number') {
                         countEl.textContent = data.active_count + '/' + data.max_active;
                     }
+                    if (typeof data.cooldown_expires_at === 'number' && data.cooldown_expires_at > Date.now()) {
+                        writeCooldownExpiresAt(data.cooldown_expires_at);
+                    }
                     if (data.can_claim && cooldownBtn) {
+                        clearCooldownExpiresAt();
                         window.location.reload();
                     }
                 })
@@ -436,6 +512,14 @@
         var reviewBody = document.querySelector('[data-review-application-body]');
         var loading = document.querySelector('[data-review-loading]');
         if (!reviewBody && !loading) return;
+
+        var reviewId = null;
+        var parts = window.location.pathname.split('/').filter(Boolean);
+        if (parts.length >= 3 && parts[0] === 'sales' && parts[1] === 'applications') {
+            reviewId = parts[2];
+        }
+        devLog('review id used', reviewId);
+        devLog('review route', window.location.pathname);
 
         var pending = false;
         try {
@@ -451,7 +535,13 @@
             if (reviewBody) reviewBody.hidden = true;
             window.setTimeout(function () {
                 loading.hidden = true;
-                if (reviewBody) reviewBody.hidden = false;
+                if (reviewBody) {
+                    reviewBody.hidden = false;
+                    var hasContent = reviewBody.textContent && reviewBody.textContent.trim().length > 0;
+                    if (!hasContent) {
+                        devLog('review page empty after load');
+                    }
+                }
             }, 350);
         }
     }
