@@ -38,8 +38,8 @@ def stored_file_exists(field_file):
 
 
 def kyc_image_field_ready(field_file) -> bool:
-    """True when the image is present and reachable (storage check with name fallback)."""
-    return stored_file_exists(field_file)
+    """True when an uploaded image reference is stored on the application."""
+    return kyc_image_field_present(field_file)
 
 
 def kyc_images_complete(app) -> bool:

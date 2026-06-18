@@ -149,6 +149,19 @@ def _render_read_only_application(request, app, *, back_tab="completed"):
     })
 
 
+def _review_app_or_read_only(request, app_id):
+    read_only_app = (
+        FinancingApplication.objects.select_related("deal", "deal__brand", "created_by", "claimed_by", "reviewed_by", "contract")
+        .filter(id=app_id, status__in=UNDERWRITER_READ_ONLY_STATUSES)
+        .filter(Q(reviewed_by=request.user) | Q(claimed_by=request.user))
+        .first()
+    )
+    if read_only_app:
+        back_tab = "rejected" if read_only_app.status in {"rejected", "cancelled"} else "completed"
+        return read_only_app, _render_read_only_application(request, read_only_app, back_tab=back_tab)
+    return review_guard(request, app_id)
+
+
 def _questionnaire_app_for_user(request, app_id):
     if is_hq(request.user) or request.user.is_staff or request.user.is_superuser:
         return get_object_or_404(
@@ -457,6 +470,7 @@ def sales_application_detail(request, app_id):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
+@safe_page("Review application")
 def sales_review_summary(request, app_id):
     from applications.services.duplicate_check import check_duplicate_customer
 
@@ -484,7 +498,7 @@ def sales_review_summary(request, app_id):
         back_tab = "rejected" if read_only_app.status in {"rejected", "cancelled"} else "completed"
         return _render_read_only_application(request, read_only_app, back_tab=back_tab)
 
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)
@@ -513,8 +527,9 @@ def sales_review_summary(request, app_id):
 
 
 @underwriter_required
+@safe_page("Identity check")
 def sales_identity_check(request, app_id):
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)
@@ -531,8 +546,9 @@ def sales_identity_check(request, app_id):
 
 
 @underwriter_required
+@safe_page("Address check")
 def sales_address_check(request, app_id):
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)
@@ -690,8 +706,9 @@ def _call_recording_gate(app):
 
 
 @underwriter_required
+@safe_page("Customer call")
 def sales_customer_call(request, app_id):
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)
@@ -776,8 +793,9 @@ def sales_call_recording_file(request, recording_id):
 
 
 @underwriter_required
+@safe_page("Income check")
 def sales_income_check(request, app_id):
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)
@@ -812,8 +830,9 @@ def sales_income_check(request, app_id):
 
 
 @underwriter_required
+@safe_page("Final review")
 def sales_final_review(request, app_id):
-    app, response = review_guard(request, app_id)
+    app, response = _review_app_or_read_only(request, app_id)
     if response:
         return response
     review = get_review(app, request.user)

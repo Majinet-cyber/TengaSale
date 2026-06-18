@@ -12,6 +12,7 @@ Covers:
 """
 from datetime import date
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -20,6 +21,7 @@ from django.urls import reverse
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     PaymentAuditLog, SalarySchedule, SpinRewardPayout,
+    USSDPaymentIntent, USSDSessionLog,
 )
 from .services import (
     approve_payout_batch,
@@ -31,6 +33,64 @@ from .services import (
 )
 
 User = get_user_model()
+
+
+class USSDCallbackTests(TestCase):
+    def post_ussd(self, text, session_id="test123"):
+        return self.client.post(
+            reverse("ussd_callback"),
+            data=urlencode({
+                "sessionId": session_id,
+                "serviceCode": "*384*88900#",
+                "phoneNumber": "+265990870616",
+                "text": text,
+            }),
+            content_type="application/x-www-form-urlencoded",
+        )
+
+    def assert_plain(self, response, expected):
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain; charset=utf-8")
+        self.assertEqual(response.content.decode(), expected)
+
+    def test_main_menu(self):
+        response = self.post_ussd("")
+        self.assert_plain(response, "CON Welcome to TengaSale\n1. Pay\n2. Check balance")
+
+    def test_pay_amount_prompt(self):
+        response = self.post_ussd("1")
+        self.assert_plain(response, "CON Enter amount you want to pay")
+
+    def test_pay_contract_prompt(self):
+        response = self.post_ussd("1*1500")
+        self.assert_plain(response, "CON Enter your TengaSale contract number")
+
+    def test_payment_intent_creation(self):
+        response = self.post_ussd("1*1500*TS123")
+        self.assert_plain(response, "END Payment request received. TengaSale will verify and confirm shortly.")
+        intent = USSDPaymentIntent.objects.get()
+        self.assertEqual(intent.phone_number, "+265990870616")
+        self.assertEqual(intent.contract_number, "TS123")
+        self.assertEqual(intent.amount, Decimal("1500"))
+        self.assertEqual(intent.status, "PENDING")
+
+    def test_check_balance_prompt(self):
+        response = self.post_ussd("2")
+        self.assert_plain(response, "CON Enter your TengaSale contract number")
+
+    def test_balance_not_found(self):
+        response = self.post_ussd("2*TS123")
+        self.assert_plain(response, "END Contract not found. Please check your number or contact TengaSale support on +265990870616.")
+
+    def test_invalid_input(self):
+        response = self.post_ussd("9")
+        self.assert_plain(response, "END Invalid option. Please try again.")
+
+    def test_session_logging(self):
+        response = self.post_ussd("1")
+        log = USSDSessionLog.objects.get()
+        self.assertEqual(log.text, "1")
+        self.assertEqual(log.response, response.content.decode())
 
 
 # ──────────────────────────────────────────────────────────────────────────────

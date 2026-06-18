@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block page_title %}{{ title }} — TengaSale{% endblock %}
 
@@ -46,7 +46,7 @@
 
             {% if app.customer_face_image %}
                 <img
-                    src="{{ app.customer_face_image.url }}"
+                    src="{{ app.customer_face_image|media_url }}"
                     alt="{{ app.customer_name }}"
                     class="app-card-v2__photo"
                     data-skip-img-fallback="1"
