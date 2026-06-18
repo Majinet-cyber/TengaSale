@@ -3,6 +3,43 @@
 
 {% block page_title %}Final Review — {{ app.application_number }}{% endblock %}
 
+{% block extra_head %}
+{{ block.super }}
+<style>
+.sales-main {
+  padding-top: 18px;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+.ts-score-row {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.ts-decision-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.ts-btn-approve,
+.ts-btn-reject,
+.ts-decision-row .ts-btn-secondary,
+.ts-back-btn {
+  width: 100%;
+  min-height: 52px;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.ts-btn-approve { background: #2F9E5E; border-color: #2F9E5E; }
+.ts-btn-reject { background: #D94A38; border-color: #D94A38; }
+.ts-decision-row .ts-btn-secondary,
+.ts-back-btn {
+  background: #fff;
+  color: #111827;
+  border: 1.5px solid #111827;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 {% include "sales/_sticky_summary.html" %}
 <div

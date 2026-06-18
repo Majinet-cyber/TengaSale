@@ -9,8 +9,10 @@
 /* ── Underwriter Home — Premium Operational Cockpit ─────────────── */
 
 .uw-home {
-  padding: 0 16px 96px;
-  max-width: 520px;
+  width: 100%;
+  padding: 20px 16px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  max-width: 480px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -70,14 +72,16 @@
 .uw-action-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  background: #1d4ed8;
-  border-radius: 20px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 20px;
+  min-height: 128px;
+  background: #426F89;
+  border-radius: 22px;
   margin-bottom: 14px;
   text-decoration: none;
   color: #fff;
-  box-shadow: 0 4px 18px rgba(29,78,216,.25);
+  box-shadow: 0 8px 22px rgba(17,24,39,.12);
   transition: background .15s, box-shadow .15s, transform .1s;
   width: 100%;
   box-sizing: border-box;
@@ -90,24 +94,24 @@
 .uw-action-card:hover  { filter: brightness(1.08); }
 .uw-action-card:active { transform: scale(.98); }
 .uw-action-card--green {
-  background: #16a34a;
-  box-shadow: 0 4px 18px rgba(22,163,74,.25);
+  background: #2F9E5E;
+  box-shadow: 0 8px 22px rgba(47,158,94,.18);
 }
 .uw-action-card--blue {
-  background: #1d4ed8;
-  box-shadow: 0 4px 18px rgba(29,78,216,.25);
+  background: #426F89;
+  box-shadow: 0 8px 22px rgba(66,111,137,.18);
 }
 .uw-action-card--disabled {
   background: #e5e7eb;
-  color: #64748b;
+  color: #111827;
   box-shadow: none;
   cursor: default;
 }
 .uw-action-card--disabled:hover,
 .uw-action-card--disabled:active { filter: none; transform: none; }
 .uw-action-card__icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 13px;
   background: rgba(255,255,255,.15);
   display: grid;
@@ -129,19 +133,19 @@
   margin: 0 0 2px;
 }
 .uw-action-card__title {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 900;
   margin: 0 0 1px;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 .uw-action-card__sub {
-  font-size: 12px;
+  font-size: 13px;
   opacity: .75;
   margin: 0;
 }
 .uw-action-card__count {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   flex-shrink: 0;
   line-height: 1;
@@ -198,7 +202,7 @@
   align-items: center;
   gap: 14px;
   padding: 18px 20px;
-  background: #1d4ed8;
+  background: #426F89;
   border-radius: 20px;
   margin-bottom: 14px;
   text-decoration: none;
@@ -206,7 +210,7 @@
   box-shadow: 0 4px 18px rgba(29,78,216,.25);
   transition: background .15s, box-shadow .15s, transform .1s;
 }
-.uw-active-card:hover { background: #1e40af; box-shadow: 0 6px 24px rgba(29,78,216,.35); }
+.uw-active-card:hover { background: #365F75; box-shadow: 0 6px 24px rgba(66,111,137,.24); }
 .uw-active-card:active { transform: scale(.98); }
 .uw-active-card__count {
   font-size: 22px;

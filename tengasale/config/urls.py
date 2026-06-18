@@ -24,6 +24,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("applications/", include("applications.urls")),
     path("kyc/didit/done/", didit_callback_done, name="didit_callback_done"),
+    path("api/ussd/", payment_api_views.ussd_callback, name="ussd_callback"),
     path("api/webhooks/didit/", didit_webhook, name="didit_webhook"),
     path("api/payments/airtel/callback/", payment_api_views.airtel_callback, name="airtel_callback"),
     path("api/payments/airtel/collections/initiate/", payment_api_views.airtel_collection_initiate, name="airtel_collection_initiate"),

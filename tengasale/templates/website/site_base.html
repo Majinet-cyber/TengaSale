@@ -40,11 +40,9 @@
 
     <!-- Desktop nav links -->
     <div class="sitenav__links" role="list">
-      <a href="#how-it-works" class="sitenav__link" role="listitem">How It Works</a>
+      <a href="#portals" class="sitenav__link" role="listitem">Portals</a>
       <a href="#for-merchants" class="sitenav__link" role="listitem">Merchants</a>
-      <a href="#simulations" class="sitenav__link" role="listitem">Simulations</a>
-      <a href="#default-prevention" class="sitenav__link" role="listitem">Risk</a>
-      <a href="#faq" class="sitenav__link" role="listitem">FAQ</a>
+      <a href="#for-customers" class="sitenav__link" role="listitem">Customers</a>
       <a href="{% url 'website_careers' %}" class="sitenav__link" role="listitem">Careers</a>
     </div>
 
@@ -87,12 +85,9 @@
 
   <!-- Mobile dropdown -->
   <div class="sitenav__mobile">
-    <a href="#how-it-works" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">How It Works</a>
+    <a href="#portals" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Portals</a>
     <a href="#for-merchants" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">For Merchants</a>
-    <a href="#simulations" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Simulations</a>
-    <a href="#default-prevention" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Risk Engine</a>
-    <a href="#payment-flow" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Payments</a>
-    <a href="#faq" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">FAQ</a>
+    <a href="#for-customers" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">For Customers</a>
     <a href="{% url 'website_careers' %}" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Careers</a>
     <a href="{% url 'portal_search' %}" class="sitenav__mobile-link sitenav__mobile-link--cta">Make Payment</a>
     <a href="{% url 'login' %}" class="sitenav__mobile-link">Login</a>
@@ -106,63 +101,9 @@
 
 <!-- Footer — light mode -->
 <footer class="sitefooter">
-  <div class="sitefooter__inner">
-
-    <div class="sitefooter__brand">
-      <img src="{% static 'images/Tenga.png' %}" alt="" class="sitefooter__logo ts-logo-icon" aria-hidden="true">
-      <div class="sitefooter__brand-text">
-        <span class="sitefooter__brand-name">TengaSale</span>
-        <span class="sitefooter__brand-tagline">Smartphone Financing for Malawi</span>
-      </div>
-      <p class="sitefooter__brand-desc">
-        Structured phone financing connecting customers, merchants,
-        and repayment infrastructure across Malawi.
-      </p>
-    </div>
-
-    <div class="sitefooter__col">
-      <div class="sitefooter__col-heading">Platform</div>
-      <a href="{% url 'portal_search' %}" class="sitefooter__link">Make a Payment</a>
-      <a href="{% url 'login' %}" class="sitefooter__link">Login</a>
-      <a href="#how-it-works" class="sitefooter__link">How It Works</a>
-      <a href="#for-merchants" class="sitefooter__link">For Merchants</a>
-      <a href="#trust" class="sitefooter__link">Platform</a>
-      <a href="#faq" class="sitefooter__link">FAQ</a>
-      <a href="{% url 'website_careers' %}" class="sitefooter__link">Careers</a>
-      <a href="{% url 'website_merchant_signup' %}" class="sitefooter__link">Become a Merchant</a>
-    </div>
-
-    <div class="sitefooter__col">
-      <div class="sitefooter__col-heading">Legal</div>
-      <a href="{% url 'website_terms' %}" class="sitefooter__link">Terms of Service</a>
-      <a href="{% url 'website_privacy' %}" class="sitefooter__link">Privacy Policy</a>
-      <a href="{% url 'website_payment_terms' %}" class="sitefooter__link">Payment Terms</a>
-      <a href="{% url 'website_merchant_terms' %}" class="sitefooter__link">Merchant Terms</a>
-    </div>
-
-    <div class="sitefooter__col">
-      <div class="sitefooter__col-heading">Support</div>
-      <a href="mailto:support@tengasale.africa" class="sitefooter__link">support@tengasale.africa</a>
-      <a href="{% url 'portal_support' %}" class="sitefooter__link">Help &amp; Support</a>
-      <a href="#" class="sitefooter__link">Contact Us</a>
-    </div>
-
-  </div>
-
   <div class="sitefooter__bottom">
-    <span>&copy; 2026 TengaSale. All rights reserved.</span>
-    <span style="display:inline-flex;align-items:center;gap:6px;">
-      <svg viewBox="0 0 20 14" width="20" height="14" xmlns="http://www.w3.org/2000/svg" style="border-radius:3px;overflow:hidden;" aria-hidden="true">
-        <rect width="20" height="14" fill="#339E35"/>
-        <rect width="20" height="9.33" fill="#CE1126"/>
-        <rect width="20" height="4.67" fill="#000000"/>
-        <g transform="translate(10,4.9)">
-          <circle r="2.4" fill="#000000"/>
-          <circle r="1.9" fill="#CE1126"/>
-        </g>
-      </svg>
-      Malawi
-    </span>
+    <span><strong>TengaSale</strong></span>
+    <span>Structured smartphone financing infrastructure for Malawi.</span>
   </div>
 </footer>
 

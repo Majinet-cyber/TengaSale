@@ -9,7 +9,7 @@ Context: requires `app` and optionally `contract` variable.
   <div class="ts-sticky-summary__inner">
     <div class="ts-sticky-summary__left">
       {% if app.customer_face_image %}
-        <img src="{{ app.customer_face_image.url }}" alt="{{ app.customer_name }}" class="ts-sticky-summary__avatar"
+        <img src="{{ app.customer_face_image|media_url }}" alt="{{ app.customer_name }}" class="ts-sticky-summary__avatar"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <div class="ts-sticky-summary__avatar ts-sticky-summary__avatar--fallback" style="display:none;">
           {{ app.customer_name|first|upper }}

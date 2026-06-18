@@ -723,3 +723,50 @@ class AirtelCallbackLog(models.Model):
     def __str__(self):
         ref = self.transaction.internal_reference if self.transaction_id else "unmatched"
         return f"Airtel callback {ref} - {self.created_at}"
+
+
+class USSDPaymentIntent(models.Model):
+    SOURCE_CHOICES = [
+        ("USSD", "USSD"),
+    ]
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("PROCESSING", "Processing"),
+        ("CONFIRMED", "Confirmed"),
+        ("FAILED", "Failed"),
+        ("CANCELLED", "Cancelled"),
+    ]
+
+    phone_number = models.CharField(max_length=32)
+    session_id = models.CharField(max_length=128, db_index=True)
+    service_code = models.CharField(max_length=64, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    contract_number = models.CharField(max_length=64, db_index=True)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default="USSD")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+    raw_text = models.TextField(blank=True)
+    provider_reference = models.CharField(max_length=128, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.phone_number} - {self.contract_number} - MWK {self.amount}"
+
+
+class USSDSessionLog(models.Model):
+    session_id = models.CharField(max_length=128, db_index=True)
+    service_code = models.CharField(max_length=64, blank=True)
+    phone_number = models.CharField(max_length=32, blank=True)
+    text = models.TextField(blank=True)
+    response = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.phone_number} - {self.text}"

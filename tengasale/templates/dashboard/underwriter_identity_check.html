@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
@@ -49,17 +49,17 @@
         {# Orientation-aware KYC image grid #}
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:16px;">
             {% if app.customer_face_image %}
-            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
+            {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image|media_url card_type="selfie" status="ready" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
             {% else %}
             {% include "includes/kyc_image_review_card.html" with label="Selfie Image" card_type="selfie" status="missing" show_send_back=True field_name="customer_face_image" correction=corrections.customer_face_image %}
             {% endif %}
             {% if app.id_front_image %}
-            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image.url card_type="id_front" status="ready" show_send_back=True field_name="id_front_image" correction=corrections.id_front_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image|media_url card_type="id_front" status="ready" show_send_back=True field_name="id_front_image" correction=corrections.id_front_image %}
             {% else %}
             {% include "includes/kyc_image_review_card.html" with label="ID Card Front" card_type="id_front" status="missing" show_send_back=True field_name="id_front_image" correction=corrections.id_front_image %}
             {% endif %}
             {% if app.id_back_image %}
-            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image.url card_type="id_back" status="ready" show_send_back=True field_name="id_back_image" correction=corrections.id_back_image %}
+            {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image|media_url card_type="id_back" status="ready" show_send_back=True field_name="id_back_image" correction=corrections.id_back_image %}
             {% else %}
             {% include "includes/kyc_image_review_card.html" with label="ID Card Back" card_type="id_back" status="missing" show_send_back=True field_name="id_back_image" correction=corrections.id_back_image %}
             {% endif %}
@@ -67,7 +67,7 @@
 
         {# Signature — landscape wide card #}
         {% if app.signature_image %}
-        {% include "includes/kyc_image_review_card.html" with label="Signature" image_url=app.signature_image.url card_type="signature" status="ready" show_send_back=True field_name="signature_image" correction=corrections.signature_image %}
+        {% include "includes/kyc_image_review_card.html" with label="Signature" image_url=app.signature_image|media_url card_type="signature" status="ready" show_send_back=True field_name="signature_image" correction=corrections.signature_image %}
         {% else %}
         {% include "includes/kyc_image_review_card.html" with label="Signature" card_type="signature" status="missing" show_send_back=True field_name="signature_image" correction=corrections.signature_image %}
         {% endif %}

@@ -1,5 +1,5 @@
 {% extends "sales/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block page_title %}Identity Check — {{ app.application_number }}{% endblock %}
 
@@ -22,17 +22,17 @@
 
   <div class="kyc-portrait-stack ts-mb-16">
     {% if app.customer_face_image %}
-    {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image.url card_type="selfie" status="ready" %}
+    {% include "includes/kyc_image_review_card.html" with label="Selfie Image" image_url=app.customer_face_image|media_url card_type="selfie" status="ready" %}
     {% else %}
     {% include "includes/kyc_image_review_card.html" with label="Selfie Image" card_type="selfie" status="missing" %}
     {% endif %}
     {% if app.id_front_image %}
-    {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image.url card_type="id_front" status="ready" %}
+    {% include "includes/kyc_image_review_card.html" with label="ID Card Front" image_url=app.id_front_image|media_url card_type="id_front" status="ready" %}
     {% else %}
     {% include "includes/kyc_image_review_card.html" with label="ID Card Front" card_type="id_front" status="missing" %}
     {% endif %}
     {% if app.id_back_image %}
-    {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image.url card_type="id_back" status="ready" %}
+    {% include "includes/kyc_image_review_card.html" with label="ID Card Back" image_url=app.id_back_image|media_url card_type="id_back" status="ready" %}
     {% else %}
     {% include "includes/kyc_image_review_card.html" with label="ID Card Back" card_type="id_back" status="missing" %}
     {% endif %}
@@ -40,8 +40,8 @@
     <div class="kyc-portrait-card kyc-portrait-card--signature">
       <div class="kyc-portrait-card__label">Signature</div>
       <div class="kyc-portrait-card__frame kyc-portrait-card__frame--contain">
-        <a href="{{ app.signature_image.url }}" target="_blank" rel="noopener noreferrer">
-          <img src="{{ app.signature_image.url }}" alt="Signature" loading="lazy">
+        <a href="{{ app.signature_image|media_url }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ app.signature_image|media_url }}" alt="Signature" loading="lazy">
         </a>
       </div>
     </div>

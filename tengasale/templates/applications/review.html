@@ -45,7 +45,7 @@
         <label>Customer Signature</label>
         <div class="sig-preview-card visible" id="sig-preview-card">
             <img
-                src="{{ app.signature_image.url }}"
+                src="{{ app.signature_image|media_url }}"
                 alt="Customer signature"
                 id="sig-preview-img"
                 data-skip-img-fallback="1"

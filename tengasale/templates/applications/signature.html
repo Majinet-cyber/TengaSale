@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
@@ -48,7 +48,7 @@
         </p>
         {% if app.signature_image %}
         <div class="sig-preview-card visible" style="margin-bottom:12px;">
-            <img src="{{ app.signature_image.url }}" alt="Customer signature" data-skip-img-fallback="1">
+            <img src="{{ app.signature_image|media_url }}" alt="Customer signature" data-skip-img-fallback="1">
             <div class="sig-preview-meta">
                 <span class="section-saved-badge">Signature saved.</span>
             </div>

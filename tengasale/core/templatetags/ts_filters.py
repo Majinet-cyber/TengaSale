@@ -13,6 +13,7 @@ Usage in templates:
 
 from django import template
 from decimal import Decimal, InvalidOperation
+from django.conf import settings
 
 from core.formatting import format_mwk as _format_mwk
 from core.formatting import format_mwk_plain as _format_mwk_plain
@@ -25,6 +26,21 @@ def _to_decimal(value):
     """Safely convert value to Decimal."""
     if value is None:
         return Decimal("0")
+
+
+@register.filter(name="media_url")
+def media_url(value):
+    """Return a FieldFile URL without raising when the file is unset."""
+    if not value:
+        return ""
+    try:
+        return value.url
+    except Exception:
+        name = getattr(value, "name", "")
+        if not name:
+            return ""
+        media_base = str(getattr(settings, "MEDIA_URL", "/media/") or "/media/")
+        return f"{media_base.rstrip('/')}/{str(name).lstrip('/')}"
     try:
         return Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError):

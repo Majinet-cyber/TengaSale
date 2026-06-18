@@ -173,7 +173,7 @@
     {% if app.signature_image %}
         <div class="detail-signature">
             <span>Customer signature</span>
-            <img src="{{ app.signature_image.url }}" alt="Customer signature">
+            <img src="{{ app.signature_image|media_url }}" alt="Customer signature">
         </div>
     {% endif %}
     <div class="detail-row">

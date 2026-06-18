@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     SalarySchedule, SpinRewardPayout, PaymentApproval, PaymentAuditLog,
-    AirtelTransaction, AirtelCallbackLog,
+    AirtelTransaction, AirtelCallbackLog, USSDPaymentIntent, USSDSessionLog,
 )
 
 
@@ -97,3 +97,31 @@ class AirtelCallbackLogAdmin(admin.ModelAdmin):
     list_filter = ["signature_valid", "processed", "duplicate"]
     search_fields = ["transaction__internal_reference", "raw_body", "processing_error"]
     readonly_fields = ["received_headers", "raw_body", "parsed_body", "created_at"]
+
+
+@admin.register(USSDPaymentIntent)
+class USSDPaymentIntentAdmin(admin.ModelAdmin):
+    list_display = (
+        "phone_number",
+        "contract_number",
+        "amount",
+        "status",
+        "created_at",
+        "provider_reference",
+    )
+    list_filter = ("status", "created_at")
+    search_fields = ("phone_number", "contract_number", "session_id")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(USSDSessionLog)
+class USSDSessionLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "phone_number",
+        "session_id",
+        "service_code",
+        "text",
+        "created_at",
+    )
+    list_filter = ("created_at",)
+    search_fields = ("phone_number", "session_id", "text")
