@@ -72,19 +72,30 @@ def contract_terms(request, app_id):
     if application.status not in ["approved", "approved_pending_device_lock", "device_locked", "contract_terms", "contract_signature"]:
         return redirect(application.get_continue_url())
 
-    display_contract = contract or Contract(
-        application=application,
-        merchant=application.created_by,
-        customer_name=application.customer_name,
-        customer_phone=application.customer_phone,
-        national_id=application.national_id,
-        deal_name=str(application.deal) if application.deal_id else "",
-        cash_price=application.selected_cash_price or Decimal("0"),
-        total_loan=application.calculated_total_loan or Decimal("0"),
-        deposit_amount=application.calculated_deposit_amount or Decimal("0"),
-        monthly_payment=application.calculated_monthly_payment or Decimal("0"),
-        daily_payment=application.calculated_daily_payment or Decimal("0"),
-    )
+    if contract:
+        display_contract = contract
+    else:
+        from core.commercial import pricing_from_application, sync_application_pricing_fields
+
+        sync_application_pricing_fields(application, save=True)
+        pricing = pricing_from_application(application)
+        if not pricing:
+            messages.error(request, "Contract terms are missing pricing. Please reselect the device deal before continuing.")
+            return redirect(application.get_continue_url())
+        display_contract = Contract(
+            application=application,
+            merchant=application.created_by,
+            customer_name=application.customer_name,
+            customer_phone=application.customer_phone,
+            national_id=application.national_id,
+            deal_name=str(application.deal) if application.deal_id else "",
+            cash_price=pricing["cash_price"],
+            total_loan=pricing["contract_total"],
+            deposit_amount=pricing["deposit_required"],
+            monthly_payment=pricing["monthly_repayment"],
+            daily_payment=pricing["daily_repayment"],
+            term_months=pricing["term_months"],
+        )
 
     # Load active legal documents for display
     master_terms_doc = LegalDocumentTemplate.get_active(LegalDocumentTemplate.TYPE_MASTER_TERMS)

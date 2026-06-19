@@ -24,8 +24,12 @@ register = template.Library()
 
 def _to_decimal(value):
     """Safely convert value to Decimal."""
-    if value is None:
-        return Decimal("0")
+    if value is None or value == "":
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
 
 
 @register.filter(name="media_url")
@@ -41,62 +45,68 @@ def media_url(value):
             return ""
         media_base = str(getattr(settings, "MEDIA_URL", "/media/") or "/media/")
         return f"{media_base.rstrip('/')}/{str(name).lstrip('/')}"
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, ValueError, TypeError):
-        return Decimal("0")
 
 
 @register.filter(name="mwk")
 def format_mwk(value, arg=None):
-    """Format a number as MWK currency with commas. E.g. 1250000 → MWK 1,250,000"""
+    """Format a number as MWK currency with commas."""
     decimals = str(arg or "").lower() in {"1", "true", "yes", "decimals"}
     if value is None or value == "":
-        return "—"
+        return "Not provided"
     d = _to_decimal(value)
-    return _format_mwk(d, decimals=decimals) or "MWK 0"
-
+    if d is None:
+        return "Not provided"
+    if d == 0:
+        return "MWK 0"
+    return _format_mwk(d, decimals=decimals) or "Not provided"
 
 @register.filter(name="mwk_plain")
 def format_mwk_plain(value, arg=None):
     """Comma-formatted amount without MWK prefix."""
     decimals = str(arg or "").lower() in {"1", "true", "yes", "decimals"}
-    return _format_mwk_plain(_to_decimal(value), decimals=decimals)
-
+    d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
+    if d == 0:
+        return "0"
+    return _format_mwk_plain(d, decimals=decimals) or "Not provided"
 
 @register.filter(name="mwk_if")
 def format_mwk_if(value, pending_label="Pending setup"):
     """Format MWK when value is set and > 0; otherwise show pending label."""
-    if value is None:
+    if value is None or value == "":
         return pending_label
     d = _to_decimal(value)
-    if d <= 0:
+    if d is None or d <= 0:
         return pending_label
     return _format_mwk(d) or pending_label
 
-
 @register.filter(name="daily_mwk")
 def format_daily_mwk(value):
-    """Daily repayment display: MWK 2,566 / day"""
+    """Daily repayment display: MWK 2,566 / day."""
     d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
     if d <= 0:
         return "Pending setup"
     return f"{_format_mwk(d)} / day"
 
-
 @register.filter(name="monthly_mwk")
 def format_monthly_mwk(value):
-    """30-day repayment display: MWK 76,980 / 30 days"""
+    """30-day repayment display: MWK 76,980 / 30 days."""
     d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
     if d <= 0:
         return "Pending setup"
     return f"{_format_mwk(d)} / 30 days"
 
-
 @register.filter(name="mwk_short")
 def format_mwk_short(value):
-    """Format large MWK amounts in short form. E.g. 1250000 → MWK 1.25M"""
+    """Format large MWK amounts in short form."""
     d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
     abs_d = abs(float(d))
     neg = "-" if d < 0 else ""
     if abs_d >= 1_000_000_000:
@@ -107,15 +117,15 @@ def format_mwk_short(value):
         return f"{neg}MWK {abs_d / 1_000:.1f}K"
     return f"{neg}MWK {abs_d:,.0f}"
 
-
 @register.filter(name="tsnum")
 def format_number(value):
-    """Format a number with commas. E.g. 1250000 → 1,250,000"""
+    """Format a number with commas."""
     d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
     if d == d.to_integral_value():
         return f"{int(d):,}"
     return f"{d:,.2f}"
-
 
 @register.filter(name="pct")
 def format_pct(value, places=1):
@@ -138,17 +148,23 @@ def format_pct0(value):
 @register.filter(name="mwk_signed")
 def format_mwk_signed(value):
     """Format MWK with + or - prefix for cashflow displays."""
-    return _format_mwk_signed(_to_decimal(value)) or "MWK 0"
-
+    d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
+    if d == 0:
+        return "+MWK 0"
+    return _format_mwk_signed(d) or "Not provided"
 
 @register.filter(name="abs_mwk")
 def format_abs_mwk(value):
     """Format absolute MWK value with commas."""
-    d = abs(_to_decimal(value))
+    d = _to_decimal(value)
+    if d is None:
+        return "Not provided"
+    d = abs(d)
     if d == d.to_integral_value():
         return f"MWK {int(d):,}"
     return f"MWK {d:,.2f}"
-
 
 @register.filter(name="get_item")
 def get_item(dictionary, key):
