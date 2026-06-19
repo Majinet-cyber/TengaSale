@@ -141,12 +141,23 @@ UNDERWRITER_READ_ONLY_STATUSES = {
 
 
 def _render_read_only_application(request, app, *, back_tab="completed"):
+    _ensure_application_pricing(app)
     return render(request, "applications/read_only_detail.html", {
         "page_heading": "Completed Application",
         "app": app,
         "back_url": reverse("sales_applications") + f"?tab={back_tab}",
         "back_label": "Back",
     })
+
+
+def _ensure_application_pricing(app):
+    """Repair missing application pricing from its selected deal when possible."""
+    try:
+        from core.commercial import sync_application_pricing_fields
+
+        sync_application_pricing_fields(app, save=True)
+    except Exception:
+        pass
 
 
 def _review_app_or_read_only(request, app_id):
@@ -159,7 +170,10 @@ def _review_app_or_read_only(request, app_id):
     if read_only_app:
         back_tab = "rejected" if read_only_app.status in {"rejected", "cancelled"} else "completed"
         return read_only_app, _render_read_only_application(request, read_only_app, back_tab=back_tab)
-    return review_guard(request, app_id)
+    app, response = review_guard(request, app_id)
+    if app:
+        _ensure_application_pricing(app)
+    return app, response
 
 
 def _questionnaire_app_for_user(request, app_id):
@@ -934,6 +948,7 @@ def sales_confirm_approve(request, app_id):
     app, response = review_guard(request, app_id)
     if response:
         return response
+    _ensure_application_pricing(app)
 
     # Run fraud/exposure check and enforce approval guard
     from risk.services import run_fraud_check, can_approve_application
@@ -1058,18 +1073,23 @@ def sales_call_questionnaire(request, app_id):
     else:
         form = CustomerCallQuestionnaireForm(instance=questionnaire)
 
+    from core.commercial import pricing_from_application, sync_application_pricing_fields
+
     deal = app.deal
-    weekly_price = (app.calculated_daily_payment or Decimal("0")) * Decimal("7")
+    sync_application_pricing_fields(app, save=True)
+    pricing = pricing_from_application(app) or {}
+    daily_price = pricing.get("daily_repayment")
+    weekly_price = daily_price * Decimal("7") if daily_price is not None else None
     call_facts = {
         "merchant_name": _merchant_business_name(app),
         "device_label": str(deal) if deal else "No phone selected",
         "device_model": f"{deal.brand.name} {deal.model_name}" if deal else "",
         "device_specs": getattr(deal, "specs", "") if deal else "",
-        "deposit": app.calculated_deposit_amount or Decimal("0"),
-        "daily_price": app.calculated_daily_payment or Decimal("0"),
+        "deposit": pricing.get("deposit_required"),
+        "daily_price": daily_price,
         "weekly_price": weekly_price,
-        "monthly_price": app.calculated_monthly_payment or Decimal("0"),
-        "total_repayment": app.calculated_total_loan or Decimal("0"),
+        "monthly_price": pricing.get("monthly_repayment"),
+        "total_repayment": pricing.get("contract_total"),
     }
 
     return render(request, "sales/call_questionnaire.html", {

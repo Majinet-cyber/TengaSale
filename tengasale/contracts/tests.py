@@ -111,10 +111,39 @@ class ContractFlowTests(TestCase):
                 created_by=self.merchant,
                 status="approved",
                 customer_name=f"Customer {index}",
+                customer_phone=f"99087061{index}",
+                national_id=f"RQXFVZ{index}A",
+                deal=self.deal,
+                selected_cash_price=Decimal("350000.00"),
             )
+            app.apply_deal_selection(self.deal, Decimal("350000.00"))
+            app.save()
             numbers.add(Contract.from_application(app)[0].contract_number)
 
         self.assertEqual(len(numbers), 4)
+
+    def test_contract_from_application_recovers_zeroed_pricing_from_deal(self):
+        self.app.selected_cash_price = Decimal("0")
+        self.app.calculated_total_loan = Decimal("0")
+        self.app.calculated_deposit_amount = Decimal("0")
+        self.app.calculated_monthly_payment = Decimal("0")
+        self.app.calculated_daily_payment = Decimal("0")
+        self.app.save(update_fields=[
+            "selected_cash_price",
+            "calculated_total_loan",
+            "calculated_deposit_amount",
+            "calculated_monthly_payment",
+            "calculated_daily_payment",
+        ])
+
+        contract, _ = Contract.from_application(self.app)
+        self.app.refresh_from_db()
+
+        self.assertEqual(self.app.selected_cash_price, Decimal("350000.00"))
+        self.assertEqual(contract.cash_price, Decimal("350000.00"))
+        self.assertEqual(contract.total_loan, Decimal("875000.00"))
+        self.assertGreater(contract.deposit_amount, Decimal("0"))
+        self.assertGreater(contract.daily_payment, Decimal("0"))
 
     def test_contract_signature_requires_signature_and_terms(self):
         contract = Contract.from_application(self.app)[0]

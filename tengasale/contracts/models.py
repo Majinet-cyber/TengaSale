@@ -154,6 +154,13 @@ class Contract(models.Model):
 
     @classmethod
     def from_application(cls, application):
+        from core.commercial import pricing_from_application, sync_application_pricing_fields
+
+        sync_application_pricing_fields(application, save=True)
+        pricing = pricing_from_application(application)
+        if not pricing:
+            raise ValueError("Cannot create contract: application pricing is incomplete.")
+
         deal_name = str(application.deal) if application.deal_id else ""
         return cls.objects.get_or_create(
             application=application,
@@ -163,12 +170,12 @@ class Contract(models.Model):
                 "customer_phone": application.customer_phone,
                 "national_id": application.national_id,
                 "deal_name": deal_name,
-                "cash_price": application.selected_cash_price or Decimal("0"),
-                "total_loan": application.calculated_total_loan or Decimal("0"),
-                "deposit_amount": application.calculated_deposit_amount or Decimal("0"),
-                "monthly_payment": application.calculated_monthly_payment or Decimal("0"),
-                "daily_payment": application.calculated_daily_payment or Decimal("0"),
-                "term_months": getattr(application, "term_months", None) or 12,
+                "cash_price": pricing["cash_price"],
+                "total_loan": pricing["contract_total"],
+                "deposit_amount": pricing["deposit_required"],
+                "monthly_payment": pricing["monthly_repayment"],
+                "daily_payment": pricing["daily_repayment"],
+                "term_months": pricing["term_months"],
             },
         )
 

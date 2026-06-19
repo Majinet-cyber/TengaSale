@@ -29,6 +29,25 @@ def _money(value) -> Decimal:
         return Decimal("0")
 
 
+def _deal_cash_price(deal) -> Decimal:
+    """Return the stored deal cash price without inventing a value."""
+    if deal is None:
+        return Decimal("0")
+    for attr in ("default_cash_price", "cash_price", "min_cash_price", "max_cash_price"):
+        amount = _money(getattr(deal, attr, None))
+        if amount > 0:
+            return amount
+    return Decimal("0")
+
+
+def application_cash_price(application) -> Decimal:
+    """Authoritative cash price for an application, preserving deal data."""
+    cash = _money(getattr(application, "selected_cash_price", None))
+    if cash > 0:
+        return cash
+    return _deal_cash_price(getattr(application, "deal", None))
+
+
 def normalize_term_months(term, *, for_new_contract: bool = False) -> int:
     """Return a positive term; enforce 3/6/12 for new selections."""
     try:
@@ -93,7 +112,7 @@ def pricing_from_application(application) -> dict[str, Any] | None:
     if application is None:
         return None
 
-    cash = _money(getattr(application, "selected_cash_price", 0))
+    cash = application_cash_price(application)
     if cash <= 0:
         return None
 
@@ -140,7 +159,7 @@ def validate_application_pricing(application) -> tuple[bool, list[str]]:
     if not (application.customer_phone or "").strip():
         missing.append("phone number")
 
-    cash = _money(application.selected_cash_price)
+    cash = application_cash_price(application)
     if cash <= 0:
         missing.append("cash price")
 
@@ -167,20 +186,23 @@ def has_valid_pricing(amount) -> bool:
 
 def sync_application_pricing_fields(application, *, save: bool = False) -> bool:
     """Recompute stored pricing on application from deal + cash + term."""
-    if not application.deal_id or _money(application.selected_cash_price) <= 0:
+    if not application.deal_id:
         return False
 
     deal = application.deal
+    cash = application_cash_price(application)
+    if cash <= 0:
+        return False
     term = normalize_term_months(
         getattr(application, "term_months", None) or deal.term_months,
         for_new_contract=True,
     )
-    cash = application.selected_cash_price
     application.term_months = term
     application.apply_deal_selection(deal, cash, term_months=term)
     if save:
         application.save(
             update_fields=[
+                "selected_cash_price",
                 "term_months",
                 "selected_deposit_percent",
                 "selected_loan_multiplier",
