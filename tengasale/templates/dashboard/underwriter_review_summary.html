@@ -74,6 +74,12 @@
                     {% endif %}
                 </div>
             </div>
+            <div class="review-field">
+                <div class="review-field__copy">
+                    <span class="review-field__label">First smartphone</span>
+                    <strong class="review-field__value">{% if app.first_smartphone is None %}Not answered{% elif app.first_smartphone %}Yes{% else %}No{% endif %}</strong>
+                </div>
+            </div>
         {% else %}
 
             {% include "dashboard/partials/review_field.html" with field_name="customer_name" section="Customer" label="Full Name" value=app.customer_name correction=corrections.customer_name %}
@@ -81,6 +87,15 @@
             {% include "dashboard/partials/review_field.html" with field_name="date_of_birth" section="Customer" label="Date of Birth" value=app.date_of_birth correction=corrections.date_of_birth %}
             {% include "dashboard/partials/review_field.html" with field_name="gender" section="Customer" label="Gender" value=app.get_gender_display correction=corrections.gender %}
             {% include "dashboard/partials/review_field.html" with field_name="customer_phone" section="Customer" label="Phone" value=app.customer_phone correction=corrections.customer_phone %}
+            <div class="review-field{% if corrections.first_smartphone %} review-field--needs-correction{% endif %}" data-review-field="first_smartphone">
+                <div class="review-field__copy">
+                    <span class="review-field__label">First smartphone</span>
+                    <strong class="review-field__value">{% if app.first_smartphone is None %}Not answered{% elif app.first_smartphone %}Yes{% else %}No{% endif %}</strong>
+                    {% if corrections.first_smartphone.note %}
+                        <span class="review-field__note">{{ corrections.first_smartphone.note }}</span>
+                    {% endif %}
+                </div>
+            </div>
         {% endif %}
 
         <h3 class="uw-section-title">Merchant / Sales Rep</h3>

@@ -240,6 +240,13 @@ body.ts-oha-open {
         {% for error in form.phone_user.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
+    <div class="form-group{% if 'first_smartphone' in app.correction_fields %} has-correction{% endif %}">
+        <label for="{{ form.first_smartphone.id_for_label }}">Is this your first smartphone?</label>
+        {{ form.first_smartphone }}
+        <p class="field-help">Whether the customer has owned or used a smartphone before this financed device.</p>
+        {% for error in form.first_smartphone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    </div>
+
     <div class="form-group" id="phone-user-other-group" hidden>
         <label for="{{ form.phone_user_other.id_for_label }}">Specify who will use it</label>
         {{ form.phone_user_other }}

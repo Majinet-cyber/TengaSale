@@ -119,6 +119,12 @@ PHONE_USER_CHOICES = [
     ("other", "Other"),
 ]
 
+FIRST_SMARTPHONE_CHOICES = [
+    ("", "Is this your first smartphone?"),
+    ("yes", "Yes"),
+    ("no", "No"),
+]
+
 
 class CustomerDetailsForm(forms.ModelForm):
     customer_name = forms.CharField(required=True, min_length=2, strip=True)
@@ -166,6 +172,13 @@ class CustomerDetailsForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={"inputmode": "numeric", "placeholder": "0"}),
     )
     phone_user = forms.ChoiceField(choices=PHONE_USER_CHOICES, required=False, label="Who will use the phone?")
+    first_smartphone = forms.TypedChoiceField(
+        choices=FIRST_SMARTPHONE_CHOICES,
+        coerce=lambda value: value == "yes",
+        empty_value=None,
+        required=False,
+        label="Is this your first smartphone?",
+    )
     phone_user_other = forms.CharField(
         required=False, max_length=100,
         label="Specify who",
@@ -193,6 +206,7 @@ class CustomerDetailsForm(forms.ModelForm):
             "marital_status",
             "num_dependents",
             "phone_user",
+            "first_smartphone",
             "phone_user_other",
             "occupation",
             "income_band",

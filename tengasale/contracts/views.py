@@ -893,8 +893,12 @@ def contract_pay_deposit(request, contract_id):
         messages.error(request, "Could not prepare the payment portal. Please try again.")
         return redirect("contract_progress", contract_id=contract.id)
 
-    query = urlencode({"payment_type": "deposit"})
-    return redirect(f"/pay/contract/{contract.contract_number}/?{query}")
+    query = urlencode({
+        "contract": contract.contract_number,
+        "q": contract.contract_number,
+        "payment_type": "deposit",
+    })
+    return redirect(f"/pay/?{query}")
 
     deposit_amount = contract.deposit_amount
     if deposit_amount <= 0:
