@@ -89,7 +89,7 @@
     .ts-toast--warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
     </style>
 </head>
-<body>
+<body class="role-{{ current_tengasale_role|default:'public' }}">
 
 <div id="ts-top-loader" aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
 <div id="ts-toast-container" aria-live="polite" aria-atomic="false"></div>

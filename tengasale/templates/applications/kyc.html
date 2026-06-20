@@ -575,7 +575,10 @@
             var stepNum = getReviewStep(img);
             if (photoState[stepNum]) photoState[stepNum].previewOk = true;
             var empty = document.getElementById(img.id + '-empty');
-            if (empty) empty.hidden = true;
+            if (empty) {
+                empty.hidden = true;
+                empty.style.display = 'none';
+            }
             img.hidden = false;
             refreshSubmitState();
         }
@@ -589,6 +592,7 @@
                 if (savedEmpty) {
                     savedEmpty.textContent = 'Photo saved, but preview could not load.';
                     savedEmpty.hidden = false;
+                    savedEmpty.style.display = '';
                 }
                 img.hidden = true;
                 refreshSubmitState();
@@ -601,6 +605,7 @@
             if (empty) {
                 empty.textContent = 'Photo preview could not load.';
                 empty.hidden = false;
+                empty.style.display = '';
             }
             img.hidden = true;
             refreshSubmitState();
@@ -627,13 +632,37 @@
             photoState[stepNum].previewOk = false;
             if (typeof serverSaved === 'boolean') photoState[stepNum].saved = serverSaved;
         }
+        if (!img && empty && empty.parentElement) {
+            img = document.createElement('img');
+            img.id = reviewId;
+            img.alt = stepNum === 0 ? 'Selfie Image' : (stepNum === 1 ? 'ID Card Front' : 'ID Card Back');
+            img.className = 'kyc-smart-card__img kyc-preview-img kyc-smart-card__img--' + (stepNum === 0 ? 'cover' : 'contain');
+            img.loading = 'lazy';
+            img.dataset.kycImg = stepNum === 0 ? 'selfie' : (stepNum === 1 ? 'id_front' : 'id_back');
+            img.dataset.rotateDeg = '0';
+            img.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+            img.onerror = function () {
+                img.style.display = 'none';
+                var fallback = img.parentElement && img.parentElement.querySelector('[data-photo-fallback]');
+                if (fallback) {
+                    fallback.hidden = false;
+                    fallback.style.display = 'flex';
+                }
+            };
+            empty.parentElement.insertBefore(img, empty);
+        }
         if (img) {
             img.dataset.loadBound = '';
+            img.dataset.lightboxImg = url;
+            img.style.display = '';
             img.src = url;
             bindReviewImageLoad(img);
             img.hidden = false;
         }
-        if (empty) empty.hidden = true;
+        if (empty) {
+            empty.hidden = true;
+            empty.style.display = 'none';
+        }
         refreshSubmitState();
     }
 

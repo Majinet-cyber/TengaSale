@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
@@ -22,6 +22,64 @@ from .models import Wallet, WalletTransaction
 COMPLETED_STATUSES = ["approved", "completed"]
 
 
+def _sum_decimal(queryset, field="amount"):
+    return queryset.aggregate(total=Sum(field))["total"] or Decimal("0.00")
+
+
+def _merchant_wallet_summary(user, wallet):
+    commissions = Commission.objects.filter(user=user, role=Commission.ROLE_MERCHANT)
+    unpaid_commissions = commissions.filter(status__in=[Commission.STATUS_PENDING, Commission.STATUS_APPROVED])
+    valid_commissions = commissions.exclude(status=Commission.STATUS_CANCELLED)
+
+    spin_rewards = SpinReward.objects.filter(user=user)
+    try:
+        from payments.models import SpinRewardPayout
+
+        paid_spin_reward_ids = SpinRewardPayout.objects.filter(
+            user=user,
+            status=SpinRewardPayout.STATUS_PAID,
+        ).values_list("spin_reward_id", flat=True)
+        pending_spin_payouts = SpinRewardPayout.objects.filter(
+            user=user,
+            status__in=[SpinRewardPayout.STATUS_PENDING, SpinRewardPayout.STATUS_PROCESSING],
+        )
+        pending_spin_reward_ids = pending_spin_payouts.values_list("spin_reward_id", flat=True)
+        unpaid_spin_rewards = spin_rewards.exclude(id__in=paid_spin_reward_ids).exclude(id__in=pending_spin_reward_ids)
+        spin_pending_payout = _sum_decimal(pending_spin_payouts, "amount")
+        spin_paid_out = _sum_decimal(
+            SpinRewardPayout.objects.filter(user=user, status=SpinRewardPayout.STATUS_PAID),
+            "amount",
+        )
+    except Exception:
+        unpaid_spin_rewards = spin_rewards
+        spin_pending_payout = Decimal("0.00")
+        spin_paid_out = Decimal("0.00")
+
+    pending_payout = getattr(wallet, "pending_payout", Decimal("0.00")) or Decimal("0.00")
+    paid_out = (wallet.total_paid or Decimal("0.00")) + spin_paid_out
+    wallet_transactions_available = _sum_decimal(
+        wallet.transactions.filter(
+            Q(transaction_type__in=["manual_credit", "bonus", "adjustment"], amount__gt=0)
+            | Q(transaction_type__in=["payout", "wallet_payout", "payout_debit"], amount__lt=0)
+        )
+    )
+
+    available = (
+        _sum_decimal(unpaid_commissions)
+        + _sum_decimal(unpaid_spin_rewards)
+        + wallet_transactions_available
+        - pending_payout
+    )
+
+    return {
+        "wallet_balance": max(Decimal("0.00"), available),
+        "total_earned": _sum_decimal(valid_commissions) + _sum_decimal(spin_rewards),
+        "spin_rewards": _sum_decimal(unpaid_spin_rewards),
+        "pending_payout": pending_payout + spin_pending_payout,
+        "paid_out": paid_out,
+    }
+
+
 def _spin_access_allowed(user):
     return is_merchant(user) or is_underwriter(user)
 
@@ -29,6 +87,7 @@ def _spin_access_allowed(user):
 @merchant_required
 def earnings_home(request):
     wallet, created = Wallet.objects.get_or_create(user=request.user)
+    wallet_summary = _merchant_wallet_summary(request.user, wallet)
     transactions = wallet.transactions.all()[:20]
     commissions = Commission.objects.filter(user=request.user).select_related("application", "application__contract")
     pending_commissions = commissions.filter(status=Commission.STATUS_PENDING)
@@ -103,6 +162,7 @@ def earnings_home(request):
 
     return render(request, "earnings/home.html", {
         "wallet": wallet,
+        "wallet_summary": wallet_summary,
         "transactions": transactions,
         "transaction_rows": transaction_rows[:30],
         "payout_rows": payout_rows,

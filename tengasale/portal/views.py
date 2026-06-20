@@ -67,15 +67,24 @@ def _portal_audit(action, obj_type="", obj_id="", detail=None, request=None):
 def portal_search(request):
     """Landing / search page."""
     error = request.GET.get("error")
+    query = (
+        request.GET.get("q", "")
+        or request.GET.get("contract", "")
+        or request.GET.get("ref", "")
+    )
     return render(request, "portal/search.html", {
         "error": error,
-        "query": request.GET.get("q", ""),
+        "query": query,
     })
 
 
 def portal_search_post(request):
     """Process search and redirect to contract page."""
-    q = request.GET.get("q", "").strip()
+    q = (
+        request.GET.get("q", "")
+        or request.GET.get("contract", "")
+        or request.GET.get("ref", "")
+    ).strip()
     if not q:
         return redirect("portal_search")
 

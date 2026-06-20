@@ -8009,6 +8009,115 @@ table {
   }
 }
 
+/* Underwriter mobile pages should use the full phone viewport, not the compact app frame. */
+@media (max-width: 767px) {
+  body.role-underwriter {
+    background: var(--app-bg);
+  }
+
+  body.role-underwriter .app-shell {
+    width: 100%;
+    max-width: 100% !important;
+    margin-left: 0;
+    margin-right: 0;
+    box-shadow: none;
+    overflow-x: hidden;
+  }
+
+  body.role-underwriter .mobile-header,
+  body.role-underwriter .ts-mobile-role-nav,
+  body.role-underwriter .sales-footer {
+    width: 100%;
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  body.role-underwriter .content {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  body.role-underwriter .sales-main,
+  body.role-underwriter .ts-review-page,
+  body.role-underwriter .uw-canvas {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  body.role-underwriter .ts-review-card,
+  body.role-underwriter .uw-card,
+  body.role-underwriter .queue-privacy-card,
+  body.role-underwriter .app-card-v2,
+  body.role-underwriter .active-review-card,
+  body.role-underwriter .review-card,
+  body.role-underwriter .application-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.role-underwriter .page-enter,
+  body.role-underwriter .ts-motion-page {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* /pay/ search portal mobile width fix. */
+@media (max-width: 767px) {
+  .content:has(.portal-search-shell),
+  .content:has(.cpd-shell) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .portal-search-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+    box-sizing: border-box;
+  }
+
+  .portal-search-shell .glass-card,
+  .portal-search-shell .portal-support-card {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  .portal-search-shell .input,
+  .portal-search-shell .select,
+  .portal-search-shell .btn-full {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .portal-heading {
+    font-size: 24px;
+    line-height: 1.15;
+  }
+}
+
 /* HQ charts: ensure they don't overflow on tablet */
 @media (max-width: 768px) {
   .hq-charts-grid {
