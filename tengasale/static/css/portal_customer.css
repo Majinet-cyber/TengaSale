@@ -1772,3 +1772,100 @@
 .cpd-last-payment-row strong { color: #16a34a; font-weight: 800; }
 
 .cpd-val--green { color: #16a34a !important; }
+
+.cpd-shell--deposit-focus .cpd-summary-card {
+  border-color: rgba(255, 90, 0, 0.28);
+  box-shadow: 0 6px 22px rgba(255, 90, 0, 0.08);
+}
+
+.cpd-next-payment-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 90, 0, 0.22);
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.cpd-next-payment-card strong {
+  color: var(--cpd-orange);
+  white-space: nowrap;
+}
+
+.cpd-make-payment-card {
+  border-color: rgba(255, 90, 0, 0.28);
+}
+
+.cpd-input--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.cpd-payment-progress {
+  margin: 0 16px 16px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.cpd-payment-progress__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 0;
+}
+
+.cpd-payment-progress__row span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.cpd-payment-progress__row--active {
+  color: var(--cpd-orange);
+}
+
+.cpd-payment-progress__row--active span {
+  border-color: var(--cpd-orange);
+  background: #fff;
+  animation: cpdPromptPulse 1s ease-in-out infinite;
+}
+
+.cpd-payment-progress p {
+  margin: 8px 0 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cpd-pay-btn--loading {
+  pointer-events: none;
+  opacity: 0.88;
+}
+
+.cpd-button-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  animation: cpdSpin 0.8s linear infinite;
+}
+
+@keyframes cpdPromptPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 0, 0.32); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 90, 0, 0); }
+}
+
+@keyframes cpdSpin { to { transform: rotate(360deg); } }

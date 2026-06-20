@@ -13,6 +13,7 @@ import logging
 import re
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
@@ -70,11 +71,24 @@ def portal_search(request):
     query = (
         request.GET.get("q", "")
         or request.GET.get("contract", "")
+        or request.GET.get("payg", "")
         or request.GET.get("ref", "")
-    )
+    ).strip()
+    payment_type = request.GET.get("payment_type", "").strip().lower()
+    direct_lookup = bool(request.GET.get("contract") or request.GET.get("payg"))
+
+    if query and (direct_lookup or payment_type == "deposit"):
+        contract = search_payment_contract(query)
+        if contract:
+            params = {"payment_type": payment_type} if payment_type else {}
+            suffix = f"?{urlencode(params)}" if params else ""
+            return redirect(f"/pay/contract/{contract.contract_number}/{suffix}")
+        error = "No contract found matching that number, ID, or phone."
+
     return render(request, "portal/search.html", {
         "error": error,
         "query": query,
+        "searched": bool(error and query),
     })
 
 
@@ -211,6 +225,8 @@ def portal_contract(request, contract_number):
     deposit_remaining = contract.deposit_remaining
     deposit_complete = contract.deposit_complete
     deposit_pending = deposit_required > 0 and not deposit_complete
+    payment_type = request.GET.get("payment_type", "").strip().lower()
+    deposit_focus = payment_type == "deposit" and deposit_pending
 
     # Last payment info for lock card
     last_paid_tx = all_paid[0] if all_paid else None
@@ -228,6 +244,12 @@ def portal_contract(request, contract_number):
             "term_months": contract.term_months,
         }
     pricing_complete = contract.pricing_complete
+
+    next_required_amount = deposit_remaining if deposit_pending else recommended_amount
+    next_required_date = contract.access_expires_at or contract.lock_date or contract.due_date
+    if lock_warning:
+        next_required_amount = lock_warning["amount"]
+        next_required_date = lock_warning["date"]
 
     lock_provider_label = "Device setup pending"
     if contract.device_lock_provider:
@@ -261,6 +283,10 @@ def portal_contract(request, contract_number):
         "deposit_remaining": deposit_remaining,
         "deposit_complete": deposit_complete,
         "deposit_pending": deposit_pending,
+        "deposit_focus": deposit_focus,
+        "payment_type": payment_type,
+        "next_required_amount": next_required_amount,
+        "next_required_date": next_required_date,
         "providers": [
             ("airtel_money", "Airtel Money"),
             ("tnm_mpamba", "TNM Mpamba"),

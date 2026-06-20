@@ -7,6 +7,44 @@
 
 <h1 class="greeting">Contract Progress</h1>
 
+<div class="card ts-slide-up activation-stage-card">
+    <div class="activation-stage-card__icon">
+        {% if contract.deposit_paid %}
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        {% elif contract.phone_locked %}
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        {% else %}
+            <span class="activation-stage-card__spinner"></span>
+        {% endif %}
+    </div>
+    <div class="activation-stage-card__copy">
+        {% if contract.deposit_paid %}
+            <h2>Contract active.</h2>
+            <p>Your device access is active. Keep making payments on time to avoid locking.</p>
+        {% elif contract.phone_locked %}
+            <h2>Device secured. Deposit payment required.</h2>
+            <p>Pay the deposit to activate the contract and unlock access.</p>
+        {% elif contract.warranty_checked %}
+            <h2>Securing the device...</h2>
+            <p>We are linking this phone to TengaSale protection.</p>
+        {% elif contract.contract_number %}
+            <h2>Contract created. Checking device warranty and model...</h2>
+            <p>Do not switch on the device yet.</p>
+        {% else %}
+            <h2>Creating your TengaSale contract...</h2>
+            <p>Please wait while we prepare the financing agreement.</p>
+        {% endif %}
+        <div class="activation-stage-card__facts">
+            {% if contract.contract_number %}<span>Contract number: <strong>{{ contract.contract_number }}</strong></span>{% endif %}
+            {% if contract.payg_number %}<span>PayG: <strong>{{ contract.payg_number }}</strong></span>{% endif %}
+            {% if contract.imei_number %}<span>IMEI: <strong>{{ contract.imei_number }}</strong></span>{% endif %}
+            {% if contract.phone_locked and not contract.deposit_paid %}
+                <span>Deposit: <strong>{% if pricing_complete %}{{ deposit_due|mwk_if }}{% else %}Pending pricing{% endif %}</strong></span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 
 <div class="card ts-slide-up" style="border-left: 4px solid #ff5a00; margin-bottom: 16px;">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -131,7 +169,7 @@
             </div>
         </div>
 
-        <div class="lock-step {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">
+        <div class="lock-step lock-step--internal {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">
             <div class="ts-status-circle {% if contract.status == 'complete' %}done{% elif contract.deposit_paid %}current{% else %}pending{% endif %}">
                 {% if contract.status == 'complete' %}
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -174,10 +212,9 @@
             </p>
             {% endif %}
         </div>
-        {# Primary CTA: dedicated payment page #}
-        <a href="{% url 'contract_pay_deposit' contract.id %}" class="action-btn-large primary">
+        <a href="/pay/?contract={{ contract.contract_number|urlencode }}&payg={{ contract.payg_number|default:''|urlencode }}&payment_type=deposit" class="action-btn-large primary activation-pay-cta">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <span class="btn-label">Deposit Payment</span>
+            <span class="btn-label">PAY DEPOSIT</span>
         </a>
         {% if contract.payg_number %}
         <a href="{{ contract.payment_url }}" class="action-btn-large secondary" target="_blank">
