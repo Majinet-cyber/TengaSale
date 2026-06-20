@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.conf import settings as dj_settings
 from django.contrib import messages
@@ -882,6 +883,18 @@ def contract_pay_deposit(request, contract_id):
     if not contract.phone_locked:
         messages.warning(request, "Please lock the device before proceeding to deposit payment.")
         return redirect("contract_progress", contract_id=contract.id)
+
+    try:
+        from portal.services import sync_portal_lock_from_contract
+
+        sync_portal_lock_from_contract(contract)
+    except Exception:
+        logger.exception("Failed to sync portal payment contract before deposit redirect for contract %s", contract.pk)
+        messages.error(request, "Could not prepare the payment portal. Please try again.")
+        return redirect("contract_progress", contract_id=contract.id)
+
+    query = urlencode({"payment_type": "deposit"})
+    return redirect(f"/pay/contract/{contract.contract_number}/?{query}")
 
     deposit_amount = contract.deposit_amount
     if deposit_amount <= 0:

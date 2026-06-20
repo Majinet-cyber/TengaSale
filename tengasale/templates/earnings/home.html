@@ -14,10 +14,10 @@
 
 <section class="stat-card wallet-balance-card">
     <span>Wallet balance</span>
-    {% if wallet.balance < 0 %}
-        <strong class="amount-negative">{{ wallet.balance|mwk }}</strong>
+    {% if wallet_summary.wallet_balance < 0 %}
+        <strong class="amount-negative">{{ wallet_summary.wallet_balance|mwk }}</strong>
     {% else %}
-        <strong class="amount-positive">{{ wallet.balance|mwk }}</strong>
+        <strong class="amount-positive">{{ wallet_summary.wallet_balance|mwk }}</strong>
     {% endif %}
     <p>You are now earning more with TengaSale.</p>
 </section>
@@ -107,7 +107,7 @@
         <div class="metric-grid">
             <div>
                 <span>Total earned</span>
-                <strong class="amount-positive" data-counter data-prefix="">{{ total_commission_earned|mwk }}</strong>
+                <strong class="amount-positive" data-counter data-prefix="">{{ wallet_summary.total_earned|mwk }}</strong>
             </div>
             <div>
                 <span>Pending commissions</span>
@@ -115,7 +115,7 @@
             </div>
             <div>
                 <span>Paid out</span>
-                <strong class="amount-positive" data-counter data-prefix="">{{ paid_commission_total|mwk }}</strong>
+                <strong class="amount-positive" data-counter data-prefix="">{{ wallet_summary.paid_out|mwk }}</strong>
             </div>
             <div>
                 <span>Spin balance</span>
