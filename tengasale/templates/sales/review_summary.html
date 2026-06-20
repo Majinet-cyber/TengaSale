@@ -52,8 +52,8 @@
     </div>
     {% if app.deal %}
     <div class="ts-review-row"><span>Device / Deal</span><strong>{{ app.deal }}</strong></div>
-    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money">{{ app.calculated_deposit_amount|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Monthly Repayment</span><strong class="ts-money">{{ app.calculated_monthly_payment|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money ts-money--deposit">{{ app.calculated_deposit_amount|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Monthly Repayment</span><strong class="ts-money ts-money--monthly">{{ app.calculated_monthly_payment|mwk }}</strong></div>
     {% else %}
     <div class="ts-review-row"><span>Device / Deal</span><strong><span class="ts-missing-field">Not selected</span></strong></div>
     <div class="ts-review-row"><span>Deposit</span><strong><span class="ts-missing-field">Pending</span></strong></div>
@@ -102,11 +102,11 @@
   <div class="ts-review-card">
     <div class="ts-review-card__title">Deal</div>
     <div class="ts-review-row"><span>Smartphone</span><strong>{{ app.deal }}</strong></div>
-    <div class="ts-review-row"><span>Cash Price</span><strong class="ts-money">{{ app.selected_cash_price|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money">{{ app.calculated_deposit_amount|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Daily Repayment</span><strong class="ts-money">{{ app.calculated_daily_payment|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Monthly (30-day)</span><strong class="ts-money">{{ app.calculated_monthly_payment|mwk }}</strong></div>
-    <div class="ts-review-row"><span>Total Contract</span><strong class="ts-money">{{ app.calculated_total_loan|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Cash Price</span><strong class="ts-money ts-money--cash">{{ app.selected_cash_price|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Deposit</span><strong class="ts-money ts-money--deposit">{{ app.calculated_deposit_amount|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Daily Repayment</span><strong class="ts-money ts-money--daily">{{ app.calculated_daily_payment|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Monthly (30-day)</span><strong class="ts-money ts-money--monthly">{{ app.calculated_monthly_payment|mwk }}</strong></div>
+    <div class="ts-review-row"><span>Total Contract</span><strong class="ts-money ts-money--total">{{ app.calculated_total_loan|mwk }}</strong></div>
   </div>
   {% endif %}
 
@@ -226,9 +226,16 @@
     <div class="ts-review-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <div style="font-weight:700;color:#dc2626;font-size:0.8rem;">{{ flag.label }}</div>
       {% for match_app in flag.matching_apps %}
-      <div style="font-size:0.75rem;padding:4px 10px;background:#fff;border:1px solid #fca5a5;border-radius:6px;display:flex;gap:10px;align-items:center;width:100%;">
+      <div style="font-size:0.75rem;padding:6px 10px;background:#fff;border:1px solid #fca5a5;border-radius:6px;display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap;">
+        {% if match_app.contract_number %}
+        <span style="font-weight:800;">Contract: {{ match_app.contract_number }}</span>
+        <span style="color:#94a3b8;">/</span>
+        <span style="font-weight:700;">Application: {{ match_app.application_number }}</span>
+        {% else %}
         <span style="font-weight:700;">{{ match_app.application_number }}</span>
-        <span>{{ match_app.customer_name }}</span>
+        {% endif %}
+        <span>{{ match_app.customer_name|default:"Customer name not captured" }}</span>
+        {% if match_app.created_at %}<span style="color:#94a3b8;">{{ match_app.created_at|date:"d M Y" }}</span>{% endif %}
         <span class="status-badge {% if match_app.status == 'approved' %}status-badge--approved{% elif match_app.status == 'rejected' %}status-badge--rejected{% else %}status-badge--pending{% endif %}" style="font-size:0.68rem;margin-left:auto;">{{ match_app.status }}</span>
       </div>
       {% endfor %}

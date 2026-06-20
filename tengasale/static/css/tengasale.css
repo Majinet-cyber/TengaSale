@@ -610,14 +610,18 @@ img.ts-logo-wordmark {
 /* ── Sales Main Content Area ─────────────────────────────────────── */
 
 .sales-main {
-  padding: 0 0 80px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+  box-sizing: border-box;
 }
 
 /* ── Review page desktop centering ───────────────────────────────── */
 .ts-review-page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 0 80px;
+  padding: 0 16px 80px;
+  box-sizing: border-box;
 }
 
 /* Guarantee review body is never invisible regardless of JS/CSS state */
@@ -629,6 +633,10 @@ img.ts-logo-wordmark {
 
 .ts-review-loading {
   padding: 24px 16px;
+}
+
+.ts-review-loading[hidden] {
+  display: none !important;
 }
 
 .ts-review-loading__card {
@@ -1129,7 +1137,7 @@ img.ts-logo-wordmark {
 .ts-review-card {
   background: #ffffff;
   border-radius: 16px;
-  margin: 10px 18px;
+  margin: 10px 0;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(17, 17, 17, 0.05);
 }
@@ -1156,6 +1164,40 @@ img.ts-logo-wordmark {
 .ts-review-row:last-child { border-bottom: none; }
 .ts-review-row span { color: #7a828c; flex-shrink: 0; }
 .ts-review-row strong { text-align: right; word-break: break-word; }
+
+.ts-money {
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-money--deposit,
+.ts-money--due,
+.cpd-money-grid--deposit strong,
+.cpd-next-payment-card strong {
+  color: #d97706 !important;
+}
+
+.ts-money--daily,
+.cpd-meta-grid strong {
+  color: #334155;
+}
+
+.ts-money--monthly {
+  color: #1d4ed8;
+}
+
+.ts-money--total,
+.ts-money--cash,
+.cpd-money-grid strong {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.wallet-amount,
+.amount-positive,
+.cpd-val--green {
+  color: #15803d !important;
+}
 
 /* ── KYC Images ───────────────────────────────────────────────────── */
 
@@ -5042,6 +5084,8 @@ label,
 
   body.role-merchant .merchant-dashboard-shell .merchant-shell,
   body.role-underwriter .uw-home,
+  body.role-underwriter .sales-main,
+  body.role-underwriter .ts-review-page,
   body.role-underwriter .call-page {
     padding-left: 16px !important;
     padding-right: 16px !important;

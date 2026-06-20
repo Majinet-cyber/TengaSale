@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -46,8 +47,6 @@ from .models import ApplicationCorrectionToken, ApplicationFieldReview, Financin
 logger = logging.getLogger("tengasale.applications")
 
 ACTIVE_STATUSES = [
-    "draft",
-    "started",
     "customer_details",
     "device_selection",
     "kyc",
@@ -73,6 +72,71 @@ ACTIVE_STATUSES = [
     "deposit_pending",
     "imei_required",
 ]
+
+PENDING_DEPOSIT_STATUSES = {"deposit_pending"}
+AUTO_ARCHIVE_REASON = "Auto-archived: deposit not paid within 48 hours"
+
+
+def archive_unpaid_deposit_applications(cutoff=None):
+    cutoff = cutoff or (timezone.now() - timedelta(hours=48))
+    qs = FinancingApplication.objects.filter(
+        status__in=PENDING_DEPOSIT_STATUSES,
+        created_at__lt=cutoff,
+    ).select_related("contract", "payment_contract")
+    archived = 0
+    for old_app in qs:
+        if getattr(getattr(old_app, "contract", None), "deposit_paid", False):
+            continue
+        payment_contract = getattr(old_app, "payment_contract", None)
+        if payment_contract and getattr(payment_contract, "deposit_paid", 0):
+            continue
+        old_status = old_app.status
+        old_app.status = "cancelled"
+        old_app.review_status = ""
+        old_app.save(update_fields=["status", "review_status"])
+        if payment_contract and payment_contract.status != "completed":
+            payment_contract.status = "cancelled"
+            payment_contract.save(update_fields=["status"])
+        try:
+            from core.models import AuditLog
+
+            AuditLog.objects.create(
+                user=None,
+                action="auto_archive_unpaid_deposit",
+                object_type="FinancingApplication",
+                object_id=str(old_app.pk),
+                detail={
+                    "application_number": old_app.application_number,
+                    "old_status": old_status,
+                    "new_status": old_app.status,
+                    "reason": AUTO_ARCHIVE_REASON,
+                },
+                reason=AUTO_ARCHIVE_REASON,
+            )
+        except Exception:
+            logger.exception("Failed to audit unpaid deposit archive for application %s", old_app.pk)
+        archived += 1
+    return archived
+
+
+def _strong_identifier_duplicate(app, national_id="", customer_phone=""):
+    archive_unpaid_deposit_applications()
+    q = Q()
+    if national_id:
+        q |= Q(national_id__iexact=national_id)
+    if customer_phone:
+        digits = "".join(c for c in customer_phone if c.isdigit())[-9:]
+        if digits:
+            q |= Q(customer_phone__endswith=digits)
+    if not q:
+        return None
+    return (
+        FinancingApplication.objects.filter(q, status__in=ACTIVE_STATUSES)
+        .exclude(pk=app.pk)
+        .select_related("contract", "payment_contract")
+        .order_by("-created_at")
+        .first()
+    )
 
 
 def merchant_application(request, app_id):
@@ -124,26 +188,27 @@ def edit_customer_details(request, app_id):
             phone_user = form.cleaned_data.get("phone_user", "")
             app.third_party_phone_user_risk_flagged = bool(phone_user and phone_user != "customer_self")
 
-            # Check for active contract using same National ID (duplicate prevention)
+            # Check for active contract/application using strong identifiers.
             national_id = form.cleaned_data.get("national_id", "").strip().upper()
-            if national_id:
-                duplicate = FinancingApplication.objects.filter(
-                    national_id__iexact=national_id,
-                    status__in=ACTIVE_STATUSES,
-                ).exclude(pk=app.pk).first()
-                if duplicate:
-                    # Check if the duplicate is for the same person in a completed state
-                    form.add_error(
-                        "national_id",
-                        "This National ID already has an active financing contract or application in progress. "
-                        "A customer must complete and fully settle their current contract before applying for a new device."
-                    )
-                    return render(request, "applications/customer_details.html", {
-                        "app": app,
-                        "form": form,
-                        "has_active_contract": True,
-                        **bh,
-                    })
+            customer_phone = form.cleaned_data.get("customer_phone", "").strip()
+            duplicate = _strong_identifier_duplicate(app, national_id=national_id, customer_phone=customer_phone)
+            if duplicate:
+                existing_contract = getattr(duplicate, "contract", None) or getattr(duplicate, "payment_contract", None)
+                existing_number = getattr(existing_contract, "contract_number", "") or duplicate.application_number
+                msg = (
+                    "This customer already has an active TengaSale contract/application: "
+                    f"{existing_number} ({duplicate.get_status_display()}). Open the existing record instead."
+                )
+                field = "national_id" if national_id and (duplicate.national_id or "").upper() == national_id else "customer_phone"
+                form.add_error(field, msg)
+                messages.error(request, msg)
+                return render(request, "applications/customer_details.html", {
+                    "app": app,
+                    "form": form,
+                    "has_active_contract": True,
+                    "existing_active_application": duplicate,
+                    **bh,
+                })
 
             previous_phone = app.__class__.objects.filter(pk=app.pk).values_list("customer_phone", flat=True).first()
             phone_changed = bool(app.customer_phone and app.customer_phone != previous_phone)
