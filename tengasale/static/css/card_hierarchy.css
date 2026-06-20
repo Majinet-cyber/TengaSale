@@ -1,0 +1,376 @@
+/* Use cards only for major sections. Use rows/dividers for facts, questions, and list items. Avoid nested cards unless the child card is a true independent module. */
+
+.ts-section-card,
+.uw-card,
+.ts-review-card,
+.card,
+.form-card,
+.overview-card,
+.merchant-quality-card,
+.action-card,
+.uw-list-card,
+.simple-menu-block,
+.stat-card,
+.glass-card,
+.cpd-card-clean,
+.cpd-section-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.ts-section-card {
+  padding: 20px;
+}
+
+.ts-section-header,
+.ts-review-card__title,
+.uw-section-title,
+.section-title,
+.simple-section,
+.uw-section-label,
+.cpd-section-card__title {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.ts-info-row,
+.review-field,
+.ts-review-row,
+.detail-row,
+.transaction-row,
+.payout-breakdown,
+.summary-card,
+.pricing-grid > div,
+.metric-grid > div,
+.ts-question-card,
+.review-question,
+.yes-no-field,
+.ts-yn-group,
+.uw-comparison-card,
+.ts-call-section-card,
+.ts-recording-item,
+.cpd-money-grid > div,
+.cpd-meta-grid > div,
+.cpd-detail-item,
+.cpd-quick-stat,
+.cpd-hist-row,
+.cpd-device-row,
+.cpd-next-payment-card,
+.cpd-early-opt--simple,
+.cpd-doc-item {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.review-field,
+.ts-review-row,
+.detail-row,
+.transaction-row,
+.ts-question-card,
+.review-question,
+.yes-no-field,
+.ts-yn-group,
+.uw-comparison-card,
+.ts-call-section-card,
+.ts-recording-item,
+.cpd-hist-row,
+.cpd-detail-item,
+.cpd-device-row,
+.cpd-next-payment-card,
+.cpd-doc-item {
+  padding: 14px 0 !important;
+}
+
+.review-field__copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.review-field,
+.ts-review-row,
+.detail-row,
+.ts-info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.review-field__label,
+.ts-review-row > span,
+.detail-row > span,
+.ts-info-row > span {
+  color: #64748b;
+  flex: 0 0 42%;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.review-field__value,
+.ts-review-row > strong,
+.detail-row > strong,
+.ts-info-row > strong {
+  color: #0f172a;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.pricing-grid,
+.metric-grid,
+.uw-comparison,
+.ts-call-section-grid,
+.ts-recording-list,
+.cpd-history-list,
+.cpd-docs-list {
+  display: block !important;
+  gap: 0 !important;
+}
+
+.summary-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) !important;
+  gap: 0 14px !important;
+}
+
+.summary-card span,
+.summary-card strong {
+  padding: 11px 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+}
+
+.pricing-grid > div,
+.metric-grid > div,
+.cpd-money-grid > div,
+.cpd-meta-grid > div,
+.cpd-quick-stat {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 12px 0 !important;
+}
+
+.pricing-grid > div span,
+.metric-grid > div span,
+.cpd-money-grid .cpd-label,
+.cpd-meta-grid .cpd-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.pricing-grid > div strong,
+.metric-grid > div strong,
+.cpd-money-grid strong,
+.cpd-meta-grid strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.ts-row-list,
+.action-card,
+.uw-list-card,
+.simple-menu-block,
+.portal-support-card,
+.cpd-card-clean,
+.cpd-section-card {
+  overflow: hidden;
+}
+
+.action-row,
+.simple-row,
+.uw-list-row,
+.simple-menu-row,
+.portal-support-link,
+.cpd-support-link {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.action-row,
+.simple-row,
+.uw-list-row,
+.simple-menu-row {
+  background: transparent !important;
+  border-bottom: 1px solid #eef2f7 !important;
+}
+
+.ts-question-card {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+.ts-question-card__icon {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+.ts-mark-form {
+  grid-column: 1 / -1;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.review-choice-row,
+.yes-no-buttons,
+.ts-yn-buttons {
+  margin-top: 10px;
+}
+
+.ts-action-bar,
+.uw-actions,
+.form-actions,
+.call-actions {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.transaction-row {
+  margin: 0 !important;
+}
+
+.payout-breakdown {
+  margin: 0 0 8px !important;
+  padding: 0 0 12px !important;
+}
+
+.early-pay-panel,
+.cpd-payment-progress {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 14px 0 0 !important;
+}
+
+.cpd-money-grid,
+.cpd-meta-grid,
+.cpd-detail-grid,
+.cpd-quick-stats {
+  display: block !important;
+}
+
+.cpd-early-strip {
+  gap: 0 !important;
+}
+
+.cpd-early-opt--simple {
+  padding: 14px 0 !important;
+}
+
+.cpd-alert-card {
+  box-shadow: none !important;
+}
+
+.review-field:last-child,
+.review-field:last-of-type,
+.ts-review-row:last-child,
+.detail-row:last-child,
+.transaction-row:last-child,
+.payout-breakdown:last-child,
+.summary-card span:last-of-type,
+.summary-card strong:last-of-type,
+.pricing-grid > div:last-child,
+.metric-grid > div:last-child,
+.ts-question-card:last-child,
+.review-question:last-child,
+.review-question:last-of-type,
+.yes-no-field:last-child,
+.ts-yn-group:last-child,
+.uw-comparison-card:last-child,
+.ts-call-section-card:last-child,
+.ts-recording-item:last-child,
+.action-row:last-child,
+.simple-row:last-child,
+.uw-list-row:last-child,
+.simple-menu-row:last-child,
+.cpd-money-grid > div:last-child,
+.cpd-meta-grid > div:last-child,
+.cpd-detail-item:last-child,
+.cpd-quick-stat:last-child,
+.cpd-hist-row:last-child,
+.cpd-device-row:last-child,
+.cpd-next-payment-card:last-child,
+.cpd-early-opt--simple:last-child,
+.cpd-doc-item:last-child {
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 520px) {
+  .summary-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .summary-card span {
+    padding-bottom: 2px !important;
+    border-bottom: 0 !important;
+  }
+
+  .summary-card strong {
+    padding-top: 0 !important;
+  }
+
+  .review-field,
+  .ts-review-row,
+  .detail-row,
+  .ts-info-row,
+  .pricing-grid > div,
+  .metric-grid > div,
+  .cpd-money-grid > div,
+  .cpd-meta-grid > div,
+  .cpd-quick-stat {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .review-field__label,
+  .ts-review-row > span,
+  .detail-row > span,
+  .ts-info-row > span,
+  .review-field__value,
+  .ts-review-row > strong,
+  .detail-row > strong,
+  .ts-info-row > strong,
+  .pricing-grid > div strong,
+  .metric-grid > div strong,
+  .cpd-money-grid strong,
+  .cpd-meta-grid strong {
+    flex: none;
+    text-align: left;
+    width: 100%;
+  }
+}

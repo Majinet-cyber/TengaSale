@@ -5704,3 +5704,266 @@ label,
     grid-template-columns: 1fr;
   }
 }
+
+/* UI hierarchy rule: Use cards only for major sections. Use rows/dividers for facts, questions, and list items. Avoid nested cards unless the child card is a true independent module. */
+.ts-section-card,
+.uw-card,
+.ts-review-card,
+.action-card,
+.uw-list-card,
+.overview-card,
+.merchant-quality-card,
+.simple-menu-block {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.ts-section-card {
+  padding: 20px;
+  margin-bottom: 14px;
+}
+
+.ts-section-header,
+.uw-section-title,
+.ts-review-card__title,
+.section-title,
+.simple-section,
+.uw-section-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.ts-info-row,
+.review-field,
+.ts-review-row,
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #eef2f7;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-width: 0;
+}
+
+.ts-info-row:last-child,
+.review-field:last-child,
+.review-field:last-of-type,
+.ts-review-row:last-child,
+.detail-row:last-child {
+  border-bottom: 0;
+}
+
+.ts-info-row > span,
+.review-field__label,
+.ts-review-row > span,
+.detail-row > span {
+  color: #64748b;
+  flex: 0 0 42%;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.ts-info-row > strong,
+.review-field__value,
+.ts-review-row > strong,
+.detail-row > strong {
+  color: #0f172a;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.review-field__copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.review-edit-btn {
+  flex: 0 0 auto;
+}
+
+.ts-row-list,
+.action-card,
+.uw-list-card,
+.simple-menu-block {
+  overflow: hidden;
+}
+
+.ts-row-list > *,
+.action-row,
+.simple-row,
+.uw-list-row,
+.simple-menu-row {
+  border-bottom: 1px solid #eef2f7;
+  border-top: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ts-row-list > *:last-child,
+.action-row:last-child,
+.simple-row:last-child,
+.uw-list-row:last-child,
+.simple-menu-row:last-child {
+  border-bottom: 0;
+}
+
+.ts-question-block,
+.review-question,
+.yes-no-field,
+.ts-yn-group {
+  padding: 14px 0;
+  border-bottom: 1px solid #eef2f7;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.ts-question-block:last-child,
+.review-question:last-child,
+.review-question:last-of-type,
+.yes-no-field:last-child,
+.ts-yn-group:last-child {
+  border-bottom: 0;
+}
+
+.review-choice-row,
+.yes-no-buttons,
+.ts-yn-buttons {
+  margin-top: 10px;
+}
+
+.ts-action-bar,
+.uw-actions,
+.form-actions,
+.call-actions {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.ts-question-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ts-question-card:last-child {
+  border-bottom: 0;
+}
+
+.ts-question-card__meta,
+.ts-question-card__body,
+.ts-question-card__actions {
+  min-width: 0;
+}
+
+.ts-question-card__number {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ts-question-card__icon {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.ts-question-card__label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ts-question-card__value {
+  overflow-wrap: anywhere;
+}
+
+.ts-mark-form {
+  grid-column: 1 / -1;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.uw-comparison {
+  display: block;
+}
+
+.uw-comparison-card,
+.ts-call-section-card,
+.ts-recording-item {
+  padding: 13px 0;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.uw-comparison-card:last-child,
+.ts-call-section-card:last-child,
+.ts-recording-item:last-child {
+  border-bottom: 0;
+}
+
+.ts-recording-list {
+  gap: 0;
+}
+
+.ts-call-section-grid {
+  display: block;
+}
+
+@media (max-width: 520px) {
+  .ts-info-row,
+  .review-field,
+  .ts-review-row,
+  .detail-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ts-info-row > span,
+  .review-field__label,
+  .ts-review-row > span,
+  .detail-row > span,
+  .ts-info-row > strong,
+  .review-field__value,
+  .ts-review-row > strong,
+  .detail-row > strong {
+    flex: none;
+    text-align: left;
+    width: 100%;
+  }
+}

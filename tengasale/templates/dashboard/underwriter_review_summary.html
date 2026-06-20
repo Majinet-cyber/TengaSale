@@ -34,9 +34,7 @@
     </section>
 
     <section class="uw-card" style="border-top:3px solid var(--orange);">
-        <h2>Application Summary</h2>
-
-        <h3 class="uw-section-title">Customer</h3>
+        <h2>Customer</h2>
         {% if is_hub %}
             <div class="review-field">
                 <div class="review-field__copy">
@@ -98,7 +96,10 @@
             </div>
         {% endif %}
 
-        <h3 class="uw-section-title">Merchant / Sales Rep</h3>
+    </section>
+
+    <section class="uw-card">
+        <h2>Merchant / Sales Rep</h2>
         <div class="review-field">
             <div class="review-field__copy">
                 <span class="review-field__label">Submitted by</span>
@@ -126,7 +127,10 @@
         {% endif %}
         {% endwith %}
 
-        <h3 class="uw-section-title">Deal</h3>
+    </section>
+
+    <section class="uw-card">
+        <h2>Deal</h2>
         {% if is_hub %}
             <div class="review-field">
                 <div class="review-field__copy">
