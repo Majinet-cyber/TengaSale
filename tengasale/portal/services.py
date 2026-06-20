@@ -845,20 +845,46 @@ def search_payment_contract(query: str):
     if not q:
         return None
 
+    def _from_application(application):
+        if not application:
+            return None
+        try:
+            return application.payment_contract
+        except PaymentContract.DoesNotExist:
+            pass
+        legal_contract = getattr(application, "contract", None)
+        if legal_contract:
+            try:
+                return sync_portal_lock_from_contract(legal_contract)
+            except Exception:
+                logger.exception("Failed to sync payment contract for application %s", application.pk)
+        return None
+
     # Customer-facing legal contract number (A + 7 chars) → linked payment contract
     if len(q) == 8 and q[0].upper() == "A":
         from contracts.models import Contract
 
         legal = (
             Contract.objects.filter(contract_number__iexact=q)
-            .select_related("application")
+            .select_related("application", "application__payment_contract")
             .first()
         )
         if legal and legal.application_id:
-            try:
-                return legal.application.payment_contract
-            except PaymentContract.DoesNotExist:
-                pass
+            contract = _from_application(legal.application)
+            if contract:
+                return contract
+
+    if q.upper().startswith("TSM-"):
+        from applications.models import FinancingApplication
+
+        app = (
+            FinancingApplication.objects.filter(application_number__iexact=q)
+            .select_related("contract", "payment_contract")
+            .first()
+        )
+        contract = _from_application(app)
+        if contract:
+            return contract
 
     # Direct contract number / PayG / national ID lookup
     contract = (

@@ -68,17 +68,26 @@ def _portal_audit(action, obj_type="", obj_id="", detail=None, request=None):
 def portal_search(request):
     """Landing / search page."""
     error = request.GET.get("error")
-    query = (
-        request.GET.get("q", "")
-        or request.GET.get("contract", "")
-        or request.GET.get("payg", "")
-        or request.GET.get("ref", "")
-    ).strip()
+    candidates = [
+        request.GET.get("contract", ""),
+        request.GET.get("application", ""),
+        request.GET.get("payg", ""),
+        request.GET.get("q", ""),
+        request.GET.get("ref", ""),
+    ]
+    query = next((candidate.strip() for candidate in candidates if candidate and candidate.strip()), "")
     payment_type = request.GET.get("payment_type", "").strip().lower()
-    direct_lookup = bool(request.GET.get("contract") or request.GET.get("payg"))
+    direct_lookup = bool(request.GET.get("contract") or request.GET.get("application") or request.GET.get("payg"))
 
     if query and (direct_lookup or payment_type == "deposit"):
-        contract = search_payment_contract(query)
+        contract = None
+        for candidate in candidates:
+            candidate = (candidate or "").strip()
+            if not candidate:
+                continue
+            contract = search_payment_contract(candidate)
+            if contract:
+                break
         if contract:
             params = {"payment_type": payment_type} if payment_type else {}
             suffix = f"?{urlencode(params)}" if params else ""
@@ -97,6 +106,8 @@ def portal_search_post(request):
     q = (
         request.GET.get("q", "")
         or request.GET.get("contract", "")
+        or request.GET.get("application", "")
+        or request.GET.get("payg", "")
         or request.GET.get("ref", "")
     ).strip()
     if not q:
