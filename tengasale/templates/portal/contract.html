@@ -8,24 +8,29 @@
 {% endblock %}
 
 {% block content %}
-<div class="cpd-shell cpd-shell--simple">
+<div class="cpd-shell cpd-shell--simple{% if deposit_focus %} cpd-shell--deposit-focus{% endif %}">
   <div class="cpd-nav-row">
     <a href="{% url 'portal_search' %}" class="cpd-back-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </a>
-    <span class="cpd-nav-label">My Contract</span>
+    <span class="cpd-nav-label">{% if deposit_focus %}Deposit Payment{% else %}My Contract{% endif %}</span>
     <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-nav-action">History</a>
   </div>
 
   <section class="cpd-card-clean cpd-summary-card">
     <div class="cpd-summary-top">
       <div>
-        <div class="cpd-label">TengaSale PayG</div>
+        <div class="cpd-label">{% if deposit_focus %}TengaSale Contract{% else %}TengaSale PayG{% endif %}</div>
+        {% if deposit_focus %}
+        <h1 class="cpd-contract-num">{{ contract.contract_number }}</h1>
+        {% if contract.payg_number %}<p class="cpd-payg-customer">PayG {{ contract.payg_number }}</p>{% endif %}
+        {% else %}
         {% if contract.payg_number %}
         <h1 class="cpd-contract-num">{{ contract.payg_number }}</h1>
         {% else %}
         <h1 class="cpd-contract-num cpd-contract-num--pending">Payment code pending device setup.</h1>
+        {% endif %}
         {% endif %}
         {% if contract.customer_name %}
         <p class="cpd-payg-customer">{{ contract.customer_name }}</p>
@@ -62,6 +67,12 @@
       <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}—{% endif %}</strong></div>
       <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
     </div>
+
+    {% if pricing_complete and next_required_amount %}
+    <div class="cpd-next-payment-card">
+      To prevent your device from locking{% if next_required_date %} on {{ next_required_date|date:"d M Y" }}{% endif %}, pay <strong>{{ next_required_amount|mwk }}</strong>.
+    </div>
+    {% endif %}
 
     {% if last_paid_tx %}
     <div class="cpd-last-payment-row">
@@ -114,9 +125,12 @@
   {% endif %}
 
   {% if deposit_pending and contract.status != 'completed' %}
-  <section class="cpd-card-clean">
+  <section class="cpd-card-clean cpd-make-payment-card" id="make-payment">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Deposit Required</div>
+      <div>
+        <div class="cpd-section-card__title">Make Payment</div>
+        <div class="cpd-section-card__sub">Deposit required to activate this contract</div>
+      </div>
       <span class="cpd-status-badge cpd-status-badge--overdue">Pending</span>
     </div>
     <div class="cpd-money-grid cpd-money-grid--deposit">
@@ -129,7 +143,7 @@
       <input type="hidden" name="payment_type" value="deposit">
       <div class="cpd-form-row">
         <div class="cpd-field">
-          <label class="cpd-field-label">Mobile money number</label>
+          <label class="cpd-field-label">Payment Phone Number</label>
           <div class="cpd-phone-row">
             <span class="cpd-phone-prefix">+265</span>
             <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}" placeholder="8X XXX XXXX" required data-payment-phone>
@@ -144,12 +158,23 @@
         </div>
       </div>
       <div class="cpd-field">
+        <label class="cpd-field-label">PayG number or IMEI</label>
+        <input type="text" class="cpd-input cpd-input--mono" value="{% if contract.payg_number %}{{ contract.payg_number }}{% elif device_info.imei %}{{ device_info.imei }}{% else %}Not available yet{% endif %}" readonly>
+      </div>
+      <div class="cpd-field">
         <label class="cpd-field-label">Amount</label>
         <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" value="{{ deposit_remaining|floatformat:0 }}" required data-payment-amount>
       </div>
       <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit" disabled data-payment-submit>
-        PAY DEPOSIT <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
+        PAY <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
       </button>
+      <div class="cpd-payment-progress" hidden data-payment-progress>
+        <div class="cpd-payment-progress__row cpd-payment-progress__row--active"><span></span>Sending payment prompt</div>
+        <div class="cpd-payment-progress__row"><span></span>Customer confirming</div>
+        <div class="cpd-payment-progress__row"><span></span>Payment confirming</div>
+        <div class="cpd-payment-progress__row"><span></span>Contract activated</div>
+        <p>Check your phone and enter your mobile money PIN.</p>
+      </div>
     </form>
   </section>
   {% elif deposit_required and deposit_complete %}
@@ -266,9 +291,13 @@
 
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Device Information</div>
+      <div class="cpd-section-card__title">Contract Details</div>
     </div>
     <div class="cpd-detail-grid cpd-detail-grid--simple">
+      <div class="cpd-detail-item"><span class="cpd-label">Contract number</span><span class="cpd-detail-val cpd-detail-val--mono">{{ contract.contract_number }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">PayG number</span><span class="cpd-detail-val cpd-detail-val--mono">{% if contract.payg_number %}{{ contract.payg_number }}{% else %}Pending device setup{% endif %}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Primary phone</span><span class="cpd-detail-val">{{ contract.masked_phone }}</span></div>
+      <div class="cpd-detail-item"><span class="cpd-label">Customer name</span><span class="cpd-detail-val">{{ contract.customer_name|default:"Not captured" }}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{% if device_info.model or contract.device_model %}{{ device_info.model|default:contract.device_model }}{% else %}Not captured{% endif %}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{% if device_info.brand %}{{ device_info.brand }}{% else %}Not captured{% endif %}</span></div>
       <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{% if device_info.imei %}{{ device_info.imei }}{% else %}Not entered yet{% endif %}</span></div>
@@ -375,8 +404,24 @@
       if (el) el.addEventListener('change', validate);
     });
 
+    form.addEventListener('submit', function () {
+      var progress = form.querySelector('[data-payment-progress]');
+      if (submitBtn) {
+        submitBtn.classList.add('cpd-pay-btn--loading');
+        submitBtn.innerHTML = '<span class="cpd-button-spinner"></span> Sending payment prompt...';
+      }
+      if (progress) progress.hidden = false;
+    });
+
     validate();
   });
+
+  var focusCard = document.querySelector('.cpd-shell--deposit-focus #make-payment');
+  if (focusCard) {
+    window.setTimeout(function () {
+      focusCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
+  }
 })();
 </script>
 {% endblock %}

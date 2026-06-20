@@ -114,6 +114,7 @@ class FinancingApplication(models.Model):
         "num_dependents": "Number of dependents",
         "date_of_birth": "Date of birth",
         "phone_user": "Who will use the phone",
+        "first_smartphone": "First smartphone",
         "device_purpose": "Device purpose",
     }
 
@@ -372,6 +373,8 @@ class FinancingApplication(models.Model):
     proof_notes = models.TextField(blank=True)
     proof_income_file = models.FileField(upload_to="proof_income/", blank=True, null=True)
 
+    first_smartphone = models.BooleanField(null=True, blank=True)
+
     signature_image = models.ImageField(upload_to="signatures/", blank=True, null=True)
     agreed_to_terms = models.BooleanField(default=False)
 
@@ -606,6 +609,7 @@ class FinancingApplication(models.Model):
                 "occupation",
                 "income_band",
                 "exact_monthly_income",
+                "first_smartphone",
             },
             "device": {"selected_deal", "selected_cash_price", "calculated_deposit_amount"},
             "kyc": {"customer_face_image", "id_front_image", "id_back_image"},

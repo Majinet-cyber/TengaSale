@@ -3357,6 +3357,181 @@ label,
 }
 .lock-step--failed .lock-step__sub { color: #b45309; font-weight: 600; }
 
+.activation-stage-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  margin-bottom: 14px;
+}
+
+.activation-stage-card__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ff5a00;
+  background: #fff;
+  border: 2px solid rgba(255, 90, 0, 0.24);
+}
+
+.activation-stage-card__spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 90, 0, 0.18);
+  border-top-color: #ff5a00;
+  animation: tsActivationSpin 0.85s linear infinite;
+}
+
+.activation-stage-card__copy h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  line-height: 1.25;
+  color: #101828;
+}
+
+.activation-stage-card__copy p {
+  margin: 0;
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.activation-stage-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.activation-stage-card__facts span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #667085;
+  font-size: 12px;
+}
+
+.activation-stage-card__facts strong {
+  color: #101828;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.ts-activation-stepper .lock-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ts-activation-stepper .lock-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+
+.ts-activation-stepper .lock-step:last-child { border-bottom: 1px solid #e5e7eb; }
+
+.ts-activation-stepper .lock-step--internal {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: center;
+  text-align: left;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.ts-activation-stepper .ts-status-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 900;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  color: #475467;
+}
+
+.ts-activation-stepper .ts-status-circle.done {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #fff;
+}
+
+.ts-activation-stepper .ts-status-circle.current {
+  border: 3px dashed #ff5a00;
+  background: #fff7ed;
+  color: #ff5a00;
+  animation: pulseStep 1.4s ease-in-out infinite;
+}
+
+.ts-activation-stepper .lock-step__body { min-width: 0; }
+.ts-activation-stepper .lock-step__title {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.ts-activation-stepper .lock-step__title.done { color: #15803d; }
+.ts-activation-stepper .lock-step__title.current { color: #ff5a00; }
+.ts-activation-stepper .lock-step__title.pending { color: #475467; }
+.ts-activation-stepper .lock-step__sub {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.activation-pay-cta {
+  min-height: 56px;
+  background: #ff5a00 !important;
+  box-shadow: 0 8px 22px rgba(255, 90, 0, 0.28);
+}
+
+.activation-pay-cta .btn-label { letter-spacing: 0; }
+
+@keyframes pulseStep {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 90, 0, 0.35);
+  }
+  70% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 12px rgba(255, 90, 0, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 90, 0, 0);
+  }
+}
+
+@keyframes tsActivationSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 430px) {
+  .activation-stage-card { flex-direction: column; }
+  .ts-activation-stepper .lock-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ts-activation-stepper .lock-step { padding: 10px 6px; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MERCHANT PREMIUM DASHBOARD (mobile fintech shell)
    Scoped under .merchant-dashboard-shell — do not use global .action-row / .card
@@ -4824,6 +4999,200 @@ label,
     margin-right: 0;
     grid-template-columns: 1fr;
   }
+}
+
+/* Final mobile regression repairs: keep role pages full-width, nav viewport-fixed, and review controls clean. */
+@media (max-width: 767.98px) {
+  body.role-merchant .app-shell,
+  body.role-underwriter .app-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    overflow: visible;
+    box-shadow: none;
+  }
+
+  body.role-merchant .content,
+  body.role-underwriter .content {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 16px)) !important;
+    box-sizing: border-box;
+  }
+
+  body.role-merchant .merchant-dashboard-shell,
+  body.role-merchant .merchant-dashboard-shell .merchant-shell,
+  body.role-merchant .merchant-home-simple,
+  body.role-underwriter .uw-home,
+  body.role-underwriter .sales-main,
+  body.role-underwriter .ts-review-page,
+  body.role-underwriter .uw-canvas,
+  body.role-underwriter .call-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box;
+  }
+
+  body.role-merchant .merchant-dashboard-shell .merchant-shell,
+  body.role-underwriter .uw-home,
+  body.role-underwriter .call-page {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  body.role-merchant .merchant-dashboard-shell .merchant-shell {
+    margin-top: 0 !important;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.role-merchant .merchant-dashboard-shell .overview-card,
+  body.role-merchant .merchant-dashboard-shell .action-card,
+  body.role-merchant .merchant-dashboard-shell .simple-menu-block,
+  body.role-merchant .merchant-status-card,
+  body.role-merchant .merchant-mini-finance,
+  body.role-underwriter .ts-review-card,
+  body.role-underwriter .uw-card,
+  body.role-underwriter .uw-action-card,
+  body.role-underwriter .uw-list-card,
+  body.role-underwriter .app-card-v2,
+  body.role-underwriter .review-card,
+  body.role-underwriter .application-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ts-mobile-role-nav,
+  .merchant-dashboard-shell .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    z-index: 1000;
+    box-sizing: border-box;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-action-bar {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    margin-left: 0;
+    margin-right: 0;
+    z-index: 900;
+  }
+
+  .yes-no-buttons,
+  .ts-yn-buttons,
+  .review-choice-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .btn-yn,
+  .ts-yn-btn,
+  .review-choice {
+    width: 100%;
+    min-width: 0;
+    min-height: 56px;
+    height: auto;
+    border-radius: 14px;
+    font-weight: 800;
+    box-sizing: border-box;
+  }
+
+  .btn-yn--yes.btn-yn--active,
+  .ts-yn-btn--yes.ts-yn-btn--active,
+  .review-choice--yes.is-selected {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #ffffff;
+  }
+
+  .btn-yn--no.btn-yn--active,
+  .ts-yn-btn--no.ts-yn-btn--active,
+  .review-choice--no.is-selected {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+  }
+
+  .portal-search-shell {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  .portal-search-shell .glass-card,
+  .portal-search-shell .portal-support-card,
+  .portal-search-shell .input,
+  .portal-search-shell .select,
+  .portal-search-shell .btn-full {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  .portal-heading {
+    overflow-wrap: anywhere;
+    line-height: 1.15;
+  }
+}
+
+.kyc-portrait-stack {
+  max-width: 100%;
+}
+
+.kyc-smart-card--selfie {
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.kyc-smart-card--id_front,
+.kyc-smart-card--id_back {
+  width: 100%;
+  max-width: 100%;
+}
+
+.kyc-smart-card__frame--id_front,
+.kyc-smart-card__frame--id_back,
+.kyc-review-card-image:has(#kyc-img-id_front),
+.kyc-review-card-image:has(#kyc-img-id_back),
+.kyc-review-card-image:has(img[data-kyc-img="id_front"]),
+.kyc-review-card-image:has(img[data-kyc-img="id_back"]) {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f1f5f9;
+}
+
+.kyc-smart-card__frame--id_front img,
+.kyc-smart-card__frame--id_back img,
+.kyc-review-card-image img#kyc-img-id_front,
+.kyc-review-card-image img#kyc-img-id_back,
+.kyc-review-card-image img[data-kyc-img="id_front"],
+.kyc-review-card-image img[data-kyc-img="id_back"] {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 /* == Premium underwriter home polish ================================ */
