@@ -839,11 +839,33 @@ def search_payment_contract(query: str):
 
     Returns the first matching PaymentContract or None.
     """
+    from django.db.models import Case, F, IntegerField, Q, Value, When
+
     from portal.models import PaymentContract
 
-    q = query.strip()
+    raw_q = (query or "").strip()
+    q = raw_q
     if not q:
         return None
+    lookup = "".join(c for c in q.upper() if c.isalnum())
+    phone_digits = "".join(c for c in q if c.isdigit())
+    phone_last9 = phone_digits[-9:] if len(phone_digits) >= 9 else ""
+
+    def _best_match(qs):
+        return (
+            qs.select_related("source_application", "source_application__contract")
+            .annotate(
+                _match_rank=Case(
+                    When(status=PaymentContract.STATUS_ACTIVE, then=Value(0)),
+                    When(source_application__status="deposit_pending", then=Value(1)),
+                    When(deposit_required__gt=F("deposit_paid"), then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by("_match_rank", "-created_at", "-id")
+            .first()
+        )
 
     def _from_application(application):
         if not application:
@@ -855,17 +877,20 @@ def search_payment_contract(query: str):
         legal_contract = getattr(application, "contract", None)
         if legal_contract:
             try:
-                return sync_portal_lock_from_contract(legal_contract)
+                contract = sync_portal_lock_from_contract(legal_contract)
+                if contract:
+                    return contract
+                return create_contract_from_application(application)
             except Exception:
                 logger.exception("Failed to sync payment contract for application %s", application.pk)
         return None
 
     # Customer-facing legal contract number (A + 7 chars) → linked payment contract
-    if len(q) == 8 and q[0].upper() == "A":
+    if len(lookup) == 8 and lookup[0] == "A":
         from contracts.models import Contract
 
         legal = (
-            Contract.objects.filter(contract_number__iexact=q)
+            Contract.objects.filter(contract_number__iexact=lookup)
             .select_related("application", "application__payment_contract")
             .first()
         )
@@ -874,7 +899,7 @@ def search_payment_contract(query: str):
             if contract:
                 return contract
 
-    if q.upper().startswith("TSM-"):
+    if lookup.startswith("TSM"):
         from applications.models import FinancingApplication
 
         app = (
@@ -882,32 +907,53 @@ def search_payment_contract(query: str):
             .select_related("contract", "payment_contract")
             .first()
         )
+        if not app:
+            app = (
+                FinancingApplication.objects.filter(application_number__iexact=lookup)
+                .select_related("contract", "payment_contract")
+                .first()
+            )
         contract = _from_application(app)
         if contract:
             return contract
 
     # Direct contract number / PayG / national ID lookup
-    contract = (
-        PaymentContract.objects.filter(contract_number__iexact=q).first()
-        or PaymentContract.objects.filter(payg_number__iexact=q).first()
-        or PaymentContract.objects.filter(customer_national_id__iexact=q).first()
+    contract = _best_match(
+        PaymentContract.objects.filter(
+            Q(contract_number__iexact=q)
+            | Q(contract_number__iexact=lookup)
+            | Q(payg_number__iexact=q)
+            | Q(payg_number__iexact=lookup)
+            | Q(customer_national_id__iexact=q)
+            | Q(customer_national_id__iexact=lookup)
+        )
     )
     if contract:
         return contract
 
     # IMEI lookup (exact match — IMEIs are unique per device)
-    if q.isdigit() and len(q) == 15:
-        contract = PaymentContract.objects.filter(imei_number=q).first()
+    if phone_digits and len(phone_digits) == 15:
+        contract = _best_match(
+            PaymentContract.objects.filter(
+                Q(imei_number=phone_digits)
+                | Q(source_application__imei_number=phone_digits)
+                | Q(source_application__imei_number_2=phone_digits)
+            )
+        )
         if contract:
             return contract
 
-    # Phone lookup — strip country code and match last 9 digits
-    digits = "".join(c for c in q if c.isdigit())
-    if len(digits) >= 9:
-        last9 = digits[-9:]
-        contract = PaymentContract.objects.filter(
-            customer_phone__endswith=last9
-        ).first()
+    # Phone lookup — support +265, 265, local 0, spaces, and hyphens.
+    if phone_last9:
+        contract = _best_match(
+            PaymentContract.objects.filter(
+                Q(customer_phone__endswith=phone_last9)
+                | Q(source_application__customer_phone__endswith=phone_last9)
+                | Q(source_application__next_of_kin_1_phone__endswith=phone_last9)
+                | Q(source_application__next_of_kin_2_phone__endswith=phone_last9)
+                | Q(source_application__proof_contact_phone__endswith=phone_last9)
+            )
+        )
     return contract
 
 

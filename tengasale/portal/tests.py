@@ -30,6 +30,7 @@ Coverage:
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 from django.utils import timezone
 
@@ -321,6 +322,77 @@ class PortalSearchTest(TestCase):
     def test_search_by_full_phone(self):
         result = search_payment_contract("+265881234567")
         self.assertEqual(result.pk, self.contract.pk)
+
+    def test_search_normalizes_contract_payg_id_and_phone(self):
+        self.contract.payg_number = "EXGH4456"
+        self.contract.save(update_fields=["payg_number"])
+
+        self.assertEqual(search_payment_contract(" ts-mw-12345678 "), None)
+        self.assertEqual(search_payment_contract(f" {self.contract.contract_number.lower()} ").pk, self.contract.pk)
+        self.assertEqual(search_payment_contract("exgh-4456").pk, self.contract.pk)
+        self.assertEqual(search_payment_contract("mw12345678").pk, self.contract.pk)
+        self.assertEqual(search_payment_contract("+265 881-234-567").pk, self.contract.pk)
+        self.assertEqual(search_payment_contract("0881 234 567").pk, self.contract.pk)
+
+    def test_search_prefers_active_contract_when_phone_matches_multiple(self):
+        active = self.contract
+        PaymentContract.objects.create(
+            customer_name="Old Closed",
+            customer_phone="+265881234567",
+            customer_national_id="MW12345678",
+            total_amount=Decimal("20000"),
+            status=PaymentContract.STATUS_COMPLETED,
+        )
+
+        result = search_payment_contract("0881234567")
+
+        self.assertEqual(result.pk, active.pk)
+
+    def test_search_checks_linked_application_contact_numbers(self):
+        from applications.models import FinancingApplication
+
+        user = get_user_model().objects.create_user(username="portal-merchant")
+        app = FinancingApplication.objects.create(
+            created_by=user,
+            customer_name="Linked Customer",
+            customer_phone="991111111",
+            national_id="ABCD1234",
+            next_of_kin_1_phone="882222222",
+        )
+        contract = PaymentContract.objects.create(
+            source_application=app,
+            customer_name="Linked Customer",
+            customer_phone="+265991111111",
+            total_amount=Decimal("20000"),
+        )
+
+        result = search_payment_contract("+265 882-222-222")
+
+        self.assertEqual(result.pk, contract.pk)
+
+    def test_search_by_legal_contract_creates_payment_contract_before_payg_exists(self):
+        from applications.models import FinancingApplication
+        from applications.test_helpers import attach_complete_pricing
+        from contracts.models import Contract
+
+        user = get_user_model().objects.create_user(username="legal-merchant")
+        app = FinancingApplication.objects.create(
+            created_by=user,
+            customer_name="Legal Customer",
+            customer_phone="889777666",
+            national_id="ZXCV1234",
+            status="deposit_pending",
+        )
+        attach_complete_pricing(app)
+        legal_contract, _ = Contract.from_application(app)
+
+        self.assertFalse(hasattr(app, "payment_contract"))
+
+        result = search_payment_contract(legal_contract.contract_number)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result.source_application_id, app.pk)
+        self.assertEqual(result.payg_number, None)
 
     def test_search_returns_none_for_unknown(self):
         result = search_payment_contract("ZZZNOTHINGHERE")

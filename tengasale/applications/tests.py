@@ -722,6 +722,39 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertEqual(app.customer_phone, "990870616")
         self.assertEqual(app.status, "customer_details")
 
+    def test_customer_page_allows_duplicate_unpaid_in_progress_application(self):
+        old_app = self.create_application()
+        old_app.customer_name = "Jane Banda"
+        old_app.national_id = "RQXFVZC9"
+        old_app.customer_phone = "990870616"
+        old_app.status = "customer_details"
+        old_app.save(update_fields=["customer_name", "national_id", "customer_phone", "status"])
+        new_app = self.create_application()
+
+        response = self.client.post(
+            reverse("edit_customer_details", args=[new_app.id]),
+            valid_customer_data(),
+        )
+
+        self.assertRedirects(response, reverse("choose_device", args=[new_app.id]))
+
+    def test_customer_page_blocks_duplicate_active_contract_stage_application(self):
+        old_app = self.create_application()
+        old_app.customer_name = "Jane Banda"
+        old_app.national_id = "RQXFVZC9"
+        old_app.customer_phone = "990870616"
+        old_app.status = "active_contract"
+        old_app.save(update_fields=["customer_name", "national_id", "customer_phone", "status"])
+        new_app = self.create_application()
+
+        response = self.client.post(
+            reverse("edit_customer_details", args=[new_app.id]),
+            valid_customer_data(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "already has an active TengaSale contract/application")
+
     def test_after_valid_customer_details_user_lands_on_deal_selection(self):
         app = self.create_application()
 
