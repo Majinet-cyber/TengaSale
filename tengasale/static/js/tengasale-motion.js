@@ -513,9 +513,14 @@
         var loading = document.querySelector('[data-review-loading]');
         if (!reviewBody && !loading) return;
 
+        function clearReviewLoading() {
+            if (loading) loading.hidden = true;
+            if (reviewBody) reviewBody.hidden = false;
+        }
+
         /* Always ensure the review body is visible — never hide it. */
-        if (loading) loading.hidden = true;
-        if (reviewBody) reviewBody.hidden = false;
+        clearReviewLoading();
+        window.addEventListener('pageshow', clearReviewLoading);
 
         /* On first load after a claim, show a brief overlay (non-blocking). */
         var pending = false;
@@ -538,8 +543,9 @@
             loading.style.justifyContent = 'center';
             loading.hidden = false;
             window.setTimeout(function () {
-                if (loading) loading.hidden = true;
+                clearReviewLoading();
             }, 400);
+            window.setTimeout(clearReviewLoading, 2500);
         }
 
         var reviewId = null;

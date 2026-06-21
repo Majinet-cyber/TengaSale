@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required
@@ -73,6 +74,21 @@ ACTIVE_STATUSES = [
     "imei_required",
 ]
 
+BLOCKING_CONTRACT_STATUSES = [
+    "approved",
+    "approved_pending_device_lock",
+    "device_locked",
+    "active_contract",
+    "contract_terms",
+    "contract_signature",
+    "imei_entry",
+    "contract_creating",
+    "warranty_check",
+    "locking",
+    "deposit_pending",
+    "contract_complete",
+]
+
 PENDING_DEPOSIT_STATUSES = {"deposit_pending"}
 AUTO_ARCHIVE_REASON = "Auto-archived: deposit not paid within 48 hours"
 
@@ -131,7 +147,7 @@ def _strong_identifier_duplicate(app, national_id="", customer_phone=""):
     if not q:
         return None
     return (
-        FinancingApplication.objects.filter(q, status__in=ACTIVE_STATUSES)
+        FinancingApplication.objects.filter(q, status__in=BLOCKING_CONTRACT_STATUSES)
         .exclude(pk=app.pk)
         .select_related("contract", "payment_contract")
         .order_by("-created_at")
