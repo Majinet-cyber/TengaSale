@@ -1,0 +1,12 @@
+<a href="{{ href }}" class="ts-dashboard-menu-row action-row simple-row {{ row_class }}"{% if testid %} data-testid="{{ testid }}"{% endif %}>
+  <span class="ts-dashboard-menu-icon {{ icon_class }}" aria-hidden="true">
+    <i class="bi {{ icon }}"></i>
+  </span>
+  <span class="ts-dashboard-menu-label action-row-label">{{ label }}</span>
+  {% if value != "" and value != None %}
+    <span class="ts-dashboard-menu-value action-row-value {{ value_class }}">{{ value }}</span>
+  {% endif %}
+  <span class="ts-dashboard-menu-chevron action-row-chevron row-arrow" aria-hidden="true">
+    <i class="bi bi-chevron-right"></i>
+  </span>
+</a>
