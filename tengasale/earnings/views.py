@@ -158,7 +158,11 @@ def earnings_home(request):
 
     transaction_rows.sort(key=lambda row: row["created_at"], reverse=True)
     payout_rows = [row for row in transaction_rows if row["type_label"] == "Wallet Payout"]
-    active_tab = request.GET.get("tab", "earnings")
+    active_tab = request.GET.get("tab", "overview")
+    if active_tab == "earnings":
+        active_tab = "overview"
+    if active_tab not in {"overview", "transactions", "payouts", "rewards"}:
+        active_tab = "overview"
 
     return render(request, "earnings/home.html", {
         "wallet": wallet,

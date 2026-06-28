@@ -168,7 +168,7 @@ class SalesPageSmokeTest(TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "data-cooldown-btn")
-        self.assertContains(res, "NEXT CLAIM IN")
+        self.assertContains(res, "CLAIM AVAILABLE IN")
 
     def test_sales_home_max_active_reached_disables_claim(self):
         merchant = User.objects.create_user(username="merchant-max", password="testpass123")
@@ -194,7 +194,7 @@ class SalesPageSmokeTest(TestCase):
         res = self.client.get("/sales/")
 
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "MAX ACTIVE REACHED")
+        self.assertContains(res, "ACTIVE LIMIT REACHED")
         self.assertNotContains(res, 'data-testid="claim-next-btn"')
 
     def test_claim_next_navigates_to_review_summary(self):
@@ -355,6 +355,20 @@ class ClaimToReviewFlowTest(TestCase):
         self.assertIn("cooldown_expires_at", data)
         self.assertIsNotNone(data["cooldown_expires_at"])
         self.assertGreater(data["cooldown_remaining"], 0)
+        self.assertEqual(res["Cache-Control"], "no-store")
+
+    def test_sales_home_removes_duplicate_dashboard_controls(self):
+        self.client.login(username="uw-flow", password="testpass123")
+        res = self.client.get("/sales/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, "Report Issue")
+        self.assertNotContains(res, "Queue Rules")
+        self.assertNotContains(res, "Spin &amp; Win")
+        self.assertNotContains(res, 'aria-label="Tools"')
+        self.assertContains(res, "Earnings & Wallet")
+        applications = res.content.decode().split('aria-label="Applications"', 1)[1].split("</nav>", 1)[0]
+        self.assertNotIn("My Active", applications)
 
     def test_home_shows_cooldown_expires_at_attribute(self):
         self._pending_app(
@@ -438,7 +452,7 @@ class UnderwriterButtonSizeTest(TestCase):
         self.assertGreaterEqual(content.count("uw-action-card"), 2)
 
     def test_cooldown_card_same_size_as_my_active(self):
-        """NEXT CLAIM IN card must use same base class as My Active."""
+        """CLAIM AVAILABLE IN card must use same base class as My Active."""
         self._pending_app(
             status="under_review",
             claimed_by=self.underwriter,
@@ -448,14 +462,14 @@ class UnderwriterButtonSizeTest(TestCase):
         self.client.login(username="uw-size", password="testpass123")
         res = self.client.get("/sales/")
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "NEXT CLAIM IN")
+        self.assertContains(res, "CLAIM AVAILABLE IN")
         self.assertContains(res, 'data-testid="claim-cooldown-btn"')
         # Both cards use uw-action-card
         content = res.content.decode()
         self.assertGreaterEqual(content.count("uw-action-card"), 2)
 
     def test_max_active_reached_same_size_as_my_active(self):
-        """MAX ACTIVE REACHED card must use same base class as My Active."""
+        """ACTIVE LIMIT REACHED card must use same base class as My Active."""
         for i in range(5):
             self._pending_app(
                 status="under_review",
@@ -473,7 +487,7 @@ class UnderwriterButtonSizeTest(TestCase):
         self.client.login(username="uw-size", password="testpass123")
         res = self.client.get("/sales/")
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "MAX ACTIVE REACHED")
+        self.assertContains(res, "ACTIVE LIMIT REACHED")
         self.assertContains(res, 'data-testid="claim-max-active"')
         content = res.content.decode()
         self.assertGreaterEqual(content.count("uw-action-card"), 2)
@@ -490,11 +504,11 @@ class UnderwriterButtonSizeTest(TestCase):
         res = self.client.get("/sales/")
         self.assertEqual(res.status_code, 200)
         # Must contain formatted cooldown, not raw seconds like "300s"
-        self.assertContains(res, "NEXT CLAIM IN")
+        self.assertContains(res, "CLAIM AVAILABLE IN")
         content = res.content.decode()
         import re
         # Should match pattern like "4M 59S" not "299s"
-        self.assertRegex(content, r'NEXT CLAIM IN \d+M \d{2}S')
+        self.assertRegex(content, r'CLAIM AVAILABLE IN \d+M \d{2}S')
 
     def test_no_apps_pending_uppercase(self):
         """NO APPS PENDING must be uppercase."""

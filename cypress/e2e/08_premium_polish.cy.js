@@ -73,9 +73,9 @@ describe("B — Malawi Flag", () => {
     cy.get('[data-testid="country-pill-mw"]').should("be.visible");
   });
 
-  it("country pill contains 'MW' code", () => {
+  it("country pill does not render visible 'MW' code", () => {
     cy.visit("/tengasale/merchant/");
-    cy.get('[data-testid="country-pill-mw"]').should("contain.text", "MW");
+    cy.get('[data-testid="country-pill-mw"]').should("not.contain.text", "MW");
   });
 
   it("country pill contains 'Malawi' text", () => {

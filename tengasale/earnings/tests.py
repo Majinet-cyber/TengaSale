@@ -34,7 +34,15 @@ class EarningsPageTests(TestCase):
         self.app = FinancingApplication.objects.create(
             created_by=self.user,
             status="approved",
+            customer_name="Jane Banda",
+            customer_phone="990870616",
+            national_id="RQXFVZC9",
+            selected_cash_price=Decimal("400000.00"),
             calculated_total_loan=Decimal("1000000.00"),
+            calculated_deposit_amount=Decimal("52000.00"),
+            calculated_monthly_payment=Decimal("83333.00"),
+            calculated_daily_payment=Decimal("2778.00"),
+            term_months=12,
         )
 
     def test_earnings_page_displays_pending_commission_and_spins(self):
@@ -53,8 +61,8 @@ class EarningsPageTests(TestCase):
 
         self.assertContains(response, "Pending commissions")
         self.assertContains(response, "MWK 10,000")
-        self.assertContains(response, "Available spins")
-        self.assertContains(response, "SPIN & WIN")
+        self.assertContains(response, "Rewards")
+        self.assertNotContains(response, "SPIN &amp; WIN")
         self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
         self.assertContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
@@ -77,15 +85,27 @@ class EarningsPageTests(TestCase):
             contract_number=contract.contract_number,
         )
 
-        response = self.client.get(reverse("earnings_home"))
+        response = self.client.get(f"{reverse('earnings_home')}?tab=transactions")
 
         self.assertContains(response, "Wallet balance")
-        self.assertContains(response, "EARNINGS")
-        self.assertContains(response, "PAYOUTS")
+        self.assertContains(response, "Overview")
+        self.assertContains(response, "Transactions")
+        self.assertContains(response, "Payouts")
+        self.assertContains(response, "Rewards")
         self.assertContains(response, "amount-positive")
         self.assertContains(response, "amount-negative")
         self.assertContains(response, contract.contract_number)
         self.assertContains(response, "VIEW CONTRACT")
+
+    def test_rewards_tab_contains_spin_and_win(self):
+        SpinWallet.objects.create(user=self.user, available_spins=2, total_spins_earned=2)
+
+        response = self.client.get(f"{reverse('earnings_home')}?tab=rewards")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rewards")
+        self.assertContains(response, "Available spins")
+        self.assertContains(response, "SPIN & WIN")
 
     def test_payouts_tab_renders(self):
         response = self.client.get(f"{reverse('earnings_home')}?tab=payouts")
@@ -153,8 +173,13 @@ class PaymentsPageTests(TestCase):
             status="contract_complete",
             customer_name="Jane Banda",
             customer_phone="990870616",
+            national_id="RQXFVZC9",
+            selected_cash_price=Decimal("400000.00"),
             calculated_total_loan=Decimal("1000000.00"),
             calculated_deposit_amount=Decimal("130000.00"),
+            calculated_monthly_payment=Decimal("83333.00"),
+            calculated_daily_payment=Decimal("2778.00"),
+            term_months=12,
         )
         self.contract = Contract.from_application(self.app)[0]
 
@@ -194,7 +219,13 @@ class PaymentsPageTests(TestCase):
             status="contract_complete",
             customer_name="Other Customer",
             customer_phone="991111111",
+            national_id="OTHER1234",
+            selected_cash_price=Decimal("400000.00"),
+            calculated_total_loan=Decimal("1000000.00"),
             calculated_deposit_amount=Decimal("999999.00"),
+            calculated_monthly_payment=Decimal("83333.00"),
+            calculated_daily_payment=Decimal("2778.00"),
+            term_months=12,
         )
         other_contract = Contract.from_application(other_app)[0]
 

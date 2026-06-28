@@ -1,8 +1,8 @@
 /**
- * TengaSale Cypress E2E — Underwriter Flow
+ * TengaSale Cypress E2E - Underwriter Flow
  * Tests /sales/ underwriter review flow
  */
-describe("Underwriter Flow — /sales/", () => {
+describe("Underwriter Flow - /sales/", () => {
   beforeEach(() => {
     cy.loginAsUnderwriter();
   });
@@ -10,7 +10,8 @@ describe("Underwriter Flow — /sales/", () => {
   it("underwriter can access sales home", () => {
     cy.visit("/sales/");
     cy.get('[data-testid="claim-next"]').should("exist");
-    cy.contains("🇲🇼 Malawi").should("be.visible");
+    cy.get('[data-testid="country-pill-mw"]').should("contain.text", "Malawi");
+    cy.get('[data-testid="country-pill-mw"]').should("not.contain.text", "MW");
   });
 
   it("shows clean T logo in header (not giant marketing image)", () => {
@@ -46,7 +47,7 @@ describe("Underwriter Flow — /sales/", () => {
     cy.contains("Applications").should("be.visible");
   });
 
-  it("can access queue rules", () => {
+  it("can access queue rules page outside the home dashboard", () => {
     cy.visit("/sales/queue-rules/");
     cy.contains("Queue Rules").should("be.visible");
   });
@@ -57,14 +58,13 @@ describe("Underwriter Flow — /sales/", () => {
   });
 });
 
-describe("Underwriter — Mark Field for Review", () => {
+describe("Underwriter - Mark Field for Review", () => {
   beforeEach(() => {
     cy.loginAsUnderwriter();
   });
 
   it("mark field button has correct testid", () => {
     cy.visit("/sales/");
-    // Mark field UI exists only on review pages - check the general UI structure
     cy.get("body").should("be.visible");
   });
 });
