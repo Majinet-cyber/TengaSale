@@ -352,7 +352,7 @@ def sales_queue_status(request):
         status="pending_review", claimed_by__isnull=True
     ).count()
     cooldown_remaining, can_claim, cooldown_expires_at = _cooldown_state(request.user)
-    return JsonResponse({
+    response = JsonResponse({
         "active_count": active_count,
         "max_active": rule.max_active_applications,
         "pending_count": pending_count,
@@ -360,6 +360,8 @@ def sales_queue_status(request):
         "cooldown_expires_at": cooldown_expires_at,
         "can_claim": can_claim and pending_count > 0,
     })
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 # ---------------------------------------------------------------------------

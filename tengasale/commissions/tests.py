@@ -481,10 +481,10 @@ class SalesMobileUITests(TestCase):
         content = response.content.decode()
         has_claim = "CLAIM NEXT" in content
         has_empty = "NO APPS PENDING" in content or "NO APPLICATIONS IN QUEUE" in content
-        has_disabled = "NEXT CLAIM IN" in content or "MAX ACTIVE" in content
+        has_disabled = "CLAIM AVAILABLE IN" in content or "ACTIVE LIMIT" in content
         self.assertTrue(
             has_claim or has_empty or has_disabled,
-            "Home must contain CLAIM NEXT, NO APPLICATIONS IN QUEUE, or NEXT CLAIM IN",
+            "Home must contain CLAIM NEXT, NO APPS PENDING, or a disabled claim state",
         )
 
     def test_sales_home_contains_my_active(self):
@@ -495,7 +495,8 @@ class SalesMobileUITests(TestCase):
         response = self._get_sales_home()
         content = response.content.decode()
 
-        self.assertContains(response, "uw-primary-action--queue")
+        self.assertContains(response, "uw-queue-card")
+        self.assertContains(response, "uw-action-card--blue")
         self.assertContains(response, "active-reviews-card")
         self.assertNotIn("uw-primary-action--navy", content)
 
@@ -503,9 +504,10 @@ class SalesMobileUITests(TestCase):
         response = self._get_sales_home()
         self.assertContains(response, "Applications")
 
-    def test_sales_home_contains_tools_section(self):
+    def test_sales_home_contains_earnings_section_without_tools_duplication(self):
         response = self._get_sales_home()
-        self.assertContains(response, "Tools")
+        self.assertContains(response, "Earnings & Wallet")
+        self.assertNotContains(response, "Tools")
 
     def test_queue_status_endpoint_handles_empty_data(self):
         self.client.login(username="ui_mgr", password="test123")

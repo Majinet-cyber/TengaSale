@@ -395,8 +395,12 @@
         document.querySelectorAll('[data-claim-next-form]').forEach(function (form) {
             if (form.dataset.claimInit) return;
             form.dataset.claimInit = '1';
-            form.addEventListener('submit', function () {
+            form.addEventListener('submit', function (event) {
                 var button = form.querySelector('button[type="submit"]');
+                if (button && button.disabled) {
+                    event.preventDefault();
+                    return;
+                }
                 var label = form.querySelector('[data-claim-label]');
                 var sub = form.querySelector('[data-claim-sub]');
                 form.classList.add('is-claiming');
@@ -433,7 +437,89 @@
 
     function renderCooldownLabel(el, seconds) {
         if (!el) return;
-        el.textContent = 'NEXT CLAIM IN ' + formatCooldown(seconds);
+        el.textContent = 'CLAIM AVAILABLE IN ' + formatCooldown(seconds);
+    }
+
+    function pluralizeApplication(count) {
+        return count === 1 ? 'application' : 'applications';
+    }
+
+    function setClaimIcon(button, iconClass) {
+        var icon = button ? button.querySelector('[data-claim-icon]') : null;
+        if (!icon) return;
+        icon.className = 'bi ' + iconClass;
+    }
+
+    function setClaimState(home, data) {
+        var button = home.querySelector('[data-claim-next-form] button[type="submit"]');
+        if (!button) return;
+
+        var previousState = button.getAttribute('data-claim-state') || '';
+        var label = button.querySelector('[data-claim-label]');
+        var sub = button.querySelector('[data-claim-sub]');
+        var countEl = button.querySelector('[data-claim-count]');
+        var pending = typeof data.pending_count === 'number' ? data.pending_count : 0;
+        var active = typeof data.active_count === 'number' ? data.active_count : 0;
+        var maxActive = typeof data.max_active === 'number' ? data.max_active : 0;
+        var cooldown = typeof data.cooldown_remaining === 'number' ? data.cooldown_remaining : 0;
+        var nextState = 'empty';
+
+        button.classList.remove('uw-action-card--green', 'uw-action-card--disabled', 'uw-action-card--limit', 'uw-action-card--new');
+
+        if (maxActive > 0 && active >= maxActive) {
+            nextState = 'limit';
+            button.disabled = true;
+            button.classList.add('uw-action-card--disabled', 'uw-action-card--limit');
+            button.setAttribute('data-testid', 'claim-max-active');
+            button.removeAttribute('data-cooldown-btn');
+            button.removeAttribute('data-cooldown-remaining');
+            setClaimIcon(button, 'bi-slash-circle');
+            if (label) label.textContent = 'ACTIVE LIMIT REACHED';
+            if (sub) sub.textContent = 'Complete one review to claim another';
+            if (countEl) countEl.textContent = active + '/' + maxActive;
+        } else if (cooldown > 0) {
+            nextState = 'cooldown';
+            button.disabled = true;
+            button.classList.add('uw-action-card--disabled');
+            button.setAttribute('data-testid', 'claim-cooldown-btn');
+            button.setAttribute('data-cooldown-btn', '1');
+            button.setAttribute('data-cooldown-remaining', String(cooldown));
+            setClaimIcon(button, 'bi-clock');
+            renderCooldownLabel(label, cooldown);
+            if (sub) sub.textContent = pending + ' ' + pluralizeApplication(pending) + ' waiting';
+            if (countEl) countEl.textContent = String(pending);
+        } else if (data.can_claim && pending > 0) {
+            nextState = 'available';
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+            button.classList.add('uw-action-card--green');
+            button.setAttribute('data-testid', 'claim-next-btn');
+            button.removeAttribute('data-cooldown-btn');
+            button.removeAttribute('data-cooldown-remaining');
+            setClaimIcon(button, 'bi-lightning-charge');
+            if (label) label.textContent = 'CLAIM NEXT';
+            if (sub) sub.textContent = pending + ' ' + pluralizeApplication(pending) + ' waiting';
+            if (countEl) countEl.textContent = String(pending);
+        } else {
+            nextState = 'empty';
+            button.disabled = true;
+            button.classList.add('uw-action-card--disabled');
+            button.setAttribute('data-testid', 'claim-no-apps');
+            button.removeAttribute('data-cooldown-btn');
+            button.removeAttribute('data-cooldown-remaining');
+            setClaimIcon(button, 'bi-inbox');
+            if (label) label.textContent = 'NO APPS PENDING';
+            if (sub) sub.textContent = 'Queue is empty';
+            if (countEl) countEl.textContent = '0';
+        }
+
+        button.setAttribute('data-claim-state', nextState);
+        if (previousState && previousState !== 'available' && nextState === 'available') {
+            button.classList.add('uw-action-card--new');
+            window.setTimeout(function () {
+                button.classList.remove('uw-action-card--new');
+            }, 360);
+        }
     }
 
     function resolveCooldownExpiresAt(home, cooldownBtn) {
@@ -462,19 +548,34 @@
         if (!home) return;
 
         var cooldownBtn = home.querySelector('[data-cooldown-btn]');
-        var cooldownLabel = home.querySelector('[data-cooldown-label]');
+        var cooldownLabel = home.querySelector('[data-claim-label], [data-cooldown-label]');
         var expiresAt = resolveCooldownExpiresAt(home, cooldownBtn);
         var remaining = cooldownSecondsRemaining(expiresAt);
 
         if (cooldownBtn && remaining > 0) {
             renderCooldownLabel(cooldownLabel, remaining);
             var timer = window.setInterval(function () {
+                cooldownBtn = home.querySelector('[data-cooldown-btn]');
+                cooldownLabel = home.querySelector('[data-claim-label], [data-cooldown-label]');
+                if (!cooldownBtn) {
+                    window.clearInterval(timer);
+                    return;
+                }
                 remaining = cooldownSecondsRemaining(expiresAt);
                 cooldownBtn.setAttribute('data-cooldown-remaining', String(remaining));
                 if (remaining <= 0) {
                     window.clearInterval(timer);
                     clearCooldownExpiresAt();
-                    window.location.reload();
+                    var pendingCount = parseInt((home.querySelector('[data-claim-count]') || {}).textContent || '0', 10) || 0;
+                    if (pendingCount > 0) {
+                        setClaimState(home, {
+                            pending_count: pendingCount,
+                            active_count: parseInt((home.querySelector('.uw-active-card__count') || {}).textContent || '0', 10) || 0,
+                            max_active: parseInt(((home.querySelector('.uw-active-card__count') || {}).textContent || '/0').split('/')[1], 10) || 0,
+                            cooldown_remaining: 0,
+                            can_claim: true
+                        });
+                    }
                     return;
                 }
                 renderCooldownLabel(cooldownLabel, remaining);
@@ -496,13 +597,17 @@
                     if (countEl && typeof data.active_count === 'number' && typeof data.max_active === 'number') {
                         countEl.textContent = data.active_count + '/' + data.max_active;
                     }
+                    var pendingRow = home.querySelector('[data-testid="underwriter-pending-queue-row"] .ts-dashboard-menu-value');
+                    if (pendingRow && typeof data.pending_count === 'number') {
+                        pendingRow.textContent = data.pending_count;
+                    }
                     if (typeof data.cooldown_expires_at === 'number' && data.cooldown_expires_at > Date.now()) {
                         writeCooldownExpiresAt(data.cooldown_expires_at);
                     }
-                    if (data.can_claim && cooldownBtn) {
+                    if (typeof data.cooldown_remaining === 'number' && data.cooldown_remaining <= 0) {
                         clearCooldownExpiresAt();
-                        window.location.reload();
                     }
+                    setClaimState(home, data);
                 })
                 .catch(function () {});
         }, pollInterval);

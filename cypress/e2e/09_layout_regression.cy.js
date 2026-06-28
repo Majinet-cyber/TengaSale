@@ -83,17 +83,17 @@ describe("Merchant Home — Core Elements", () => {
     cy.contains("Completed").should("exist");
   });
 
-  it("Tools section exists with All Deals", () => {
-    cy.contains("All Deals").should("exist");
+  it("Portfolio Overview section exists", () => {
+    cy.get('[data-testid="merchant-portfolio-overview"]').should("exist");
   });
 
-  it("Tools section has My Earnings", () => {
-    cy.contains("My Earnings").should("exist");
+  it("Earnings section has Earnings Summary", () => {
+    cy.get("nav[aria-label='Earnings']").should("contain.text", "Earnings Summary");
   });
 
-  it("Report Issue link exists", () => {
-    // Support link serves as report issue on merchant home
-    cy.contains("Support").should("exist");
+  it("Merchant dashboard does not duplicate support", () => {
+    cy.contains("Support").should("not.exist");
+    cy.contains("Report Issue").should("not.exist");
   });
 
   it("Greeting message is visible", () => {
@@ -154,8 +154,8 @@ describe("Underwriter Home — Core Elements", () => {
     cy.get('[data-testid="country-pill-mw"]').should("be.visible");
   });
 
-  it("Report Issue link is visible", () => {
-    cy.contains("Report Issue").should("be.visible");
+  it("Report Issue link is absent from dashboard", () => {
+    cy.contains("Report Issue").should("not.exist");
   });
 
   it("Application Queue card exists", () => {
@@ -194,8 +194,8 @@ describe("Underwriter Home — Core Elements", () => {
     cy.get("nav[aria-label='Applications']").should("exist");
   });
 
-  it("Applications section has My Active row", () => {
-    cy.get("nav[aria-label='Applications']").should("contain.text", "My Active");
+  it("Applications section does not duplicate My Active row", () => {
+    cy.get("nav[aria-label='Applications']").should("not.contain.text", "My Active");
   });
 
   it("Applications section has Pending Queue row", () => {
@@ -206,12 +206,12 @@ describe("Underwriter Home — Core Elements", () => {
     cy.get("nav[aria-label='Applications']").should("contain.text", "Completed");
   });
 
-  it("Tools section exists", () => {
-    cy.get("nav[aria-label='Tools']").should("exist");
+  it("Tools section is not on the underwriter home", () => {
+    cy.get("nav[aria-label='Tools']").should("not.exist");
   });
 
-  it("Tools section has Earnings & Wallet", () => {
-    cy.get("nav[aria-label='Tools']").should("contain.text", "Earnings");
+  it("Earnings section has Earnings & Wallet", () => {
+    cy.get("nav[aria-label='Earnings']").should("contain.text", "Earnings");
   });
 
   it("No broken placeholder fragments in body text", () => {

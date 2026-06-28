@@ -21,30 +21,29 @@ from .portfolio_services import calculate_contract_risk, calculate_par_band, cal
 
 def assert_merchant_dashboard_malawi_flag(test_case, response):
     """
-    Regression lock: merchant dashboard must always show Malawi flag + MW chip.
-    Fails if the chip is removed, reverted to text-only MW, or the SVG partial is dropped.
+    Regression lock: merchant dashboard must show one Malawi flag and no visible MW code.
     """
     test_case.assertEqual(response.status_code, 200)
     test_case.assertContains(
         response,
-        'class="flag-pill merchant-country-chip"',
+        'class="flag-pill merchant-country-chip country-pill"',
         count=1,
         msg_prefix="Exactly one Malawi country chip",
     )
-    test_case.assertContains(response, "merchant-country-chip__code", msg_prefix="MW code span")
     test_case.assertContains(response, 'title="Malawi"', msg_prefix="Malawi chip title")
     test_case.assertContains(
         response,
         'viewBox="0 0 20 14"',
+        count=1,
         msg_prefix="Malawi flag SVG (portal/_malawi_flag.html)",
     )
     test_case.assertContains(response, "#339E35", msg_prefix="Malawi flag green band")
     test_case.assertContains(response, "#CE1126", msg_prefix="Malawi flag red band")
-    test_case.assertContains(response, ">MW<", msg_prefix="MW country code")
+    test_case.assertContains(response, ">Malawi<", count=1, msg_prefix="Malawi country label")
 
     content = response.content.decode()
     greeting_idx = content.index('class="merchant-greeting"')
-    chip_idx = content.index('class="flag-pill merchant-country-chip"', greeting_idx)
+    chip_idx = content.index('class="flag-pill merchant-country-chip country-pill"', greeting_idx)
     greeting_end = content.index("</section>", greeting_idx)
     chip_region = content[chip_idx:greeting_end]
     test_case.assertIn(
@@ -52,12 +51,10 @@ def assert_merchant_dashboard_malawi_flag(test_case, response):
         chip_region,
         "Flag SVG must render inside merchant-country-chip (not a broken img or text-only MW)",
     )
-    test_case.assertIn(
-        "merchant-country-chip__code",
-        chip_region,
-        "MW label must stay inside the country chip beside the flag",
-    )
-    test_case.assertIn(">MW<", chip_region, "MW text must render inside the greeting country chip")
+    test_case.assertEqual(chip_region.count('viewBox="0 0 20 14"'), 1)
+    test_case.assertEqual(chip_region.count(">Malawi<"), 1)
+    test_case.assertNotIn(">MW<", chip_region, "MW text must not render inside the country chip")
+    test_case.assertNotIn("merchant-country-chip__code", chip_region)
 
 
 class MerchantComplianceWorkflowTests(TestCase):
@@ -410,8 +407,8 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("merchant_dashboard"))
         assert_merchant_dashboard_malawi_flag(self, response)
 
-    def test_merchant_dashboard_contains_applications_and_tools_sections(self):
-        """Applications and Tools navigation sections must be present."""
+    def test_merchant_dashboard_contains_refined_sections(self):
+        """Merchant home keeps applications, portfolio, seller quality, and earnings without dashboard tools."""
         self.create_user("merchant", "Merchant")
         self.client.login(username="merchant", password="test-pass-123")
 
@@ -419,13 +416,16 @@ class HomePageTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Applications")
+        self.assertContains(response, "Portfolio Overview")
+        self.assertContains(response, "Seller Quality")
+        self.assertContains(response, "Earnings Summary")
         self.assertContains(response, "Active")
         self.assertContains(response, "Completed")
         self.assertContains(response, "Archived / Rejected")
-        self.assertContains(response, "Tools")
-        self.assertContains(response, "All Deals")
-        self.assertContains(response, "My Earnings")
-        self.assertContains(response, "Payments")
+        self.assertNotContains(response, "Tools")
+        self.assertNotContains(response, "My Earnings")
+        self.assertNotContains(response, "Payments")
+        self.assertNotContains(response, ">Support<")
         self.assertContains(response, "row-arrow")
 
     def test_merchant_dashboard_cta_appears_before_applications_nav(self):
@@ -1894,11 +1894,13 @@ class LayoutRegressionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Active")
 
-    def test_merchant_dashboard_has_tools_link(self):
+    def test_merchant_dashboard_has_earnings_link_without_tools_section(self):
         self.client.login(username="reg_merchant", password="pass123")
         response = self.client.get(reverse("merchant_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "All Deals")
+        self.assertContains(response, "Earnings Summary")
+        self.assertContains(response, reverse("earnings_home"))
+        self.assertNotContains(response, "Tools")
 
     def test_merchant_dashboard_no_oversized_hero(self):
         """The orange hero block must not dominate the page."""
@@ -1913,9 +1915,9 @@ class LayoutRegressionTests(TestCase):
         content = response.content.decode()
         cta_pos = content.index("NEW APPLICATION")
         apps_pos = content.index("Applications")
-        tools_pos = content.index("Tools")
+        earnings_pos = content.index("Earnings")
         self.assertLess(cta_pos, apps_pos, "CTA must appear before Applications")
-        self.assertLess(apps_pos, tools_pos, "Applications must appear before Tools")
+        self.assertLess(apps_pos, earnings_pos, "Applications must appear before Earnings")
 
     # ── Underwriter (sales) portal regression ─────────────────────────────────
 

@@ -12,7 +12,7 @@
 .merchant-shell {
   width: min(100%, 500px);
   margin: 0 auto;
-  padding: 0 16px 84px;
+  padding: 0 16px calc(100px + env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
 }
 .merchant-header {
@@ -23,9 +23,9 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
-  min-height: 58px;
+  min-height: 76px;
   margin: 0 -16px;
-  padding: env(safe-area-inset-top, 0) 16px 0;
+  padding: calc(14px + env(safe-area-inset-top, 0)) 16px 14px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -42,9 +42,9 @@
   display: inline-flex !important;
 }
 .merchant-brand-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -76,10 +76,10 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 16px;
   background: transparent;
   color: #475467;
   cursor: pointer;
@@ -159,17 +159,35 @@
   text-decoration: none;
 }
 .merchant-cta-wrap {
-  padding: 2px 0 18px;
+  padding: 2px 0 8px;
+}
+.dashboard-primary-action {
+  min-height: 104px;
+  max-height: 112px;
+  padding: 18px 22px;
+  border-radius: 22px;
+}
+.dashboard-row {
+  min-height: 68px;
+  padding: 16px 20px;
+}
+.dashboard-section {
+  margin-top: 28px;
+}
+.dashboard-card-stack {
+  gap: 12px;
 }
 .primary-big-action {
-  min-height: 64px;
+  min-height: 104px;
+  max-height: 112px;
   width: 100%;
   display: flex !important;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: 7px;
-  background: #f97316;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 22px;
+  border-radius: 22px;
+  background: #ff5a00;
   color: #fff;
   text-decoration: none;
   font-size: 18px;
@@ -186,8 +204,77 @@
   justify-content: center;
   font-size: 20px;
 }
+.primary-contract-btn__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.18);
+  flex: 0 0 54px;
+}
 .primary-contract-btn__label {
+  flex: 1;
   min-width: 0;
+}
+.portfolio-overview {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  background: #fff;
+}
+.portfolio-overview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.portfolio-overview__title {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 850;
+}
+.portfolio-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.portfolio-overview__metric {
+  min-width: 0;
+}
+.portfolio-overview__icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #c2410c;
+}
+.portfolio-overview__value {
+  display: block;
+  color: #101828;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+}
+.portfolio-overview__label {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+}
+.seller-quality-row {
+  display: block;
+}
+.seller-quality-row__sub {
+  display: block;
+  margin-top: 3px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 500;
 }
 .dashboard-section-title {
   margin: 0;
@@ -199,15 +286,15 @@
 .ts-dashboard-menu-list {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 18px;
   overflow: hidden;
 }
 .ts-dashboard-menu-row {
-  min-height: 58px;
+  min-height: 68px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 13px;
+  padding: 16px 18px;
   color: #101828;
   text-decoration: none;
   border-bottom: 1px solid #e5e7eb;
@@ -220,18 +307,24 @@
   background: #f9fafb;
 }
 .ts-dashboard-menu-icon {
-  width: 22px;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   display: inline-flex;
+  align-items: center;
   justify-content: center;
   color: #667085;
   font-size: 16px;
-  flex: 0 0 22px;
+  flex: 0 0 42px;
+  background: #f3f4f6;
 }
 .ts-dashboard-menu-icon--orange {
   color: #c2410c;
+  background: #fff7ed;
 }
 .ts-dashboard-menu-icon--green {
   color: #15803d;
+  background: #f0fdf4;
 }
 .ts-dashboard-menu-label {
   flex: 1;
@@ -256,31 +349,6 @@
   flex: 0 0 16px;
   font-size: 14px;
 }
-.merchant-mobile-nav {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: min(100%, 500px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  padding: 7px 16px calc(7px + env(safe-area-inset-bottom, 0));
-  background: #fff;
-  border-top: 1px solid #e5e7eb;
-  box-sizing: border-box;
-}
-.merchant-mobile-nav a {
-  min-height: 38px;
-  display: grid;
-  place-items: center;
-  color: #475467;
-  text-decoration: none;
-  font-size: 18px;
-}
-.merchant-mobile-nav a[aria-current="page"] {
-  color: #c2410c;
-}
 @media (max-width: 380px) {
   .merchant-shell {
     padding-left: 12px;
@@ -296,12 +364,31 @@
     font-size: 22px;
   }
   .merchant-header-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+  }
+  .dashboard-primary-action,
+  .primary-big-action {
+    min-height: 88px;
+    padding: 16px 18px;
+    border-radius: 18px;
+  }
+  .portfolio-overview__grid {
+    gap: 8px;
+  }
+  .portfolio-overview__value {
+    font-size: 18px;
   }
   .ts-dashboard-menu-row {
     padding-left: 11px;
     padding-right: 11px;
+  }
+}
+@media (min-width: 768px) {
+  .dashboard-primary-action,
+  .primary-big-action {
+    min-height: 100px;
+    max-width: 760px;
   }
 }
 </style>
@@ -395,8 +482,40 @@
          data-testid="merchant-new-app-btn">
         <span class="primary-contract-btn__icon" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
         <span class="primary-contract-btn__label">NEW APPLICATION</span>
+        <span class="primary-contract-btn__arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
       </a>
     </div>
+
+    <section class="dashboard-section" aria-label="Portfolio Overview">
+      <div class="portfolio-overview" data-testid="merchant-portfolio-overview">
+        <div class="portfolio-overview__header">
+          <h2 class="portfolio-overview__title">Portfolio Overview</h2>
+          <a href="{% url 'all_deals' %}" class="ts-dashboard-menu-value">Deals</a>
+        </div>
+        <div class="portfolio-overview__grid">
+          <div class="portfolio-overview__metric">
+            <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-phone"></i></span>
+            <span class="portfolio-overview__value">{{ device_financing_stats.total_financed_devices|default:0 }}</span>
+            <span class="portfolio-overview__label">Financed</span>
+          </div>
+          <div class="portfolio-overview__metric">
+            <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
+            <span class="portfolio-overview__value">{{ device_financing_stats.active_contracts|default:0 }}</span>
+            <span class="portfolio-overview__label">Active</span>
+          </div>
+          <div class="portfolio-overview__metric">
+            <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
+            <span class="portfolio-overview__value">{{ device_financing_stats.locked_devices|default:0 }}</span>
+            <span class="portfolio-overview__label">Locked</span>
+          </div>
+          <div class="portfolio-overview__metric">
+            <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
+            <span class="portfolio-overview__value">{{ device_financing_stats.overdue_contracts|default:0 }}</span>
+            <span class="portfolio-overview__label">Overdue</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <h2 class="dashboard-section-title">Applications</h2>
     <nav class="ts-dashboard-menu-list action-card" aria-label="Applications">
@@ -410,29 +529,27 @@
       {% include "partials/dashboard_menu_row.html" with href=rejected_url icon="bi-archive" label="Archived / Rejected" value=archived_rejected_count only %}
     </nav>
 
-    <h2 class="dashboard-section-title">Tools</h2>
-    <nav class="ts-dashboard-menu-list action-card" aria-label="Tools">
-      {% url 'all_deals' as deals_url %}
-      {% include "partials/dashboard_menu_row.html" with href=deals_url icon="bi-grid" label="All Deals" only %}
+    <h2 class="dashboard-section-title">Seller Quality</h2>
+    <nav class="ts-dashboard-menu-list action-card" aria-label="Seller Quality">
+      {% url 'active_applications' as quality_url %}
+      <a href="{{ quality_url }}" class="ts-dashboard-menu-row dashboard-row seller-quality-row" data-testid="merchant-seller-quality-row">
+        <span class="ts-dashboard-menu-icon ts-dashboard-menu-icon--green" aria-hidden="true">
+          <i class="bi bi-award"></i>
+        </span>
+        <span class="ts-dashboard-menu-label">
+          Seller Quality
+          <span class="seller-quality-row__sub">{{ active_count }} Active &middot; {{ completed_count }} Completed &middot; {{ archived_rejected_count }} Rejected</span>
+        </span>
+        <span class="ts-dashboard-menu-value">Good Standing</span>
+        <span class="ts-dashboard-menu-chevron row-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+      </a>
+    </nav>
+
+    <h2 class="dashboard-section-title">Earnings</h2>
+    <nav class="ts-dashboard-menu-list action-card" aria-label="Earnings">
       {% url 'earnings_home' as earnings_url %}
-      {% include "partials/dashboard_menu_row.html" with href=earnings_url icon="bi-wallet2" label="My Earnings" value=earnings_total|mwk value_class="ts-dashboard-menu-value--money" testid="merchant-row-earnings" only %}
-      {% url 'payments_home' as payments_url %}
-      {% include "partials/dashboard_menu_row.html" with href=payments_url icon="bi-credit-card" label="Payments" only %}
-      {% url 'spin_rewards' as spin_url %}
-      {% if spin_wallet.balance %}
-        {% include "partials/dashboard_menu_row.html" with href=spin_url icon="bi-stars" label="Spin & Win" value=spin_wallet.balance|stringformat:"s"|add:" pts" only %}
-      {% else %}
-        {% include "partials/dashboard_menu_row.html" with href=spin_url icon="bi-stars" label="Spin & Win" only %}
-      {% endif %}
-      {% url 'ticket_create' as support_url %}
-      {% include "partials/dashboard_menu_row.html" with href=support_url icon="bi-life-preserver" label="Support" only %}
+      {% include "partials/dashboard_menu_row.html" with href=earnings_url icon="bi-wallet2" icon_class="ts-dashboard-menu-icon--green" label="Earnings Summary" value=earnings_total|mwk value_class="ts-dashboard-menu-value--money" testid="merchant-row-earnings" only %}
     </nav>
   </div>
-
-  <nav class="merchant-mobile-nav" aria-label="Merchant mobile navigation">
-    <a href="{% url 'merchant_dashboard' %}" aria-label="Home" aria-current="page"><i class="bi bi-house-door" aria-hidden="true"></i></a>
-    <a href="{% url 'new_application' %}" aria-label="New application"><i class="bi bi-plus-lg" aria-hidden="true"></i></a>
-    <a href="{% url 'profile_settings' %}" aria-label="Profile settings"><i class="bi bi-person" aria-hidden="true"></i></a>
-  </nav>
 </div>
 {% endblock %}
