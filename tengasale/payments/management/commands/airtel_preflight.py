@@ -4,15 +4,18 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.test import Client
 from django.urls import Resolver404, resolve
 
 from payments.airtel_client import AirtelConfig, AirtelConfigurationError
 from payments.models import AirtelTransaction
+from portal.services import resolve_payable_contract
 
 
 CALLBACK_PATH = "/api/payments/airtel/callback/"
 RENDER_HOST = "tengasale-api.onrender.com"
 RENDER_ORIGIN = "https://tengasale-api.onrender.com"
+CALLBACK_URL = "https://tengasale-api.onrender.com/api/payments/airtel/callback/"
 
 
 class Command(BaseCommand):
@@ -49,14 +52,14 @@ class Command(BaseCommand):
         self._check(config.environment == "staging", "Airtel environment defaults to staging for UAT.", failures)
         self._check(config.base_url == "https://openapiuat.airtel.mw", "Selected base URL is Airtel UAT.", failures)
         self._check(not config.production_enabled, "Production safety lock is off.", failures)
-        self._check(not config.collections_enabled, "Collections kill switch is currently blocking new prompts.", failures, warning=False)
-        self._check(config.dry_run, "Dry-run is enabled.", failures)
+        self._check(config.collections_enabled, "Airtel collections are enabled for staging prompts.", failures)
+        self._check(not config.dry_run, "AIRTEL_DRY_RUN is disabled for controlled staging prompts.", failures)
 
         self._check(bool(config.client_id), "AIRTEL_CLIENT_ID is configured.", failures)
         self._check(bool(config.client_secret), "AIRTEL_CLIENT_SECRET is configured.", failures)
         self._check(bool(config.private_key), "AIRTEL_PRIVATE_KEY or callback secret is configured.", failures)
         self._check(bool(config.merchant_code), "AIRTEL_MERCHANT_CODE is configured.", failures)
-        self._check(bool(getattr(settings, "AIRTEL_CALLBACK_URL", "")), "AIRTEL_CALLBACK_URL is configured.", failures)
+        self._check(getattr(settings, "AIRTEL_CALLBACK_URL", "") == CALLBACK_URL, "AIRTEL_CALLBACK_URL is the permanent Render callback URL.", failures)
         self._check(config.callback_auth_enabled, "Callback authentication is enabled.", failures)
         self._check(bool(config.allowed_test_msisdns), "AIRTEL_ALLOWED_TEST_MSISDNS is configured.", failures)
 
@@ -72,6 +75,18 @@ class Command(BaseCommand):
         except Resolver404:
             route_ok = False
         self._check(route_ok, "Callback route resolves.", failures)
+        get_response = Client(HTTP_HOST="localhost").get(CALLBACK_PATH)
+        self._check(get_response.status_code == 405, "GET callback returns 405.", failures)
+
+        resolution = resolve_payable_contract("E71919832", country="MW")
+        if resolution.found:
+            self._check(
+                resolution.status in {"payable", "fully_paid", "inactive"},
+                f"E71919832 resolves with status {resolution.status}.",
+                failures,
+            )
+        else:
+            self._check(False, "E71919832 is not present in this database; skipping demo contract lookup.", failures, warning=True)
 
         allowed_hosts = list(getattr(settings, "ALLOWED_HOSTS", []))
         csrf_origins = list(getattr(settings, "CSRF_TRUSTED_ORIGINS", []))

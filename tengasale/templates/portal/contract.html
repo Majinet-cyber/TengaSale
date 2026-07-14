@@ -103,7 +103,17 @@
     </div>
   </section>
 
-  {% if contract.status != 'completed' %}
+  {% if fully_paid %}
+    <section class="cpd-alert-card cpd-alert-card--safe">
+      <strong>Contract fully paid</strong>
+      <span>No payment is currently required.</span>
+    </section>
+  {% elif inactive_reason %}
+    <section class="cpd-alert-card cpd-alert-card--warning">
+      <strong>Payment unavailable</strong>
+      <span>This contract cannot currently accept payments: {{ inactive_reason }}.</span>
+    </section>
+  {% else %}
     {% if lock_status == 'overdue' %}
     <section class="cpd-alert-card cpd-alert-card--danger">
       <strong>Device payment is overdue</strong>
@@ -124,7 +134,7 @@
     {% endif %}
   {% endif %}
 
-  {% if deposit_pending and contract.status != 'completed' %}
+  {% if deposit_pending and not fully_paid and not inactive_reason %}
   <section class="cpd-card-clean cpd-make-payment-card" id="make-payment">
     <div class="cpd-section-card__header">
       <div>
@@ -177,14 +187,14 @@
       </div>
     </form>
   </section>
-  {% elif deposit_required and deposit_complete %}
+  {% elif deposit_required and deposit_complete and not fully_paid %}
   <section class="cpd-alert-card cpd-alert-card--safe">
     <strong>Deposit paid &#10003;</strong>
     <span>Deposit of {{ deposit_required|mwk }} is complete. Deposit unlocks the device for 7 days{% if contract.deposit_unlock_expires_at %}, until {{ contract.deposit_unlock_expires_at|date:"d M Y H:i" }}{% endif %}.</span>
   </section>
   {% endif %}
 
-  {% if contract.status != 'completed' and not deposit_pending and pricing_complete %}
+  {% if not fully_paid and not inactive_reason and not deposit_pending and pricing_complete %}
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Make a Payment</div>
@@ -229,7 +239,7 @@
   </section>
   {% endif %}
 
-  {% if contract.status != 'completed' and early_options and pricing_complete %}
+  {% if not fully_paid and not inactive_reason and early_options and pricing_complete %}
   <section class="cpd-card-clean">
     <div class="cpd-section-card__header">
       <div class="cpd-section-card__title">Pay Early, Pay Less</div>

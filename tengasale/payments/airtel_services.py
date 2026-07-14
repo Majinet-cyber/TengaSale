@@ -210,6 +210,31 @@ class AirtelCollectionService:
             raise ValueError("Unsupported Airtel payment purpose.")
 
         normalized_msisdn = normalize_malawi_msisdn(msisdn)
+        if contract is not None:
+            remaining = contract.deposit_remaining if purpose == AirtelTransaction.PURPOSE_DEPOSIT else contract.remaining_amount
+            if remaining <= Decimal("0"):
+                raise ValueError("Contract fully paid. No payment is currently required.")
+            blocked_statuses = {
+                "cancelled",
+                "repossession_pending",
+                "repossessed",
+                "ready_for_resale",
+                "resold",
+                "written_off",
+                "legally_closed",
+            }
+            if contract.status in blocked_statuses:
+                raise ValueError("This contract cannot currently accept payments.")
+            if amount > remaining:
+                raise ValueError(f"Payment amount exceeds the outstanding balance of MWK {remaining}.")
+            duplicate_exists = AirtelTransaction.objects.filter(
+                contract=contract,
+                direction=AirtelTransaction.DIRECTION_COLLECTION,
+                status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
+                processed_success_at__isnull=True,
+            ).exists()
+            if duplicate_exists:
+                raise ValueError("A payment request is already pending for this contract.")
         if not self.client.config.collections_enabled:
             raise ValueError("Airtel collections are disabled by configuration.")
         if self.client.config.environment == "staging":
@@ -254,6 +279,28 @@ class AirtelCollectionService:
             contract=contract,
             customer=customer,
         )
+        if contract is not None:
+            payment_type = (
+                PaymentTransaction.TYPE_DEPOSIT
+                if purpose == AirtelTransaction.PURPOSE_DEPOSIT
+                else PaymentTransaction.TYPE_REPAYMENT
+            )
+            portal_tx = PaymentTransaction.objects.create(
+                payment_contract=contract,
+                provider=PaymentTransaction.PROVIDER_AIRTEL,
+                payment_type=payment_type,
+                amount=amount,
+                commissionable_amount=Decimal("0") if payment_type == PaymentTransaction.TYPE_DEPOSIT else amount,
+                currency=self.client.config.currency,
+                phone=normalized_msisdn,
+                network=PaymentTransaction.NETWORK_AIRTEL,
+                balance_before=contract.deposit_remaining if payment_type == PaymentTransaction.TYPE_DEPOSIT else contract.remaining_amount,
+                status=PaymentTransaction.STATUS_PENDING,
+                raw_request=payload,
+                initiated_at=timezone.now(),
+            )
+            airtel_tx.payment_transaction = portal_tx
+            airtel_tx.save(update_fields=["payment_transaction", "updated_at"])
 
         if self.client.config.dry_run:
             airtel_tx.status = AirtelTransaction.STATUS_DRY_RUN
@@ -530,9 +577,10 @@ class AirtelCallbackService:
         elif portal_tx.status != PaymentTransaction.STATUS_PAID:
             portal_tx.status = PaymentTransaction.STATUS_PAID
             portal_tx.paid_at = timezone.now()
+            portal_tx.provider_reference = airtel_tx.airtel_money_id or airtel_tx.airtel_transaction_id or airtel_tx.provider_reference or ""
             portal_tx.webhook_payload = airtel_tx.raw_callback
             portal_tx.raw_response = airtel_tx.raw_response
-            portal_tx.save(update_fields=["status", "paid_at", "webhook_payload", "raw_response", "updated_at"])
+            portal_tx.save(update_fields=["status", "paid_at", "provider_reference", "webhook_payload", "raw_response", "updated_at"])
 
         result = apply_payment_to_contract(contract, airtel_tx.amount, payment_type=payment_type)
         portal_tx.balance_after = contract.deposit_remaining if payment_type == PaymentTransaction.TYPE_DEPOSIT else contract.remaining_amount

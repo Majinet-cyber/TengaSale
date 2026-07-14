@@ -189,6 +189,52 @@ class AirtelApiTests(TestCase):
         tx = AirtelTransaction.objects.get(internal_reference=data["internal_reference"])
         self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
         self.assertEqual(tx.environment, "staging")
+        self.assertIsNotNone(tx.payment_transaction)
+        self.assertEqual(tx.payment_transaction.status, PaymentTransaction.STATUS_PENDING)
+
+    def test_collection_initiate_resolves_contract_query(self):
+        self.contract.customer_national_id = "VB78NNRU"
+        self.contract.save(update_fields=["customer_national_id"])
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {"status": {"code": "200"}, "transaction": {"status_code": "TIP"}}
+            response = self.client.post(
+                "/api/payments/airtel/collections/initiate/",
+                data=json.dumps({
+                    "msisdn": "0991234567",
+                    "amount": 500,
+                    "purpose": "INSTALLMENT",
+                    "contract_query": "VB78NNRU",
+                }),
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        tx = AirtelTransaction.objects.get(internal_reference=response.json()["internal_reference"])
+        self.assertEqual(tx.contract, self.contract)
+        self.assertEqual(tx.payment_transaction.status, PaymentTransaction.STATUS_PENDING)
+
+    def test_duplicate_pending_collection_is_blocked(self):
+        AirtelTransaction.objects.create(
+            internal_reference="TENGA-AIRTEL-20260714-DUPL1234",
+            customer_msisdn="+265991234567",
+            amount=Decimal("500"),
+            purpose=AirtelTransaction.PURPOSE_INSTALLMENT,
+            direction=AirtelTransaction.DIRECTION_COLLECTION,
+            status=AirtelTransaction.STATUS_PENDING,
+            contract=self.contract,
+        )
+        response = self.client.post(
+            "/api/payments/airtel/collections/initiate/",
+            data=json.dumps({
+                "msisdn": "0991234567",
+                "amount": 500,
+                "purpose": "INSTALLMENT",
+                "contract_id": self.contract.id,
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("already pending", response.json()["error"])
 
     @override_settings(AIRTEL_COLLECTIONS_ENABLED=False)
     def test_collections_disabled_blocks_requests(self):
@@ -456,7 +502,6 @@ class AirtelApiTests(TestCase):
         self.assertEqual(self.contract.deposit_paid, Decimal("15000"))
         self.assertEqual(PaymentTransaction.objects.count(), 1)
 
-    @override_settings(AIRTEL_COLLECTIONS_ENABLED=False, AIRTEL_DRY_RUN=True)
     def test_preflight_passes_when_uat_config_is_complete(self):
         output = io.StringIO()
         call_command("airtel_preflight", stdout=output)

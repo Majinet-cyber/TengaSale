@@ -16,6 +16,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from contracts.models import Contract
 from portal.models import PaymentContract
+from portal.services import resolve_payable_contract
 
 from .airtel_client import AirtelConfig, AirtelConfigurationError
 from .airtel_services import (
@@ -47,14 +48,12 @@ def format_mwk(value):
 
 
 def get_contract_balance(contract_number: str):
-    contract_number = (contract_number or "").strip()
-    if not contract_number:
+    query = (contract_number or "").strip()
+    if not query:
         return None
 
-    portal_contract = (
-        PaymentContract.objects.filter(contract_number__iexact=contract_number).first()
-        or PaymentContract.objects.filter(payg_number__iexact=contract_number).first()
-    )
+    result = resolve_payable_contract(query, country="MW")
+    portal_contract = result.contract
     if portal_contract:
         balance = max((portal_contract.total_amount or Decimal("0")) - (portal_contract.amount_paid or Decimal("0")), Decimal("0"))
         next_payment = portal_contract.thirty_day_price or portal_contract.daily_price or Decimal("0")
@@ -64,7 +63,7 @@ def get_contract_balance(contract_number: str):
             "due_date": portal_contract.due_date.isoformat() if portal_contract.due_date else "Not available",
         }
 
-    legal_contract = Contract.objects.filter(contract_number__iexact=contract_number).first()
+    legal_contract = Contract.objects.filter(contract_number__iexact=query).first()
     if legal_contract:
         balance = max((legal_contract.total_loan or Decimal("0")) - (legal_contract.deposit_amount if legal_contract.deposit_paid else Decimal("0")), Decimal("0"))
         return {
@@ -298,6 +297,28 @@ def airtel_collection_initiate(request):
     contract_id = data.get("contract_id")
     if contract_id not in (None, ""):
         contract = get_object_or_404(PaymentContract, id=contract_id)
+    else:
+        contract_query = (
+            data.get("contract")
+            or data.get("contract_number")
+            or data.get("contract_query")
+            or data.get("reference")
+            or data.get("q")
+            or ""
+        )
+        if contract_query:
+            result = resolve_payable_contract(contract_query, country=data.get("country", "MW"))
+            if not result.contract:
+                message = "No matching payable contract was found."
+                if result.status == "ambiguous":
+                    message = "More than one contract matched that reference. Contact support to verify it."
+                return JsonResponse({"success": False, "error": message, "reason": result.reason}, status=400)
+            if not result.payable:
+                message = "This contract cannot currently accept payments."
+                if result.status == "fully_paid":
+                    message = "Contract fully paid. No payment is currently required."
+                return JsonResponse({"success": False, "error": message, "reason": result.reason}, status=400)
+            contract = result.contract
 
     try:
         amount = Decimal(str(data.get("amount", "")))
