@@ -16,13 +16,17 @@ import hmac
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase, Client, override_settings
 from django.utils import timezone
 
+from applications.models import FinancingApplication
+from contracts.models import Contract
 from portal.models import (
     PaymentContract, PaymentTransaction,
     generate_contract_number, generate_payg_number, generate_payment_reference,
 )
+from portal.services import resolve_payable_contract
 from portal.payment_providers import (
     MockPaymentProvider,
     PayChanguProvider,
@@ -297,6 +301,96 @@ class TestPortalSearch(TestCase):
     def test_search_by_contract_number_in_post(self):
         resp = self.client.post("/pay/search/", {"query": self.contract.contract_number})
         self.assertIn(resp.status_code, [200, 302])
+
+
+class TestContractResolution(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.merchant = get_user_model().objects.create_user(
+            username="merchant-resolution",
+            password="test-pass-123",
+        )
+        self.application = FinancingApplication.objects.create(
+            created_by=self.merchant,
+            application_number="TSM-260526-000008",
+            customer_name="Laisa Sandra",
+            customer_phone="988745444",
+            national_id="VB78NNRU",
+            selected_cash_price=Decimal("527000.00"),
+            calculated_total_loan=Decimal("1317500.00"),
+            calculated_deposit_amount=Decimal("171275.00"),
+            calculated_monthly_payment=Decimal("109792.00"),
+            calculated_daily_payment=Decimal("3660.00"),
+            status="contract_complete",
+        )
+        self.legal_contract = Contract.objects.create(
+            application=self.application,
+            contract_number="E71919832",
+            merchant=self.merchant,
+            customer_name="Laisa Sandra",
+            customer_phone="988745444",
+            national_id="VB78NNRU",
+            cash_price=Decimal("527000.00"),
+            total_loan=Decimal("1317500.00"),
+            deposit_amount=Decimal("171275.00"),
+            monthly_payment=Decimal("109792.00"),
+            daily_payment=Decimal("3660.00"),
+            deposit_paid=True,
+            deposit_paid_at=timezone.now(),
+            status=Contract.STATUS_COMPLETE,
+        )
+
+    def test_exact_demo_identifiers_resolve_to_same_payable_contract(self):
+        queries = [
+            "E71919832",
+            "TSM-260526-000008",
+            "VB78NNRU",
+            "+265988745444",
+            "265988745444",
+            "0988745444",
+            "988745444",
+        ]
+        resolved_ids = set()
+        for query in queries:
+            result = resolve_payable_contract(query, country="MW")
+            self.assertEqual(result.status, "payable", query)
+            self.assertIsNotNone(result.contract, query)
+            resolved_ids.add(result.contract.id)
+
+        self.assertEqual(len(resolved_ids), 1)
+        contract = PaymentContract.objects.get(id=resolved_ids.pop())
+        self.assertEqual(contract.source_application, self.application)
+        self.assertEqual(contract.customer_national_id, "VB78NNRU")
+        self.assertEqual(contract.deposit_paid, contract.deposit_required)
+        self.assertGreater(contract.remaining_amount, Decimal("0"))
+        self.assertEqual(contract.status, PaymentContract.STATUS_ACTIVE)
+
+    def test_search_page_does_not_show_not_found_for_legal_contract(self):
+        response = self.client.get("/pay/search/", {"country": "MW", "q": "E71919832"})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/pay/contract/", response["Location"])
+
+    def test_another_country_cannot_retrieve_contract(self):
+        result = resolve_payable_contract("E71919832", country="ZM")
+        self.assertEqual(result.status, "not_found")
+        self.assertIsNone(result.contract)
+
+    def test_fully_paid_contract_resolves_as_fully_paid_not_not_found(self):
+        result = resolve_payable_contract("E71919832", country="MW")
+        contract = result.contract
+        contract.amount_paid = contract.total_amount
+        contract.status = PaymentContract.STATUS_COMPLETED
+        contract.save(update_fields=["amount_paid", "status"])
+
+        result = resolve_payable_contract("E71919832", country="MW")
+        self.assertEqual(result.status, "fully_paid")
+        self.assertIsNotNone(result.contract)
+
+    def test_ambiguous_phone_is_handled_safely(self):
+        _make_contract(customer_phone="988745444", customer_national_id="AB12CD34")
+        result = resolve_payable_contract("988745444", country="MW")
+        self.assertEqual(result.status, "ambiguous")
+        self.assertIsNone(result.contract)
 
 
 # ---------------------------------------------------------------------------

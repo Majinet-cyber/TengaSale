@@ -33,6 +33,7 @@ from .services import (
     calculate_payment_behaviour,
     calculate_health_score,
     calculate_customer_insights,
+    resolve_payable_contract,
     search_payment_contract,
 )
 
@@ -65,6 +66,15 @@ def _portal_audit(action, obj_type="", obj_id="", detail=None, request=None):
 # Search
 # ---------------------------------------------------------------------------
 
+def _safe_resolution_message(result):
+    if result.status == "ambiguous":
+        return "We found more than one matching contract. Please contact TengaSale Support to verify the payment reference."
+    if result.status == "inactive":
+        return "This contract cannot currently accept payments. Please contact TengaSale Support."
+    if result.status == "fully_paid":
+        return "Contract fully paid. No payment is currently required."
+    return "No contract found matching that number, ID, or phone."
+
 def portal_search(request):
     """Landing / search page."""
     error = request.GET.get("error")
@@ -85,14 +95,15 @@ def portal_search(request):
             candidate = (candidate or "").strip()
             if not candidate:
                 continue
-            contract = search_payment_contract(candidate)
+            result = resolve_payable_contract(candidate, country=request.GET.get("country", "MW"))
+            contract = result.contract
             if contract:
                 break
         if contract:
             params = {"payment_type": payment_type} if payment_type else {}
             suffix = f"?{urlencode(params)}" if params else ""
             return redirect(f"/pay/contract/{contract.contract_number}/{suffix}")
-        error = "No contract found matching that number, ID, or phone."
+        error = _safe_resolution_message(result)
 
     return render(request, "portal/search.html", {
         "error": error,
@@ -113,14 +124,14 @@ def portal_search_post(request):
     if not q:
         return redirect("portal_search")
 
-    contract = search_payment_contract(q)
-    if contract:
-        return redirect("portal_contract", contract_number=contract.contract_number)
+    result = resolve_payable_contract(q, country=request.GET.get("country", "MW"))
+    if result.contract:
+        return redirect("portal_contract", contract_number=result.contract.contract_number)
 
     return render(request, "portal/search.html", {
         "searched": True,
         "query": q,
-        "error": "No contract found matching that number, ID, or phone.",
+        "error": _safe_resolution_message(result),
     })
 
 
@@ -136,11 +147,22 @@ def portal_contract(request, contract_number):
     now = timezone.now()
     remaining = calculate_remaining_amount(contract)
     early_options = calculate_early_settlement_options(contract)
+    fully_paid = remaining <= Decimal("0")
+    inactive_statuses = {
+        PaymentContract.STATUS_CANCELLED,
+        PaymentContract.STATUS_REPOSSESSION_PENDING,
+        PaymentContract.STATUS_REPOSSESSED,
+        PaymentContract.STATUS_READY_FOR_RESALE,
+        PaymentContract.STATUS_RESOLD,
+        PaymentContract.STATUS_WRITTEN_OFF,
+        PaymentContract.STATUS_LEGALLY_CLOSED,
+    }
+    inactive_reason = contract.get_status_display() if contract.status in inactive_statuses else ""
 
     # Lock status warning
     lock_warning = None
     lock_status = "safe"
-    if contract.status == "completed":
+    if fully_paid or contract.status == "completed":
         lock_status = "completed"
     elif contract.access_expires_at or contract.lock_date:
         lock_at = contract.access_expires_at
@@ -305,6 +327,8 @@ def portal_contract(request, contract_number):
         "commercial": commercial,
         "pricing_complete": pricing_complete,
         "lock_provider_label": lock_provider_label,
+        "fully_paid": fully_paid,
+        "inactive_reason": inactive_reason,
     })
 
 
@@ -317,8 +341,12 @@ def portal_payment(request, contract_number):
     """Initiate a payment against a contract."""
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
 
+    remaining_now = calculate_remaining_amount(contract)
+    if contract.status == PaymentContract.STATUS_COMPLETED and remaining_now <= Decimal("0"):
+        messages.info(request, "Contract fully paid. No payment is currently required.")
+        return redirect("portal_contract", contract_number=contract_number)
+
     closed_statuses = {
-        PaymentContract.STATUS_COMPLETED,
         PaymentContract.STATUS_RESOLD,
         PaymentContract.STATUS_WRITTEN_OFF,
         PaymentContract.STATUS_LEGALLY_CLOSED,

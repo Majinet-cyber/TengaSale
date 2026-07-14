@@ -13,7 +13,8 @@ class Command(BaseCommand):
         self.stdout.write(f"base_url: {summary['base_url']}")
         self.stdout.write(f"country/currency: {summary['country']}/{summary['currency']}")
         self.stdout.write(f"merchant_code_present: {summary['merchant_code_present']}")
+        self.stdout.write(f"collections_enabled: {summary['collections_enabled']}")
+        self.stdout.write(f"dry_run: {summary['dry_run']}")
         self.stdout.write(f"callback_auth_enabled: {summary['callback_auth_enabled']}")
-        self.stdout.write(f"callback_hash_key_present: {bool(config.callback_hash_key)} ({summary['callback_hash_key'] or 'missing'})")
-        self.stdout.write(f"auth_token_present: {bool(config.auth_token)} ({summary['auth_token'] or 'missing'})")
-
+        self.stdout.write(f"callback_secret_configured: {summary['callback_secret_configured']}")
+        self.stdout.write(f"token_configured: {summary['token_configured']}")

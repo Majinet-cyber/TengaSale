@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.db.models import Sum
 from django.contrib.staticfiles import finders
 from django.conf import settings
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import resolve, reverse
 from django.utils import timezone
 from decimal import Decimal
@@ -772,10 +772,50 @@ class LogoutTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class StaticFileTests(TestCase):
+class StaticFileTests(SimpleTestCase):
     def test_local_css_is_configured_and_findable(self):
         static_dir = settings.BASE_DIR / "static"
 
         self.assertIn(static_dir, settings.STATICFILES_DIRS)
         self.assertTrue((static_dir / "css" / "style.css").exists())
         self.assertIsNotNone(finders.find("css/style.css"))
+
+    def test_hq_shell_css_is_configured_and_findable(self):
+        static_dir = settings.BASE_DIR / "static"
+
+        self.assertTrue((static_dir / "css" / "hq-shell.css").exists())
+        self.assertIsNotNone(finders.find("css/hq-shell.css"))
+
+    def test_static_storage_backend_matches_runtime_mode(self):
+        import importlib
+        import os
+
+        from config import settings as project_settings
+
+        debug_storages = project_settings._build_storages(debug=True, testing=False)
+        test_storages = project_settings._build_storages(debug=False, testing=True)
+        production_storages = project_settings._build_storages(debug=False, testing=False)
+
+        self.assertEqual(
+            debug_storages["staticfiles"]["BACKEND"],
+            "django.contrib.staticfiles.storage.StaticFilesStorage",
+        )
+        self.assertEqual(
+            test_storages["staticfiles"]["BACKEND"],
+            "django.contrib.staticfiles.storage.StaticFilesStorage",
+        )
+        self.assertEqual(
+            production_storages["staticfiles"]["BACKEND"],
+            "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        )
+        self.assertEqual(
+            production_storages["default"]["BACKEND"],
+            "django.core.files.storage.FileSystemStorage",
+        )
+
+        os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret-key")
+        production_settings = importlib.import_module("config.settings_production")
+        self.assertEqual(
+            production_settings.STORAGES["staticfiles"]["BACKEND"],
+            "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        )

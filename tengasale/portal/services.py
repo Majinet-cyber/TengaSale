@@ -10,6 +10,7 @@ MWK rounding note:
 """
 
 import logging
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from datetime import timedelta, date as date_type
 
@@ -17,6 +18,22 @@ from django.db import transaction
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ContractResolution:
+    status: str
+    contract: object | None = None
+    reason: str = ""
+    matches: int = 0
+
+    @property
+    def found(self) -> bool:
+        return self.contract is not None
+
+    @property
+    def payable(self) -> bool:
+        return self.status == "payable"
 
 
 # ---------------------------------------------------------------------------
@@ -828,7 +845,185 @@ def sync_portal_lock_from_contract(contract, *, assign_payg=True):
 # Contract search
 # ---------------------------------------------------------------------------
 
-def search_payment_contract(query: str):
+def _normalize_identifier(value: str) -> str:
+    return "".join(ch for ch in str(value or "").upper() if ch.isalnum())
+
+
+def _phone_last9(value: str) -> str:
+    digits = "".join(ch for ch in str(value or "") if ch.isdigit())
+    if digits.startswith("265"):
+        digits = digits[3:]
+    digits = digits.lstrip("0")
+    return digits if len(digits) == 9 else ""
+
+
+def _payment_contract_resolution_status(contract) -> ContractResolution:
+    from portal.models import PaymentContract
+
+    remaining = calculate_remaining_amount(contract)
+    inactive_statuses = {
+        PaymentContract.STATUS_CANCELLED,
+        PaymentContract.STATUS_REPOSSESSION_PENDING,
+        PaymentContract.STATUS_REPOSSESSED,
+        PaymentContract.STATUS_READY_FOR_RESALE,
+        PaymentContract.STATUS_RESOLD,
+        PaymentContract.STATUS_WRITTEN_OFF,
+        PaymentContract.STATUS_LEGALLY_CLOSED,
+    }
+    if remaining <= Decimal("0"):
+        return ContractResolution("fully_paid", contract, "fully_paid", 1)
+    if contract.status in inactive_statuses:
+        return ContractResolution("inactive", contract, contract.status, 1)
+    if contract.status == PaymentContract.STATUS_COMPLETED:
+        return ContractResolution("fully_paid", contract, "completed", 1)
+    return ContractResolution("payable", contract, "payable", 1)
+
+
+def _sync_contract_state_from_legal(payment_contract, legal_contract):
+    if not legal_contract:
+        return payment_contract
+
+    update_fields = []
+    if legal_contract.deposit_paid and payment_contract.deposit_required > payment_contract.deposit_paid:
+        payment_contract.deposit_paid = payment_contract.deposit_required
+        payment_contract.deposit_paid_at = legal_contract.deposit_paid_at or timezone.now()
+        update_fields.extend(["deposit_paid", "deposit_paid_at"])
+
+    if payment_contract.status == payment_contract.STATUS_COMPLETED and payment_contract.remaining_amount > 0:
+        payment_contract.status = payment_contract.STATUS_ACTIVE
+        update_fields.append("status")
+
+    if update_fields:
+        payment_contract.save(update_fields=list(dict.fromkeys(update_fields)))
+    return payment_contract
+
+
+def _contract_from_application(application):
+    from portal.models import PaymentContract
+
+    if not application:
+        return None
+    try:
+        contract = application.payment_contract
+    except PaymentContract.DoesNotExist:
+        contract = None
+
+    legal_contract = getattr(application, "contract", None)
+    if contract:
+        return _sync_contract_state_from_legal(contract, legal_contract)
+
+    if legal_contract:
+        try:
+            synced = sync_portal_lock_from_contract(legal_contract)
+            if synced:
+                return _sync_contract_state_from_legal(synced, legal_contract)
+            created = create_contract_from_application(application)
+            return _sync_contract_state_from_legal(created, legal_contract)
+        except Exception:
+            logger.exception("Failed to sync payment contract for application %s", application.pk)
+    return None
+
+
+def _collect_contract_candidates(query: str):
+    from django.db.models import Q
+
+    from applications.models import FinancingApplication
+    from contracts.models import Contract
+    from portal.models import PaymentContract
+
+    raw_q = (query or "").strip()
+    lookup = _normalize_identifier(raw_q)
+    phone = _phone_last9(raw_q)
+    candidates = {}
+
+    def add(contract):
+        if contract:
+            candidates[contract.pk] = contract
+
+    direct_filter = (
+        Q(contract_number__iexact=raw_q)
+        | Q(contract_number__iexact=lookup)
+        | Q(payg_number__iexact=raw_q)
+        | Q(payg_number__iexact=lookup)
+        | Q(customer_national_id__iexact=raw_q)
+        | Q(customer_national_id__iexact=lookup)
+        | Q(source_application__application_number__iexact=raw_q)
+        | Q(source_application__application_number__iexact=lookup)
+        | Q(source_application__national_id__iexact=raw_q)
+        | Q(source_application__national_id__iexact=lookup)
+        | Q(source_application__contract__contract_number__iexact=raw_q)
+        | Q(source_application__contract__contract_number__iexact=lookup)
+    )
+    for contract in PaymentContract.objects.select_related("source_application", "source_application__contract").filter(direct_filter):
+        add(_sync_contract_state_from_legal(contract, getattr(contract.source_application, "contract", None)))
+
+    legal = (
+        Contract.objects.select_related("application", "application__payment_contract")
+        .filter(Q(contract_number__iexact=raw_q) | Q(contract_number__iexact=lookup))
+        .first()
+    )
+    if legal and legal.application_id:
+        add(_contract_from_application(legal.application))
+
+    application_filter = (
+        Q(application_number__iexact=raw_q)
+        | Q(application_number__iexact=lookup)
+        | Q(national_id__iexact=raw_q)
+        | Q(national_id__iexact=lookup)
+    )
+    if phone:
+        application_filter |= Q(customer_phone__endswith=phone)
+    for application in (
+        FinancingApplication.objects.select_related("contract", "payment_contract")
+        .filter(application_filter)
+        .order_by("-created_at", "-id")[:5]
+    ):
+        add(_contract_from_application(application))
+
+    if phone:
+        for contract in PaymentContract.objects.select_related("source_application", "source_application__contract").filter(
+            Q(customer_phone__endswith=phone) | Q(source_application__customer_phone__endswith=phone)
+        ):
+            add(_sync_contract_state_from_legal(contract, getattr(contract.source_application, "contract", None)))
+
+    if lookup.isdigit() and len(lookup) == 15:
+        for contract in PaymentContract.objects.select_related("source_application", "source_application__contract").filter(
+            Q(imei_number=lookup)
+            | Q(source_application__imei_number=lookup)
+            | Q(source_application__imei_number_2=lookup)
+        ):
+            add(_sync_contract_state_from_legal(contract, getattr(contract.source_application, "contract", None)))
+
+    return list(candidates.values())
+
+
+def resolve_payable_contract(query: str, country: str = "MW") -> ContractResolution:
+    raw_q = (query or "").strip()
+    if not raw_q:
+        return ContractResolution("not_found", None, "empty_query", 0)
+    if (country or "MW").strip().upper() != "MW":
+        return ContractResolution("not_found", None, "unsupported_country", 0)
+
+    matches = _collect_contract_candidates(raw_q)
+    if not matches:
+        return ContractResolution("not_found", None, "not_found", 0)
+    if len(matches) > 1:
+        logger.warning(
+            "Ambiguous payment contract search for query=%s country=%s matched=%s",
+            _normalize_identifier(raw_q),
+            country,
+            [contract.pk for contract in matches],
+        )
+        return ContractResolution("ambiguous", None, "ambiguous", len(matches))
+
+    result = _payment_contract_resolution_status(matches[0])
+    return ContractResolution(result.status, result.contract, result.reason, len(matches))
+
+
+def search_payment_contract(query: str, country: str = "MW"):
+    result = resolve_payable_contract(query, country=country)
+    return result.contract if result.found and result.status != "ambiguous" else None
+
     """
     Look up a PaymentContract by:
       - contract_number (TS-MW-XXXXXXXX)

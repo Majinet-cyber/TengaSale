@@ -49,7 +49,9 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "yes")
+# Base settings are local-development friendly; production uses settings_production.py,
+# which forces DEBUG=False and keeps manifest static storage enabled.
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -181,27 +183,28 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# In development (DEBUG=True) or test runs, serve source files directly — no collectstatic needed.
-# In production, use whitenoise CompressedManifest for hashed, compressed assets.
 _TESTING = "test" in sys.argv or "pytest" in sys.modules
-if DEBUG or _TESTING:
-    STORAGES = {
+
+
+def _build_storages(*, debug: bool, testing: bool) -> dict:
+    # In development or test runs, serve source static files directly; production
+    # uses WhiteNoise's compressed manifest storage for hashed assets.
+    staticfiles_backend = (
+        "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if debug or testing
+        else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    )
+    return {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": staticfiles_backend,
         },
     }
-else:
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+
+
+STORAGES = _build_storages(debug=DEBUG, testing=_TESTING)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -294,18 +297,32 @@ TNM_MPAMBA_API_KEY = os.environ.get("TNM_MPAMBA_API_KEY", "")
 PAYTRIGGER_API_KEY = os.environ.get("PAYTRIGGER_API_KEY", "")
 
 # Direct Airtel Money Malawi API (UAT/live). Keep all values in environment.
-AIRTEL_ENV = os.environ.get("AIRTEL_ENV", "uat").lower()
+def _env_bool(name: str, default: str = "false") -> bool:
+    return os.environ.get(name, default).lower() in ("true", "1", "yes", "on")
+
+
+AIRTEL_ENVIRONMENT = os.environ.get("AIRTEL_ENVIRONMENT", os.environ.get("AIRTEL_ENV", "staging")).lower()
+AIRTEL_ENV = os.environ.get("AIRTEL_ENV", AIRTEL_ENVIRONMENT).lower()
+AIRTEL_PRODUCTION_ENABLED = _env_bool("AIRTEL_PRODUCTION_ENABLED", "false")
+AIRTEL_COLLECTIONS_ENABLED = _env_bool("AIRTEL_COLLECTIONS_ENABLED", "false")
+AIRTEL_DRY_RUN = _env_bool("AIRTEL_DRY_RUN", "true")
+AIRTEL_TEST_MAX_AMOUNT = os.environ.get("AIRTEL_TEST_MAX_AMOUNT", "1000")
+AIRTEL_ALLOWED_TEST_MSISDNS = os.environ.get("AIRTEL_ALLOWED_TEST_MSISDNS", "")
 AIRTEL_BASE_URL = os.environ.get("AIRTEL_BASE_URL", "https://openapiuat.airtel.mw")
 AIRTEL_COUNTRY = os.environ.get("AIRTEL_COUNTRY", "MW")
 AIRTEL_CURRENCY = os.environ.get("AIRTEL_CURRENCY", "MWK")
 AIRTEL_MERCHANT_CODE = os.environ.get("AIRTEL_MERCHANT_CODE", "")
-AIRTEL_CALLBACK_AUTH_ENABLED = os.environ.get("AIRTEL_CALLBACK_AUTH_ENABLED", "False").lower() in (
-    "true",
-    "1",
-    "yes",
-    "on",
+AIRTEL_PRIVATE_KEY = os.environ.get(
+    "AIRTEL_PRIVATE_KEY",
+    os.environ.get("AIRTEL_CALLBACK_SECRET", os.environ.get("AIRTEL_CALLBACK_HASH_KEY", os.environ.get("AIRTEL_KEY", ""))),
 )
-AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", "")
+AIRTEL_CALLBACK_SECRET = os.environ.get("AIRTEL_CALLBACK_SECRET", "")
+AIRTEL_CALLBACK_URL = os.environ.get(
+    "AIRTEL_CALLBACK_URL",
+    "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+)
+AIRTEL_CALLBACK_AUTH_ENABLED = _env_bool("AIRTEL_CALLBACK_AUTH_ENABLED", "true")
+AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", AIRTEL_PRIVATE_KEY)
 AIRTEL_CLIENT_ID = os.environ.get("AIRTEL_CLIENT_ID", "")
 AIRTEL_CLIENT_SECRET = os.environ.get("AIRTEL_CLIENT_SECRET", "")
 AIRTEL_AUTH_TOKEN = os.environ.get("AIRTEL_AUTH_TOKEN", "")
@@ -320,7 +337,12 @@ AIRTEL_SIGNATURE_SECRET = os.environ.get("AIRTEL_SIGNATURE_SECRET", "")
 AIRTEL_KEY = os.environ.get("AIRTEL_KEY", "")
 AIRTEL_COLLECTION_PATH = os.environ.get("AIRTEL_COLLECTION_PATH", "/merchant/v1/payments/")
 AIRTEL_ENQUIRY_PATH_TEMPLATE = os.environ.get("AIRTEL_ENQUIRY_PATH_TEMPLATE", "/standard/v1/payments/{reference}")
+AIRTEL_TOKEN_PATH = os.environ.get("AIRTEL_TOKEN_PATH", "/auth/oauth2/token")
 AIRTEL_DISBURSEMENT_PATH = os.environ.get("AIRTEL_DISBURSEMENT_PATH", "/standard/v3/disbursements")
+AIRTEL_CALLBACK_MAX_BYTES = int(os.environ.get("AIRTEL_CALLBACK_MAX_BYTES", "65536"))
+AIRTEL_REQUEST_TIMEOUT_SECONDS = int(os.environ.get("AIRTEL_REQUEST_TIMEOUT_SECONDS", "30"))
+AIRTEL_CONNECT_TIMEOUT = int(os.environ.get("AIRTEL_CONNECT_TIMEOUT", "5"))
+AIRTEL_READ_TIMEOUT = int(os.environ.get("AIRTEL_READ_TIMEOUT", "20"))
 
 # Production safety guard: if DEBUG=False and live charges are on, keys must exist
 if not DEBUG and PAYMENTS_ALLOW_LIVE_CHARGES:

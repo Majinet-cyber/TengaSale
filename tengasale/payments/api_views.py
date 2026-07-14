@@ -3,18 +3,22 @@ from __future__ import annotations
 import json
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.core.paginator import Paginator
+from django.db import connection
 from django.db.models import Count, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import Resolver404, resolve
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from contracts.models import Contract
 from portal.models import PaymentContract
+from portal.services import resolve_payable_contract
 
-from .airtel_client import AirtelConfig
+from .airtel_client import AirtelConfig, AirtelConfigurationError
 from .airtel_services import (
     AirtelCallbackService,
     AirtelCollectionService,
@@ -44,14 +48,12 @@ def format_mwk(value):
 
 
 def get_contract_balance(contract_number: str):
-    contract_number = (contract_number or "").strip()
-    if not contract_number:
+    query = (contract_number or "").strip()
+    if not query:
         return None
 
-    portal_contract = (
-        PaymentContract.objects.filter(contract_number__iexact=contract_number).first()
-        or PaymentContract.objects.filter(payg_number__iexact=contract_number).first()
-    )
+    result = resolve_payable_contract(query, country="MW")
+    portal_contract = result.contract
     if portal_contract:
         balance = max((portal_contract.total_amount or Decimal("0")) - (portal_contract.amount_paid or Decimal("0")), Decimal("0"))
         next_payment = portal_contract.thirty_day_price or portal_contract.daily_price or Decimal("0")
@@ -61,7 +63,7 @@ def get_contract_balance(contract_number: str):
             "due_date": portal_contract.due_date.isoformat() if portal_contract.due_date else "Not available",
         }
 
-    legal_contract = Contract.objects.filter(contract_number__iexact=contract_number).first()
+    legal_contract = Contract.objects.filter(contract_number__iexact=query).first()
     if legal_contract:
         balance = max((legal_contract.total_loan or Decimal("0")) - (legal_contract.deposit_amount if legal_contract.deposit_paid else Decimal("0")), Decimal("0"))
         return {
@@ -162,16 +164,126 @@ def ussd_callback(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
+@require_POST
 def airtel_callback(request):
-    if request.method == "GET":
-        return JsonResponse({"ok": True, "provider": "airtel", "endpoint": "callback"})
-
     headers = {key: value for key, value in request.headers.items()}
-    log, valid_body = AirtelCallbackService().handle_callback(request.body, headers)
+    log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
     if not valid_body:
         return JsonResponse({"ok": False, "message": "Invalid callback body.", "log_id": log.id}, status=400)
-    return JsonResponse({"ok": True, "provider": "airtel", "log_id": log.id}, status=200)
+    if status_code in (401, 403):
+        return JsonResponse({"ok": False, "message": "Invalid callback signature.", "log_id": log.id}, status=status_code)
+    if status_code >= 400:
+        return JsonResponse({"ok": False, "message": log.processing_error or "Callback rejected.", "log_id": log.id}, status=status_code)
+    return JsonResponse({"ok": True, "provider": "airtel_money", "log_id": log.id}, status=200)
+
+
+@require_GET
+def airtel_health(request):
+    try:
+        config = AirtelConfig.from_settings()
+        environment = config.environment
+        callback_configured = bool(getattr(settings, "AIRTEL_CALLBACK_URL", ""))
+    except AirtelConfigurationError:
+        environment = "invalid"
+        callback_configured = bool(getattr(settings, "AIRTEL_CALLBACK_URL", ""))
+    return JsonResponse({
+        "status": "ok",
+        "provider": "airtel_money",
+        "environment": environment,
+        "callback_configured": callback_configured,
+    })
+
+
+def _callback_route_resolves() -> bool:
+    try:
+        match = resolve("/api/payments/airtel/callback/")
+    except Resolver404:
+        return False
+    return getattr(match.func, "__name__", "") == "airtel_callback"
+
+
+def _database_ready() -> bool:
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        return True
+    except Exception:
+        return False
+
+
+def airtel_readiness_status() -> tuple[dict, int]:
+    missing = []
+    try:
+        config = AirtelConfig.from_settings()
+        config_error = ""
+    except AirtelConfigurationError as exc:
+        config = None
+        config_error = str(exc)
+        missing.append("AIRTEL_ENVIRONMENT")
+
+    callback_route_resolves = _callback_route_resolves()
+    database_ready = _database_ready()
+
+    if config is None:
+        payload = {
+            "status": "not_ready",
+            "environment": "invalid",
+            "base_url": "",
+            "collections_enabled": False,
+            "dry_run": True,
+            "callback_url": getattr(settings, "AIRTEL_CALLBACK_URL", ""),
+            "callback_route_resolves": callback_route_resolves,
+            "database_ready": database_ready,
+            "missing": missing,
+            "configuration_error": config_error,
+        }
+        return payload, 503
+
+    checks = {
+        "client_id_configured": bool(config.client_id),
+        "client_secret_configured": bool(config.client_secret),
+        "private_key_configured": bool(config.private_key),
+        "merchant_code_configured": bool(config.merchant_code),
+        "allowed_test_numbers_configured": bool(config.allowed_test_msisdns),
+        "callback_configured": bool(getattr(settings, "AIRTEL_CALLBACK_URL", "")),
+    }
+    for key, ok in checks.items():
+        if not ok:
+            missing.append(key.replace("_configured", "").upper())
+    if not callback_route_resolves:
+        missing.append("CALLBACK_ROUTE")
+    if not database_ready:
+        missing.append("DATABASE")
+    if config.is_production and not config.production_enabled:
+        missing.append("AIRTEL_PRODUCTION_ENABLED")
+
+    ready = not missing
+    payload = {
+        "status": "ready" if ready else "not_ready",
+        "provider": "airtel_money",
+        "environment": config.environment,
+        "base_url": config.base_url,
+        "collections_enabled": config.collections_enabled,
+        "dry_run": config.dry_run,
+        "callback_url": getattr(settings, "AIRTEL_CALLBACK_URL", ""),
+        "callback_route_resolves": callback_route_resolves,
+        "client_id_configured": checks["client_id_configured"],
+        "client_secret_configured": checks["client_secret_configured"],
+        "private_key_configured": checks["private_key_configured"],
+        "merchant_code_configured": checks["merchant_code_configured"],
+        "allowed_test_numbers_configured": checks["allowed_test_numbers_configured"],
+        "test_max_amount": config.test_max_amount,
+        "database_ready": database_ready,
+        "missing": missing,
+    }
+    return payload, 200 if ready else 503
+
+
+@require_GET
+def airtel_readiness(request):
+    payload, status_code = airtel_readiness_status()
+    return JsonResponse(payload, status=status_code)
 
 
 @csrf_exempt
@@ -185,6 +297,28 @@ def airtel_collection_initiate(request):
     contract_id = data.get("contract_id")
     if contract_id not in (None, ""):
         contract = get_object_or_404(PaymentContract, id=contract_id)
+    else:
+        contract_query = (
+            data.get("contract")
+            or data.get("contract_number")
+            or data.get("contract_query")
+            or data.get("reference")
+            or data.get("q")
+            or ""
+        )
+        if contract_query:
+            result = resolve_payable_contract(contract_query, country=data.get("country", "MW"))
+            if not result.contract:
+                message = "No matching payable contract was found."
+                if result.status == "ambiguous":
+                    message = "More than one contract matched that reference. Contact support to verify it."
+                return JsonResponse({"success": False, "error": message, "reason": result.reason}, status=400)
+            if not result.payable:
+                message = "This contract cannot currently accept payments."
+                if result.status == "fully_paid":
+                    message = "Contract fully paid. No payment is currently required."
+                return JsonResponse({"success": False, "error": message, "reason": result.reason}, status=400)
+            contract = result.contract
 
     try:
         amount = Decimal(str(data.get("amount", "")))
@@ -199,16 +333,48 @@ def airtel_collection_initiate(request):
             contract=contract,
             customer=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
         )
+    except AirtelConfigurationError as exc:
+        return JsonResponse({"success": False, "error": str(exc)}, status=503)
     except ValueError as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=400)
 
     return JsonResponse({
         "success": True,
-        "provider": "airtel",
+        "provider": "airtel_money",
         "internal_reference": tx.internal_reference,
         "status": tx.status,
-        "message": "Payment request sent. Please approve on your phone.",
+        "dry_run": tx.status == AirtelTransaction.STATUS_DRY_RUN,
+        "message": "Dry-run Airtel request recorded; nothing was sent." if tx.status == AirtelTransaction.STATUS_DRY_RUN else "Payment request sent. Please approve on your phone.",
     })
+
+
+@csrf_exempt
+@require_POST
+def airtel_simulate_callback(request):
+    try:
+        config = AirtelConfig.from_settings()
+    except AirtelConfigurationError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=503)
+    if config.is_production:
+        return JsonResponse({"ok": False, "error": "Airtel callback simulation is disabled in production."}, status=403)
+
+    user = getattr(request, "user", None)
+    secret = getattr(settings, "AIRTEL_SIMULATION_SECRET", "")
+    provided_secret = request.headers.get("X-Airtel-Test-Secret", "")
+    authorized = bool(user and user.is_authenticated and user.is_staff) or bool(secret and provided_secret == secret)
+    if not authorized:
+        return JsonResponse({"ok": False, "error": "Unauthorized."}, status=403)
+
+    headers = {key: value for key, value in request.headers.items()}
+    headers["X-Airtel-Simulated"] = "true"
+    log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
+    if not valid_body:
+        return JsonResponse({"ok": False, "simulated": True, "message": "Invalid callback body.", "log_id": log.id}, status=400)
+    if status_code in (401, 403):
+        return JsonResponse({"ok": False, "simulated": True, "message": "Invalid callback signature.", "log_id": log.id}, status=status_code)
+    if status_code >= 400:
+        return JsonResponse({"ok": False, "simulated": True, "message": log.processing_error or "Callback rejected.", "log_id": log.id}, status=status_code)
+    return JsonResponse({"ok": True, "simulated": True, "provider": "airtel_money", "log_id": log.id}, status=200)
 
 
 @require_http_methods(["GET"])
@@ -253,7 +419,21 @@ def airtel_dashboard(request):
 
     page = Paginator(qs.select_related("contract").order_by("-created_at"), 25).get_page(request.GET.get("page"))
     callback_logs = AirtelCallbackLog.objects.select_related("transaction").order_by("-created_at")[:25]
-    config = AirtelConfig.from_settings().safe_summary()
+    try:
+        config = AirtelConfig.from_settings().safe_summary()
+    except AirtelConfigurationError as exc:
+        config = {
+            "environment": "invalid",
+            "env": "invalid",
+            "base_url": "",
+            "country": "",
+            "currency": "",
+            "token_configured": False,
+            "dry_run": True,
+            "collections_enabled": False,
+            "callback_auth_enabled": False,
+            "configuration_error": str(exc),
+        }
 
     return render(request, "payments/hq_airtel.html", {
         "summary": summary,

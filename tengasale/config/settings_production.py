@@ -15,6 +15,7 @@ IMPORTANT:
 """
 
 from .settings import *  # noqa: F401, F403
+from .settings import _build_storages
 import os
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -22,11 +23,19 @@ import os
 # ──────────────────────────────────────────────────────────────────────────────
 
 DEBUG = False
+STORAGES = _build_storages(debug=DEBUG, testing=False)
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]  # Must be set — no default
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+def _csv_env(name, default):
+    return [value.strip() for value in os.environ.get(name, default).split(",") if value.strip()]
+
+
+ALLOWED_HOSTS = _csv_env("ALLOWED_HOSTS", "tengasale-api.onrender.com,tengasale.emajinet.africa,.onrender.com")
+CSRF_TRUSTED_ORIGINS = _csv_env(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://tengasale-api.onrender.com,https://tengasale.emajinet.africa,https://*.onrender.com",
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # HTTPS enforcement
