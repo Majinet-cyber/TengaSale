@@ -10,6 +10,14 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+STAGING_BASE_URL = "https://openapiuat.airtel.mw"
+PRODUCTION_BASE_URL = "https://openapi.airtel.mw"
+VALID_ENVIRONMENTS = {"staging", "production"}
+
+
+class AirtelConfigurationError(RuntimeError):
+    """Raised when Airtel-specific settings are unsafe or incomplete."""
+
 
 def mask_secret(value: str) -> str:
     if not value:
@@ -22,11 +30,17 @@ def mask_secret(value: str) -> str:
 
 @dataclass(frozen=True)
 class AirtelConfig:
+    environment: str
     env: str
     base_url: str
     country: str
     currency: str
     merchant_code: str
+    production_enabled: bool
+    collections_enabled: bool
+    dry_run: bool
+    test_max_amount: str
+    allowed_test_msisdns: tuple[str, ...]
     callback_auth_enabled: bool
     callback_hash_key: str
     private_key: str
@@ -46,17 +60,55 @@ class AirtelConfig:
 
     @classmethod
     def from_settings(cls) -> "AirtelConfig":
+        raw_environment = (
+            getattr(settings, "AIRTEL_ENVIRONMENT", "")
+            or getattr(settings, "AIRTEL_ENV", "staging")
+            or "staging"
+        )
+        environment = str(raw_environment).strip().lower()
+        if environment in {"uat", "test", "sandbox"}:
+            environment = "staging"
+        if environment in {"prod", "live"}:
+            environment = "production"
+        if environment not in VALID_ENVIRONMENTS:
+            raise AirtelConfigurationError(
+                "AIRTEL_ENVIRONMENT must be either 'staging' or 'production'."
+            )
+
+        production_enabled = bool(getattr(settings, "AIRTEL_PRODUCTION_ENABLED", False))
+        if environment == "production" and not production_enabled:
+            base_url = PRODUCTION_BASE_URL
+        elif environment == "production":
+            base_url = getattr(settings, "AIRTEL_BASE_URL", PRODUCTION_BASE_URL) or PRODUCTION_BASE_URL
+        else:
+            base_url = getattr(settings, "AIRTEL_BASE_URL", STAGING_BASE_URL) or STAGING_BASE_URL
+            if base_url.rstrip("/") == PRODUCTION_BASE_URL:
+                base_url = STAGING_BASE_URL
+
         private_key = (
             getattr(settings, "AIRTEL_PRIVATE_KEY", "")
+            or getattr(settings, "AIRTEL_CALLBACK_SECRET", "")
             or getattr(settings, "AIRTEL_CALLBACK_HASH_KEY", "")
             or getattr(settings, "AIRTEL_KEY", "")
         )
+        allowed_msisdns = tuple(
+            value.strip()
+            for value in str(getattr(settings, "AIRTEL_ALLOWED_TEST_MSISDNS", "") or "").split(",")
+            if value.strip()
+        )
+        timeout_seconds = int(getattr(settings, "AIRTEL_REQUEST_TIMEOUT_SECONDS", 30))
         return cls(
-            env=getattr(settings, "AIRTEL_ENV", "uat"),
-            base_url=getattr(settings, "AIRTEL_BASE_URL", "https://openapiuat.airtel.mw"),
+            environment=environment,
+            env=environment,
+            base_url=base_url,
             country=getattr(settings, "AIRTEL_COUNTRY", "MW"),
             currency=getattr(settings, "AIRTEL_CURRENCY", "MWK"),
             merchant_code=getattr(settings, "AIRTEL_MERCHANT_CODE", ""),
+            production_enabled=production_enabled,
+            collections_enabled=bool(getattr(settings, "AIRTEL_COLLECTIONS_ENABLED", False)),
+            dry_run=bool(getattr(settings, "AIRTEL_DRY_RUN", True)),
+            test_max_amount=str(getattr(settings, "AIRTEL_TEST_MAX_AMOUNT", "1000")),
+            allowed_test_msisdns=allowed_msisdns,
             callback_auth_enabled=getattr(settings, "AIRTEL_CALLBACK_AUTH_ENABLED", False),
             callback_hash_key=private_key,
             private_key=private_key,
@@ -71,23 +123,40 @@ class AirtelConfig:
             enquiry_path_template=getattr(settings, "AIRTEL_ENQUIRY_PATH_TEMPLATE", "/standard/v1/payments/{reference}"),
             token_path=getattr(settings, "AIRTEL_TOKEN_PATH", "/auth/oauth2/token"),
             disbursement_path=getattr(settings, "AIRTEL_DISBURSEMENT_PATH", "/standard/v3/disbursements"),
-            connect_timeout=int(getattr(settings, "AIRTEL_CONNECT_TIMEOUT", 5)),
-            read_timeout=int(getattr(settings, "AIRTEL_READ_TIMEOUT", 20)),
+            connect_timeout=int(getattr(settings, "AIRTEL_CONNECT_TIMEOUT", min(5, timeout_seconds))),
+            read_timeout=int(getattr(settings, "AIRTEL_READ_TIMEOUT", timeout_seconds)),
         )
 
     def safe_summary(self) -> dict[str, Any]:
         return {
-            "env": self.env,
+            "env": self.environment,
+            "environment": self.environment,
             "base_url": self.base_url,
             "country": self.country,
             "currency": self.currency,
             "merchant_code_present": bool(self.merchant_code),
+            "production_enabled": self.production_enabled,
+            "collections_enabled": self.collections_enabled,
+            "dry_run": self.dry_run,
+            "allowed_test_numbers_configured": bool(self.allowed_test_msisdns),
+            "test_max_amount": self.test_max_amount,
             "callback_auth_enabled": self.callback_auth_enabled,
-            "callback_hash_key": mask_secret(self.callback_hash_key),
-            "auth_token": mask_secret(self.auth_token),
-            "client_id": mask_secret(self.client_id),
+            "callback_secret_configured": bool(self.callback_hash_key),
+            "auth_token_configured": bool(self.auth_token),
+            "client_id_configured": bool(self.client_id),
+            "client_secret_configured": bool(self.client_secret),
             "token_configured": bool(self.auth_token or (self.client_id and self.client_secret)),
         }
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    def assert_production_allowed(self) -> None:
+        if self.is_production and not self.production_enabled:
+            raise AirtelConfigurationError(
+                "Airtel production requests are blocked because AIRTEL_PRODUCTION_ENABLED is not true."
+            )
 
 
 class AirtelClient:
@@ -110,6 +179,7 @@ class AirtelClient:
         return (self.config.connect_timeout, self.config.read_timeout)
 
     def get_access_token(self) -> str:
+        self.config.assert_production_allowed()
         if self.config.auth_token:
             return self.config.auth_token
 
@@ -164,6 +234,7 @@ class AirtelClient:
         return headers
 
     def post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        self.config.assert_production_allowed()
         response = requests.post(
             self._url(path),
             json=payload,
@@ -173,6 +244,7 @@ class AirtelClient:
         return self._decode_response(response)
 
     def get(self, path: str) -> dict[str, Any]:
+        self.config.assert_production_allowed()
         response = requests.get(
             self._url(path),
             headers=self._headers(),

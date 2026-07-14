@@ -15,6 +15,7 @@ IMPORTANT:
 """
 
 from .settings import *  # noqa: F401, F403
+from .settings import _build_storages
 import os
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ import os
 # ──────────────────────────────────────────────────────────────────────────────
 
 DEBUG = False
+STORAGES = _build_storages(debug=DEBUG, testing=False)
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]  # Must be set — no default
 

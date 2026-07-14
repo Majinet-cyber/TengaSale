@@ -8,10 +8,21 @@
     <p>Direct Airtel Money collections, callbacks, and reconciliation.</p>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <span class="badge {{ config.env }}">{{ config.env }}</span>
-    <span class="badge {% if config.auth_token %}success{% else %}pending{% endif %}">Token {% if config.auth_token %}set{% else %}missing{% endif %}</span>
+    <span class="badge {{ config.environment }}">{{ config.environment }}</span>
+    <span class="badge {% if config.token_configured %}success{% else %}pending{% endif %}">Token {% if config.token_configured %}configured{% else %}missing{% endif %}</span>
   </div>
 </div>
+
+{% if config.environment == "staging" %}
+<div class="pay-table-card" style="border-color:#f59e0b;background:#fffbeb;padding:14px 18px;margin-bottom:14px;font-weight:800;color:#92400e;">
+  AIRTEL STAGING MODE - NO PRODUCTION COLLECTIONS
+</div>
+{% endif %}
+{% if config.dry_run %}
+<div class="pay-table-card" style="border-color:#38bdf8;background:#f0f9ff;padding:14px 18px;margin-bottom:14px;font-weight:800;color:#075985;">
+  DRY RUN - REQUESTS ARE NOT SENT TO AIRTEL
+</div>
+{% endif %}
 
 <div class="pay-table-card">
   <div class="pay-table-header"><h3>Summary</h3></div>
@@ -34,7 +45,9 @@
     <tbody>
       <tr><th>Base URL</th><td>{{ config.base_url }}</td><th>Country/Currency</th><td>{{ config.country }} / {{ config.currency }}</td></tr>
       <tr><th>Merchant code</th><td>{% if config.merchant_code_present %}Present{% else %}Missing{% endif %}</td><th>Callback auth</th><td>{{ config.callback_auth_enabled }}</td></tr>
-      <tr><th>Hash key</th><td>{{ config.callback_hash_key|default:"Missing" }}</td><th>Auth token</th><td>{{ config.auth_token|default:"Missing" }}</td></tr>
+      <tr><th>Callback secret</th><td>{% if config.callback_secret_configured %}Configured{% else %}Missing{% endif %}</td><th>Token credentials</th><td>{% if config.token_configured %}Configured{% else %}Missing{% endif %}</td></tr>
+      <tr><th>Collections</th><td>{{ config.collections_enabled }}</td><th>Dry run</th><td>{{ config.dry_run }}</td></tr>
+      <tr><th>Allowed test numbers</th><td>{% if config.allowed_test_numbers_configured %}Configured{% else %}Missing{% endif %}</td><th>Test max amount</th><td>MWK {{ config.test_max_amount }}</td></tr>
     </tbody>
   </table>
 </div>
@@ -59,22 +72,24 @@
   <div class="pay-table-header"><h3>Transactions ({{ page_obj.paginator.count }})</h3></div>
   <table class="pay-table">
     <thead>
-      <tr><th>Reference</th><th>Customer</th><th>Amount</th><th>Purpose</th><th>Status</th><th>Callback</th><th>Date</th><th></th></tr>
+      <tr><th>Reference</th><th>Environment</th><th>Customer</th><th>Amount</th><th>Status</th><th>Callback</th><th>Repayment</th><th>Duplicate</th><th>Date</th><th></th></tr>
     </thead>
     <tbody>
       {% for tx in page_obj %}
       <tr>
         <td style="font-family:monospace;font-size:12px;">{{ tx.internal_reference }}</td>
+        <td>{{ tx.environment }}</td>
         <td>{{ tx.customer_msisdn }}</td>
         <td>MWK {{ tx.amount|intcomma }}</td>
-        <td>{{ tx.purpose }}</td>
         <td><span class="badge {{ tx.status|lower }}">{{ tx.status }}</span></td>
         <td>{% if tx.callback_verified %}<span class="badge success">verified</span>{% else %}<span class="badge pending">unverified</span>{% endif %}</td>
+        <td>{{ tx.repayment_posted }}</td>
+        <td>{{ tx.duplicate_callback }}</td>
         <td>{{ tx.created_at|date:"d M Y H:i" }}</td>
         <td><a class="btn btn-ghost btn-sm" href="{% url 'airtel_transaction_enquiry' tx.internal_reference %}">Enquire</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="8">No Airtel transactions found.</td></tr>
+      <tr><td colspan="10">No Airtel transactions found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

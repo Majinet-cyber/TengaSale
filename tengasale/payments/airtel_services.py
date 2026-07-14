@@ -18,7 +18,7 @@ from django.utils import timezone
 from portal.models import PaymentTransaction
 from portal.services import apply_payment_to_contract, finalize_paid_transaction_commission
 
-from .airtel_client import AirtelClient, AirtelConfig
+from .airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
 from .models import AirtelCallbackLog, AirtelTransaction
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,26 @@ def normalize_malawi_msisdn(value: str) -> str:
     return f"+265{digits}"
 
 
+def mask_msisdn(value: str) -> str:
+    try:
+        normalized = normalize_malawi_msisdn(value)
+    except ValueError:
+        return "***"
+    return f"{normalized[:4]}***{normalized[-4:]}"
+
+
 def _airtel_api_msisdn(value: str) -> str:
     return normalize_malawi_msisdn(value).lstrip("+")
+
+
+def _allowed_test_msisdns(config: AirtelConfig) -> set[str]:
+    normalized = set()
+    for value in config.allowed_test_msisdns:
+        try:
+            normalized.add(normalize_malawi_msisdn(value))
+        except ValueError:
+            continue
+    return normalized
 
 
 def generate_airtel_reference() -> str:
@@ -178,6 +196,7 @@ class AirtelCollectionService:
 
     @transaction.atomic
     def initiate_collection_payment(self, msisdn, amount, purpose, contract=None, customer=None) -> AirtelTransaction:
+        self.client.config.assert_production_allowed()
         try:
             amount = Decimal(str(amount)).quantize(Decimal("0.01"))
         except (InvalidOperation, ValueError):
@@ -191,6 +210,21 @@ class AirtelCollectionService:
             raise ValueError("Unsupported Airtel payment purpose.")
 
         normalized_msisdn = normalize_malawi_msisdn(msisdn)
+        if not self.client.config.collections_enabled:
+            raise ValueError("Airtel collections are disabled by configuration.")
+        if self.client.config.environment == "staging":
+            try:
+                max_amount = Decimal(str(self.client.config.test_max_amount)).quantize(Decimal("0.01"))
+            except (InvalidOperation, ValueError):
+                raise AirtelConfigurationError("AIRTEL_TEST_MAX_AMOUNT must be a valid MWK amount.")
+            if amount > max_amount:
+                raise ValueError(f"Staging Airtel collections are limited to MWK {max_amount}.")
+            allowed = _allowed_test_msisdns(self.client.config)
+            if not allowed:
+                raise ValueError("Airtel staging test MSISDN allowlist is not configured.")
+            if normalized_msisdn not in allowed:
+                raise ValueError("Airtel staging test MSISDN is not allowlisted.")
+
         internal_reference = generate_airtel_reference()
         payload = {
             "reference": internal_reference,
@@ -209,6 +243,7 @@ class AirtelCollectionService:
 
         airtel_tx = AirtelTransaction.objects.create(
             internal_reference=internal_reference,
+            environment=self.client.config.environment,
             customer_msisdn=normalized_msisdn,
             amount=amount,
             currency=self.client.config.currency,
@@ -219,6 +254,21 @@ class AirtelCollectionService:
             contract=contract,
             customer=customer,
         )
+
+        if self.client.config.dry_run:
+            airtel_tx.status = AirtelTransaction.STATUS_DRY_RUN
+            airtel_tx.raw_response = {
+                "dry_run": True,
+                "message": "AIRTEL_DRY_RUN is enabled; request was validated and not sent to Airtel.",
+            }
+            airtel_tx.save(update_fields=["status", "raw_response", "updated_at"])
+            logger.info(
+                "Airtel dry-run collection created ref=%s msisdn=%s amount=%s",
+                internal_reference,
+                mask_msisdn(normalized_msisdn),
+                amount,
+            )
+            return airtel_tx
 
         if not self.client.is_configured_for_api_calls:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
@@ -232,9 +282,9 @@ class AirtelCollectionService:
         try:
             response = self.client.post(self.client.config.collection_path, payload)
         except Exception as exc:
-            logger.exception("Airtel collection API failed for %s", internal_reference)
+            logger.warning("Airtel collection API failed for %s: %s", internal_reference, exc.__class__.__name__)
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
-            airtel_tx.raw_response = {"error": str(exc)}
+            airtel_tx.raw_response = {"error": exc.__class__.__name__}
             airtel_tx.save(update_fields=["status", "raw_response", "updated_at"])
             return airtel_tx
 
@@ -406,6 +456,8 @@ class AirtelCallbackService:
         if duplicate:
             log.duplicate = True
             log.processed = True
+            airtel_tx.duplicate_callback = True
+            airtel_tx.save(update_fields=["duplicate_callback", "updated_at"])
             log.save(update_fields=["transaction", "duplicate", "processed"])
             return log, True, 200
 
@@ -491,8 +543,9 @@ class AirtelCallbackService:
             logger.exception("Airtel commission finalization failed for %s", airtel_tx.internal_reference)
         airtel_tx.processed_success_at = timezone.now()
         airtel_tx.completed_at = airtel_tx.processed_success_at
+        airtel_tx.repayment_posted = True
         airtel_tx.processing_note = f"Applied to contract {contract.contract_number}; days_extended={result.get('days_extended', 0)}"
-        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "completed_at", "processing_note", "updated_at"])
+        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "completed_at", "repayment_posted", "processing_note", "updated_at"])
         return airtel_tx
 
 

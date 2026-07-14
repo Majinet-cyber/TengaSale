@@ -629,6 +629,7 @@ class AirtelTransaction(models.Model):
 
     STATUS_INITIATED = "INITIATED"
     STATUS_PENDING = "PENDING"
+    STATUS_DRY_RUN = "DRY_RUN"
     STATUS_SUCCESS = "SUCCESS"
     STATUS_FAILED = "FAILED"
     STATUS_REVERSED = "REVERSED"
@@ -638,6 +639,7 @@ class AirtelTransaction(models.Model):
     STATUS_CHOICES = [
         (STATUS_INITIATED, "Initiated"),
         (STATUS_PENDING, "Pending"),
+        (STATUS_DRY_RUN, "Dry run"),
         (STATUS_SUCCESS, "Success"),
         (STATUS_FAILED, "Failed"),
         (STATUS_REVERSED, "Reversed"),
@@ -646,6 +648,8 @@ class AirtelTransaction(models.Model):
     ]
 
     internal_reference = models.CharField(max_length=60, unique=True, db_index=True)
+    environment = models.CharField(max_length=20, default="staging", db_index=True)
+    provider = models.CharField(max_length=30, default="airtel_money", db_index=True)
     provider_reference = models.CharField(max_length=120, null=True, blank=True, db_index=True)
     airtel_money_id = models.CharField(max_length=120, null=True, blank=True, db_index=True)
     airtel_transaction_id = models.CharField(max_length=120, null=True, blank=True, db_index=True)
@@ -683,6 +687,8 @@ class AirtelTransaction(models.Model):
         blank=True,
         related_name="airtel_transaction",
     )
+    repayment_posted = models.BooleanField(default=False)
+    duplicate_callback = models.BooleanField(default=False)
     processed_success_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     processing_note = models.TextField(blank=True)
@@ -694,6 +700,7 @@ class AirtelTransaction(models.Model):
         indexes = [
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["purpose", "direction"]),
+            models.Index(fields=["environment", "status"]),
         ]
         constraints = [
             models.UniqueConstraint(

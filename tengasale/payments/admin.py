@@ -69,8 +69,22 @@ class PaymentAuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(AirtelTransaction)
 class AirtelTransactionAdmin(admin.ModelAdmin):
-    list_display = ["internal_reference", "amount", "purpose", "direction", "status", "callback_verified", "completed_at", "created_at"]
-    list_filter = ["status", "purpose", "direction", "callback_verified"]
+    list_display = [
+        "internal_reference",
+        "environment",
+        "masked_customer_msisdn",
+        "amount",
+        "currency",
+        "purpose",
+        "status",
+        "airtel_money_id",
+        "callback_received_at",
+        "repayment_posted",
+        "duplicate_callback",
+        "completed_at",
+        "created_at",
+    ]
+    list_filter = ["environment", "status", "purpose", "direction", "callback_verified", "repayment_posted", "duplicate_callback", "created_at"]
     search_fields = [
         "internal_reference",
         "provider_reference",
@@ -86,11 +100,18 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "raw_callback",
         "callback_received_at",
         "failure_reason",
+        "repayment_posted",
+        "duplicate_callback",
         "processed_success_at",
         "completed_at",
         "created_at",
         "updated_at",
     ]
+
+    @admin.display(description="MSISDN")
+    def masked_customer_msisdn(self, obj):
+        value = obj.customer_msisdn or ""
+        return f"{value[:4]}***{value[-4:]}" if len(value) >= 8 else "***"
 
 
 @admin.register(AirtelCallbackLog)
