@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import secrets
 import string
 from decimal import Decimal, InvalidOperation
@@ -26,6 +27,7 @@ SUCCESS_VALUES = {"TS", "SUCCESS", "SUCCESSFUL", "TRANSACTION SUCCESSFUL"}
 PENDING_VALUES = {"TIP", "PENDING", "IN_PROGRESS"}
 EXPIRED_VALUES = {"TE", "EXPIRED"}
 FAILED_VALUES = {"FAILED", "TF", "DECLINED", "REJECTED"}
+TERMINAL_FAILURE_STATUSES = {AirtelTransaction.STATUS_FAILED, AirtelTransaction.STATUS_EXPIRED}
 
 
 def normalize_airtel_status(value: Any) -> str:
@@ -78,6 +80,21 @@ def _extract_nested(data: Any, *paths: str) -> Any:
     return None
 
 
+def _canonical_callback_payload(data: dict[str, Any]) -> bytes:
+    payload = dict(data)
+    payload.pop("hash", None)
+    payload.pop("Hash", None)
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
+    sensitive = {"authorization", "x-api-key", "api-key", "cookie"}
+    sanitized = {}
+    for key, value in headers.items():
+        sanitized[key] = "***" if str(key).lower() in sensitive else value
+    return sanitized
+
+
 def _collect_reference_values(data: dict[str, Any]) -> set[str]:
     values = set()
     names = {
@@ -109,7 +126,9 @@ def _collect_reference_values(data: dict[str, Any]) -> set[str]:
 def extract_airtel_status(data: dict[str, Any]) -> str:
     value = _extract_nested(
         data,
+        "data.transaction.status_code",
         "data.transaction.status",
+        "transaction.status_code",
         "transaction.status",
         "status.status",
         "status.code",
@@ -129,6 +148,28 @@ def extract_airtel_references(data: dict[str, Any]) -> dict[str, str]:
         "airtel_transaction_id": str(_extract_nested(data, "data.transaction.id", "transaction.id", "id") or ""),
         "airtel_reference_id": str(_extract_nested(data, "data.transaction.reference_id", "transaction.reference_id", "reference_id") or ""),
     }
+
+
+def extract_airtel_amount(data: dict[str, Any]) -> Decimal | None:
+    value = _extract_nested(
+        data,
+        "data.transaction.amount",
+        "data.transaction.transaction_amount",
+        "transaction.amount",
+        "transaction.transaction_amount",
+        "amount",
+    )
+    if value in (None, ""):
+        message = str(_extract_nested(data, "data.transaction.message", "transaction.message", "message") or "")
+        match = re.search(r"(?i)\bMWK\s*([0-9][0-9,]*(?:\.\d+)?)", message)
+        if match:
+            value = match.group(1).replace(",", "")
+    if value in (None, ""):
+        return None
+    try:
+        return Decimal(str(value).replace(",", "")).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return None
 
 
 class AirtelCollectionService:
@@ -249,7 +290,7 @@ class AirtelCallbackService:
     def __init__(self, config: AirtelConfig | None = None):
         self.config = config or AirtelConfig.from_settings()
 
-    def verify_signature(self, raw_body: bytes, headers: dict[str, str]) -> tuple[bool, bool]:
+    def verify_signature(self, raw_body: bytes, headers: dict[str, str], parsed: dict[str, Any] | None = None) -> tuple[bool, bool]:
         if not self.config.callback_auth_enabled:
             return True, False
         provided = ""
@@ -258,53 +299,105 @@ class AirtelCallbackService:
             provided = lower_headers.get(name.lower(), "")
             if provided:
                 break
+        if not provided and isinstance(parsed, dict):
+            provided = str(parsed.get("hash") or parsed.get("Hash") or "").strip()
         if not provided or not self.config.callback_hash_key:
             return False, False
-        digest = hmac.new(self.config.callback_hash_key.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
-        return hmac.compare_digest(provided.lower(), digest.lower()), True
+
+        raw_digest = hmac.new(self.config.callback_hash_key.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+        if hmac.compare_digest(provided.lower(), raw_digest.lower()):
+            return True, True
+
+        if isinstance(parsed, dict):
+            canonical_digest = hmac.new(
+                self.config.callback_hash_key.encode("utf-8"),
+                _canonical_callback_payload(parsed),
+                hashlib.sha256,
+            ).hexdigest()
+            if hmac.compare_digest(provided.lower(), canonical_digest.lower()):
+                return True, True
+        return False, True
 
     @transaction.atomic
-    def handle_callback(self, raw_body: bytes, headers: dict[str, str]) -> tuple[AirtelCallbackLog, bool]:
+    def handle_callback(self, raw_body: bytes, headers: dict[str, str]) -> tuple[AirtelCallbackLog, bool, int]:
+        max_bytes = int(getattr(settings, "AIRTEL_CALLBACK_MAX_BYTES", 65536))
+        safe_headers = _sanitize_headers(headers)
+        if len(raw_body or b"") > max_bytes:
+            log = AirtelCallbackLog.objects.create(
+                received_headers=safe_headers,
+                raw_body="",
+                parsed_body=None,
+                processing_error="Airtel callback body exceeds configured size limit.",
+            )
+            return log, False, 400
+
         try:
             parsed = json.loads(raw_body.decode("utf-8")) if raw_body else {}
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             log = AirtelCallbackLog.objects.create(
-                received_headers=headers,
+                received_headers=safe_headers,
                 raw_body=raw_body.decode("utf-8", errors="replace"),
                 parsed_body=None,
                 processing_error=f"Invalid JSON: {exc}",
             )
-            return log, False
+            return log, False, 400
 
-        signature_valid, signature_found = self.verify_signature(raw_body, headers)
+        if not isinstance(parsed, dict) or not isinstance(_extract_nested(parsed, "data.transaction", "transaction"), dict):
+            log = AirtelCallbackLog.objects.create(
+                received_headers=safe_headers,
+                raw_body=raw_body.decode("utf-8", errors="replace"),
+                parsed_body=parsed if isinstance(parsed, dict) else None,
+                processing_error="Missing Airtel transaction object.",
+            )
+            return log, False, 400
+
+        signature_valid, signature_found = self.verify_signature(raw_body, headers, parsed)
         log = AirtelCallbackLog.objects.create(
-            received_headers=headers,
+            received_headers=safe_headers,
             raw_body=raw_body.decode("utf-8", errors="replace"),
             parsed_body=parsed,
             signature_valid=signature_valid,
         )
 
-        if self.config.env.lower() in {"prod", "production", "live"} and self.config.callback_auth_enabled and not signature_valid:
+        if self.config.callback_auth_enabled and not signature_valid:
             log.processing_error = "Invalid or missing Airtel callback signature."
             if not signature_found:
                 log.processing_error = "Missing Airtel callback signature."
             log.save(update_fields=["processing_error"])
-            return log, True
+            return log, True, 401
 
         airtel_tx = self.find_transaction(parsed)
         if not airtel_tx:
             log.processing_error = "No matching Airtel transaction found."
             log.save(update_fields=["processing_error"])
-            return log, True
+            return log, True, 200
 
         log.transaction = airtel_tx
         status = extract_airtel_status(parsed)
         refs = extract_airtel_references(parsed)
         duplicate = airtel_tx.status == AirtelTransaction.STATUS_SUCCESS and bool(airtel_tx.processed_success_at)
+
+        callback_amount = extract_airtel_amount(parsed)
+        if callback_amount is not None and callback_amount != airtel_tx.amount:
+            log.processing_error = "Airtel callback amount does not match original payment attempt."
+            log.save(update_fields=["transaction", "processing_error"])
+            airtel_tx.failure_reason = "Callback amount mismatch."
+            airtel_tx.raw_callback = parsed
+            airtel_tx.callback_verified = signature_valid
+            airtel_tx.callback_received_at = timezone.now()
+            airtel_tx.save(update_fields=["failure_reason", "raw_callback", "callback_verified", "callback_received_at", "updated_at"])
+            return log, True, 400
+
         airtel_tx.raw_callback = parsed
         airtel_tx.callback_verified = signature_valid
         airtel_tx.callback_received_at = timezone.now()
         airtel_tx.status = status
+        if status in TERMINAL_FAILURE_STATUSES:
+            airtel_tx.failure_reason = str(
+                _extract_nested(parsed, "data.transaction.message", "transaction.message", "message", "status.message")
+                or "Airtel transaction failed."
+            )[:500]
+            airtel_tx.completed_at = timezone.now()
         for field, value in refs.items():
             if value:
                 setattr(airtel_tx, field, value)
@@ -314,14 +407,14 @@ class AirtelCallbackService:
             log.duplicate = True
             log.processed = True
             log.save(update_fields=["transaction", "duplicate", "processed"])
-            return log, True
+            return log, True, 200
 
         if status == AirtelTransaction.STATUS_SUCCESS:
             self.apply_success(airtel_tx)
 
         log.processed = True
         log.save(update_fields=["transaction", "processed"])
-        return log, True
+        return log, True, 200
 
     def find_transaction(self, payload: dict[str, Any]) -> AirtelTransaction | None:
         values = _collect_reference_values(payload)
@@ -348,8 +441,9 @@ class AirtelCallbackService:
         contract = airtel_tx.contract
         if not contract:
             airtel_tx.processed_success_at = timezone.now()
+            airtel_tx.completed_at = airtel_tx.processed_success_at
             airtel_tx.processing_note = "Success received; no linked contract to credit."
-            airtel_tx.save(update_fields=["processed_success_at", "processing_note", "updated_at"])
+            airtel_tx.save(update_fields=["processed_success_at", "completed_at", "processing_note", "updated_at"])
             return airtel_tx
 
         payment_type = PaymentTransaction.TYPE_REPAYMENT
@@ -371,7 +465,7 @@ class AirtelCallbackService:
                 phone=airtel_tx.customer_msisdn,
                 network=PaymentTransaction.NETWORK_AIRTEL,
                 internal_reference=airtel_tx.internal_reference[:30],
-                provider_reference=airtel_tx.provider_reference or airtel_tx.airtel_transaction_id or "",
+                provider_reference=airtel_tx.airtel_money_id or airtel_tx.airtel_transaction_id or airtel_tx.provider_reference or "",
                 status=PaymentTransaction.STATUS_PAID,
                 raw_request=airtel_tx.raw_request,
                 raw_response=airtel_tx.raw_response,
@@ -396,8 +490,9 @@ class AirtelCallbackService:
         except Exception:
             logger.exception("Airtel commission finalization failed for %s", airtel_tx.internal_reference)
         airtel_tx.processed_success_at = timezone.now()
+        airtel_tx.completed_at = airtel_tx.processed_success_at
         airtel_tx.processing_note = f"Applied to contract {contract.contract_number}; days_extended={result.get('days_extended', 0)}"
-        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "processing_note", "updated_at"])
+        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "completed_at", "processing_note", "updated_at"])
         return airtel_tx
 
 

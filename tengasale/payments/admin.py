@@ -69,7 +69,7 @@ class PaymentAuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(AirtelTransaction)
 class AirtelTransactionAdmin(admin.ModelAdmin):
-    list_display = ["internal_reference", "amount", "purpose", "direction", "status", "callback_verified", "created_at"]
+    list_display = ["internal_reference", "amount", "purpose", "direction", "status", "callback_verified", "completed_at", "created_at"]
     list_filter = ["status", "purpose", "direction", "callback_verified"]
     search_fields = [
         "internal_reference",
@@ -85,7 +85,9 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "raw_response",
         "raw_callback",
         "callback_received_at",
+        "failure_reason",
         "processed_success_at",
+        "completed_at",
         "created_at",
         "updated_at",
     ]

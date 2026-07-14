@@ -299,13 +299,21 @@ AIRTEL_BASE_URL = os.environ.get("AIRTEL_BASE_URL", "https://openapiuat.airtel.m
 AIRTEL_COUNTRY = os.environ.get("AIRTEL_COUNTRY", "MW")
 AIRTEL_CURRENCY = os.environ.get("AIRTEL_CURRENCY", "MWK")
 AIRTEL_MERCHANT_CODE = os.environ.get("AIRTEL_MERCHANT_CODE", "")
+AIRTEL_PRIVATE_KEY = os.environ.get(
+    "AIRTEL_PRIVATE_KEY",
+    os.environ.get("AIRTEL_CALLBACK_HASH_KEY", os.environ.get("AIRTEL_KEY", "")),
+)
+AIRTEL_CALLBACK_URL = os.environ.get(
+    "AIRTEL_CALLBACK_URL",
+    "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+)
 AIRTEL_CALLBACK_AUTH_ENABLED = os.environ.get("AIRTEL_CALLBACK_AUTH_ENABLED", "False").lower() in (
     "true",
     "1",
     "yes",
     "on",
 )
-AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", "")
+AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", AIRTEL_PRIVATE_KEY)
 AIRTEL_CLIENT_ID = os.environ.get("AIRTEL_CLIENT_ID", "")
 AIRTEL_CLIENT_SECRET = os.environ.get("AIRTEL_CLIENT_SECRET", "")
 AIRTEL_AUTH_TOKEN = os.environ.get("AIRTEL_AUTH_TOKEN", "")
@@ -320,7 +328,11 @@ AIRTEL_SIGNATURE_SECRET = os.environ.get("AIRTEL_SIGNATURE_SECRET", "")
 AIRTEL_KEY = os.environ.get("AIRTEL_KEY", "")
 AIRTEL_COLLECTION_PATH = os.environ.get("AIRTEL_COLLECTION_PATH", "/merchant/v1/payments/")
 AIRTEL_ENQUIRY_PATH_TEMPLATE = os.environ.get("AIRTEL_ENQUIRY_PATH_TEMPLATE", "/standard/v1/payments/{reference}")
+AIRTEL_TOKEN_PATH = os.environ.get("AIRTEL_TOKEN_PATH", "/auth/oauth2/token")
 AIRTEL_DISBURSEMENT_PATH = os.environ.get("AIRTEL_DISBURSEMENT_PATH", "/standard/v3/disbursements")
+AIRTEL_CALLBACK_MAX_BYTES = int(os.environ.get("AIRTEL_CALLBACK_MAX_BYTES", "65536"))
+AIRTEL_CONNECT_TIMEOUT = int(os.environ.get("AIRTEL_CONNECT_TIMEOUT", "5"))
+AIRTEL_READ_TIMEOUT = int(os.environ.get("AIRTEL_READ_TIMEOUT", "20"))
 
 # Production safety guard: if DEBUG=False and live charges are on, keys must exist
 if not DEBUG and PAYMENTS_ALLOW_LIVE_CHARGES:

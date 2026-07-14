@@ -661,6 +661,7 @@ class AirtelTransaction(models.Model):
     raw_callback = models.JSONField(default=dict, blank=True)
     callback_verified = models.BooleanField(default=False)
     callback_received_at = models.DateTimeField(null=True, blank=True)
+    failure_reason = models.TextField(blank=True)
     contract = models.ForeignKey(
         "portal.PaymentContract",
         on_delete=models.SET_NULL,
@@ -683,6 +684,7 @@ class AirtelTransaction(models.Model):
         related_name="airtel_transaction",
     )
     processed_success_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     processing_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -692,6 +694,18 @@ class AirtelTransaction(models.Model):
         indexes = [
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["purpose", "direction"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["airtel_money_id"],
+                condition=models.Q(airtel_money_id__isnull=False) & ~models.Q(airtel_money_id=""),
+                name="uniq_airtel_money_id_when_present",
+            ),
+            models.UniqueConstraint(
+                fields=["airtel_transaction_id"],
+                condition=models.Q(airtel_transaction_id__isnull=False) & ~models.Q(airtel_transaction_id=""),
+                name="uniq_airtel_tx_id_when_present",
+            ),
         ]
 
     def __str__(self):

@@ -3,13 +3,14 @@ from __future__ import annotations
 import json
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from contracts.models import Contract
 from portal.models import PaymentContract
@@ -162,16 +163,29 @@ def ussd_callback(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
+@require_POST
 def airtel_callback(request):
-    if request.method == "GET":
-        return JsonResponse({"ok": True, "provider": "airtel", "endpoint": "callback"})
-
     headers = {key: value for key, value in request.headers.items()}
-    log, valid_body = AirtelCallbackService().handle_callback(request.body, headers)
+    log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
     if not valid_body:
         return JsonResponse({"ok": False, "message": "Invalid callback body.", "log_id": log.id}, status=400)
-    return JsonResponse({"ok": True, "provider": "airtel", "log_id": log.id}, status=200)
+    if status_code in (401, 403):
+        return JsonResponse({"ok": False, "message": "Invalid callback signature.", "log_id": log.id}, status=status_code)
+    if status_code >= 400:
+        return JsonResponse({"ok": False, "message": log.processing_error or "Callback rejected.", "log_id": log.id}, status=status_code)
+    return JsonResponse({"ok": True, "provider": "airtel_money", "log_id": log.id}, status=200)
+
+
+@require_GET
+def airtel_health(request):
+    config = AirtelConfig.from_settings()
+    env = "production" if config.base_url.rstrip("/") == "https://openapi.airtel.mw" else "staging"
+    return JsonResponse({
+        "status": "ok",
+        "provider": "airtel_money",
+        "environment": env,
+        "callback_configured": bool(getattr(settings, "AIRTEL_CALLBACK_URL", "")),
+    })
 
 
 @csrf_exempt
