@@ -19,6 +19,7 @@ from portal.models import PaymentTransaction
 from portal.services import apply_payment_to_contract, finalize_paid_transaction_commission
 
 from .airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
+from .mobile_network import PROVIDER_AIRTEL, normalize_malawi_msisdn as normalize_malawi_number
 from .models import AirtelCallbackLog, AirtelTransaction
 
 logger = logging.getLogger(__name__)
@@ -44,13 +45,10 @@ def normalize_airtel_status(value: Any) -> str:
 
 
 def normalize_malawi_msisdn(value: str) -> str:
-    digits = "".join(ch for ch in str(value or "") if ch.isdigit())
-    if digits.startswith("265"):
-        digits = digits[3:]
-    digits = digits.lstrip("0")
-    if len(digits) != 9:
+    normalized = normalize_malawi_number(value)
+    if not normalized.valid or normalized.provider != PROVIDER_AIRTEL:
         raise ValueError("Enter a valid Malawi mobile money number.")
-    return f"+265{digits}"
+    return normalized.international
 
 
 def mask_msisdn(value: str) -> str:
@@ -211,6 +209,7 @@ class AirtelCollectionService:
 
         normalized_msisdn = normalize_malawi_msisdn(msisdn)
         if contract is not None:
+            contract = contract.__class__.objects.select_for_update().get(pk=contract.pk)
             remaining = contract.deposit_remaining if purpose == AirtelTransaction.PURPOSE_DEPOSIT else contract.remaining_amount
             if remaining <= Decimal("0"):
                 raise ValueError("Contract fully paid. No payment is currently required.")
@@ -341,6 +340,9 @@ class AirtelCollectionService:
         airtel_tx.status = extract_airtel_status(body) if isinstance(body, dict) else AirtelTransaction.STATUS_UNKNOWN
         if airtel_tx.status == AirtelTransaction.STATUS_UNKNOWN and response.get("ok"):
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
+        if airtel_tx.status == AirtelTransaction.STATUS_SUCCESS:
+            airtel_tx.status = AirtelTransaction.STATUS_PENDING
+            airtel_tx.processing_note = "Collection request accepted; awaiting callback or enquiry confirmation."
         for field, value in refs.items():
             if value:
                 setattr(airtel_tx, field, value)

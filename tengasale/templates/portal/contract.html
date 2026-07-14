@@ -151,20 +151,18 @@
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="deposit">
+      <input type="hidden" name="provider" value="" data-payment-provider>
       <div class="cpd-form-row">
         <div class="cpd-field">
           <label class="cpd-field-label">Payment Phone Number</label>
           <div class="cpd-phone-row">
             <span class="cpd-phone-prefix">+265</span>
-            <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}" placeholder="8X XXX XXXX" required data-payment-phone>
+            <input type="tel" name="phone" class="cpd-input" placeholder="099 123 4567" required data-payment-phone>
           </div>
         </div>
         <div class="cpd-field">
           <label class="cpd-field-label">Network</label>
-          <select name="provider" class="cpd-select" required data-payment-provider>
-            <option value="">Select network</option>
-            {% for value, label in providers %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-          </select>
+          <div class="cpd-field-hint" data-network-hint>Enter a Malawi mobile money number.</div>
         </div>
       </div>
       <div class="cpd-field">
@@ -203,6 +201,7 @@
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="repayment">
+      <input type="hidden" name="provider" value="" data-payment-provider>
       <div class="cpd-amount-seg">
         <button type="button" class="cpd-seg-btn" data-amount-mode="1d" data-amount-multiplier="1"><span class="cpd-seg-btn__label">1 Day</span><span class="cpd-seg-btn__val" data-label-1d></span></button>
         <button type="button" class="cpd-seg-btn" data-amount-mode="7d" data-amount-multiplier="7"><span class="cpd-seg-btn__label">1 Week</span><span class="cpd-seg-btn__val" data-label-7d></span></button>
@@ -216,15 +215,12 @@
           <label class="cpd-field-label">Mobile money number</label>
           <div class="cpd-phone-row">
             <span class="cpd-phone-prefix">+265</span>
-            <input type="tel" name="phone" class="cpd-input" maxlength="9" pattern="\d{9}" placeholder="8X XXX XXXX" required data-payment-phone>
+            <input type="tel" name="phone" class="cpd-input" placeholder="099 123 4567" required data-payment-phone>
           </div>
         </div>
         <div class="cpd-field">
           <label class="cpd-field-label">Network</label>
-          <select name="provider" class="cpd-select" required data-payment-provider>
-            <option value="">Select network</option>
-            {% for value, label in providers %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-          </select>
+          <div class="cpd-field-hint" data-network-hint>Enter a Malawi mobile money number.</div>
         </div>
       </div>
       <div class="cpd-field">
@@ -346,8 +342,20 @@
     return 'MWK ' + value.toLocaleString();
   }
 
-  function validPhone(value) {
-    return /^\d{9}$/.test((value || '').trim());
+  function detectNetwork(value) {
+    var digits = String(value || '').replace(/\D/g, '');
+    if (digits.indexOf('265') === 0) digits = digits.slice(3);
+    digits = digits.replace(/^0+/, '');
+    if (digits.length !== 9) {
+      return { valid: false, provider: '', label: '', message: 'Enter a valid Malawi mobile money number.' };
+    }
+    if (digits.charAt(0) === '9') {
+      return { valid: true, provider: 'airtel_money', label: 'Airtel Money', message: 'Airtel Money detected.' };
+    }
+    if (digits.charAt(0) === '8') {
+      return { valid: true, provider: 'tnm_mpamba', label: 'TNM Mpamba', message: 'TNM Mpamba is not available yet. Please use Airtel Money.' };
+    }
+    return { valid: false, provider: 'unknown', label: '', message: 'Unsupported mobile money network. Please use Airtel Money.' };
   }
 
   document.querySelectorAll('[data-payment-form]').forEach(function (form) {
@@ -359,6 +367,7 @@
     var submitBtn = form.querySelector('[data-payment-submit]');
     var submitLabel = form.querySelector('[data-payment-submit-label]');
     var hint = form.querySelector('[data-payment-hint]');
+    var networkHint = form.querySelector('[data-network-hint]');
 
     // Populate dynamic labels
     var lbl1d = form.querySelector('[data-label-1d]');
@@ -395,9 +404,15 @@
 
     function validate() {
       var amount = Number(amountInput && amountInput.value);
-      var valid = amount >= 100 && providerInput && providerInput.value && phoneInput && validPhone(phoneInput.value);
+      var network = detectNetwork(phoneInput && phoneInput.value);
+      if (providerInput) providerInput.value = network.provider || '';
+      var valid = amount >= 100 && network.valid && network.provider === 'airtel_money';
       if (submitBtn) submitBtn.disabled = !valid;
       if (submitLabel) submitLabel.textContent = amount > 0 ? fmt(amount) : '';
+      if (networkHint) {
+        networkHint.textContent = network.message;
+        networkHint.hidden = false;
+      }
       if (hint) {
         hint.hidden = !(amount > 0 && daily > 0);
         if (amount > 0 && daily > 0) {
@@ -414,9 +429,15 @@
       if (el) el.addEventListener('change', validate);
     });
 
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', function (event) {
+      validate();
+      if (submitBtn && submitBtn.disabled) {
+        event.preventDefault();
+        return;
+      }
       var progress = form.querySelector('[data-payment-progress]');
       if (submitBtn) {
+        submitBtn.disabled = true;
         submitBtn.classList.add('cpd-pay-btn--loading');
         submitBtn.innerHTML = '<span class="cpd-button-spinner"></span> Sending payment prompt...';
       }

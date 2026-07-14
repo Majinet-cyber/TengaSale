@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/payments/airtel/callback/", payment_api_views.airtel_callback, name="airtel_callback"),
     path("api/payments/airtel/test/simulate-callback/", payment_api_views.airtel_simulate_callback, name="airtel_simulate_callback"),
     path("api/payments/airtel/collections/initiate/", payment_api_views.airtel_collection_initiate, name="airtel_collection_initiate"),
+    path("api/payments/<str:transaction_id>/status/", payment_api_views.payment_transaction_status, name="payment_transaction_status"),
     path(
         "api/payments/airtel/transactions/<str:internal_reference>/enquiry/",
         payment_api_views.airtel_transaction_enquiry,

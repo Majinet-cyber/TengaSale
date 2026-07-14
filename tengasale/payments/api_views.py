@@ -23,6 +23,7 @@ from .airtel_services import (
     AirtelCallbackService,
     AirtelCollectionService,
     AirtelTransactionEnquiryService,
+    mask_msisdn,
 )
 from .models import AirtelCallbackLog, AirtelTransaction, USSDPaymentIntent, USSDSessionLog
 from .views import _hq_or_finance
@@ -390,6 +391,99 @@ def airtel_transaction_enquiry(request, internal_reference):
         "internal_reference": tx.internal_reference,
         "status": tx.status,
     })
+
+
+def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
+    contract = tx.contract
+    portal_tx = tx.payment_transaction
+    success_applied = bool(tx.processed_success_at or tx.repayment_posted)
+    status_map = {
+        AirtelTransaction.STATUS_FAILED: (
+            "failed",
+            "Payment failed or was declined. No money has been applied to this contract.",
+            True,
+        ),
+        AirtelTransaction.STATUS_EXPIRED: (
+            "timed_out",
+            "Payment request expired before it was approved. No money has been applied to this contract.",
+            True,
+        ),
+        AirtelTransaction.STATUS_REVERSED: (
+            "reversed",
+            "Payment was reversed. Please contact support before trying again.",
+            True,
+        ),
+        AirtelTransaction.STATUS_DRY_RUN: (
+            "pending_customer_approval",
+            "Payment request was created in Airtel dry-run mode and is awaiting test confirmation.",
+            False,
+        ),
+        AirtelTransaction.STATUS_INITIATED: (
+            "request_sent",
+            "Airtel Money request has been sent. Please approve it on your phone.",
+            False,
+        ),
+        AirtelTransaction.STATUS_PENDING: (
+            "pending_customer_approval",
+            "Waiting for Airtel Money confirmation. Please approve the prompt on your phone.",
+            False,
+        ),
+    }
+    public_status, message, final = status_map.get(
+        tx.status,
+        (
+            "pending_provider_confirmation",
+            "Airtel is still confirming this payment. Do not make another payment yet.",
+            False,
+        ),
+    )
+    if tx.status == AirtelTransaction.STATUS_SUCCESS:
+        if success_applied or contract is None:
+            public_status = "successful"
+            message = "Payment confirmed. Your contract balance has been updated."
+            final = True
+        else:
+            public_status = "pending_provider_confirmation"
+            message = "Airtel returned a success status and TengaSale is finishing confirmation. Do not pay again yet."
+            final = False
+    return {
+        "success": True,
+        "transaction_id": tx.internal_reference,
+        "provider": "airtel_money",
+        "provider_label": "Airtel Money",
+        "status": public_status,
+        "provider_status": tx.status,
+        "message": message,
+        "final": final,
+        "amount": str(tx.amount),
+        "currency": tx.currency,
+        "masked_phone": mask_msisdn(tx.customer_msisdn),
+        "airtel_money_id": tx.airtel_money_id or tx.airtel_transaction_id or "",
+        "contract_number": contract.contract_number if contract else "",
+        "payg_number": contract.payg_number if contract else "",
+        "portal_transaction_status": portal_tx.status if portal_tx else "",
+        "balance_after": str(portal_tx.balance_after) if portal_tx and portal_tx.balance_after is not None else "",
+        "updated_at": tx.updated_at.isoformat() if tx.updated_at else "",
+    }
+
+
+@require_http_methods(["GET"])
+def payment_transaction_status(request, transaction_id):
+    tx = get_object_or_404(
+        AirtelTransaction.objects.select_related("contract", "payment_transaction"),
+        internal_reference=transaction_id,
+    )
+    if request.GET.get("enquire") == "1" and tx.status not in {
+        AirtelTransaction.STATUS_SUCCESS,
+        AirtelTransaction.STATUS_FAILED,
+        AirtelTransaction.STATUS_EXPIRED,
+        AirtelTransaction.STATUS_REVERSED,
+    }:
+        try:
+            tx = AirtelTransactionEnquiryService().enquire(tx.internal_reference)
+        except Exception:
+            tx.refresh_from_db()
+    return JsonResponse(_customer_payment_status_payload(tx))
 
 
 def airtel_dashboard(request):

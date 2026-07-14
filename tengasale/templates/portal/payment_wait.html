@@ -1,0 +1,259 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block title %}Payment Confirmation | TengaSale{% endblock %}
+
+{% block extra_css %}
+<style>
+  .payment-wait-shell {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background: #f6f8fb;
+  }
+  .payment-wait-panel {
+    width: min(100%, 560px);
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+  .payment-wait-heading {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .payment-wait-spinner {
+    width: 34px;
+    height: 34px;
+    border: 3px solid #dbeafe;
+    border-top-color: #0f766e;
+    border-radius: 999px;
+    animation: paymentWaitSpin 0.9s linear infinite;
+    flex: 0 0 auto;
+  }
+  .payment-wait-spinner.is-final {
+    animation: none;
+    border-color: #16a34a;
+    background: #dcfce7;
+  }
+  .payment-wait-title {
+    margin: 0;
+    font-size: 1.35rem;
+    line-height: 1.25;
+    color: #0f172a;
+  }
+  .payment-wait-subtitle {
+    margin: 4px 0 0;
+    color: #475569;
+    font-size: 0.94rem;
+  }
+  .payment-wait-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 20px 0;
+  }
+  .payment-wait-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #f8fafc;
+  }
+  .payment-wait-label {
+    display: block;
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .payment-wait-value {
+    display: block;
+    margin-top: 4px;
+    color: #0f172a;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .payment-wait-message {
+    border-radius: 8px;
+    padding: 14px;
+    background: #ecfeff;
+    color: #155e75;
+    line-height: 1.45;
+  }
+  .payment-wait-message.is-success {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .payment-wait-message.is-failed {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .payment-wait-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .payment-wait-btn {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    background: #0f172a;
+    color: #fff;
+  }
+  .payment-wait-btn--secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .payment-wait-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  @keyframes paymentWaitSpin {
+    to { transform: rotate(360deg); }
+  }
+  @media (max-width: 560px) {
+    .payment-wait-grid {
+      grid-template-columns: 1fr;
+    }
+    .payment-wait-panel {
+      padding: 18px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="payment-wait-shell">
+  <section class="payment-wait-panel" data-payment-wait data-status-url="{{ status_url }}">
+    <div class="payment-wait-heading">
+      <div class="payment-wait-spinner" data-payment-spinner aria-hidden="true"></div>
+      <div>
+        <h1 class="payment-wait-title" data-payment-title>Waiting for Airtel confirmation</h1>
+        <p class="payment-wait-subtitle">Approve the prompt on your phone. Your balance updates only after Airtel confirms.</p>
+      </div>
+    </div>
+
+    <div class="payment-wait-grid">
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">Amount</span>
+        <span class="payment-wait-value">{{ airtel_tx.amount|mwk }}</span>
+      </div>
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">Provider</span>
+        <span class="payment-wait-value">{{ provider_label }}</span>
+      </div>
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">Phone</span>
+        <span class="payment-wait-value">{{ masked_phone }}</span>
+      </div>
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">Reference</span>
+        <span class="payment-wait-value">{{ airtel_tx.internal_reference }}</span>
+      </div>
+      {% if contract %}
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">Contract</span>
+        <span class="payment-wait-value">{{ contract.contract_number }}</span>
+      </div>
+      <div class="payment-wait-item">
+        <span class="payment-wait-label">PayG</span>
+        <span class="payment-wait-value">{{ contract.payg_number|default:"Pending setup" }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="payment-wait-message" data-payment-message>
+      Waiting for customer approval. Do not submit another payment while this request is pending.
+    </div>
+
+    <div class="payment-wait-actions">
+      {% if return_url %}<a class="payment-wait-btn" href="{{ return_url }}">Return to contract</a>{% endif %}
+      <button type="button" class="payment-wait-btn payment-wait-btn--secondary" data-payment-check>Check again</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var panel = document.querySelector('[data-payment-wait]');
+  if (!panel) return;
+  var statusUrl = panel.dataset.statusUrl;
+  var message = panel.querySelector('[data-payment-message]');
+  var title = panel.querySelector('[data-payment-title]');
+  var spinner = panel.querySelector('[data-payment-spinner]');
+  var checkBtn = panel.querySelector('[data-payment-check]');
+  var attempts = 0;
+  var maxAttempts = 5;
+  var delayMs = 6000;
+  var timer = null;
+
+  function setState(data, stopped) {
+    var status = data.status || 'pending_provider_confirmation';
+    message.classList.toggle('is-success', status === 'successful');
+    message.classList.toggle('is-failed', status === 'failed' || status === 'timed_out' || status === 'reversed');
+    if (spinner) spinner.classList.toggle('is-final', !!data.final);
+
+    if (status === 'successful') {
+      title.textContent = 'Payment confirmed';
+      message.textContent = data.message || 'Payment confirmed.';
+    } else if (status === 'failed' || status === 'timed_out' || status === 'reversed') {
+      title.textContent = 'Payment not completed';
+      message.textContent = data.message || 'Payment was not completed.';
+    } else if (stopped) {
+      title.textContent = 'Still waiting for confirmation';
+      message.textContent = 'Airtel has not confirmed this payment yet. Do not pay again until this request finishes or support checks it.';
+    } else {
+      title.textContent = 'Waiting for Airtel confirmation';
+      message.textContent = data.message || 'Waiting for Airtel Money confirmation.';
+    }
+  }
+
+  function poll(enquire) {
+    if (!statusUrl) return;
+    if (checkBtn) checkBtn.disabled = true;
+    fetch(statusUrl + (enquire ? '?enquire=1' : ''), {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        attempts += 1;
+        var stopped = attempts >= maxAttempts;
+        setState(data, stopped);
+        if (!data.final && !stopped) {
+          timer = window.setTimeout(function () { poll(false); }, delayMs);
+        }
+      })
+      .catch(function () {
+        attempts += 1;
+        setState({ status: 'pending_provider_confirmation', message: 'Unable to refresh status right now.' }, attempts >= maxAttempts);
+        if (attempts < maxAttempts) {
+          timer = window.setTimeout(function () { poll(false); }, delayMs);
+        }
+      })
+      .finally(function () {
+        if (checkBtn) checkBtn.disabled = false;
+      });
+  }
+
+  if (checkBtn) {
+    checkBtn.addEventListener('click', function () {
+      if (timer) window.clearTimeout(timer);
+      attempts = Math.min(attempts, maxAttempts - 1);
+      poll(true);
+    });
+  }
+
+  poll(false);
+})();
+</script>
+{% endblock %}

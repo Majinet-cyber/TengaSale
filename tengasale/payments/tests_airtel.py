@@ -8,11 +8,12 @@ from unittest.mock import Mock, patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import Client, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
 from payments.airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
 from payments.airtel_services import AirtelTransactionEnquiryService, normalize_airtel_status
+from payments.mobile_network import PROVIDER_AIRTEL, PROVIDER_TNM, normalize_malawi_msisdn as normalize_mobile_network
 from payments.models import AirtelCallbackLog, AirtelTransaction
 from portal.models import PaymentContract, PaymentTransaction, generate_contract_number, generate_payg_number
 
@@ -62,6 +63,24 @@ class AirtelStatusMappingTests(TestCase):
 
     def test_unknown_status(self):
         self.assertEqual(normalize_airtel_status("SOMETHING_NEW"), AirtelTransaction.STATUS_UNKNOWN)
+
+
+class MalawiMobileNetworkTests(SimpleTestCase):
+    def test_detects_airtel_numbers(self):
+        normalized = normalize_mobile_network("099 123 4567")
+        self.assertTrue(normalized.valid)
+        self.assertEqual(normalized.provider, PROVIDER_AIRTEL)
+        self.assertEqual(normalized.international, "+265991234567")
+
+    def test_detects_tnm_numbers(self):
+        normalized = normalize_mobile_network("+265 88 123 4567")
+        self.assertTrue(normalized.valid)
+        self.assertEqual(normalized.provider, PROVIDER_TNM)
+        self.assertEqual(normalized.international, "+265881234567")
+
+    def test_rejects_unknown_or_short_numbers(self):
+        self.assertFalse(normalize_mobile_network("071234567").valid)
+        self.assertFalse(normalize_mobile_network("099123").valid)
 
 
 @override_settings(
@@ -191,6 +210,72 @@ class AirtelApiTests(TestCase):
         self.assertEqual(tx.environment, "staging")
         self.assertIsNotNone(tx.payment_transaction)
         self.assertEqual(tx.payment_transaction.status, PaymentTransaction.STATUS_PENDING)
+
+    def test_collection_initiate_success_code_still_waits_for_confirmation(self):
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {"status": {"code": "200"}, "transaction": {"status_code": "TS"}}
+            response = self.client.post(
+                "/api/payments/airtel/collections/initiate/",
+                data=json.dumps({
+                    "msisdn": "0991234567",
+                    "amount": 500,
+                    "purpose": "INSTALLMENT",
+                    "contract_id": self.contract.id,
+                }),
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        tx = AirtelTransaction.objects.get(internal_reference=response.json()["internal_reference"])
+        self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
+        self.assertFalse(tx.repayment_posted)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.amount_paid, Decimal("0"))
+
+    def test_portal_payment_submit_redirects_to_waiting_without_success(self):
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {"status": {"code": "200"}, "transaction": {"status_code": "TIP"}}
+            response = self.client.post(
+                f"/pay/contract/{self.contract.contract_number}/payment/",
+                data={"phone": "0991234567", "amount": "500", "payment_type": "repayment"},
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/pay/payment/", response["Location"])
+        tx = AirtelTransaction.objects.get()
+        self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
+        self.assertIsNotNone(tx.payment_transaction)
+        self.assertEqual(tx.payment_transaction.status, PaymentTransaction.STATUS_PENDING)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.amount_paid, Decimal("0"))
+        self.assertEqual(self.contract.remaining_amount, Decimal("150000"))
+
+    def test_portal_payment_blocks_tnm_until_integrated(self):
+        response = self.client.post(
+            f"/pay/contract/{self.contract.contract_number}/payment/",
+            data={"phone": "0881234567", "amount": "500", "payment_type": "repayment"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(AirtelTransaction.objects.count(), 0)
+        self.assertEqual(PaymentTransaction.objects.count(), 0)
+
+    def test_customer_status_endpoint_exposes_safe_pending_state(self):
+        tx = AirtelTransaction.objects.create(
+            internal_reference="TENGA-AIRTEL-20260714-STATUS01",
+            customer_msisdn="+265991234567",
+            amount=Decimal("500"),
+            purpose=AirtelTransaction.PURPOSE_INSTALLMENT,
+            direction=AirtelTransaction.DIRECTION_COLLECTION,
+            status=AirtelTransaction.STATUS_PENDING,
+            contract=self.contract,
+        )
+        response = self.client.get(f"/api/payments/{tx.internal_reference}/status/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "pending_customer_approval")
+        self.assertFalse(data["final"])
+        self.assertEqual(data["masked_phone"], "+26599***4567")
+        self.assertNotIn("raw_response", data)
 
     def test_collection_initiate_resolves_contract_query(self):
         self.contract.customer_national_id = "VB78NNRU"

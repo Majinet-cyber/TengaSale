@@ -18,6 +18,7 @@ urlpatterns = [
     path("payg/<str:payg_number>/history/", views.portal_payg_history, name="portal_payg_history"),
 
     # Payment return / status pages
+    path("payment/<str:internal_reference>/", views.portal_payment_wait, name="portal_payment_wait"),
     path("payment-return/", views.payment_return, name="payment_return"),
     path("payment-status/", views.payment_status_json, name="payment_status_json"),
 

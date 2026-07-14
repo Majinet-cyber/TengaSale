@@ -24,10 +24,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.models import AuditLog
+from payments.airtel_client import AirtelConfigurationError
+from payments.airtel_services import AirtelCollectionService, mask_msisdn
+from payments.mobile_network import PROVIDER_AIRTEL, PROVIDER_TNM, detect_mobile_network
+from payments.models import AirtelTransaction
 from .models import PaymentContract, PaymentTransaction
-from .payment_providers import get_payment_provider
 from .services import (
-    apply_payment_to_contract,
     calculate_early_settlement_options,
     calculate_remaining_amount,
     calculate_payment_behaviour,
@@ -337,8 +339,9 @@ def portal_contract(request, contract_number):
 # ---------------------------------------------------------------------------
 
 @require_POST
-def portal_payment(request, contract_number):
+def _legacy_portal_payment_provider_flow(request, contract_number):
     """Initiate a payment against a contract."""
+    raise RuntimeError("Legacy provider payment flow is disabled; use portal_payment.")
     contract = get_object_or_404(PaymentContract, contract_number=contract_number)
 
     remaining_now = calculate_remaining_amount(contract)
@@ -510,6 +513,142 @@ def portal_payment(request, contract_number):
         )
 
     return redirect("portal_contract", contract_number=contract_number)
+
+
+@require_POST
+def portal_payment(request, contract_number):
+    """Initiate an Airtel collection without confirming payment locally."""
+    contract = get_object_or_404(PaymentContract, contract_number=contract_number)
+
+    remaining_now = calculate_remaining_amount(contract)
+    if contract.status == PaymentContract.STATUS_COMPLETED and remaining_now <= Decimal("0"):
+        messages.info(request, "Contract fully paid. No payment is currently required.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    closed_statuses = {
+        PaymentContract.STATUS_RESOLD,
+        PaymentContract.STATUS_WRITTEN_OFF,
+        PaymentContract.STATUS_LEGALLY_CLOSED,
+    }
+    if contract.status in closed_statuses:
+        messages.info(request, "This contract is closed - no further access-restoring payments are available.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    phone_raw = request.POST.get("phone", "").strip()
+    amount_raw = request.POST.get("amount", "0").strip()
+    payment_type_raw = request.POST.get("payment_type", "").strip().lower()
+
+    try:
+        amount = Decimal(amount_raw)
+    except (InvalidOperation, ValueError):
+        messages.error(request, "Invalid amount entered. Please try again.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    if amount <= Decimal("0"):
+        messages.error(request, "Payment amount must be greater than zero.")
+        return redirect("portal_contract", contract_number=contract_number)
+    if amount < Decimal("100"):
+        messages.error(request, "Minimum payment is MWK 100.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    from portal.services import calculate_deposit_payment_type
+    payment_type = calculate_deposit_payment_type(contract, payment_type_raw)
+    if payment_type == PaymentTransaction.TYPE_DEPOSIT:
+        deposit_remaining = contract.deposit_remaining
+        if deposit_remaining <= Decimal("0"):
+            messages.info(request, "Deposit is already fully paid.")
+            return redirect("portal_contract", contract_number=contract_number)
+        if amount > deposit_remaining:
+            amount = deposit_remaining
+    else:
+        remaining = calculate_remaining_amount(contract)
+        if remaining <= Decimal("0"):
+            messages.info(request, "This contract is fully paid.")
+            return redirect("portal_contract", contract_number=contract_number)
+        if amount > remaining:
+            amount = remaining
+
+    network = detect_mobile_network(phone_raw)
+    if not network.valid:
+        messages.error(request, "Enter a valid Malawi mobile money number starting with 09 or +265 9.")
+        return redirect("portal_contract", contract_number=contract_number)
+    if network.provider == PROVIDER_TNM:
+        messages.error(request, "TNM Mpamba payments are not yet available. Please use an Airtel Money number.")
+        return redirect("portal_contract", contract_number=contract_number)
+    if network.provider != PROVIDER_AIRTEL:
+        messages.error(request, "This mobile money network is not currently supported. Please use Airtel Money.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    purpose = (
+        AirtelTransaction.PURPOSE_DEPOSIT
+        if payment_type == PaymentTransaction.TYPE_DEPOSIT
+        else AirtelTransaction.PURPOSE_INSTALLMENT
+    )
+    try:
+        airtel_tx = AirtelCollectionService().initiate_collection_payment(
+            msisdn=network.international,
+            amount=amount,
+            purpose=purpose,
+            contract=contract,
+            customer=request.user if request.user.is_authenticated else None,
+        )
+    except AirtelConfigurationError:
+        logger.exception("Airtel configuration error while initiating contract payment %s", contract_number)
+        messages.error(request, "Airtel Money is not ready for live payments. Please contact support.")
+        return redirect("portal_contract", contract_number=contract_number)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("portal_contract", contract_number=contract_number)
+    except Exception:
+        logger.exception("Airtel payment initiation failed for contract %s", contract_number)
+        messages.error(request, "Airtel Money is temporarily unavailable. Please try again or contact support.")
+        return redirect("portal_contract", contract_number=contract_number)
+
+    _portal_audit(
+        AuditLog.ACTION_PAYMENT,
+        "PaymentContract",
+        contract.id,
+        {
+            "contract_number": contract_number,
+            "payg_number": contract.payg_number,
+            "payment_type": payment_type,
+            "amount": str(amount),
+            "provider": PROVIDER_AIRTEL,
+            "reference": airtel_tx.internal_reference,
+            "status": airtel_tx.status,
+        },
+        request,
+    )
+    messages.info(
+        request,
+        f"Airtel Money prompt sent to {mask_msisdn(airtel_tx.customer_msisdn)}. Enter your PIN to confirm MWK {amount:,.0f}."
+    )
+    return redirect("portal_payment_wait", internal_reference=airtel_tx.internal_reference)
+
+
+def portal_payment_wait(request, internal_reference):
+    """Waiting page for pending Airtel collection confirmation."""
+    airtel_tx = get_object_or_404(
+        AirtelTransaction.objects.select_related("contract", "payment_transaction"),
+        internal_reference=internal_reference,
+    )
+    contract = airtel_tx.contract
+    return render(
+        request,
+        "portal/payment_wait.html",
+        {
+            "airtel_tx": airtel_tx,
+            "contract": contract,
+            "provider_label": "Airtel Money",
+            "masked_phone": mask_msisdn(airtel_tx.customer_msisdn),
+            "status_url": f"/api/payments/{airtel_tx.internal_reference}/status/",
+            "return_url": (
+                redirect("portal_contract", contract_number=contract.contract_number).url
+                if contract
+                else ""
+            ),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
