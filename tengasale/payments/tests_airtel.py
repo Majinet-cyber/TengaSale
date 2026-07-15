@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import Client, SimpleTestCase, TestCase, override_settings
+from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
 
 from payments.airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
@@ -109,6 +110,43 @@ class AirtelApiTests(TestCase):
     def test_callback_url_resolves_and_get_returns_405(self):
         response = self.client.get("/api/payments/airtel/callback/")
         self.assertEqual(response.status_code, 405)
+
+    def test_exact_public_routes_resolve_and_reverse(self):
+        routes = {
+            "airtel_health": "/api/payments/airtel/health/",
+            "airtel_readiness": "/api/payments/airtel/readiness/",
+            "airtel_callback": "/api/payments/airtel/callback/",
+        }
+        for name, route in routes.items():
+            with self.subTest(route=route):
+                self.assertEqual(reverse(name), route)
+                self.assertEqual(resolve(route).url_name, name)
+
+    def test_duplicated_api_payments_prefix_does_not_resolve(self):
+        with self.assertRaises(Resolver404):
+            resolve("/api/payments/api/payments/airtel/readiness/")
+
+    def test_callback_post_is_public_and_never_redirects_to_login(self):
+        response = self.client.post(
+            reverse("airtel_callback"),
+            data="{not-json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotEqual(response.status_code, 404)
+        self.assertNotIn(response.status_code, (301, 302, 307, 308))
+
+    def test_airtel_routes_command_lists_only_public_routes(self):
+        output = io.StringIO()
+        call_command("airtel_routes", stdout=output)
+        self.assertEqual(
+            output.getvalue().splitlines(),
+            [
+                "GET  /api/payments/airtel/health/",
+                "GET  /api/payments/airtel/readiness/",
+                "POST /api/payments/airtel/callback/",
+            ],
+        )
 
     def test_health_endpoint_returns_safe_status(self):
         response = self.client.get("/api/payments/airtel/health/")

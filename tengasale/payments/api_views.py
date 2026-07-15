@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
 from django.db.models import Count, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -213,6 +214,14 @@ def _database_ready() -> bool:
         return False
 
 
+def _migrations_applied() -> bool:
+    try:
+        executor = MigrationExecutor(connection)
+        return not executor.migration_plan(executor.loader.graph.leaf_nodes())
+    except Exception:
+        return False
+
+
 def airtel_readiness_status() -> tuple[dict, int]:
     missing = []
     try:
@@ -225,6 +234,7 @@ def airtel_readiness_status() -> tuple[dict, int]:
 
     callback_route_resolves = _callback_route_resolves()
     database_ready = _database_ready()
+    migrations_applied = _migrations_applied() if database_ready else False
 
     if config is None:
         payload = {
@@ -236,6 +246,7 @@ def airtel_readiness_status() -> tuple[dict, int]:
             "callback_url": getattr(settings, "AIRTEL_CALLBACK_URL", ""),
             "callback_route_resolves": callback_route_resolves,
             "database_ready": database_ready,
+            "migrations_applied": migrations_applied,
             "missing": missing,
             "configuration_error": config_error,
         }
@@ -248,6 +259,15 @@ def airtel_readiness_status() -> tuple[dict, int]:
         "merchant_code_configured": bool(config.merchant_code),
         "allowed_test_numbers_configured": bool(config.allowed_test_msisdns),
         "callback_configured": bool(getattr(settings, "AIRTEL_CALLBACK_URL", "")),
+        "callback_url_exact": getattr(settings, "AIRTEL_CALLBACK_URL", "")
+        == "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+        "country_is_mw": config.country == "MW",
+        "currency_is_mwk": config.currency == "MWK",
+        "test_max_configured": bool(
+            config.test_max_amount and Decimal(str(config.test_max_amount)) > 0
+        ),
+        "production_disabled": not config.production_enabled,
+        "staging_environment": not config.is_production,
     }
     for key, ok in checks.items():
         if not ok:
@@ -256,14 +276,15 @@ def airtel_readiness_status() -> tuple[dict, int]:
         missing.append("CALLBACK_ROUTE")
     if not database_ready:
         missing.append("DATABASE")
-    if config.is_production and not config.production_enabled:
-        missing.append("AIRTEL_PRODUCTION_ENABLED")
+    if not migrations_applied:
+        missing.append("MIGRATIONS")
 
     ready = not missing
     payload = {
         "status": "ready" if ready else "not_ready",
         "provider": "airtel_money",
         "environment": config.environment,
+        "production_enabled": config.production_enabled,
         "base_url": config.base_url,
         "collections_enabled": config.collections_enabled,
         "dry_run": config.dry_run,
@@ -272,10 +293,16 @@ def airtel_readiness_status() -> tuple[dict, int]:
         "client_id_configured": checks["client_id_configured"],
         "client_secret_configured": checks["client_secret_configured"],
         "private_key_configured": checks["private_key_configured"],
+        "callback_key_configured": checks["private_key_configured"],
         "merchant_code_configured": checks["merchant_code_configured"],
         "allowed_test_numbers_configured": checks["allowed_test_numbers_configured"],
+        "allowed_test_msisdns_configured": checks["allowed_test_numbers_configured"],
         "test_max_amount": config.test_max_amount,
+        "test_max_configured": checks["test_max_configured"],
+        "country": config.country,
+        "currency": config.currency,
         "database_ready": database_ready,
+        "migrations_applied": migrations_applied,
         "missing": missing,
     }
     return payload, 200 if ready else 503

@@ -56,7 +56,7 @@ def mask_msisdn(value: str) -> str:
         normalized = normalize_malawi_msisdn(value)
     except ValueError:
         return "***"
-    return f"{normalized[:4]}***{normalized[-4:]}"
+    return f"{normalized[:6]}***{normalized[-4:]}"
 
 
 def _airtel_api_msisdn(value: str) -> str:
