@@ -35,6 +35,7 @@ from .services import (
     calculate_payment_behaviour,
     calculate_health_score,
     calculate_customer_insights,
+    get_deposit_summary,
     resolve_payable_contract,
     search_payment_contract,
 )
@@ -150,6 +151,7 @@ def portal_contract(request, contract_number):
     remaining = calculate_remaining_amount(contract)
     early_options = calculate_early_settlement_options(contract)
     fully_paid = remaining <= Decimal("0")
+    deposit_summary = get_deposit_summary(contract)
     inactive_statuses = {
         PaymentContract.STATUS_CANCELLED,
         PaymentContract.STATUS_REPOSSESSION_PENDING,
@@ -254,14 +256,17 @@ def portal_contract(request, contract_number):
         except Exception:
             pass
 
-    # Deposit state
-    deposit_required = contract.deposit_required or Decimal("0")
-    deposit_paid_amt = contract.deposit_paid or Decimal("0")
-    deposit_remaining = contract.deposit_remaining
-    deposit_complete = contract.deposit_complete
+    # Authoritative deposit state comes from confirmed ledger transactions.
+    deposit_required = deposit_summary.required_amount
+    deposit_paid_amt = deposit_summary.confirmed_paid_amount
+    deposit_remaining = deposit_summary.remaining_amount
+    deposit_complete = deposit_summary.is_fully_paid
     deposit_pending = deposit_required > 0 and not deposit_complete
     payment_type = request.GET.get("payment_type", "").strip().lower()
     deposit_focus = payment_type == "deposit" and deposit_pending
+    if deposit_pending:
+        lock_status = "deposit_pending"
+        lock_warning = None
 
     # Last payment info for lock card
     last_paid_tx = all_paid[0] if all_paid else None
@@ -319,6 +324,7 @@ def portal_contract(request, contract_number):
         "deposit_complete": deposit_complete,
         "deposit_pending": deposit_pending,
         "deposit_focus": deposit_focus,
+        "deposit_summary": deposit_summary,
         "payment_type": payment_type,
         "next_required_amount": next_required_amount,
         "next_required_date": next_required_date,
@@ -559,9 +565,13 @@ def portal_payment(request, contract_number):
     from portal.services import calculate_deposit_payment_type
     payment_type = calculate_deposit_payment_type(contract, payment_type_raw)
     if payment_type == PaymentTransaction.TYPE_DEPOSIT:
-        deposit_remaining = contract.deposit_remaining
+        deposit_state = get_deposit_summary(contract)
+        deposit_remaining = deposit_state.remaining_amount
         if deposit_remaining <= Decimal("0"):
             messages.info(request, "Deposit is already fully paid.")
+            return redirect("portal_contract", contract_number=contract_number)
+        if deposit_state.status == "pending_confirmation":
+            messages.info(request, "A deposit payment is still awaiting confirmation. Do not pay again yet.")
             return redirect("portal_contract", contract_number=contract_number)
         if amount > deposit_remaining:
             amount = deposit_remaining
@@ -725,6 +735,7 @@ def portal_history(request, contract_number):
 
     return render(request, "portal/history.html", {
         "contract": contract,
+        "deposit_summary": get_deposit_summary(contract),
         "transactions": all_txns,
         "month_filter": month_filter,
         "method_filter": method_filter,
@@ -1024,14 +1035,32 @@ def _maybe_activate_contract_after_deposit(contract, tx):
     if tx.payment_type != PaymentTransaction.TYPE_DEPOSIT:
         return
     contract.refresh_from_db()
-    if contract.deposit_complete and contract.status not in (
+    deposit_state = get_deposit_summary(contract)
+    update_fields = []
+    if contract.deposit_paid != deposit_state.confirmed_paid_amount:
+        contract.deposit_paid = deposit_state.confirmed_paid_amount
+        update_fields.append("deposit_paid")
+    if deposit_state.can_activate_contract and contract.status not in (
         PaymentContract.STATUS_ACTIVE, PaymentContract.STATUS_COMPLETED
     ):
         contract.status = PaymentContract.STATUS_ACTIVE
-        contract.save(update_fields=["status"])
+        update_fields.append("status")
+    if update_fields:
+        contract.save(update_fields=update_fields)
+    if "status" in update_fields:
+        _portal_audit(
+            AuditLog.ACTION_PAYMENT,
+            "PaymentContract",
+            contract.pk,
+            {
+                "event": "deposit_confirmed_contract_activated",
+                "transaction": tx.internal_reference,
+                "confirmed_deposit": str(deposit_state.confirmed_paid_amount),
+            },
+        )
         logger.info(
             "Contract %s activated after deposit fully paid (deposit_paid=%s)",
-            contract.contract_number, contract.deposit_paid,
+            contract.contract_number, deposit_state.confirmed_paid_amount,
         )
 
 

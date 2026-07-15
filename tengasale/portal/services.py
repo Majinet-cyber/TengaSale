@@ -36,6 +36,74 @@ class ContractResolution:
         return self.status == "payable"
 
 
+@dataclass(frozen=True)
+class DepositSummary:
+    required_amount: Decimal
+    confirmed_paid_amount: Decimal
+    pending_amount: Decimal
+    remaining_amount: Decimal
+    percentage_paid: Decimal
+    status: str
+    is_fully_paid: bool
+    can_activate_contract: bool
+    activated_at: object | None = None
+
+
+def get_deposit_summary(contract) -> DepositSummary:
+    """Return deposit state from confirmed ledger transactions, never snapshots."""
+    from django.db.models import Sum
+    from portal.models import PaymentTransaction
+
+    required = Decimal(str(getattr(contract, "deposit_required", 0) or 0))
+    deposits = contract.transactions.filter(payment_type=PaymentTransaction.TYPE_DEPOSIT)
+    confirmed = deposits.filter(
+        status=PaymentTransaction.STATUS_PAID,
+        paid_at__isnull=False,
+    )
+    confirmed_amount = confirmed.aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    confirmed_amount = min(max(confirmed_amount, Decimal("0")), required) if required > 0 else Decimal("0")
+    pending_amount = deposits.filter(
+        status__in=(
+            PaymentTransaction.STATUS_PENDING,
+            PaymentTransaction.STATUS_TENGA_PROCESSING,
+            PaymentTransaction.STATUS_PROCESSING,
+        )
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    remaining = max(required - confirmed_amount, Decimal("0"))
+    percentage = (
+        (confirmed_amount / required * Decimal("100")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if required > 0 else Decimal("100")
+    )
+    is_fully_paid = required <= 0 or confirmed_amount >= required
+    if required <= 0:
+        status = "not_required"
+    elif is_fully_paid:
+        status = "paid"
+    elif confirmed_amount > 0:
+        status = "partially_paid"
+    elif pending_amount > 0:
+        status = "pending_confirmation"
+    elif deposits.filter(status=PaymentTransaction.STATUS_REVERSED).exists():
+        status = "refunded"
+    elif deposits.filter(status=PaymentTransaction.STATUS_FAILED).exists():
+        status = "failed"
+    else:
+        status = "unpaid"
+    latest_confirmation = confirmed.order_by("-paid_at").values_list("paid_at", flat=True).first()
+    activated_at = getattr(contract, "deposit_paid_at", None) if is_fully_paid else None
+    return DepositSummary(
+        required_amount=required,
+        confirmed_paid_amount=confirmed_amount,
+        pending_amount=pending_amount,
+        remaining_amount=remaining,
+        percentage_paid=min(percentage, Decimal("100")),
+        status=status,
+        is_fully_paid=is_fully_paid,
+        can_activate_contract=required > 0 and is_fully_paid,
+        activated_at=activated_at or latest_confirmation if is_fully_paid else None,
+    )
+
+
 # ---------------------------------------------------------------------------
 # MWK rounding helper
 # ---------------------------------------------------------------------------
@@ -557,21 +625,39 @@ def apply_payment_to_contract(
 
     # ── Deposit payment ──────────────────────────────────────────────────────
     if payment_type == PaymentTransaction.TYPE_DEPOSIT:
-        deposit_remaining = contract.deposit_remaining
-        if deposit_remaining <= Decimal("0"):
+        authoritative = get_deposit_summary(contract)
+        if authoritative.confirmed_paid_amount <= Decimal("0"):
             return {
                 "applied": Decimal("0"),
                 "arrears_cleared": Decimal("0"),
                 "days_extended": 0,
                 "payment_type": payment_type,
+                "error": "Deposit payment has not been confirmed.",
+            }
+        previous_snapshot = min(
+            Decimal(str(contract.deposit_paid or 0)),
+            authoritative.confirmed_paid_amount,
+        )
+        applied = max(authoritative.confirmed_paid_amount - previous_snapshot, Decimal("0"))
+        was_complete = (
+            authoritative.required_amount <= 0
+            or previous_snapshot >= authoritative.required_amount
+        )
+        contract.deposit_paid = authoritative.confirmed_paid_amount
+        confirmed_complete = authoritative.is_fully_paid
+        became_complete = confirmed_complete and not was_complete
+        if confirmed_complete and was_complete and applied <= Decimal("0"):
+            return {
+                "applied": Decimal("0"),
+                "arrears_cleared": Decimal("0"),
+                "days_extended": 0,
+                "payment_type": payment_type,
+                "deposit_remaining": Decimal("0"),
+                "deposit_complete": True,
                 "error": "Deposit is already fully paid.",
             }
-        applied = min(amount, deposit_remaining)
-        was_complete = contract.deposit_complete
-        contract.deposit_paid = (contract.deposit_paid or Decimal("0")) + applied
-        became_complete = contract.deposit_complete and not was_complete
         access_expiry = None
-        if became_complete:
+        if became_complete and confirmed_complete:
             access_days = get_deposit_access_days(contract)
             access_expiry = payment_at + timedelta(days=access_days)
             contract.deposit_paid_at = payment_at
@@ -583,7 +669,7 @@ def apply_payment_to_contract(
             contract.status = "active"
         if db_save:
             update_fields = ["deposit_paid"]
-            if became_complete:
+            if became_complete and confirmed_complete:
                 update_fields.extend([
                     "deposit_paid_at",
                     "last_payment_at",
@@ -594,13 +680,28 @@ def apply_payment_to_contract(
                     "status",
                 ])
             contract.save(update_fields=update_fields)
+            if became_complete and confirmed_complete:
+                try:
+                    from core.models import AuditLog
+                    AuditLog.objects.create(
+                        user=None,
+                        action=AuditLog.ACTION_PAYMENT,
+                        object_type="PaymentContract",
+                        object_id=str(contract.pk),
+                        detail={
+                            "event": "deposit_confirmed_contract_activated",
+                            "confirmed_deposit": str(authoritative.confirmed_paid_amount),
+                        },
+                    )
+                except Exception:
+                    logger.exception("Could not audit deposit activation for %s", contract.pk)
         return {
             "applied": applied,
             "arrears_cleared": Decimal("0"),
-            "days_extended": get_deposit_access_days(contract) if became_complete else 0,
+            "days_extended": get_deposit_access_days(contract) if became_complete and confirmed_complete else 0,
             "payment_type": payment_type,
-            "deposit_remaining": contract.deposit_remaining,
-            "deposit_complete": contract.deposit_complete,
+            "deposit_remaining": authoritative.remaining_amount,
+            "deposit_complete": authoritative.is_fully_paid,
             "deposit_paid_at": contract.deposit_paid_at,
             "deposit_unlock_expires_at": contract.deposit_unlock_expires_at,
             "access_expires_at": contract.access_expires_at,
@@ -902,10 +1003,8 @@ def _sync_contract_state_from_legal(payment_contract, legal_contract):
         return payment_contract
 
     update_fields = []
-    if legal_contract.deposit_paid and payment_contract.deposit_required > payment_contract.deposit_paid:
-        payment_contract.deposit_paid = payment_contract.deposit_required
-        payment_contract.deposit_paid_at = legal_contract.deposit_paid_at or timezone.now()
-        update_fields.extend(["deposit_paid", "deposit_paid_at"])
+    # The legal-contract boolean is not payment evidence. Deposit state is
+    # reconciled exclusively from confirmed PaymentTransaction ledger rows.
 
     if payment_contract.status == payment_contract.STATUS_COMPLETED and payment_contract.remaining_amount > 0:
         payment_contract.status = payment_contract.STATUS_ACTIVE
@@ -1273,7 +1372,11 @@ def create_contract_from_application(application, approved_by=None) -> "PaymentC
         thirty_day_price=pricing["monthly_repayment"],
         term_months=pricing["term_months"],
         deposit_access_days=_deposit_access_days,
-        status=PaymentContract.STATUS_ACTIVE,
+        status=(
+            PaymentContract.STATUS_PENDING_ACTIVATION
+            if pricing["deposit_required"] > Decimal("0")
+            else PaymentContract.STATUS_ACTIVE
+        ),
         provider_metadata=provider_meta,
     )
 

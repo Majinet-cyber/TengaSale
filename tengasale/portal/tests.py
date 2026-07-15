@@ -966,10 +966,22 @@ class DepositPaymentTest(TestCase):
         defaults.update(kwargs)
         return _ensure_test_payg(PaymentContract.objects.create(**defaults))
 
+    def _confirm_deposit(self, contract, amount, paid_at=None):
+        return PaymentTransaction.objects.create(
+            payment_contract=contract,
+            provider=PaymentTransaction.PROVIDER_AIRTEL,
+            payment_type=PaymentTransaction.TYPE_DEPOSIT,
+            amount=Decimal(amount),
+            phone=contract.customer_phone,
+            status=PaymentTransaction.STATUS_PAID,
+            paid_at=paid_at or timezone.now(),
+        )
+
     # --- Deposit property tests ---
 
     def test_deposit_remaining_correct(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("2000"))
+        self._confirm_deposit(c, "2000")
         self.assertEqual(c.deposit_remaining, Decimal("3000"))
 
     def test_deposit_remaining_zero_when_no_requirement(self):
@@ -982,12 +994,14 @@ class DepositPaymentTest(TestCase):
 
     def test_deposit_complete_true_when_full(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
+        self._confirm_deposit(c, "5000")
         self.assertTrue(c.deposit_complete)
 
     # --- apply_payment deposit type ---
 
     def test_deposit_payment_credits_deposit_paid(self):
         c = self._make_contract()
+        self._confirm_deposit(c, "2000")
         result = apply_payment_to_contract(c, Decimal("2000"), payment_type="deposit")
         c.refresh_from_db()
         self.assertEqual(c.deposit_paid, Decimal("2000"))
@@ -996,6 +1010,8 @@ class DepositPaymentTest(TestCase):
 
     def test_deposit_payment_capped_at_deposit_remaining(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("4000"))
+        self._confirm_deposit(c, "4000")
+        self._confirm_deposit(c, "3000")
         result = apply_payment_to_contract(c, Decimal("3000"), payment_type="deposit")
         c.refresh_from_db()
         self.assertEqual(c.deposit_paid, Decimal("5000"))
@@ -1003,12 +1019,14 @@ class DepositPaymentTest(TestCase):
 
     def test_deposit_already_paid_returns_error(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
+        self._confirm_deposit(c, "5000")
         result = apply_payment_to_contract(c, Decimal("1000"), payment_type="deposit")
         self.assertIn("error", result)
         self.assertEqual(result["applied"], Decimal("0"))
 
     def test_deposit_does_not_affect_amount_paid(self):
         c = self._make_contract()
+        self._confirm_deposit(c, "5000")
         apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")
         c.refresh_from_db()
         self.assertEqual(c.amount_paid, Decimal("0"))
@@ -1076,6 +1094,7 @@ class DepositPaymentTest(TestCase):
 
     def test_deposit_complete_after_full_deposit(self):
         c = self._make_contract()
+        self._confirm_deposit(c, "5000")
         apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")
         c.refresh_from_db()
         self.assertTrue(c.deposit_complete)
@@ -1083,6 +1102,7 @@ class DepositPaymentTest(TestCase):
     def test_deposit_payment_sets_exact_seven_day_access_expiry(self):
         paid_at = timezone.make_aware(datetime(2026, 6, 5, 20, 13, 0))
         c = self._make_contract(deposit_access_days=7)
+        self._confirm_deposit(c, "5000", paid_at=paid_at)
 
         result = apply_payment_to_contract(
             c,

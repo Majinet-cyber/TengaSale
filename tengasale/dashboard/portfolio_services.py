@@ -177,6 +177,8 @@ def portfolio_rows(contracts=None):
     contracts = (contracts or PaymentContract.objects.all()).select_related("source_application", "source_application__created_by")
     rows = []
     for contract in contracts:
+        from portal.services import get_deposit_summary
+        deposit_summary = get_deposit_summary(contract)
         app = contract.source_application
         merchant_name = ""
         underwriter = ""
@@ -191,7 +193,7 @@ def portfolio_rows(contracts=None):
             "underwriter": underwriter,
             "device": contract.device_model,
             "loan": contract.total_amount,
-            "deposit": contract.deposit_paid,
+            "deposit": deposit_summary.confirmed_paid_amount,
             "paid": contract.amount_paid,
             "balance": contract.remaining_amount,
             "status": contract.get_status_display(),

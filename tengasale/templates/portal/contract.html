@@ -37,7 +37,8 @@
         {% endif %}
       </div>
       <span class="cpd-status-badge cpd-status-badge--{{ contract.status }}">
-        {% if contract.status == 'active' %}Active
+        {% if deposit_pending %}Pending activation
+        {% elif contract.status == 'active' %}Active
         {% elif contract.status == 'completed' %}Completed
         {% elif contract.status == 'overdue' %}Overdue
         {% elif contract.status == 'locked' %}Locked
@@ -85,7 +86,7 @@
     {% if pricing_complete and contract.deposit_required > 0 %}
     <div class="cpd-meta-grid" style="margin-top:10px;">
       <div><span class="cpd-label">Deposit required</span><strong>{{ contract.deposit_required|mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit paid</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
+      <div><span class="cpd-label">Confirmed deposit</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
     </div>
     {% endif %}
 
@@ -105,7 +106,12 @@
     </div>
   </section>
 
-  {% if fully_paid %}
+  {% if deposit_pending %}
+    <section class="cpd-alert-card cpd-alert-card--warning" data-deposit-account-state="{{ deposit_summary.status }}">
+      <strong>{% if deposit_summary.status == 'pending_confirmation' %}Deposit payment pending{% elif deposit_summary.status == 'partially_paid' %}Deposit partly paid{% else %}Deposit not paid{% endif %}</strong>
+      <span>Contract is not active yet. {% if deposit_summary.status == 'pending_confirmation' %}Waiting for payment confirmation—do not pay again yet.{% else %}Pay the full deposit to activate this contract.{% endif %}</span>
+    </section>
+  {% elif fully_paid %}
     <section class="cpd-alert-card cpd-alert-card--safe">
       <strong>Contract fully paid</strong>
       <span>No payment is currently required.</span>
@@ -147,9 +153,17 @@
     </div>
     <div class="cpd-money-grid cpd-money-grid--deposit">
       <div><span class="cpd-label">Deposit Required</span><strong class="cpd-val--due">{{ deposit_required|mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit Paid</span><strong class="cpd-val--green">{{ deposit_paid_amt|mwk }}</strong></div>
+      <div><span class="cpd-label">Confirmed Amount</span><strong class="{% if deposit_paid_amt %}cpd-val--green{% else %}cpd-val--navy{% endif %}">{{ deposit_paid_amt|mwk }}</strong></div>
       <div><span class="cpd-label">Deposit Remaining</span><strong class="{% if deposit_complete %}cpd-val--green{% else %}cpd-val--due{% endif %}">{{ deposit_remaining|mwk }}</strong></div>
     </div>
+    <div class="cpd-deposit-progress" aria-label="Deposit {{ deposit_summary.percentage_paid|floatformat:0 }}% paid">
+      <div><span style="width:{{ deposit_summary.percentage_paid }}%"></span></div>
+      <strong>{{ deposit_summary.percentage_paid|floatformat:0 }}% paid</strong>
+      <small>{{ deposit_remaining|mwk }} outstanding</small>
+    </div>
+    {% if deposit_summary.status == 'pending_confirmation' %}
+    <button type="button" class="cpd-pay-btn" disabled>Deposit confirmation pending</button>
+    {% else %}
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="deposit">
@@ -176,7 +190,7 @@
         <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" value="{{ deposit_remaining|floatformat:0 }}" required data-payment-amount>
       </div>
       <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit" disabled data-payment-submit>
-        Pay deposit — <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
+        {% if deposit_summary.status == 'partially_paid' %}Complete deposit{% else %}Pay deposit{% endif %} — <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
       </button>
       <div class="cpd-payment-progress" hidden data-payment-progress>
         <div class="cpd-payment-progress__row cpd-payment-progress__row--active"><span></span>Sending payment prompt</div>
@@ -186,6 +200,7 @@
         <p>Check your phone and enter your mobile money PIN.</p>
       </div>
     </form>
+    {% endif %}
   </section>
   {% elif deposit_required and deposit_complete and not fully_paid %}
   <section class="cpd-alert-card cpd-alert-card--safe">

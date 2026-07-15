@@ -26,7 +26,12 @@ from portal.models import (
     PaymentContract, PaymentTransaction,
     generate_contract_number, generate_payg_number, generate_payment_reference,
 )
-from portal.services import resolve_payable_contract
+from portal.services import (
+    _sync_contract_state_from_legal,
+    apply_payment_to_contract,
+    get_deposit_summary,
+    resolve_payable_contract,
+)
 from portal.payment_providers import (
     MockPaymentProvider,
     PayChanguProvider,
@@ -72,6 +77,102 @@ def _make_transaction(contract, **kwargs):
     )
     defaults.update(kwargs)
     return PaymentTransaction.objects.create(**defaults)
+
+
+class AuthoritativeDepositStateTests(TestCase):
+    def setUp(self):
+        self.contract = _make_contract(
+            deposit_required=Decimal("232050"),
+            deposit_paid=Decimal("232050"),  # deliberately stale snapshot
+            amount_paid=Decimal("0"),
+            status=PaymentContract.STATUS_ACTIVE,
+        )
+
+    def confirmed_deposit(self, amount, status=PaymentTransaction.STATUS_PAID, paid_at=True):
+        return _make_transaction(
+            self.contract,
+            payment_type=PaymentTransaction.TYPE_DEPOSIT,
+            amount=Decimal(amount),
+            status=status,
+            paid_at=timezone.now() if paid_at else None,
+        )
+
+    def test_stale_snapshot_without_confirmed_transaction_is_unpaid(self):
+        summary = get_deposit_summary(self.contract)
+        self.assertEqual(summary.confirmed_paid_amount, Decimal("0"))
+        self.assertEqual(summary.remaining_amount, Decimal("232050"))
+        self.assertEqual(summary.percentage_paid, Decimal("0.00"))
+        self.assertEqual(summary.status, "unpaid")
+        self.assertFalse(summary.is_fully_paid)
+        self.assertFalse(self.contract.deposit_complete)
+
+    def test_legal_contract_boolean_cannot_invent_confirmed_deposit(self):
+        legal_contract = MagicMock(deposit_paid=True, deposit_paid_at=timezone.now())
+        self.contract.deposit_paid = Decimal("0")
+        self.contract.save(update_fields=["deposit_paid"])
+        _sync_contract_state_from_legal(self.contract, legal_contract)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.deposit_paid, Decimal("0"))
+        self.assertEqual(get_deposit_summary(self.contract).confirmed_paid_amount, Decimal("0"))
+
+    def test_pending_failed_and_unconfirmed_paid_rows_do_not_count(self):
+        self.confirmed_deposit("100000", PaymentTransaction.STATUS_PENDING, paid_at=False)
+        self.confirmed_deposit("100000", PaymentTransaction.STATUS_FAILED, paid_at=False)
+        self.confirmed_deposit("100000", PaymentTransaction.STATUS_PAID, paid_at=False)
+        summary = get_deposit_summary(self.contract)
+        self.assertEqual(summary.confirmed_paid_amount, Decimal("0"))
+        self.assertEqual(summary.status, "pending_confirmation")
+
+    def test_partial_confirmed_deposit_has_correct_percentage(self):
+        self.confirmed_deposit("100000")
+        summary = get_deposit_summary(self.contract)
+        self.assertEqual(summary.confirmed_paid_amount, Decimal("100000"))
+        self.assertEqual(summary.remaining_amount, Decimal("132050"))
+        self.assertEqual(summary.percentage_paid, Decimal("43.09"))
+        self.assertEqual(summary.status, "partially_paid")
+
+    def test_regular_repayment_does_not_count_toward_deposit(self):
+        _make_transaction(
+            self.contract,
+            payment_type=PaymentTransaction.TYPE_REPAYMENT,
+            amount=Decimal("232050"),
+            status=PaymentTransaction.STATUS_PAID,
+            paid_at=timezone.now(),
+        )
+        self.assertEqual(get_deposit_summary(self.contract).confirmed_paid_amount, Decimal("0"))
+
+    def test_full_confirmed_deposit_activates_once(self):
+        self.contract.status = PaymentContract.STATUS_LOCKED
+        self.contract.deposit_paid = Decimal("0")
+        self.contract.save(update_fields=["status", "deposit_paid"])
+        self.confirmed_deposit("232050")
+        first = apply_payment_to_contract(self.contract, Decimal("232050"), payment_type=PaymentTransaction.TYPE_DEPOSIT)
+        self.contract.refresh_from_db()
+        activated_at = self.contract.deposit_paid_at
+        second = apply_payment_to_contract(self.contract, Decimal("232050"), payment_type=PaymentTransaction.TYPE_DEPOSIT)
+        self.contract.refresh_from_db()
+        self.assertTrue(first["deposit_complete"])
+        self.assertEqual(second["applied"], Decimal("0"))
+        self.assertEqual(self.contract.status, PaymentContract.STATUS_ACTIVE)
+        self.assertEqual(self.contract.deposit_paid_at, activated_at)
+
+    def test_unpaid_contract_page_has_one_consistent_state(self):
+        response = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
+        self.assertContains(response, "Deposit not paid")
+        self.assertContains(response, "Contract is not active yet")
+        self.assertContains(response, "MWK 232,050 outstanding")
+        self.assertContains(response, "0% paid")
+        self.assertContains(response, "Pay deposit")
+        self.assertNotContains(response, "Deposit paid")
+        self.assertNotContains(response, "Your device is safe")
+        self.assertNotContains(response, "good standing")
+
+    def test_pending_deposit_disables_duplicate_payment_cta(self):
+        self.confirmed_deposit("232050", PaymentTransaction.STATUS_PENDING, paid_at=False)
+        response = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
+        self.assertContains(response, "Deposit confirmation pending")
+        self.assertContains(response, "do not pay again yet")
+        self.assertNotContains(response, 'name="payment_type" value="deposit"')
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +346,13 @@ class TestApplyPayment(TestCase):
 
     def test_deposit_payment_updates_deposit_paid(self):
         contract = _make_contract()
+        _make_transaction(
+            contract,
+            payment_type=PaymentTransaction.TYPE_DEPOSIT,
+            amount=Decimal("15000"),
+            status=PaymentTransaction.STATUS_PAID,
+            paid_at=timezone.now(),
+        )
         from portal.services import apply_payment_to_contract
         apply_payment_to_contract(contract, Decimal("15000"), payment_type=PaymentTransaction.TYPE_DEPOSIT)
         contract.refresh_from_db()
@@ -262,17 +370,15 @@ class TestContractActivation(TestCase):
         contract = _make_contract(
             deposit_required=Decimal("15000"),
             deposit_paid=Decimal("0"),
-            status=PaymentContract.STATUS_ACTIVE,
+            status=PaymentContract.STATUS_LOCKED,
         )
         tx = _make_transaction(
             contract,
             payment_type=PaymentTransaction.TYPE_DEPOSIT,
             amount=Decimal("15000"),
             status=PaymentTransaction.STATUS_PAID,
+            paid_at=timezone.now(),
         )
-        # Simulate deposit payment applying
-        contract.deposit_paid = Decimal("15000")
-        contract.save()
 
         from portal.views import _maybe_activate_contract_after_deposit
         _maybe_activate_contract_after_deposit(contract, tx)
@@ -361,9 +467,10 @@ class TestContractResolution(TestCase):
         contract = PaymentContract.objects.get(id=resolved_ids.pop())
         self.assertEqual(contract.source_application, self.application)
         self.assertEqual(contract.customer_national_id, "VB78NNRU")
-        self.assertEqual(contract.deposit_paid, contract.deposit_required)
+        self.assertEqual(contract.deposit_paid, Decimal("0"))
+        self.assertEqual(get_deposit_summary(contract).status, "unpaid")
         self.assertGreater(contract.remaining_amount, Decimal("0"))
-        self.assertEqual(contract.status, PaymentContract.STATUS_ACTIVE)
+        self.assertEqual(contract.status, PaymentContract.STATUS_PENDING_ACTIVATION)
 
     def test_search_page_does_not_show_not_found_for_legal_contract(self):
         response = self.client.get("/pay/search/", {"country": "MW", "q": "E71919832"})

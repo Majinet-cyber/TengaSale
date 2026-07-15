@@ -10,7 +10,7 @@ class PaymentContractAdmin(admin.ModelAdmin):
     list_display = (
         "contract_number", "payg_number", "customer_name",
         "masked_phone_display", "device_model",
-        "total_amount", "amount_paid", "remaining_display",
+        "total_amount", "confirmed_deposit_display", "amount_paid", "remaining_display",
         "progress_bar", "status_badge", "due_date",
         "lock_status_badge", "created_at",
     )
@@ -30,6 +30,7 @@ class PaymentContractAdmin(admin.ModelAdmin):
     readonly_fields = (
         "contract_number", "payg_number",
         "progress_percent", "remaining_amount",
+        "confirmed_deposit_display", "deposit_paid",
         "created_at", "updated_at",
     )
     ordering = ("-created_at",)
@@ -47,7 +48,7 @@ class PaymentContractAdmin(admin.ModelAdmin):
         }),
         ("Financials", {
             "fields": (
-                "total_amount", "deposit_paid", "amount_paid",
+                "total_amount", "deposit_required", "confirmed_deposit_display", "deposit_paid", "amount_paid",
                 "remaining_amount", "progress_percent",
                 "daily_price", "thirty_day_price", "term_months",
             ),
@@ -91,7 +92,15 @@ class PaymentContractAdmin(admin.ModelAdmin):
         return f"MWK {obj.remaining_amount:,.0f}"
     remaining_display.short_description = "Remaining"
 
+    def confirmed_deposit_display(self, obj):
+        from .services import get_deposit_summary
+        summary = get_deposit_summary(obj)
+        return f"MWK {summary.confirmed_paid_amount:,.0f} ({summary.status.replace('_', ' ')})"
+    confirmed_deposit_display.short_description = "Confirmed deposit"
+
     def status_badge(self, obj):
+        from .services import get_deposit_summary
+        deposit = get_deposit_summary(obj)
         colours = {
             "active": "#168a45",
             "overdue": "#d93025",
@@ -99,12 +108,16 @@ class PaymentContractAdmin(admin.ModelAdmin):
             "completed": "#0d47a1",
             "cancelled": "#7a828c",
         }
+        label = obj.get_status_display()
         colour = colours.get(obj.status, "#7a828c")
+        if deposit.required_amount > 0 and not deposit.is_fully_paid:
+            label = "Pending activation"
+            colour = "#d97706"
         return format_html(
             '<span style="display:inline-block;padding:3px 10px;border-radius:999px;'
             'background:{colour};color:#fff;font-size:11px;font-weight:700;">{label}</span>',
             colour=colour,
-            label=obj.get_status_display(),
+            label=label,
         )
     status_badge.short_description = "Status"
 

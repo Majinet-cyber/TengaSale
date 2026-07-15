@@ -1821,6 +1821,7 @@
   align-self:center;
 }
 .cpd-next-payment-card__label{color:#8a4b09;font-size:11px;text-transform:uppercase;letter-spacing:.05em}.cpd-next-payment-card small{color:#64748b;font-size:11px;font-weight:600}
+.cpd-deposit-progress{display:grid;grid-template-columns:1fr auto;align-items:center;gap:7px 10px;margin:0 16px 14px}.cpd-deposit-progress>div{grid-column:1/-1;height:7px;overflow:hidden;border-radius:999px;background:#e5e7eb}.cpd-deposit-progress>div span{display:block;height:100%;max-width:100%;border-radius:inherit;background:var(--cpd-amber)}.cpd-deposit-progress strong{color:var(--cpd-amber);font-size:12px}.cpd-deposit-progress small{color:var(--cpd-muted);font-size:11px;text-align:right}
 @media(max-width:360px){.cpd-next-payment-card{grid-template-columns:1fr}.cpd-next-payment-card strong{grid-column:1;grid-row:auto}.cpd-next-payment-card small{grid-column:1}}
 
 .cpd-make-payment-card {

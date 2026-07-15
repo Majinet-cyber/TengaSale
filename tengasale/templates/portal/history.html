@@ -35,8 +35,8 @@
         <span class="cpd-label">Instalments</span>
       </div>
       <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.deposit_paid|mwk }}</span>
-        <span class="cpd-label">Deposit Paid</span>
+        <span class="cpd-quick-stat__val">{{ deposit_summary.confirmed_paid_amount|mwk }}</span>
+        <span class="cpd-label">Confirmed Deposit</span>
       </div>
       <div class="cpd-quick-stat">
         <span class="cpd-quick-stat__val">{{ contract.remaining_amount|mwk }}</span>

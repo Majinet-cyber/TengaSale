@@ -63,6 +63,7 @@ def generate_payment_reference():
 class PaymentContract(models.Model):
     """Public-facing financing contract that customers pay against."""
 
+    STATUS_PENDING_ACTIVATION = "pending_activation"
     STATUS_ACTIVE = "active"
     STATUS_OVERDUE = "overdue"
     STATUS_LOCKED = "locked"
@@ -76,6 +77,7 @@ class PaymentContract(models.Model):
     STATUS_LEGALLY_CLOSED = "legally_closed"
 
     STATUS_CHOICES = [
+        (STATUS_PENDING_ACTIVATION, "Pending activation"),
         (STATUS_ACTIVE, "Active"),
         (STATUS_OVERDUE, "Overdue"),
         (STATUS_LOCKED, "Locked"),
@@ -302,16 +304,19 @@ class PaymentContract(models.Model):
 
     @property
     def deposit_remaining(self):
-        """Amount still owed to complete the deposit."""
-        from decimal import Decimal
-        if not self.deposit_required:
-            return Decimal("0")
-        return max(self.deposit_required - self.deposit_paid, Decimal("0"))
+        """Amount still owed according to confirmed deposit ledger entries."""
+        if not self.pk:
+            return max((self.deposit_required or Decimal("0")), Decimal("0"))
+        from portal.services import get_deposit_summary
+        return get_deposit_summary(self).remaining_amount
 
     @property
     def deposit_complete(self):
-        """True when the required deposit has been fully collected."""
-        return self.deposit_remaining <= 0
+        """True only when confirmed deposit ledger entries cover the deposit."""
+        if not self.pk:
+            return not bool(self.deposit_required)
+        from portal.services import get_deposit_summary
+        return get_deposit_summary(self).is_fully_paid
 
     @property
     def remaining_amount(self):
