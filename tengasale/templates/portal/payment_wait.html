@@ -1,263 +1,71 @@
 {% extends "base/base.html" %}
-{% load static ts_filters %}
+{% load static %}
 
-{% block title %}Payment Confirmation | TengaSale{% endblock %}
-
-{% block extra_css %}
-<style>
-  .payment-wait-shell {
-    min-height: 70vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 16px;
-    background: #f6f8fb;
-  }
-  .payment-wait-panel {
-    width: min(100%, 560px);
-    background: #fff;
-    border: 1px solid #dbe3ef;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  }
-  .payment-wait-heading {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    margin-bottom: 18px;
-  }
-  .payment-wait-spinner {
-    width: 34px;
-    height: 34px;
-    border: 3px solid #dbeafe;
-    border-top-color: #0f766e;
-    border-radius: 999px;
-    animation: paymentWaitSpin 0.9s linear infinite;
-    flex: 0 0 auto;
-  }
-  .payment-wait-spinner.is-final {
-    animation: none;
-    border-color: #16a34a;
-    background: #dcfce7;
-  }
-  .payment-wait-title {
-    margin: 0;
-    font-size: 1.35rem;
-    line-height: 1.25;
-    color: #0f172a;
-  }
-  .payment-wait-subtitle {
-    margin: 4px 0 0;
-    color: #475569;
-    font-size: 0.94rem;
-  }
-  .payment-wait-grid {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 20px 0;
-  }
-  .payment-wait-item {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    background: #f8fafc;
-  }
-  .payment-wait-label {
-    display: block;
-    color: #64748b;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .payment-wait-value {
-    display: block;
-    margin-top: 4px;
-    color: #0f172a;
-    font-weight: 700;
-    overflow-wrap: anywhere;
-  }
-  .payment-wait-message {
-    border-radius: 8px;
-    padding: 14px;
-    background: #ecfeff;
-    color: #155e75;
-    line-height: 1.45;
-  }
-  .payment-wait-message.is-success {
-    background: #dcfce7;
-    color: #166534;
-  }
-  .payment-wait-message.is-failed {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-  .payment-wait-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 18px;
-  }
-  .payment-wait-btn {
-    border: 0;
-    border-radius: 8px;
-    padding: 11px 16px;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    background: #0f172a;
-    color: #fff;
-  }
-  .payment-wait-btn--secondary {
-    background: #e2e8f0;
-    color: #0f172a;
-  }
-  .payment-wait-btn[disabled] {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-  @keyframes paymentWaitSpin {
-    to { transform: rotate(360deg); }
-  }
-  @media (max-width: 560px) {
-    .payment-wait-grid {
-      grid-template-columns: 1fr;
-    }
-    .payment-wait-panel {
-      padding: 18px;
-    }
-  }
-</style>
-{% endblock %}
+{% block page_title %}Payment confirmation | TengaSale{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/payment-status.css' %}?v=1.0.0">{% endblock %}
+{% block topbar %}{% endblock %}
 
 {% block content %}
-<main class="payment-wait-shell">
-  <section class="payment-wait-panel" data-payment-wait data-status-url="{{ status_url }}">
-    <div class="payment-wait-heading">
-      <div class="payment-wait-spinner" data-payment-spinner aria-hidden="true"></div>
-      <div>
-        <h1 class="payment-wait-title" data-payment-title>Waiting for Airtel confirmation</h1>
-        <p class="payment-wait-subtitle">Approve the prompt on your phone. Your balance updates only after Airtel confirms.</p>
-      </div>
+<main class="pay-status-page" data-payment-wait data-status-url="{{ status_url }}" data-state="{{ status_data.status }}" data-current-step="{{ status_data.current_step }}">
+  <div class="pay-status-wrap">
+    <header class="pay-status-header">
+      <img class="pay-status-logo" src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale">
+      <span class="pay-status-secure-pill">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Secure payment</span>
+      </span>
+    </header>
+
+    <section class="pay-status-card pay-status-hero">
+      <span class="pay-status-badge"><span class="pay-status-badge-dot"></span><span data-status-badge>{% if status_data.is_final %}{{ status_data.status_label|upper }}{% else %}PENDING CONFIRMATION{% endif %}</span></span>
+      <h1 class="pay-status-title" data-payment-title>{{ status_data.status_label }}</h1>
+      <p class="pay-status-copy" data-payment-copy>{{ status_data.message }}</p>
+    </section>
+
+    <section class="pay-status-card pay-status-stepper" aria-label="Payment progress">
+      <div class="pay-status-step" data-step="1"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="pay-status-step-label">Request sent</span></div>
+      <div class="pay-status-step" data-step="2"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 6h4M10 10h.01M14 10h.01M10 14h.01M14 14h.01"/></svg></span><span class="pay-status-step-label">Enter PIN</span></div>
+      <div class="pay-status-step" data-step="3"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="pay-status-step-label">Awaiting confirmation</span></div>
+    </section>
+
+    <section class="pay-status-card pay-status-amount">
+      <span class="pay-status-amount-label">Amount</span>
+      <div class="pay-status-amount-value">{{ airtel_tx.currency }} {{ amount_display }}</div>
+      <span class="pay-status-provider"><span class="pay-status-provider-mark">a</span>{{ provider_name }}</span>
+    </section>
+
+    <section class="pay-status-card pay-status-details" aria-label="Payment details">
+      <div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 18h4"/></svg></span><span class="pay-status-detail-label">Phone</span><span class="pay-status-detail-value">{{ masked_phone }}</span></div>
+      <div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span><span class="pay-status-detail-label">Reference</span><span class="pay-status-detail-value is-code">{{ transaction_reference }}</span></div>
+      {% if contract_reference %}<div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="pay-status-detail-label">Contract</span><span class="pay-status-detail-value is-code">{{ contract_reference }}</span></div>{% endif %}
+      {% if payg_code %}<div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M10 3 8 21M16 3l-2 18M4 9h16M3 15h16"/></svg></span><span class="pay-status-detail-label">PayG Code</span><span class="pay-status-detail-value is-code">{{ payg_code }}</span></div>{% endif %}
+      <div class="pay-status-detail" data-provider-id-row {% if not status_data.airtel_money_id %}hidden{% endif %}><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5"/></svg></span><span class="pay-status-detail-label">Airtel transaction ID</span><span class="pay-status-detail-value is-code" data-provider-id>{{ status_data.airtel_money_id }}</span></div>
+      <div class="pay-status-detail" data-balance-row {% if not status_data.balance_after %}hidden{% endif %}><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4zM4 10h16M16 14h2"/></svg></span><span class="pay-status-detail-label">Updated balance</span><span class="pay-status-detail-value" data-balance>{{ status_data.currency }} {{ status_data.balance_after }}</span></div>
+    </section>
+
+    <div class="pay-status-message" data-payment-message role="status" aria-live="polite">{{ status_data.message }}</div>
+    {% if is_staff_view and is_dry_run %}<div class="pay-status-message">Internal preview mode is active for this transaction.</div>{% endif %}
+
+    <div class="pay-status-actions">
+      {% if return_url %}<a class="pay-status-button" href="{{ return_url }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Return to contract</a>{% endif %}
+      <button type="button" class="pay-status-button pay-status-button--primary" data-payment-check {% if status_data.is_final %}disabled{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9m2 6a7 7 0 0 0 12 2.5L20 15"/></svg><span data-check-label>Check again</span></button>
     </div>
 
-    <div class="payment-wait-grid">
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">Amount</span>
-        <span class="payment-wait-value">{{ airtel_tx.amount|mwk }}</span>
-      </div>
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">Provider</span>
-        <span class="payment-wait-value">{{ provider_label }}</span>
-      </div>
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">Phone</span>
-        <span class="payment-wait-value">{{ masked_phone }}</span>
-      </div>
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">Reference</span>
-        <span class="payment-wait-value">{{ airtel_tx.internal_reference }}</span>
-      </div>
-      {% if contract %}
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">Contract</span>
-        <span class="payment-wait-value">{{ contract.contract_number }}</span>
-      </div>
-      <div class="payment-wait-item">
-        <span class="payment-wait-label">PayG</span>
-        <span class="payment-wait-value">{{ contract.payg_number|default:"Pending setup" }}</span>
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="payment-wait-message" data-payment-message>
-      Waiting for customer approval. Do not submit another payment while this request is pending.
-    </div>
-
-    <div class="payment-wait-actions">
-      {% if return_url %}<a class="payment-wait-btn" href="{{ return_url }}">Return to contract</a>{% endif %}
-      <button type="button" class="payment-wait-btn payment-wait-btn--secondary" data-payment-check>Check again</button>
-    </div>
-  </section>
+    <footer class="pay-status-footer"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Secure <span aria-hidden="true">•</span> Your data is protected</footer>
+  </div>
 </main>
 
 <script>
-(function () {
-  var panel = document.querySelector('[data-payment-wait]');
-  if (!panel) return;
-  var statusUrl = panel.dataset.statusUrl;
-  var message = panel.querySelector('[data-payment-message]');
-  var title = panel.querySelector('[data-payment-title]');
-  var spinner = panel.querySelector('[data-payment-spinner]');
-  var checkBtn = panel.querySelector('[data-payment-check]');
-  var attempts = 0;
-  var maxAttempts = 5;
-  var delayMs = 6000;
-  var timer = null;
-
-  function setState(data, stopped) {
-    var status = data.status || 'pending_provider_confirmation';
-    message.classList.toggle('is-success', status === 'successful');
-    message.classList.toggle('is-failed', status === 'failed' || status === 'timed_out' || status === 'reversed');
-    if (spinner) spinner.classList.toggle('is-final', !!data.final);
-
-    if (status === 'successful') {
-      title.textContent = 'Payment confirmed';
-      if (data.payment_type === 'partial_repayment') {
-        message.textContent = 'Partial repayment — ' + data.full_repayment_days_covered + ' full repayment days covered. Partial credit balance: MWK ' + data.partial_credit_balance + '.';
-      } else {
-        message.textContent = data.message || 'Payment confirmed.';
-      }
-    } else if (status === 'failed' || status === 'timed_out' || status === 'reversed') {
-      title.textContent = 'Payment not completed';
-      message.textContent = data.message || 'Payment was not completed.';
-    } else if (stopped) {
-      title.textContent = 'Still waiting for confirmation';
-      message.textContent = 'Airtel has not confirmed this payment yet. Do not pay again until this request finishes or support checks it.';
-    } else {
-      title.textContent = 'Waiting for Airtel confirmation';
-      message.textContent = data.message || 'Waiting for Airtel Money confirmation.';
-    }
-  }
-
-  function poll(enquire) {
-    if (!statusUrl) return;
-    if (checkBtn) checkBtn.disabled = true;
-    fetch(statusUrl + (enquire ? '?enquire=1' : ''), {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'same-origin'
-    })
-      .then(function (response) { return response.json(); })
-      .then(function (data) {
-        attempts += 1;
-        var stopped = attempts >= maxAttempts;
-        setState(data, stopped);
-        if (!data.final && !stopped) {
-          timer = window.setTimeout(function () { poll(false); }, delayMs);
-        }
-      })
-      .catch(function () {
-        attempts += 1;
-        setState({ status: 'pending_provider_confirmation', message: 'Unable to refresh status right now.' }, attempts >= maxAttempts);
-        if (attempts < maxAttempts) {
-          timer = window.setTimeout(function () { poll(false); }, delayMs);
-        }
-      })
-      .finally(function () {
-        if (checkBtn) checkBtn.disabled = false;
-      });
-  }
-
-  if (checkBtn) {
-    checkBtn.addEventListener('click', function () {
-      if (timer) window.clearTimeout(timer);
-      attempts = Math.min(attempts, maxAttempts - 1);
-      poll(true);
-    });
-  }
-
-  poll(false);
+(function(){
+  var page=document.querySelector('[data-payment-wait]');if(!page)return;
+  var statusUrl=page.dataset.statusUrl,title=page.querySelector('[data-payment-title]'),copy=page.querySelector('[data-payment-copy]'),message=page.querySelector('[data-payment-message]'),badge=page.querySelector('[data-status-badge]'),button=page.querySelector('[data-payment-check]'),buttonLabel=page.querySelector('[data-check-label]');
+  var attempts=0,maxAttempts=5,delayMs=6000,timer=null,inFlight=false,isFinal=button?button.disabled:false;
+  function renderSteps(current,final,failed){page.querySelectorAll('[data-step]').forEach(function(step){var number=Number(step.dataset.step);step.classList.toggle('is-complete',final&&!failed||number<current);step.classList.toggle('is-current',!final&&number===current);});}
+  function render(data,stopped){var state=data.status||'pending_provider_confirmation',failed=['failed','cancelled','expired','reversed'].indexOf(state)!==-1;isFinal=!!data.final;page.dataset.state=state;title.textContent=stopped&&!data.final?'Still confirming payment':(data.status_label||'Waiting for Airtel confirmation');copy.textContent=stopped&&!data.final?'Do not pay again yet. We are checking the previous request.':(data.message||'Your payment is still being confirmed.');message.textContent=copy.textContent;message.classList.toggle('is-success',state==='successful');message.classList.toggle('is-failed',failed);badge.textContent=data.final?(data.status_label||state).toUpperCase():'PENDING CONFIRMATION';renderSteps(Number(data.current_step||3),isFinal,failed);button.disabled=isFinal||inFlight;var providerId=page.querySelector('[data-provider-id]'),providerRow=page.querySelector('[data-provider-id-row]');if(providerId&&data.airtel_money_id){providerId.textContent=data.airtel_money_id;providerRow.hidden=false;}var balance=page.querySelector('[data-balance]'),balanceRow=page.querySelector('[data-balance-row]');if(balance&&data.balance_after){balance.textContent=(data.currency||'MWK')+' '+data.balance_after;balanceRow.hidden=false;}}
+  function setLoading(loading){inFlight=loading;if(button){button.disabled=loading||isFinal;buttonLabel.textContent=loading?'Checking…':'Check again';var old=button.querySelector('.pay-status-button-spinner');if(loading&&!old){var spinner=document.createElement('span');spinner.className='pay-status-button-spinner';button.insertBefore(spinner,button.firstChild);}else if(!loading&&old){old.remove();}}}
+  function poll(enquire){if(!statusUrl||inFlight)return;setLoading(true);fetch(statusUrl+(enquire?'?enquire=1':''),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(response){if(!response.ok)throw new Error('status');return response.json();}).then(function(data){attempts+=1;var stopped=attempts>=maxAttempts;render(data,stopped);if(!data.final&&!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);}).catch(function(){attempts+=1;var stopped=attempts>=maxAttempts;render({status:'pending_provider_confirmation',status_label:'Still confirming payment',current_step:3,final:false,message:'We could not refresh the status right now. Do not pay again yet.'},stopped);if(!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);}).finally(function(){setLoading(false);});}
+  if(button)button.addEventListener('click',function(){if(inFlight)return;if(timer)window.clearTimeout(timer);attempts=Math.min(attempts,maxAttempts-1);poll(true);});
+  render({status:page.dataset.state,status_label:title.textContent,current_step:Number(page.dataset.currentStep||2),final:isFinal,message:copy.textContent},false);
+  if(button&&!button.disabled)poll(false);
 })();
 </script>
 {% endblock %}

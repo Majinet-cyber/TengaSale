@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from contracts.models import Contract
-from portal.models import PaymentContract
+from portal.models import PaymentContract, PaymentTransaction
 from portal.services import resolve_payable_contract
 
 from .airtel_client import AirtelConfig, AirtelConfigurationError
@@ -420,7 +420,7 @@ def airtel_transaction_enquiry(request, internal_reference):
     })
 
 
-def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
+def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
     contract = tx.contract
     portal_tx = tx.payment_transaction
     success_applied = bool(tx.processed_success_at or tx.repayment_posted)
@@ -431,7 +431,7 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
             True,
         ),
         AirtelTransaction.STATUS_EXPIRED: (
-            "timed_out",
+            "expired",
             "Payment request expired before it was approved. No money has been applied to this contract.",
             True,
         ),
@@ -441,8 +441,8 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
             True,
         ),
         AirtelTransaction.STATUS_DRY_RUN: (
-            "pending_customer_approval",
-            "Payment request was created in Airtel dry-run mode and is awaiting test confirmation.",
+            "request_sending",
+            "Your payment request is being prepared. No payment has been applied yet.",
             False,
         ),
         AirtelTransaction.STATUS_INITIATED: (
@@ -452,7 +452,7 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         ),
         AirtelTransaction.STATUS_PENDING: (
             "pending_customer_approval",
-            "Waiting for Airtel Money confirmation. Please approve the prompt on your phone.",
+            "Approve the prompt on your phone. Your balance updates only after Airtel confirms.",
             False,
         ),
     }
@@ -473,15 +473,34 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
             public_status = "pending_provider_confirmation"
             message = "Airtel returned a success status and TengaSale is finishing confirmation. Do not pay again yet."
             final = False
+    if portal_tx and portal_tx.status == PaymentTransaction.STATUS_CANCELLED:
+        public_status = "cancelled"
+        message = "This payment request was cancelled. No money has been applied to this contract."
+        final = True
+
+    state_ui = {
+        "request_sending": ("Sending payment request", 1),
+        "request_sent": ("Check your phone", 2),
+        "pending_customer_approval": ("Waiting for Airtel confirmation", 2),
+        "pending_provider_confirmation": ("Waiting for Airtel confirmation", 3),
+        "successful": ("Payment confirmed", 3),
+        "failed": ("Payment failed", 3),
+        "cancelled": ("Payment cancelled", 3),
+        "expired": ("Payment request expired", 3),
+        "reversed": ("Payment reversed", 3),
+    }
+    status_label, current_step = state_ui.get(public_status, ("Still confirming payment", 3))
     return {
         "success": True,
         "transaction_id": tx.internal_reference,
         "provider": "airtel_money",
         "provider_label": "Airtel Money",
         "status": public_status,
-        "provider_status": tx.status,
+        "status_label": status_label,
+        "current_step": current_step,
         "message": message,
         "final": final,
+        "is_final": final,
         "amount": str(tx.amount),
         "currency": tx.currency,
         "masked_phone": mask_msisdn(tx.customer_msisdn),
@@ -498,6 +517,9 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         "full_repayment_days_covered": tx.full_repayment_days_covered,
         "partial_credit_balance": str(tx.partial_credit_balance),
         "updated_at": tx.updated_at.isoformat() if tx.updated_at else "",
+        "created_at": tx.created_at.isoformat() if tx.created_at else "",
+        "confirmed_at": tx.completed_at.isoformat() if tx.completed_at else "",
+        "can_check_again": not final,
     }
 
 
@@ -517,7 +539,7 @@ def payment_transaction_status(request, transaction_id):
             tx = AirtelTransactionEnquiryService().enquire(tx.internal_reference)
         except Exception:
             tx.refresh_from_db()
-    return JsonResponse(_customer_payment_status_payload(tx))
+    return JsonResponse(customer_payment_status_payload(tx))
 
 
 def airtel_dashboard(request):

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.contrib.staticfiles import finders
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
@@ -408,11 +409,14 @@ class AirtelApiTests(TestCase):
         self.assertIn("limited", response.json()["error"])
 
     def test_staging_accepts_mwk_100_and_keeps_it_pending(self):
-        response = self.client.post(
-            "/api/payments/airtel/collections/initiate/",
-            data=json.dumps({"msisdn": "0991234567", "amount": 100, "purpose": "INSTALLMENT", "contract_id": self.contract.id}),
-            content_type="application/json",
-        )
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {"status": {"code": "200"}, "transaction": {"status_code": "TIP"}}
+            response = self.client.post(
+                "/api/payments/airtel/collections/initiate/",
+                data=json.dumps({"msisdn": "0991234567", "amount": 100, "purpose": "INSTALLMENT", "contract_id": self.contract.id}),
+                content_type="application/json",
+            )
         self.assertEqual(response.status_code, 200)
         tx = AirtelTransaction.objects.get()
         self.assertEqual(tx.amount, Decimal("100"))
@@ -465,6 +469,96 @@ class AirtelApiTests(TestCase):
         self.assertContains(response, "For Airtel testing, you may enter an amount from MWK 100")
         self.assertContains(response, "Partial payment — 0 full repayment days covered")
         self.assertNotContains(response, "MWK 100 — 1 day paid")
+
+    def _status_page_transaction(self, status=AirtelTransaction.STATUS_PENDING, **kwargs):
+        defaults = {
+            "internal_reference": f"TENGA-AIRTEL-UI-{status}",
+            "environment": "staging",
+            "customer_msisdn": "+265991234567",
+            "amount": Decimal("100"),
+            "purpose": AirtelTransaction.PURPOSE_INSTALLMENT,
+            "direction": AirtelTransaction.DIRECTION_COLLECTION,
+            "status": status,
+            "contract": self.contract,
+        }
+        defaults.update(kwargs)
+        return AirtelTransaction.objects.create(**defaults)
+
+    def test_pending_status_page_matches_approved_structure(self):
+        tx = self._status_page_transaction()
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        self.assertEqual(response.status_code, 200)
+        for expected in (
+            "Waiting for Airtel confirmation", "MWK 100", "+26599***4567",
+            tx.internal_reference, self.contract.contract_number, self.contract.payg_number,
+            "Request sent", "Enter PIN", "Awaiting confirmation",
+            "Return to contract", "Check again", "Your data is protected",
+        ):
+            self.assertContains(response, expected)
+        self.assertContains(response, "css/payment-status.css")
+        self.assertNotContains(response, "provider callback")
+        self.assertNotContains(response, "transaction enquiry")
+
+    def test_dry_run_customer_page_does_not_claim_prompt_sent(self):
+        tx = self._status_page_transaction(status=AirtelTransaction.STATUS_DRY_RUN)
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        self.assertContains(response, "Sending payment request")
+        self.assertNotContains(response, "dry-run mode")
+        self.assertNotContains(response, "test confirmation")
+        self.assertNotContains(response, "prompt has been sent")
+
+    def test_status_pages_render_final_states_accurately(self):
+        cases = (
+            (AirtelTransaction.STATUS_FAILED, "Payment failed"),
+            (AirtelTransaction.STATUS_EXPIRED, "Payment request expired"),
+            (AirtelTransaction.STATUS_REVERSED, "Payment reversed"),
+        )
+        for index, (status, heading) in enumerate(cases):
+            tx = self._status_page_transaction(status=status, internal_reference=f"TENGA-AIRTEL-UI-FINAL-{index}")
+            response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+            self.assertContains(response, heading)
+            self.assertNotContains(response, "Check your phone")
+
+    def test_confirmed_status_page_renders_success(self):
+        tx = self._status_page_transaction(
+            status=AirtelTransaction.STATUS_SUCCESS,
+            processed_success_at=timezone.now(),
+            completed_at=timezone.now(),
+            airtel_money_id="AM-UI-100",
+        )
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        self.assertContains(response, "Payment confirmed")
+        self.assertContains(response, "AM-UI-100")
+
+    def test_invalid_agent_business_response_is_failed_not_pin_pending(self):
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {"status": {"code": "400", "message": "Invalid agent code"}}
+            response = self.client.post(
+                "/api/payments/airtel/collections/initiate/",
+                data=json.dumps({"msisdn": "0991234567", "amount": 100, "purpose": "INSTALLMENT", "contract_id": self.contract.id}),
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        tx = AirtelTransaction.objects.get()
+        self.assertEqual(tx.status, AirtelTransaction.STATUS_FAILED)
+        page = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        self.assertContains(page, "Payment failed")
+        self.assertNotContains(page, "Check your phone")
+        self.assertNotContains(page, "Invalid agent code")
+
+    def test_polling_script_only_calls_internal_status_endpoint_and_is_bounded(self):
+        tx = self._status_page_transaction()
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        content = response.content.decode("utf-8")
+        self.assertIn(f"/api/payments/{tx.internal_reference}/status/", content)
+        self.assertIn("maxAttempts=5", content)
+        self.assertIn("delayMs=6000", content)
+        self.assertIn("if(inFlight)return", content)
+        self.assertNotIn("collections/initiate", content)
+
+    def test_payment_status_stylesheet_is_discoverable(self):
+        self.assertIsNotNone(finders.find("css/payment-status.css"))
 
     def test_unapproved_test_phone_number_is_blocked(self):
         response = self.client.post(

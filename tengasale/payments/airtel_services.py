@@ -341,6 +341,18 @@ class AirtelCollectionService:
         refs = extract_airtel_references(body if isinstance(body, dict) else {})
         airtel_tx.raw_response = response
         airtel_tx.status = extract_airtel_status(body) if isinstance(body, dict) else AirtelTransaction.STATUS_UNKNOWN
+        business_code = _extract_nested(body, "status.code", "data.status.code") if isinstance(body, dict) else None
+        business_message = str(_extract_nested(body, "status.message", "message") or "") if isinstance(body, dict) else ""
+        business_failed = not response.get("ok")
+        try:
+            business_failed = business_failed or int(str(business_code)) >= 400
+        except (TypeError, ValueError):
+            pass
+        if business_failed:
+            airtel_tx.status = AirtelTransaction.STATUS_FAILED
+            airtel_tx.failure_reason = "Airtel Money could not process this payment request."
+            if "agent" in business_message.lower() or "merchant" in business_message.lower():
+                airtel_tx.processing_note = "Provider configuration error reported during collection initiation."
         if airtel_tx.status == AirtelTransaction.STATUS_UNKNOWN:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
         if airtel_tx.status == AirtelTransaction.STATUS_SUCCESS:
@@ -350,6 +362,9 @@ class AirtelCollectionService:
             if value:
                 setattr(airtel_tx, field, value)
         airtel_tx.save()
+        if airtel_tx.status == AirtelTransaction.STATUS_FAILED and airtel_tx.payment_transaction:
+            airtel_tx.payment_transaction.status = PaymentTransaction.STATUS_FAILED
+            airtel_tx.payment_transaction.save(update_fields=["status", "updated_at"])
         return airtel_tx
 
 

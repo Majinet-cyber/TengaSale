@@ -624,10 +624,15 @@ def portal_payment(request, contract_number):
         },
         request,
     )
-    messages.info(
-        request,
-        f"Airtel Money prompt sent to {mask_msisdn(airtel_tx.customer_msisdn)}. Enter your PIN to confirm MWK {amount:,.0f}."
-    )
+    if airtel_tx.status == AirtelTransaction.STATUS_FAILED:
+        messages.error(request, "Airtel Money could not process this payment request. Please try again later.")
+    elif airtel_tx.status == AirtelTransaction.STATUS_DRY_RUN:
+        messages.info(request, "Your payment request is being prepared. No payment has been applied yet.")
+    else:
+        messages.info(
+            request,
+            f"Airtel Money prompt sent to {mask_msisdn(airtel_tx.customer_msisdn)}. Enter your PIN to confirm MWK {amount:,.0f}."
+        )
     return redirect("portal_payment_wait", internal_reference=airtel_tx.internal_reference)
 
 
@@ -638,6 +643,9 @@ def portal_payment_wait(request, internal_reference):
         internal_reference=internal_reference,
     )
     contract = airtel_tx.contract
+    from payments.api_views import customer_payment_status_payload
+
+    status_data = customer_payment_status_payload(airtel_tx)
     return render(
         request,
         "portal/payment_wait.html",
@@ -645,7 +653,16 @@ def portal_payment_wait(request, internal_reference):
             "airtel_tx": airtel_tx,
             "contract": contract,
             "provider_label": "Airtel Money",
+            "provider_name": "Airtel Money",
+            "provider_slug": "airtel_money",
             "masked_phone": mask_msisdn(airtel_tx.customer_msisdn),
+            "amount_display": f"{airtel_tx.amount:,.0f}",
+            "transaction_reference": airtel_tx.internal_reference,
+            "contract_reference": contract.contract_number if contract else "",
+            "payg_code": contract.payg_number if contract else "",
+            "status_data": status_data,
+            "is_staff_view": bool(request.user.is_authenticated and request.user.is_staff),
+            "is_dry_run": airtel_tx.status == AirtelTransaction.STATUS_DRY_RUN,
             "status_url": f"/api/payments/{airtel_tx.internal_reference}/status/",
             "return_url": (
                 redirect("portal_contract", contract_number=contract.contract_number).url
