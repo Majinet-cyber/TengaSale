@@ -23,6 +23,10 @@
   --cpd-radius-sm:   12px;
   --cpd-shadow:      0 1px 4px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
   --cpd-shadow-lg:   0 4px 24px rgba(15, 23, 42, 0.10);
+  --motion-quick:    140ms;
+  --motion-normal:   240ms;
+  --motion-reveal:   360ms;
+  --motion-pending:  1.9s;
 }
 
 /* ── Shell ─────────────────────────────────────────────────────── */
@@ -779,6 +783,9 @@
 }
 
 .cpd-phone-row:focus-within { border-color: var(--cpd-orange); }
+.cpd-phone-row.is-airtel { border-color:var(--cpd-green); box-shadow:0 0 0 3px var(--cpd-green-lt); }
+.cpd-phone-row.is-tnm { border-color:var(--cpd-amber); box-shadow:0 0 0 3px var(--cpd-amber-lt); }
+.cpd-phone-row.is-invalid { border-color:var(--cpd-red); box-shadow:0 0 0 3px var(--cpd-red-lt); }
 
 .cpd-phone-prefix {
   padding: 0 10px;
@@ -941,6 +948,9 @@
   font-weight: 800;
   color: var(--cpd-ink);
 }
+.cpd-hist-row--success .cpd-hist-row__amount { color:var(--cpd-green); }
+.cpd-hist-row--failed .cpd-hist-row__amount { color:var(--cpd-red); }
+.cpd-hist-row--pending .cpd-hist-row__amount { color:var(--cpd-amber); }
 
 .cpd-hist-status {
   font-size: 10px;
@@ -1772,6 +1782,15 @@
 .cpd-last-payment-row strong { color: #16a34a; font-weight: 800; }
 
 .cpd-val--green { color: #16a34a !important; }
+.cpd-val--navy { color:var(--cpd-ink) !important; }
+.cpd-val--due { color:var(--cpd-amber) !important; }
+.cpd-val--danger { color:var(--cpd-red) !important; }
+.cpd-network-hint{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:4px 8px;border-radius:999px;transition:color var(--motion-normal) ease-out,background-color var(--motion-normal) ease-out,transform var(--motion-normal) ease-out}
+.cpd-network-hint.is-airtel{color:var(--cpd-green);background:var(--cpd-green-lt);font-weight:750;animation:cpdNetworkIn var(--motion-normal) ease-out both}.cpd-network-hint.is-airtel:before{content:"✓";display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--cpd-green);color:#fff;font-size:10px}
+.cpd-network-hint.is-tnm{color:var(--cpd-amber);background:var(--cpd-amber-lt);font-weight:700}.cpd-network-hint.is-tnm:before{content:"i";display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--cpd-amber);color:#fff;font-size:10px}
+.cpd-network-hint.is-invalid{color:var(--cpd-red);background:var(--cpd-red-lt);font-weight:700}.cpd-network-hint.is-invalid:before{content:"!";font-weight:900}
+@keyframes cpdNetworkIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.cpd-network-hint{animation:none!important;transition:none}.cpd-pay-btn,.cpd-hist-row{transition:none}}
 
 .cpd-shell--deposit-focus .cpd-summary-card {
   border-color: rgba(255, 90, 0, 0.28);

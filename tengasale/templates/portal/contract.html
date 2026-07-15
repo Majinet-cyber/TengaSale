@@ -64,7 +64,7 @@
 
     <div class="cpd-money-grid">
       <div><span class="cpd-label">Paid</span><strong class="cpd-val--green">{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}—{% endif %}</strong></div>
-      <div><span class="cpd-label">Remaining</span><strong>{% if pricing_complete %}{{ remaining|mwk }}{% else %}—{% endif %}</strong></div>
+      <div><span class="cpd-label">Remaining</span><strong class="{% if contract.status == 'overdue' %}cpd-val--danger{% else %}cpd-val--navy{% endif %}">{% if pricing_complete %}{{ remaining|mwk }}{% else %}—{% endif %}</strong></div>
       <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
     </div>
 
@@ -144,9 +144,9 @@
       <span class="cpd-status-badge cpd-status-badge--overdue">Pending</span>
     </div>
     <div class="cpd-money-grid cpd-money-grid--deposit">
-      <div><span class="cpd-label">Deposit required</span><strong>{{ deposit_required|mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit paid</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit remaining</span><strong>{{ deposit_remaining|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit Required</span><strong class="cpd-val--due">{{ deposit_required|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit Paid</span><strong class="cpd-val--green">{{ deposit_paid_amt|mwk }}</strong></div>
+      <div><span class="cpd-label">Deposit Remaining</span><strong class="{% if deposit_complete %}cpd-val--green{% else %}cpd-val--due{% endif %}">{{ deposit_remaining|mwk }}</strong></div>
     </div>
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
       {% csrf_token %}
@@ -162,7 +162,7 @@
         </div>
         <div class="cpd-field">
           <label class="cpd-field-label">Network</label>
-          <div class="cpd-field-hint" data-network-hint>Enter a Malawi mobile money number.</div>
+          <div class="cpd-field-hint cpd-network-hint" data-network-hint role="status" aria-live="polite">Enter a Malawi mobile money number.</div>
         </div>
       </div>
       <div class="cpd-field">
@@ -220,7 +220,7 @@
         </div>
         <div class="cpd-field">
           <label class="cpd-field-label">Network</label>
-          <div class="cpd-field-hint" data-network-hint>Enter a Malawi mobile money number.</div>
+          <div class="cpd-field-hint cpd-network-hint" data-network-hint role="status" aria-live="polite">Enter a Malawi mobile money number.</div>
         </div>
       </div>
       <div class="cpd-field">
@@ -415,6 +415,17 @@
       if (networkHint) {
         networkHint.textContent = network.message;
         networkHint.hidden = false;
+        networkHint.classList.toggle('is-airtel', network.valid && network.provider === 'airtel_money');
+        networkHint.classList.toggle('is-tnm', network.valid && network.provider === 'tnm_mpamba');
+        networkHint.classList.toggle('is-invalid', !!(phoneInput && phoneInput.value) && !network.valid);
+      }
+      if (phoneInput) {
+        var phoneRow = phoneInput.closest('.cpd-phone-row');
+        if (phoneRow) {
+          phoneRow.classList.toggle('is-airtel', network.valid && network.provider === 'airtel_money');
+          phoneRow.classList.toggle('is-tnm', network.valid && network.provider === 'tnm_mpamba');
+          phoneRow.classList.toggle('is-invalid', !!phoneInput.value && !network.valid);
+        }
       }
       if (hint) {
         hint.hidden = !(amount > 0 && daily > 0);

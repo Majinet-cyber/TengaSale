@@ -70,7 +70,12 @@ class AllDealsPageTests(TestCase):
         self.assertContains(response, "Compare cash price, deposit, repayments, and early settlement options")
         # Brand names are normalised in the view: "TECNO"→"Tecno", "itel"→"Itel", "Redmi"→"Redmi/Xiaomi"
         for brand_name in ["Tecno", "Itel", "Redmi/Xiaomi"]:
-            self.assertContains(response, brand_name)
+            self.assertContains(response, f'data-brand="{brand_name}"')
+        self.assertContains(response, 'aria-label="View ')
+        self.assertNotContains(response, 'class="brand-card-v2__name"')
+        self.assertContains(response, 'class="brand-card-v2__logo-stage"')
+        self.assertContains(response, 'class="brand-card-v2__arrow"')
+        self.assertContains(response, "models")
         self.assertContains(response, "Choose a model")
         self.assertContains(response, "Choose specs")
         self.assertContains(response, "Pay early, pay less")

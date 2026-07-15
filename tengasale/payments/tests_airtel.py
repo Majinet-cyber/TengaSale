@@ -470,6 +470,21 @@ class AirtelApiTests(TestCase):
         self.assertContains(response, "Partial payment — 0 full repayment days covered")
         self.assertNotContains(response, "MWK 100 — 1 day paid")
 
+    def test_payment_form_exposes_semantic_network_detection_states(self):
+        response = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
+        self.assertEqual(response.status_code, 200)
+        for expected in (
+            "Airtel Money detected.",
+            "TNM Mpamba is not available yet.",
+            "Enter a valid Malawi mobile money number.",
+            "cpd-network-hint",
+            "is-airtel",
+            "is-tnm",
+            "is-invalid",
+        ):
+            self.assertContains(response, expected)
+        self.assertNotContains(response, "Airtel payment successful")
+
     def _status_page_transaction(self, status=AirtelTransaction.STATUS_PENDING, **kwargs):
         defaults = {
             "internal_reference": f"TENGA-AIRTEL-UI-{status}",
@@ -499,6 +514,9 @@ class AirtelApiTests(TestCase):
         self.assertContains(response, "img/brands/airtel.svg")
         self.assertContains(response, "data-provider-id-row hidden")
         self.assertContains(response, "data-balance-row hidden")
+        self.assertContains(response, "is-payment-pending")
+        self.assertContains(response, "pay-status-live-ring")
+        self.assertContains(response, "Checking Airtel securely")
         self.assertNotContains(response, "provider callback")
         self.assertNotContains(response, "transaction enquiry")
         self.assertNotContains(response, "C:\\Users\\")
@@ -521,6 +539,8 @@ class AirtelApiTests(TestCase):
             tx = self._status_page_transaction(status=status, internal_reference=f"TENGA-AIRTEL-UI-FINAL-{index}")
             response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
             self.assertContains(response, heading)
+            self.assertContains(response, "is-payment-failed")
+            self.assertNotContains(response, 'class="pay-status-page is-payment-pending"')
             self.assertNotContains(response, "Check your phone")
 
     def test_confirmed_status_page_renders_success(self):
@@ -533,6 +553,8 @@ class AirtelApiTests(TestCase):
         response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
         self.assertContains(response, "Payment confirmed")
         self.assertContains(response, "AM-UI-100")
+        self.assertContains(response, "is-payment-success")
+        self.assertNotContains(response, 'class="pay-status-page is-payment-pending"')
 
     def test_invalid_agent_business_response_is_failed_not_pin_pending(self):
         with patch("payments.airtel_client.requests.post") as post:
@@ -559,6 +581,7 @@ class AirtelApiTests(TestCase):
         self.assertIn("maxAttempts=5", content)
         self.assertIn("delayMs=6000", content)
         self.assertIn("if(inFlight)return", content)
+        self.assertIn("?enquire=1", content)
         self.assertNotIn("collections/initiate", content)
 
     def test_payment_status_stylesheet_is_discoverable(self):
@@ -568,6 +591,8 @@ class AirtelApiTests(TestCase):
         self.assertIn("prefers-reduced-motion:reduce", stylesheet)
         self.assertIn(".pay-status-provider-logo", stylesheet)
         self.assertIn("height:18px", stylesheet)
+        self.assertIn("payStatusRing", stylesheet)
+        self.assertIn("is-polling-stopped", stylesheet)
         self.assertNotIn("C:\\Users\\", stylesheet)
 
     def test_unapproved_test_phone_number_is_blocked(self):

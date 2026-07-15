@@ -54,13 +54,15 @@
             data-brand="{{ brand_name }}"
             role="listitem"
             aria-pressed="false"
+            {% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name %}aria-label="View {{ bi.deal_count }} {{ brand_name }} phone model{% if bi.deal_count != 1 %}s{% endif %}"{% endif %}{% endfor %}{% endif %}
             style="--brand-color:{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name %}{{ bi.color }}{% endif %}{% endfor %}{% else %}#ff5a00{% endif %};--brand-bg:{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name %}{{ bi.bg }}{% endif %}{% endfor %}{% else %}rgba(255,90,0,0.08){% endif %};"
         >
+            <span class="brand-card-v2__logo-stage" aria-hidden="true">
             {% if brand_info %}
                 {% for bn, bi in brand_info.items %}
                     {% if bn == brand_name %}
                         {% if bi.logo_url %}
-                            <img src="{{ bi.logo_url }}" alt="{{ brand_name }}"
+                            <img src="{{ bi.logo_url }}" alt=""
                                  class="brand-card-v2__logo-img"
                                  loading="lazy"
                                  data-skip-img-fallback="1"
@@ -73,13 +75,16 @@
                  style="{% if brand_info %}{% for bn, bi in brand_info.items %}{% if bn == brand_name and bi.logo_url %}display:none;{% endif %}{% endfor %}{% endif %}">
                 {{ brand_name|slice:":1"|upper }}
             </div>
-            <div class="brand-card-v2__name">{{ brand_name }}</div>
-            <div class="brand-card-v2__sub">
+            </span>
+            <div class="brand-card-v2__footer">
+              <span class="brand-card-v2__sub">
                 {% if brand_info %}
                     {% for bn, binfo in brand_info.items %}
                         {% if bn == brand_name %}{{ binfo.deal_count }} model{% if binfo.deal_count != 1 %}s{% endif %}{% endif %}
                     {% endfor %}
                 {% endif %}
+              </span>
+              <svg class="brand-card-v2__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </div>
         </button>
         {% endwith %}
