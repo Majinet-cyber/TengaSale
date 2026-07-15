@@ -489,15 +489,19 @@ class AirtelApiTests(TestCase):
         response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
         self.assertEqual(response.status_code, 200)
         for expected in (
-            "Waiting for Airtel confirmation", "MWK 100", "+26599***4567",
+            "Confirm on your phone", "MWK 100", "+26599***4567",
             tx.internal_reference, self.contract.contract_number, self.contract.payg_number,
             "Request sent", "Enter PIN", "Awaiting confirmation",
             "Return to contract", "Check again", "Your data is protected",
         ):
             self.assertContains(response, expected)
         self.assertContains(response, "css/payment-status.css")
+        self.assertContains(response, "img/brands/airtel.svg")
+        self.assertContains(response, "data-provider-id-row hidden")
+        self.assertContains(response, "data-balance-row hidden")
         self.assertNotContains(response, "provider callback")
         self.assertNotContains(response, "transaction enquiry")
+        self.assertNotContains(response, "C:\\Users\\")
 
     def test_dry_run_customer_page_does_not_claim_prompt_sent(self):
         tx = self._status_page_transaction(status=AirtelTransaction.STATUS_DRY_RUN)
@@ -559,6 +563,12 @@ class AirtelApiTests(TestCase):
 
     def test_payment_status_stylesheet_is_discoverable(self):
         self.assertIsNotNone(finders.find("css/payment-status.css"))
+        with open(finders.find("css/payment-status.css"), encoding="utf-8") as css_file:
+            stylesheet = css_file.read()
+        self.assertIn("prefers-reduced-motion:reduce", stylesheet)
+        self.assertIn(".pay-status-provider-logo", stylesheet)
+        self.assertIn("height:18px", stylesheet)
+        self.assertNotIn("C:\\Users\\", stylesheet)
 
     def test_unapproved_test_phone_number_is_blocked(self):
         response = self.client.post(

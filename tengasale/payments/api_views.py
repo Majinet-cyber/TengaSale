@@ -480,8 +480,8 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
 
     state_ui = {
         "request_sending": ("Sending payment request", 1),
-        "request_sent": ("Check your phone", 2),
-        "pending_customer_approval": ("Waiting for Airtel confirmation", 2),
+        "request_sent": ("Confirm on your phone", 2),
+        "pending_customer_approval": ("Confirm on your phone", 2),
         "pending_provider_confirmation": ("Waiting for Airtel confirmation", 3),
         "successful": ("Payment confirmed", 3),
         "failed": ("Payment failed", 3),

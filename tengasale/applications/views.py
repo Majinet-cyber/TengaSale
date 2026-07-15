@@ -17,7 +17,7 @@ from core.business_hours import business_hours_context
 from deals.models import DeviceDeal
 from geography.models import Region
 
-from deals.brand_utils import BRAND_STATIC_LOGOS, brand_logo_url, canonical_brand, ordered_brand_names
+from deals.brand_utils import BRAND_STATIC_LOGOS, brand_logo_url, canonical_brand, get_brand_logo, ordered_brand_names
 
 from .forms import (
     CustomerDetailsForm,
@@ -312,6 +312,7 @@ def choose_device(request, app_id):
         {
             "id": deal.id,
             "brand": canonical_brand(deal.brand.name),
+            "brand_logo_url": get_brand_logo(deal.brand.name),
             "model_name": deal.model_name,
             "specs": deal.specs,
             "min_cash_price": str(deal.min_cash_price),

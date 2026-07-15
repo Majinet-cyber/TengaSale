@@ -61,7 +61,7 @@
             <article class="deal-card selected-offer-card">
                 <div class="deal-header">
                     <div>
-                        <p class="offer-kicker" data-offer-brand></p>
+                        <div class="offer-brand-row"><p class="offer-kicker" data-offer-brand></p><img class="brand-logo brand-logo--device" data-offer-brand-logo alt="" hidden></div>
                         <h2 data-offer-model></h2>
                         <p class="text-muted" data-offer-specs></p>
                     </div>
@@ -296,6 +296,12 @@
             slider.max = Math.round(Number(deal.max_cash_price));
             slider.value = Math.round(Number(deal.default_cash_price));
             document.querySelector("[data-offer-brand]").textContent = deal.brand;
+            const offerBrandLogo = document.querySelector("[data-offer-brand-logo]");
+            if (offerBrandLogo) {
+                offerBrandLogo.src = deal.brand_logo_url || "";
+                offerBrandLogo.alt = deal.brand_logo_url ? deal.brand + " logo" : "";
+                offerBrandLogo.hidden = !deal.brand_logo_url;
+            }
             document.querySelector("[data-offer-model]").textContent = deal.model_name;
             document.querySelector("[data-offer-specs]").textContent = deal.specs;
             document.querySelector("[data-offer-condition]").textContent = deal.condition || "New";

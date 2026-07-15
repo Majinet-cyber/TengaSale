@@ -9,10 +9,16 @@ BRAND_ALIASES = {
     "redmi/xiaomi": "Redmi/Xiaomi",
     "redmi / xiaomi": "Redmi/Xiaomi",
     "redmi-xiaomi": "Redmi/Xiaomi",
+    "redmi by xiaomi": "Redmi/Xiaomi",
+    "xiaomi redmi": "Redmi/Xiaomi",
     "tecno": "Tecno",
+    "tecno mobile": "Tecno",
     "itel": "Itel",
     "samsung": "Samsung",
+    "samsung mobile": "Samsung",
     "infinix": "Infinix",
+    "airtel": "Airtel",
+    "airtel money": "Airtel",
 }
 
 VISIBLE_BRAND_NAMES = {"Tecno", "Itel", "Samsung", "Redmi/Xiaomi"}
@@ -23,7 +29,18 @@ BRAND_STATIC_LOGOS = {
     "Itel": "img/brands/itel.svg",
     "Redmi/Xiaomi": "img/brands/redmi.svg",
     "Samsung": "img/brands/samsung.svg",
+    "Airtel": "img/brands/airtel.svg",
 }
+
+
+def brand_logo_path(name: str) -> str:
+    """Return one safe canonical static path, or an empty string for unknown brands."""
+    return BRAND_STATIC_LOGOS.get(canonical_brand(name), "")
+
+
+def get_brand_logo(name: str) -> str:
+    """Resolve a known manufacturer/provider logo through Django staticfiles."""
+    return brand_logo_url(brand_logo_path(name))
 
 
 def canonical_brand(name: str) -> str:

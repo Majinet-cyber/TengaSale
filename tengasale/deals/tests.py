@@ -3,15 +3,51 @@ from io import StringIO
 from importlib import import_module
 
 from django.contrib import admin
+from django.contrib.staticfiles import finders
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from accounts.utils import assign_role
 from .models import DeviceBrand, DeviceDeal
+from .brand_utils import brand_logo_path, canonical_brand, get_brand_logo
+
+
+class BrandLogoResolverTests(SimpleTestCase):
+    def test_known_brand_aliases_resolve_centrally(self):
+        cases = {
+            "TECNO": "img/brands/tecno.svg",
+            "Tecno Mobile": "img/brands/tecno.svg",
+            "Redmi by Xiaomi": "img/brands/redmi.svg",
+            "Xiaomi Redmi": "img/brands/redmi.svg",
+            "iTel": "img/brands/itel.svg",
+            "Samsung Mobile": "img/brands/samsung.svg",
+            "Airtel Money": "img/brands/airtel.svg",
+        }
+        for brand, path in cases.items():
+            with self.subTest(brand=brand):
+                self.assertEqual(brand_logo_path(brand), path)
+                self.assertIn(path, get_brand_logo(brand))
+
+    def test_unknown_brand_falls_back_without_broken_image(self):
+        self.assertEqual(canonical_brand("Unlisted Phone Co"), "Unlisted Phone Co")
+        self.assertEqual(brand_logo_path("Unlisted Phone Co"), "")
+        self.assertEqual(get_brand_logo("Unlisted Phone Co"), "")
+
+    def test_all_imported_svg_logos_are_discoverable_and_safe(self):
+        for name in ("tecno", "redmi", "itel", "samsung", "airtel"):
+            relative_path = f"img/brands/{name}.svg"
+            located = finders.find(relative_path)
+            self.assertIsNotNone(located)
+            with open(located, encoding="utf-8") as logo_file:
+                content = logo_file.read().lower()
+            self.assertIn("<svg", content)
+            self.assertNotIn("<html", content)
+            self.assertNotIn("<script", content)
+            self.assertNotIn('href="http', content)
 
 
 class DealUrlTests(TestCase):

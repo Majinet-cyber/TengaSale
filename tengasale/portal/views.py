@@ -643,6 +643,7 @@ def portal_payment_wait(request, internal_reference):
         internal_reference=internal_reference,
     )
     contract = airtel_tx.contract
+    from deals.brand_utils import get_brand_logo
     from payments.api_views import customer_payment_status_payload
 
     status_data = customer_payment_status_payload(airtel_tx)
@@ -655,6 +656,7 @@ def portal_payment_wait(request, internal_reference):
             "provider_label": "Airtel Money",
             "provider_name": "Airtel Money",
             "provider_slug": "airtel_money",
+            "provider_logo_url": get_brand_logo("Airtel Money"),
             "masked_phone": mask_msisdn(airtel_tx.customer_msisdn),
             "amount_display": f"{airtel_tx.amount:,.0f}",
             "transaction_reference": airtel_tx.internal_reference,
