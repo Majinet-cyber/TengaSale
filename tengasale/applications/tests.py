@@ -860,6 +860,11 @@ class ApplicationFlowTests(ApplicationTestCase):
         self.assertContains(response, "data-term-display")
         self.assertContains(response, "data-deal-js-error")
         self.assertContains(response, 'document.querySelector("[data-term-display]")')
+        self.assertContains(response, "term_discounts")
+        self.assertContains(response, '"3": "25"')
+        self.assertContains(response, '"6": "15"')
+        self.assertNotContains(response, "totalLoan * 0.85")
+        self.assertNotContains(response, "totalLoan * 0.75")
 
     def test_invalid_deal_id_post_returns_error(self):
         app = self.create_application()

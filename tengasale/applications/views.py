@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required
 from core.business_hours import business_hours_context
+from core.commercial import EARLY_PAYOFF_DISCOUNTS
 from deals.models import DeviceDeal
 from geography.models import Region
 
@@ -324,6 +325,10 @@ def choose_device(request, app_id):
             "stock_status": deal.get_stock_status_display(),
             "is_lock_ready": deal.is_lock_ready,
             "condition": deal.get_condition_display(),
+            "term_discounts": {
+                str(term): str(discount)
+                for term, discount in EARLY_PAYOFF_DISCOUNTS.items()
+            },
         }
         for deal in deals
     ]

@@ -70,7 +70,9 @@
 
     {% if pricing_complete and next_required_amount %}
     <div class="cpd-next-payment-card">
-      To prevent your device from locking{% if next_required_date %} on {{ next_required_date|date:"d M Y" }}{% endif %}, pay <strong>{{ next_required_amount|mwk }}</strong>.
+      <span class="cpd-next-payment-card__label">Amount due{% if next_required_date %} by {{ next_required_date|date:"d M Y" }}{% endif %}</span>
+      <strong>{{ next_required_amount|mwk }}</strong>
+      <small>{% if deposit_pending %}Deposit required before regular repayments begin.{% else %}Paying this amount keeps your device access up to date.{% endif %}</small>
     </div>
     {% endif %}
 
@@ -174,7 +176,7 @@
         <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" value="{{ deposit_remaining|floatformat:0 }}" required data-payment-amount>
       </div>
       <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit" disabled data-payment-submit>
-        PAY <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
+        Pay deposit — <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
       </button>
       <div class="cpd-payment-progress" hidden data-payment-progress>
         <div class="cpd-payment-progress__row cpd-payment-progress__row--active"><span></span>Sending payment prompt</div>
@@ -230,7 +232,7 @@
         <div class="cpd-field-hint" data-payment-hint hidden></div>
       </div>
       <button type="submit" class="cpd-pay-btn" disabled data-payment-submit>
-        Pay Now <span data-payment-submit-label></span>
+        Pay amount due — <span data-payment-submit-label></span>
       </button>
     </form>
   </section>
@@ -274,7 +276,7 @@
             <span class="cpd-hist-row__amount">{{ tx.amount|mwk }}</span>
             <span class="cpd-hist-status cpd-hist-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
           </div>
-          <div class="cpd-hist-row__meta">{{ tx.paid_at|date:"d M Y"|default:tx.created_at|date:"d M Y" }} · {{ tx.get_provider_display }}{% if tx.internal_reference %} · {{ tx.internal_reference }}{% endif %}</div>
+          <div class="cpd-hist-row__meta">{{ tx.paid_at|date:"d M Y, H:i"|default:tx.created_at|date:"d M Y, H:i" }} · {{ tx.get_provider_display }}{% if tx.phone %} · {{ tx.masked_phone }}{% endif %}{% if tx.internal_reference %} · {{ tx.internal_reference }}{% endif %}</div>
         </div>
       </div>
       {% endfor %}
@@ -329,10 +331,10 @@
 
   <section class="cpd-support-card cpd-support-card--simple">
     <div>
-      <div class="cpd-support-card__title">Need Help?</div>
-      <div class="cpd-support-card__desc">Payment help, contract questions, or account support.</div>
+      <div class="cpd-support-card__title">Need help?</div>
+      <div class="cpd-support-card__desc">Contact us if you need help with your contract or payments.</div>
     </div>
-    <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">WhatsApp Support</a>
+    <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">WhatsApp support</a>
   </section>
 </div>
 

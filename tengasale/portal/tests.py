@@ -454,10 +454,21 @@ class PortalPageTest(TestCase):
     def test_contract_page_renders(self):
         res = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
         self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Amount due")
+        self.assertContains(res, "Need help?")
+        self.assertContains(res, "WhatsApp support")
 
     def test_history_page_renders(self):
+        PaymentTransaction.objects.create(
+            payment_contract=self.contract,
+            provider="airtel_money",
+            amount=Decimal("500"),
+            phone="+265991234567",
+            status=PaymentTransaction.STATUS_PAID,
+        )
         res = self.client.get(f"/pay/contract/{self.contract.contract_number}/history/")
         self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "+26***567")
 
     def test_support_page_renders(self):
         res = self.client.get("/pay/support/")
@@ -1150,7 +1161,7 @@ class DepositPaymentTest(TestCase):
         res = client.get(f"/pay/contract/{c.contract_number}/")
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "Deposit Required")
-        self.assertContains(res, "PAY DEPOSIT")
+        self.assertContains(res, "Pay deposit")
 
     def test_contract_page_shows_deposit_complete_when_paid(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))

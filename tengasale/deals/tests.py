@@ -84,6 +84,11 @@ class AllDealsPageTests(TestCase):
         self.assertContains(response, "6 months")
         self.assertContains(response, "15% discount")
         self.assertContains(response, "deal-summary-card")
+        self.assertContains(response, "deal-config-progress")
+        self.assertContains(response, "product-card__brand-logo")
+        self.assertContains(response, "deal-detail-brand-logo")
+        self.assertContains(response, "Verified early-payment saving")
+        self.assertContains(response, "Continue — MWK")
         self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
         self.assertContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
@@ -100,6 +105,11 @@ class AllDealsPageTests(TestCase):
         self.assertContains(response, "loan_multiplier")
         self.assertContains(response, "deposit_percent")
         self.assertContains(response, "default_cash_price")
+        self.assertContains(response, "brand_logo_url")
+        self.assertContains(response, "term_discounts")
+        self.assertContains(response, '"3": "25"')
+        self.assertContains(response, '"6": "15"')
+        self.assertContains(response, '"12": "0"')
 
     def test_infinix_is_not_visible_in_guided_brand_cards(self):
         infinix = DeviceBrand.objects.create(name="Infinix")

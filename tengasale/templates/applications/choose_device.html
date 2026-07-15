@@ -342,8 +342,9 @@
                 el.textContent = termMonths;
             });
             if (termDisplay) termDisplay.textContent = termMonths;
-            const sixTotal = totalLoan * 0.85;
-            const threeTotal = totalLoan * 0.75;
+            const discounts = selectedDeal.term_discounts || {};
+            const sixTotal = totalLoan * (1 - Number(discounts["6"] || 0) / 100);
+            const threeTotal = totalLoan * (1 - Number(discounts["3"] || 0) / 100);
 
             hiddenDeal.value = selectedDeal.id;
             hiddenPrice.value = slider.value;

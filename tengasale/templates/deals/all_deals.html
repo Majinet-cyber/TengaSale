@@ -40,6 +40,13 @@
     <p class="ts-page-header__sub">Compare cash price, deposit, repayments, and early settlement options</p>
 </div>
 
+<nav class="deal-config-progress" aria-label="Phone configuration progress">
+    <span class="is-active" data-config-stage="brand"><b>1</b> Brand</span>
+    <span data-config-stage="model"><b>2</b> Model</span>
+    <span data-config-stage="plan"><b>3</b> Plan</span>
+    <span data-config-stage="review"><b>4</b> Review</span>
+</nav>
+
 {% if deals %}
 
 
@@ -106,11 +113,11 @@
         <div class="product-card deal-summary-card" style="cursor:default;">
             <div class="product-card__header">
                 <div>
-                    <div class="product-card__specs" id="dd-brand" style="font-size:12px;color:#667085;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;"></div>
                     <div class="product-card__name" id="dd-model"></div>
                     <div class="product-card__specs" id="dd-specs"></div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                    <img id="dd-brand-logo" class="deal-detail-brand-logo" src="" alt="" hidden>
                     <span class="ts-status-chip ts-status-chip--active" id="dd-condition">New</span>
                     <span class="ts-status-chip ts-status-chip--pending" id="dd-stock">In Stock</span>
                 </div>
@@ -120,9 +127,13 @@
             <div class="ts-section-label" style="padding:0 0 2px;font-size:10px;">Choose term</div>
             <p style="font-size:11px;color:#667085;margin:0 0 6px;">Pay early, pay less — shorter terms attract discounts.</p>
             <div class="term-selector" id="term-selector">
-                <button class="term-chip" type="button" data-term="3">3 months<span class="term-chip__discount">25% discount</span></button>
-                <button class="term-chip" type="button" data-term="6">6 months<span class="term-chip__discount">15% discount</span></button>
-                <button class="term-chip active" type="button" data-term="12">12 months</button>
+                {% for option in term_options %}<button class="term-chip{% if option.months == 12 %} active{% endif %}" type="button" data-term="{{ option.months }}">{{ option.months }} months<span class="term-chip__discount">{% if option.discount_percent %}{{ option.discount_percent }}% discount{% else %}Standard plan{% endif %}</span></button>{% endfor %}
+            </div>
+
+            <div class="deal-savings-summary" id="dd-savings-summary" aria-live="polite">
+                <span>Verified early-payment saving</span>
+                <strong id="dd-savings">MWK 0</strong>
+                <small>Based on TengaSale’s approved term policy.</small>
             </div>
 
             <div class="product-card__price-grid">
@@ -185,9 +196,9 @@
             </div>
         </div>
 
-        <a href="{% url 'new_application' %}" id="dd-apply-btn"
+        <a href="{% url 'new_application' %}" id="dd-apply-btn" data-default-label="Continue with this phone"
             class="btn" style="width:100%;margin-top:10px;text-align:center;display:block;">
-            Start Application
+            Continue with this phone
         </a>
     </div>
 </div>
@@ -219,6 +230,18 @@
     const modelCardList = document.getElementById("model-card-list");
     const modelLabel = document.getElementById("model-section-label");
     const brandBtns = document.querySelectorAll("[data-brand]");
+    const configStages = document.querySelectorAll("[data-config-stage]");
+    const applyButton = document.getElementById("dd-apply-btn");
+
+    function setStage(stage) {
+        const order = ["brand", "model", "plan", "review"];
+        const activeIndex = order.indexOf(stage);
+        configStages.forEach(function(item) {
+            const index = order.indexOf(item.dataset.configStage);
+            item.classList.toggle("is-active", index === activeIndex);
+            item.classList.toggle("is-complete", index < activeIndex);
+        });
+    }
 
     // Term selector
     document.getElementById("term-selector").addEventListener("click", function(e) {
@@ -235,6 +258,7 @@
             selectedBrand = btn.dataset.brand;
             brandBtns.forEach(b => { b.classList.toggle("active", b === btn); b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
             renderModels();
+            setStage("model");
         });
     });
 
@@ -252,6 +276,7 @@
             card.style.width = "100%";
             card.style.cursor = "pointer";
             card.dataset.modelName = modelName;
+            card.setAttribute("aria-label", `View ${selectedBrand} ${modelName} pricing options`);
 
             // Build specs list
             const specsList = unique(modelDeals.map(d => d.specs)).join(", ");
@@ -264,7 +289,11 @@
                         <div class="product-card__name">${modelName}</div>
                         <div class="product-card__specs">${specsList}</div>
                     </div>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                    <span class="product-card__brand-action">
+                        ${firstDeal.brand_logo_url ? `<img class="product-card__brand-logo" src="${firstDeal.brand_logo_url}" alt="" aria-hidden="true">` : ''}
+                        <span class="product-card__availability">${firstDeal.stock_status || 'Available'}</span>
+                        <svg class="product-card__arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                    </span>
                 </div>
                 <div class="product-card__price-grid" style="grid-template-columns:1fr 1fr 1fr;">
                     <div class="product-card__price-item">
@@ -308,11 +337,14 @@
         slider.max = Math.round(Number(deal.max_cash_price));
         slider.value = Math.round(Number(deal.default_cash_price));
 
-        document.getElementById("dd-brand").textContent = deal.brand;
         document.getElementById("dd-model").textContent = deal.model_name;
         document.getElementById("dd-specs").textContent = deal.specs;
         document.getElementById("dd-condition").textContent = deal.condition || "New";
         document.getElementById("dd-stock").textContent = deal.stock_status || "In Stock";
+        const detailLogo = document.getElementById("dd-brand-logo");
+        detailLogo.src = deal.brand_logo_url || "";
+        detailLogo.alt = deal.brand_logo_url ? deal.brand + " logo" : "";
+        detailLogo.hidden = !deal.brand_logo_url;
         document.getElementById("dd-min-cash").textContent = money(deal.min_cash_price);
         document.getElementById("dd-max-cash").textContent = money(deal.max_cash_price);
 
@@ -328,6 +360,7 @@
 
         detailSection.hidden = false;
         updatePricing();
+        setStage("plan");
 
         setTimeout(() => detailSection.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
     }
@@ -338,10 +371,9 @@
         const totalLoan = cash * Number(selectedDeal.loan_multiplier);
         const deposit = totalLoan * Number(selectedDeal.deposit_percent) / 100;
 
-        let contractTotal = totalLoan;
-        if (selectedTerm === 3)       contractTotal = totalLoan * 0.75;
-        else if (selectedTerm === 6)  contractTotal = totalLoan * 0.85;
-        else                          contractTotal = totalLoan;
+        const discountPercent = Number((selectedDeal.term_discounts || {})[String(selectedTerm)] || 0);
+        const contractTotal = totalLoan * (1 - discountPercent / 100);
+        const savings = totalLoan - contractTotal;
 
         const monthly = contractTotal / selectedTerm;
         const daily   = contractTotal / (selectedTerm * 30);
@@ -360,11 +392,20 @@
         document.getElementById("dd-bimonthly").textContent = money(bimonthly);
         document.getElementById("dd-cash-slider-val").textContent = money(cash);
         document.getElementById("dd-term-label").textContent = selectedTerm;
+        document.getElementById("dd-savings").textContent = "MWK " + money(savings);
+        document.getElementById("dd-savings-summary").classList.toggle("has-savings", savings > 0);
+        if (applyButton) applyButton.textContent = "Continue — MWK " + money(daily) + "/day";
         var depPct = document.getElementById("dd-dep-pct");
         if (depPct) depPct.textContent = Math.round(Number(selectedDeal.deposit_percent));
     }
 
     document.getElementById("dd-cash-slider").addEventListener("input", updatePricing);
+    if (applyButton) applyButton.addEventListener("click", function() {
+        if (applyButton.getAttribute("aria-disabled") === "true") return;
+        applyButton.setAttribute("aria-disabled", "true");
+        applyButton.textContent = "Opening application…";
+        setStage("review");
+    });
 })();
 </script>
 

@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from accounts.decorators import merchant_required
+from core.commercial import ALLOWED_CONTRACT_TERMS, EARLY_PAYOFF_DISCOUNTS
 from .brand_utils import BRAND_STATIC_LOGOS, PREFERRED_BRAND_ORDER, brand_logo_url, canonical_brand, ordered_brand_names
 from .models import DeviceBrand, DeviceDeal
 
@@ -29,7 +30,11 @@ def all_deals(request):
         {
             "id": deal.id,
             "brand": deal._canonical_brand,
-            "brand_logo": deal.brand.logo.url if deal.brand.logo else "",
+            "brand_logo_url": (
+                deal.brand.logo.url
+                if deal.brand.logo
+                else brand_logo_url(BRAND_STATIC_LOGOS.get(deal._canonical_brand, ""))
+            ),
             "model_name": deal.model_name,
             "specs": deal.specs,
             "min_cash_price": str(deal.min_cash_price),
@@ -41,6 +46,10 @@ def all_deals(request):
             "stock_status": deal.get_stock_status_display(),
             "is_lock_ready": deal.is_lock_ready,
             "condition": deal.get_condition_display(),
+            "term_discounts": {
+                str(term): str(EARLY_PAYOFF_DISCOUNTS.get(term, 0))
+                for term in ALLOWED_CONTRACT_TERMS
+            },
         }
         for deal in deals
     ]
@@ -80,5 +89,12 @@ def all_deals(request):
             "deal_options": deal_options,
             "brand_names": brand_names,
             "brand_info": brand_info,
+            "term_options": [
+                {
+                    "months": term,
+                    "discount_percent": EARLY_PAYOFF_DISCOUNTS.get(term, 0),
+                }
+                for term in ALLOWED_CONTRACT_TERMS
+            ],
         },
     )

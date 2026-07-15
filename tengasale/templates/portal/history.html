@@ -107,6 +107,7 @@
           <div class="cpd-hist-row__meta">
             {{ tx.paid_at|date:"d M Y, H:i"|default:tx.created_at|date:"d M Y, H:i" }}
             · {{ tx.get_provider_display }}
+            {% if tx.phone %}· {{ tx.masked_phone }}{% endif %}
             · {{ tx.internal_reference }}
           </div>
           {% if tx.status == 'paid' and tx.balance_after is not None %}
