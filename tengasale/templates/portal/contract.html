@@ -198,7 +198,7 @@
       <div class="cpd-section-card__title">Make a Payment</div>
       <div class="cpd-section-card__sub">Each payment extends your device access</div>
     </div>
-    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}">
+    <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}" data-min-amount="{{ airtel_test_min_amount|default:'100' }}" data-max-amount="{{ airtel_test_max_amount|default:'1000' }}">
       {% csrf_token %}
       <input type="hidden" name="payment_type" value="repayment">
       <input type="hidden" name="provider" value="" data-payment-provider>
@@ -225,7 +225,8 @@
       </div>
       <div class="cpd-field">
         <label class="cpd-field-label">Amount</label>
-        <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" placeholder="MWK amount" required data-payment-amount>
+        <input type="number" name="amount" class="cpd-input cpd-input--amount" min="{{ airtel_test_min_amount|default:'100' }}" max="{{ airtel_test_max_amount|default:'1000' }}" step="1" placeholder="MWK amount" required data-payment-amount>
+        {% if airtel_staging %}<div class="cpd-field-hint">For Airtel testing, you may enter an amount from MWK {{ airtel_test_min_amount|default:'100' }}. The daily amount above is guidance, not a minimum.</div>{% endif %}
         <div class="cpd-field-hint" data-payment-hint hidden></div>
       </div>
       <button type="submit" class="cpd-pay-btn" disabled data-payment-submit>
@@ -360,6 +361,8 @@
 
   document.querySelectorAll('[data-payment-form]').forEach(function (form) {
     var daily = Number(form.dataset.daily || 0);
+    var minimumAmount = Number(form.dataset.minAmount || 100);
+    var maximumAmount = Number(form.dataset.maxAmount || 1000);
     var thirty = Number(form.dataset.thirty || 0);
     var amountInput = form.querySelector('[data-payment-amount]');
     var providerInput = form.querySelector('[data-payment-provider]');
@@ -406,7 +409,7 @@
       var amount = Number(amountInput && amountInput.value);
       var network = detectNetwork(phoneInput && phoneInput.value);
       if (providerInput) providerInput.value = network.provider || '';
-      var valid = amount >= 100 && network.valid && network.provider === 'airtel_money';
+      var valid = amount >= minimumAmount && amount <= maximumAmount && network.valid && network.provider === 'airtel_money';
       if (submitBtn) submitBtn.disabled = !valid;
       if (submitLabel) submitLabel.textContent = amount > 0 ? fmt(amount) : '';
       if (networkHint) {
@@ -419,7 +422,7 @@
           var daysCovered = Math.floor(amount / daily);
           hint.textContent = daysCovered > 0
             ? 'This payment covers approximately ' + daysCovered + ' day' + (daysCovered !== 1 ? 's' : '') + ' of access.'
-            : 'Amount is less than 1 day\'s rate (' + fmt(daily) + ').';
+            : 'Partial payment — 0 full repayment days covered. Credit will accumulate toward the daily rate of ' + fmt(daily) + '.';
         }
       }
     }

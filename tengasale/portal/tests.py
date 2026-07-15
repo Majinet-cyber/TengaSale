@@ -1009,6 +1009,60 @@ class DepositPaymentTest(TestCase):
         self.assertEqual(c.amount_paid, Decimal("3750"))
         self.assertEqual(c.deposit_paid, Decimal("0"))
 
+    def test_staging_partial_repayments_accumulate_full_days_and_remainder(self):
+        c = self._make_contract(
+            deposit_required=Decimal("5000"),
+            deposit_paid=Decimal("5000"),
+            daily_price=Decimal("26736"),
+            total_amount=Decimal("200000"),
+        )
+        original_due = c.due_date
+        first = apply_payment_to_contract(c, Decimal("100"), accumulate_partial_days=True)
+        second = apply_payment_to_contract(c, Decimal("10000"), accumulate_partial_days=True)
+        third = apply_payment_to_contract(c, Decimal("16636"), accumulate_partial_days=True)
+        c.refresh_from_db()
+        self.assertEqual(first["days_extended"], 0)
+        self.assertEqual(second["days_extended"], 0)
+        self.assertEqual(third["days_extended"], 1)
+        self.assertEqual(c.partial_repayment_credit, Decimal("0"))
+        self.assertEqual(c.amount_paid, Decimal("26736"))
+        self.assertNotEqual(c.due_date, original_due)
+
+    def test_partial_repayment_uses_floor_and_preserves_remainder(self):
+        c = self._make_contract(
+            deposit_required=Decimal("5000"),
+            deposit_paid=Decimal("5000"),
+            daily_price=Decimal("26736"),
+            total_amount=Decimal("200000"),
+        )
+        result = apply_payment_to_contract(c, Decimal("30000"), accumulate_partial_days=True)
+        c.refresh_from_db()
+        self.assertEqual(result["days_extended"], 1)
+        self.assertEqual(c.partial_repayment_credit, Decimal("3264"))
+
+    def test_exact_and_below_daily_partial_allocation_use_floor(self):
+        exact = self._make_contract(deposit_required=Decimal("0"), daily_price=Decimal("1000"))
+        below = self._make_contract(deposit_required=Decimal("0"), daily_price=Decimal("1000"))
+        exact_result = apply_payment_to_contract(exact, Decimal("1000"), accumulate_partial_days=True)
+        below_result = apply_payment_to_contract(below, Decimal("999"), accumulate_partial_days=True)
+        below.refresh_from_db()
+        self.assertEqual(exact_result["days_extended"], 1)
+        self.assertEqual(below_result["days_extended"], 0)
+        self.assertEqual(below.partial_repayment_credit, Decimal("999"))
+
+    def test_partial_regular_payment_does_not_activate_unpaid_deposit(self):
+        c = self._make_contract(
+            deposit_required=Decimal("5000"),
+            deposit_paid=Decimal("0"),
+            daily_price=Decimal("1000"),
+            status="awaiting_deposit",
+        )
+        result = apply_payment_to_contract(c, Decimal("100"), accumulate_partial_days=True)
+        c.refresh_from_db()
+        self.assertEqual(result["days_extended"], 0)
+        self.assertEqual(c.status, "awaiting_deposit")
+        self.assertFalse(c.deposit_complete)
+
     def test_deposit_complete_after_full_deposit(self):
         c = self._make_contract()
         apply_payment_to_contract(c, Decimal("5000"), payment_type="deposit")

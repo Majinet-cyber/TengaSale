@@ -239,8 +239,11 @@ class AirtelCollectionService:
         if self.client.config.environment == "staging":
             try:
                 max_amount = Decimal(str(self.client.config.test_max_amount)).quantize(Decimal("0.01"))
+                min_amount = Decimal(str(self.client.config.test_min_amount)).quantize(Decimal("0.01"))
             except (InvalidOperation, ValueError):
-                raise AirtelConfigurationError("AIRTEL_TEST_MAX_AMOUNT must be a valid MWK amount.")
+                raise AirtelConfigurationError("Airtel staging test amount limits must be valid MWK amounts.")
+            if amount < min_amount:
+                raise ValueError(f"Airtel staging payments must be at least MWK {min_amount:,.0f}.")
             if amount > max_amount:
                 raise ValueError(f"Staging Airtel collections are limited to MWK {max_amount}.")
             allowed = _allowed_test_msisdns(self.client.config)
@@ -338,7 +341,7 @@ class AirtelCollectionService:
         refs = extract_airtel_references(body if isinstance(body, dict) else {})
         airtel_tx.raw_response = response
         airtel_tx.status = extract_airtel_status(body) if isinstance(body, dict) else AirtelTransaction.STATUS_UNKNOWN
-        if airtel_tx.status == AirtelTransaction.STATUS_UNKNOWN and response.get("ok"):
+        if airtel_tx.status == AirtelTransaction.STATUS_UNKNOWN:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
         if airtel_tx.status == AirtelTransaction.STATUS_SUCCESS:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
@@ -584,7 +587,15 @@ class AirtelCallbackService:
             portal_tx.raw_response = airtel_tx.raw_response
             portal_tx.save(update_fields=["status", "paid_at", "provider_reference", "webhook_payload", "raw_response", "updated_at"])
 
-        result = apply_payment_to_contract(contract, airtel_tx.amount, payment_type=payment_type)
+        result = apply_payment_to_contract(
+            contract,
+            airtel_tx.amount,
+            payment_type=payment_type,
+            accumulate_partial_days=(
+                airtel_tx.environment == "staging"
+                and payment_type == PaymentTransaction.TYPE_REPAYMENT
+            ),
+        )
         portal_tx.balance_after = contract.deposit_remaining if payment_type == PaymentTransaction.TYPE_DEPOSIT else contract.remaining_amount
         portal_tx.save(update_fields=["balance_after", "updated_at"])
         try:
@@ -594,8 +605,10 @@ class AirtelCallbackService:
         airtel_tx.processed_success_at = timezone.now()
         airtel_tx.completed_at = airtel_tx.processed_success_at
         airtel_tx.repayment_posted = True
+        airtel_tx.full_repayment_days_covered = result.get("days_extended", 0)
+        airtel_tx.partial_credit_balance = result.get("partial_credit", Decimal("0"))
         airtel_tx.processing_note = f"Applied to contract {contract.contract_number}; days_extended={result.get('days_extended', 0)}"
-        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "completed_at", "repayment_posted", "processing_note", "updated_at"])
+        airtel_tx.save(update_fields=["payment_transaction", "processed_success_at", "completed_at", "repayment_posted", "full_repayment_days_covered", "partial_credit_balance", "processing_note", "updated_at"])
         return airtel_tx
 
 

@@ -204,7 +204,11 @@
 
     if (status === 'successful') {
       title.textContent = 'Payment confirmed';
-      message.textContent = data.message || 'Payment confirmed.';
+      if (data.payment_type === 'partial_repayment') {
+        message.textContent = 'Partial repayment — ' + data.full_repayment_days_covered + ' full repayment days covered. Partial credit balance: MWK ' + data.partial_credit_balance + '.';
+      } else {
+        message.textContent = data.message || 'Payment confirmed.';
+      }
     } else if (status === 'failed' || status === 'timed_out' || status === 'reversed') {
       title.textContent = 'Payment not completed';
       message.textContent = data.message || 'Payment was not completed.';

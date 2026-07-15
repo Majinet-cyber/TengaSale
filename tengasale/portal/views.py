@@ -331,6 +331,9 @@ def portal_contract(request, contract_number):
         "lock_provider_label": lock_provider_label,
         "fully_paid": fully_paid,
         "inactive_reason": inactive_reason,
+        "airtel_test_min_amount": getattr(settings, "AIRTEL_TEST_MIN_AMOUNT", "100"),
+        "airtel_test_max_amount": getattr(settings, "AIRTEL_TEST_MAX_AMOUNT", "1000"),
+        "airtel_staging": getattr(settings, "AIRTEL_ENVIRONMENT", "staging").lower() == "staging",
     })
 
 
@@ -547,8 +550,10 @@ def portal_payment(request, contract_number):
     if amount <= Decimal("0"):
         messages.error(request, "Payment amount must be greater than zero.")
         return redirect("portal_contract", contract_number=contract_number)
-    if amount < Decimal("100"):
-        messages.error(request, "Minimum payment is MWK 100.")
+    is_airtel_staging = getattr(settings, "AIRTEL_ENVIRONMENT", "staging").lower() == "staging"
+    minimum = Decimal(str(getattr(settings, "AIRTEL_TEST_MIN_AMOUNT", "100"))) if is_airtel_staging else Decimal("100")
+    if amount < minimum:
+        messages.error(request, f"Minimum payment is MWK {minimum:,.0f}.")
         return redirect("portal_contract", contract_number=contract_number)
 
     from portal.services import calculate_deposit_payment_type

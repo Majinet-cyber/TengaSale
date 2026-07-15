@@ -40,6 +40,7 @@ class AirtelConfig:
     collections_enabled: bool
     dry_run: bool
     test_max_amount: str
+    test_min_amount: str
     allowed_test_msisdns: tuple[str, ...]
     callback_auth_enabled: bool
     callback_hash_key: str
@@ -108,6 +109,7 @@ class AirtelConfig:
             collections_enabled=bool(getattr(settings, "AIRTEL_COLLECTIONS_ENABLED", False)),
             dry_run=bool(getattr(settings, "AIRTEL_DRY_RUN", True)),
             test_max_amount=str(getattr(settings, "AIRTEL_TEST_MAX_AMOUNT", "1000")),
+            test_min_amount=str(getattr(settings, "AIRTEL_TEST_MIN_AMOUNT", "100")),
             allowed_test_msisdns=allowed_msisdns,
             callback_auth_enabled=getattr(settings, "AIRTEL_CALLBACK_AUTH_ENABLED", False),
             callback_hash_key=private_key,
@@ -140,6 +142,7 @@ class AirtelConfig:
             "dry_run": self.dry_run,
             "allowed_test_numbers_configured": bool(self.allowed_test_msisdns),
             "test_max_amount": self.test_max_amount,
+            "test_min_amount": self.test_min_amount,
             "callback_auth_enabled": self.callback_auth_enabled,
             "callback_secret_configured": bool(self.callback_hash_key),
             "auth_token_configured": bool(self.auth_token),

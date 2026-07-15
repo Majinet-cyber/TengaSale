@@ -688,6 +688,8 @@ class AirtelTransaction(models.Model):
         related_name="airtel_transaction",
     )
     repayment_posted = models.BooleanField(default=False)
+    full_repayment_days_covered = models.PositiveIntegerField(default=0)
+    partial_credit_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     duplicate_callback = models.BooleanField(default=False)
     processed_success_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)

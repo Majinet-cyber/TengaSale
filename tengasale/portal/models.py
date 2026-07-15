@@ -136,6 +136,18 @@ class PaymentContract(models.Model):
     )
     deposit_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    partial_repayment_credit = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="Confirmed regular repayments not yet allocated to a full repayment day.",
+    )
+    partial_repayment_daily_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Daily rate used for the current partial repayment accumulation cycle.",
+    )
     daily_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     thirty_day_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 

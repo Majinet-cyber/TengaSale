@@ -505,6 +505,7 @@ def apply_payment_to_contract(
     db_save: bool = True,
     payment_type: str = "repayment",
     payment_at=None,
+    accumulate_partial_days: bool = False,
 ) -> dict:
     """
     Apply a payment to a contract.
@@ -632,8 +633,19 @@ def apply_payment_to_contract(
             arrears_amount = Decimal(overdue_days) * contract.daily_price
             arrears_cleared = min(applied, arrears_amount)
 
-    # Calculate days extended by this payment
-    days_extended = days_covered_by_payment(applied, contract.daily_price)
+    # Airtel staging supports sub-instalment payments. Preserve the exact
+    # remainder and allocate only complete days; normal production/provider
+    # behavior continues to use the individual confirmed payment.
+    partial_credit = getattr(contract, "partial_repayment_credit", Decimal("0")) or Decimal("0")
+    partial_rate = getattr(contract, "partial_repayment_daily_rate", Decimal("0")) or Decimal("0")
+    if accumulate_partial_days and contract.daily_price and contract.daily_price > 0:
+        allocation_rate = partial_rate if partial_credit > 0 and partial_rate > 0 else contract.daily_price
+        accumulated = partial_credit + applied
+        days_extended = int(accumulated / allocation_rate)
+        contract.partial_repayment_credit = accumulated - (Decimal(days_extended) * allocation_rate)
+        contract.partial_repayment_daily_rate = allocation_rate if contract.partial_repayment_credit > 0 else Decimal("0")
+    else:
+        days_extended = days_covered_by_payment(applied, contract.daily_price)
 
     # Update contract financials
     contract.amount_paid += applied
@@ -647,21 +659,25 @@ def apply_payment_to_contract(
     current_expiry = getattr(contract, "access_expires_at", None)
     if current_expiry and timezone.is_naive(current_expiry):
         current_expiry = timezone.make_aware(current_expiry, timezone.get_current_timezone())
-    base_time = current_expiry if current_expiry and current_expiry > payment_at else payment_at
-    new_access_expiry = base_time + timedelta(days=days_extended)
+    if accumulate_partial_days and days_extended == 0:
+        new_access_expiry = current_expiry
+    else:
+        base_time = current_expiry if current_expiry and current_expiry > payment_at else payment_at
+        new_access_expiry = base_time + timedelta(days=days_extended)
     contract.last_payment_at = payment_at
-    contract.access_expires_at = new_access_expiry
-    contract.due_date = new_access_expiry.date()
-    contract.lock_date = new_access_expiry.date()
+    if new_access_expiry is not None:
+        contract.access_expires_at = new_access_expiry
+        contract.due_date = new_access_expiry.date()
+        contract.lock_date = new_access_expiry.date()
 
     # Update status
     if contract.amount_paid >= contract.total_amount:
         contract.status = "completed"
-    elif new_access_expiry <= timezone.now():
+    elif new_access_expiry and new_access_expiry <= timezone.now():
         contract.status = "overdue"
     elif contract.status == "repossession_pending":
         contract.status = "active"
-    else:
+    elif contract.deposit_complete:
         contract.status = "active"
 
     # Recalculate pricing on remaining balance for next period
@@ -677,6 +693,7 @@ def apply_payment_to_contract(
         contract.save(update_fields=[
             "amount_paid", "due_date", "lock_date", "status",
             "daily_price", "thirty_day_price", "last_payment_at", "access_expires_at",
+            "partial_repayment_credit", "partial_repayment_daily_rate",
         ])
         # Refresh stored analytics after every successful payment
         try:
@@ -688,6 +705,7 @@ def apply_payment_to_contract(
         "applied": applied,
         "arrears_cleared": arrears_cleared,
         "days_extended": days_extended,
+        "partial_credit": getattr(contract, "partial_repayment_credit", Decimal("0")),
         "payment_type": payment_type,
         "new_due_date": contract.due_date,
         "new_lock_date": contract.lock_date,

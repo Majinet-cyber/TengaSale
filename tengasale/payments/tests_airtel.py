@@ -91,6 +91,7 @@ class MalawiMobileNetworkTests(SimpleTestCase):
     AIRTEL_COLLECTIONS_ENABLED=True,
     AIRTEL_DRY_RUN=False,
     AIRTEL_TEST_MAX_AMOUNT="1000",
+    AIRTEL_TEST_MIN_AMOUNT="100",
     AIRTEL_ALLOWED_TEST_MSISDNS="0991234567",
     AIRTEL_CALLBACK_AUTH_ENABLED=True,
     AIRTEL_CALLBACK_HASH_KEY="testhash",
@@ -405,6 +406,65 @@ class AirtelApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("limited", response.json()["error"])
+
+    def test_staging_accepts_mwk_100_and_keeps_it_pending(self):
+        response = self.client.post(
+            "/api/payments/airtel/collections/initiate/",
+            data=json.dumps({"msisdn": "0991234567", "amount": 100, "purpose": "INSTALLMENT", "contract_id": self.contract.id}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        tx = AirtelTransaction.objects.get()
+        self.assertEqual(tx.amount, Decimal("100"))
+        self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.amount_paid, Decimal("0"))
+
+    def test_staging_rejects_amounts_below_mwk_100(self):
+        for amount in (99, 0, -1):
+            with self.subTest(amount=amount):
+                response = self.client.post(
+                    "/api/payments/airtel/collections/initiate/",
+                    data=json.dumps({"msisdn": "0991234567", "amount": amount, "purpose": "INSTALLMENT", "contract_id": self.contract.id}),
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_confirmed_mwk_100_is_partial_and_callback_is_idempotent(self):
+        self.contract.deposit_paid = self.contract.deposit_required
+        self.contract.save(update_fields=["deposit_paid"])
+        original_due_date = self.contract.due_date
+        tx = AirtelTransaction.objects.create(
+            internal_reference="TENGA-AIRTEL-PARTIAL-100",
+            environment="staging",
+            customer_msisdn="+265991234567",
+            amount=Decimal("100"),
+            purpose=AirtelTransaction.PURPOSE_INSTALLMENT,
+            direction=AirtelTransaction.DIRECTION_COLLECTION,
+            status=AirtelTransaction.STATUS_PENDING,
+            contract=self.contract,
+        )
+        payload = signed_payload({"transaction": {"reference_id": tx.internal_reference, "id": "AT-PARTIAL-100", "status_code": "TS", "amount": "100"}})
+        for _ in range(2):
+            response = self.client.post("/api/payments/airtel/callback/", data=json.dumps(payload), content_type="application/json")
+            self.assertEqual(response.status_code, 200)
+        self.contract.refresh_from_db()
+        tx.refresh_from_db()
+        self.assertEqual(self.contract.amount_paid, Decimal("100"))
+        self.assertEqual(self.contract.partial_repayment_credit, Decimal("100"))
+        self.assertEqual(tx.full_repayment_days_covered, 0)
+        self.assertEqual(tx.partial_credit_balance, Decimal("100"))
+        self.assertEqual(self.contract.due_date, original_due_date)
+        self.assertEqual(PaymentTransaction.objects.filter(payment_contract=self.contract, status=PaymentTransaction.STATUS_PAID).count(), 1)
+
+    def test_payment_form_labels_mwk_100_as_zero_day_partial_payment(self):
+        self.contract.deposit_paid = self.contract.deposit_required
+        self.contract.save(update_fields=["deposit_paid"])
+        response = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "For Airtel testing, you may enter an amount from MWK 100")
+        self.assertContains(response, "Partial payment — 0 full repayment days covered")
+        self.assertNotContains(response, "MWK 100 — 1 day paid")
 
     def test_unapproved_test_phone_number_is_blocked(self):
         response = self.client.post(

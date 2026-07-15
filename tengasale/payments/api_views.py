@@ -490,6 +490,13 @@ def _customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         "payg_number": contract.payg_number if contract else "",
         "portal_transaction_status": portal_tx.status if portal_tx else "",
         "balance_after": str(portal_tx.balance_after) if portal_tx and portal_tx.balance_after is not None else "",
+        "payment_type": (
+            "deposit" if tx.purpose == AirtelTransaction.PURPOSE_DEPOSIT
+            else "partial_repayment" if tx.full_repayment_days_covered == 0
+            else "repayment"
+        ),
+        "full_repayment_days_covered": tx.full_repayment_days_covered,
+        "partial_credit_balance": str(tx.partial_credit_balance),
         "updated_at": tx.updated_at.isoformat() if tx.updated_at else "",
     }
 
