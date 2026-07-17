@@ -36,7 +36,17 @@ TERMINAL_FAILURE_STATUSES = {
 
 
 def normalize_airtel_status(value: Any) -> str:
-    status = str(value or "").strip().upper()
+    """
+    Normalize Airtel status values before mapping them to local statuses.
+
+    Airtel may return punctuation in values such as "Success.".
+    Removing punctuation ensures those valid responses are recognised.
+    """
+    status = re.sub(
+        r"[^A-Z0-9_ ]+",
+        "",
+        str(value or "").strip().upper(),
+    )
 
     if status in SUCCESS_VALUES:
         return AirtelTransaction.STATUS_SUCCESS
@@ -738,9 +748,19 @@ class AirtelTransactionEnquiryService:
         airtel_tx.raw_response = response
 
         if isinstance(body, dict):
-            airtel_tx.status = extract_airtel_status(
-                body
-            )
+            enquiry_status = extract_airtel_status(body)
+
+            # Preserve the current transaction status when Airtel's
+            # enquiry response does not contain a recognised payment status.
+            # For example, "Transaction Not Found" must not replace a valid
+            # PENDING transaction with UNKNOWN.
+            if enquiry_status != AirtelTransaction.STATUS_UNKNOWN:
+                airtel_tx.status = enquiry_status
+            else:
+                airtel_tx.processing_note = (
+                    "Airtel enquiry returned no recognised transaction "
+                    "status; the existing status was preserved."
+                )
 
             refs = extract_airtel_references(body)
 
