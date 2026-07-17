@@ -32,7 +32,9 @@ from .mobile_network import (
 )
 from .models import AirtelCallbackLog, AirtelTransaction
 
+
 logger = logging.getLogger(__name__)
+
 
 SUCCESS_VALUES = {
     "TS",
@@ -40,21 +42,25 @@ SUCCESS_VALUES = {
     "SUCCESSFUL",
     "TRANSACTION SUCCESSFUL",
 }
+
 PENDING_VALUES = {
     "TIP",
     "PENDING",
     "IN_PROGRESS",
 }
+
 EXPIRED_VALUES = {
     "TE",
     "EXPIRED",
 }
+
 FAILED_VALUES = {
     "FAILED",
     "TF",
     "DECLINED",
     "REJECTED",
 }
+
 TERMINAL_FAILURE_STATUSES = {
     AirtelTransaction.STATUS_FAILED,
     AirtelTransaction.STATUS_EXPIRED,
@@ -82,8 +88,13 @@ def normalize_airtel_status(value: Any) -> str:
 def normalize_malawi_msisdn(value: str) -> str:
     normalized = normalize_malawi_number(value)
 
-    if not normalized.valid or normalized.provider != PROVIDER_AIRTEL:
-        raise ValueError("Enter a valid Malawi mobile money number.")
+    if (
+        not normalized.valid
+        or normalized.provider != PROVIDER_AIRTEL
+    ):
+        raise ValueError(
+            "Enter a valid Malawi mobile money number."
+        )
 
     return normalized.international
 
@@ -101,12 +112,16 @@ def _airtel_api_msisdn(value: str) -> str:
     return normalize_malawi_msisdn(value).lstrip("+")
 
 
-def _allowed_test_msisdns(config: AirtelConfig) -> set[str]:
+def _allowed_test_msisdns(
+    config: AirtelConfig,
+) -> set[str]:
     normalized = set()
 
     for value in config.allowed_test_msisdns:
         try:
-            normalized.add(normalize_malawi_msisdn(value))
+            normalized.add(
+                normalize_malawi_msisdn(value)
+            )
         except ValueError:
             continue
 
@@ -114,30 +129,44 @@ def _allowed_test_msisdns(config: AirtelConfig) -> set[str]:
 
 
 def generate_airtel_reference() -> str:
+    """
+    Generate an Airtel-compatible reference.
+
+    Airtel requires the reference to contain only
+    letters and numbers and to be no longer than
+    64 characters.
+    """
     chars = string.ascii_uppercase + string.digits
+    date_part = timezone.now().strftime("%Y%m%d")
 
     for _ in range(100):
-        suffix = "".join(secrets.choice(chars) for _ in range(8))
-        ref = (
-            f"TENGA-AIRTEL-"
-            f"{timezone.now().strftime('%Y%m%d')}-"
-            f"{suffix}"
+        suffix = "".join(
+            secrets.choice(chars)
+            for _ in range(10)
         )
 
+        reference = f"TENGA{date_part}{suffix}"
+
         if not AirtelTransaction.objects.filter(
-            internal_reference=ref
+            internal_reference=reference
         ).exists():
-            return ref
+            return reference
 
-    return f"TENGA-AIRTEL-{secrets.token_hex(8).upper()}"
+    return f"TENGA{secrets.token_hex(16).upper()}"
 
 
-def _extract_nested(data: Any, *paths: str) -> Any:
+def _extract_nested(
+    data: Any,
+    *paths: str,
+) -> Any:
     for path in paths:
         current = data
 
         for part in path.split("."):
-            if not isinstance(current, dict) or part not in current:
+            if (
+                not isinstance(current, dict)
+                or part not in current
+            ):
                 current = None
                 break
 
@@ -153,6 +182,7 @@ def _canonical_callback_payload(
     data: dict[str, Any],
 ) -> bytes:
     payload = dict(data)
+
     payload.pop("hash", None)
     payload.pop("Hash", None)
 
@@ -206,7 +236,10 @@ def _collect_reference_values(
             for key, value in obj.items():
                 lower = str(key).lower()
 
-                if lower in names and value not in (None, ""):
+                if (
+                    lower in names
+                    and value not in (None, "")
+                ):
                     values.add(str(value))
 
                 walk(value)
@@ -245,10 +278,13 @@ def extract_airtel_status(
     normalized = normalize_airtel_status(value)
 
     if (
-        normalized == AirtelTransaction.STATUS_UNKNOWN
+        normalized
+        == AirtelTransaction.STATUS_UNKNOWN
         and message
     ):
-        normalized = normalize_airtel_status(message)
+        normalized = normalize_airtel_status(
+            message
+        )
 
     return normalized
 
@@ -332,6 +368,7 @@ def extract_airtel_amount(
         return Decimal(
             str(value).replace(",", "")
         ).quantize(Decimal("0.01"))
+
     except (InvalidOperation, ValueError):
         return None
 
@@ -355,11 +392,14 @@ class AirtelCollectionService:
         self.client.config.assert_production_allowed()
 
         try:
-            amount = Decimal(str(amount)).quantize(
-                Decimal("0.01")
-            )
+            amount = Decimal(
+                str(amount)
+            ).quantize(Decimal("0.01"))
+
         except (InvalidOperation, ValueError):
-            raise ValueError("Enter a valid MWK amount.")
+            raise ValueError(
+                "Enter a valid MWK amount."
+            )
 
         if amount <= 0:
             raise ValueError(
@@ -372,7 +412,9 @@ class AirtelCollectionService:
 
         valid_purposes = {
             choice[0]
-            for choice in AirtelTransaction.PURPOSE_CHOICES
+            for choice in (
+                AirtelTransaction.PURPOSE_CHOICES
+            )
         }
 
         if purpose not in valid_purposes:
@@ -380,8 +422,8 @@ class AirtelCollectionService:
                 "Unsupported Airtel payment purpose."
             )
 
-        normalized_msisdn = normalize_malawi_msisdn(
-            msisdn
+        normalized_msisdn = (
+            normalize_malawi_msisdn(msisdn)
         )
 
         if contract is not None:
@@ -393,7 +435,8 @@ class AirtelCollectionService:
 
             remaining = (
                 contract.deposit_remaining
-                if purpose == AirtelTransaction.PURPOSE_DEPOSIT
+                if purpose
+                == AirtelTransaction.PURPOSE_DEPOSIT
                 else contract.remaining_amount
             )
 
@@ -415,13 +458,15 @@ class AirtelCollectionService:
 
             if contract.status in blocked_statuses:
                 raise ValueError(
-                    "This contract cannot currently accept payments."
+                    "This contract cannot currently "
+                    "accept payments."
                 )
 
             if amount > remaining:
                 raise ValueError(
-                    "Payment amount exceeds the outstanding "
-                    f"balance of MWK {remaining}."
+                    "Payment amount exceeds the "
+                    "outstanding balance of "
+                    f"MWK {remaining}."
                 )
 
             duplicate_exists = (
@@ -432,8 +477,10 @@ class AirtelCollectionService:
                         .DIRECTION_COLLECTION
                     ),
                     status__in=[
-                        AirtelTransaction.STATUS_INITIATED,
-                        AirtelTransaction.STATUS_PENDING,
+                        AirtelTransaction
+                        .STATUS_INITIATED,
+                        AirtelTransaction
+                        .STATUS_PENDING,
                     ],
                     processed_success_at__isnull=True,
                 ).exists()
@@ -441,8 +488,8 @@ class AirtelCollectionService:
 
             if duplicate_exists:
                 raise ValueError(
-                    "A payment request is already pending "
-                    "for this contract."
+                    "A payment request is already "
+                    "pending for this contract."
                 )
 
         if not self.client.config.collections_enabled:
@@ -455,32 +502,36 @@ class AirtelCollectionService:
             try:
                 max_amount = Decimal(
                     str(
-                        self.client.config.test_max_amount
+                        self.client.config
+                        .test_max_amount
                     )
                 ).quantize(Decimal("0.01"))
 
                 min_amount = Decimal(
                     str(
-                        self.client.config.test_min_amount
+                        self.client.config
+                        .test_min_amount
                     )
                 ).quantize(Decimal("0.01"))
 
             except (InvalidOperation, ValueError):
                 raise AirtelConfigurationError(
-                    "Airtel staging test amount limits "
-                    "must be valid MWK amounts."
+                    "Airtel staging test amount "
+                    "limits must be valid MWK amounts."
                 )
 
             if amount < min_amount:
                 raise ValueError(
-                    "Airtel staging payments must be "
-                    f"at least MWK {min_amount:,.0f}."
+                    "Airtel staging payments must "
+                    f"be at least MWK "
+                    f"{min_amount:,.0f}."
                 )
 
             if amount > max_amount:
                 raise ValueError(
-                    "Staging Airtel collections are "
-                    f"limited to MWK {max_amount}."
+                    "Staging Airtel collections "
+                    f"are limited to MWK "
+                    f"{max_amount}."
                 )
 
             allowed = _allowed_test_msisdns(
@@ -499,39 +550,63 @@ class AirtelCollectionService:
                     "is not allowlisted."
                 )
 
-        internal_reference = generate_airtel_reference()
+        internal_reference = (
+            generate_airtel_reference()
+        )
 
         payload = {
             "reference": internal_reference,
             "subscriber": {
-                "country": self.client.config.country,
-                "currency": self.client.config.currency,
+                "country": (
+                    self.client.config.country
+                ),
+                "currency": (
+                    self.client.config.currency
+                ),
                 "msisdn": _airtel_api_msisdn(
                     normalized_msisdn
                 ),
             },
             "transaction": {
                 "amount": str(amount),
-                "country": self.client.config.country,
-                "currency": self.client.config.currency,
+                "country": (
+                    self.client.config.country
+                ),
+                "currency": (
+                    self.client.config.currency
+                ),
                 "id": internal_reference,
             },
         }
 
-        airtel_tx = AirtelTransaction.objects.create(
-            internal_reference=internal_reference,
-            environment=self.client.config.environment,
-            customer_msisdn=normalized_msisdn,
-            amount=amount,
-            currency=self.client.config.currency,
-            purpose=purpose,
-            direction=(
-                AirtelTransaction.DIRECTION_COLLECTION
-            ),
-            status=AirtelTransaction.STATUS_INITIATED,
-            raw_request=payload,
-            contract=contract,
-            customer=customer,
+        airtel_tx = (
+            AirtelTransaction.objects.create(
+                internal_reference=(
+                    internal_reference
+                ),
+                environment=(
+                    self.client.config.environment
+                ),
+                customer_msisdn=(
+                    normalized_msisdn
+                ),
+                amount=amount,
+                currency=(
+                    self.client.config.currency
+                ),
+                purpose=purpose,
+                direction=(
+                    AirtelTransaction
+                    .DIRECTION_COLLECTION
+                ),
+                status=(
+                    AirtelTransaction
+                    .STATUS_INITIATED
+                ),
+                raw_request=payload,
+                contract=contract,
+                customer=customer,
+            )
         )
 
         if contract is not None:
@@ -539,39 +614,54 @@ class AirtelCollectionService:
                 PaymentTransaction.TYPE_DEPOSIT
                 if purpose
                 == AirtelTransaction.PURPOSE_DEPOSIT
-                else PaymentTransaction.TYPE_REPAYMENT
+                else PaymentTransaction
+                .TYPE_REPAYMENT
             )
 
-            portal_tx = PaymentTransaction.objects.create(
-                payment_contract=contract,
-                provider=(
-                    PaymentTransaction.PROVIDER_AIRTEL
-                ),
-                payment_type=payment_type,
-                amount=amount,
-                commissionable_amount=(
-                    Decimal("0")
-                    if payment_type
-                    == PaymentTransaction.TYPE_DEPOSIT
-                    else amount
-                ),
-                currency=self.client.config.currency,
-                phone=normalized_msisdn,
-                network=(
-                    PaymentTransaction.NETWORK_AIRTEL
-                ),
-                balance_before=(
-                    contract.deposit_remaining
-                    if payment_type
-                    == PaymentTransaction.TYPE_DEPOSIT
-                    else contract.remaining_amount
-                ),
-                status=PaymentTransaction.STATUS_PENDING,
-                raw_request=payload,
-                initiated_at=timezone.now(),
+            portal_tx = (
+                PaymentTransaction.objects.create(
+                    payment_contract=contract,
+                    provider=(
+                        PaymentTransaction
+                        .PROVIDER_AIRTEL
+                    ),
+                    payment_type=payment_type,
+                    amount=amount,
+                    commissionable_amount=(
+                        Decimal("0")
+                        if payment_type
+                        == PaymentTransaction
+                        .TYPE_DEPOSIT
+                        else amount
+                    ),
+                    currency=(
+                        self.client.config.currency
+                    ),
+                    phone=normalized_msisdn,
+                    network=(
+                        PaymentTransaction
+                        .NETWORK_AIRTEL
+                    ),
+                    balance_before=(
+                        contract.deposit_remaining
+                        if payment_type
+                        == PaymentTransaction
+                        .TYPE_DEPOSIT
+                        else contract
+                        .remaining_amount
+                    ),
+                    status=(
+                        PaymentTransaction
+                        .STATUS_PENDING
+                    ),
+                    raw_request=payload,
+                    initiated_at=timezone.now(),
+                )
             )
 
-            airtel_tx.payment_transaction = portal_tx
+            airtel_tx.payment_transaction = (
+                portal_tx
+            )
 
             airtel_tx.save(
                 update_fields=[
@@ -589,8 +679,8 @@ class AirtelCollectionService:
                 "dry_run": True,
                 "message": (
                     "AIRTEL_DRY_RUN is enabled; "
-                    "request was validated and not sent "
-                    "to Airtel."
+                    "request was validated and not "
+                    "sent to Airtel."
                 ),
             }
 
@@ -606,7 +696,9 @@ class AirtelCollectionService:
                 "Airtel dry-run collection created "
                 "ref=%s msisdn=%s amount=%s",
                 internal_reference,
-                mask_msisdn(normalized_msisdn),
+                mask_msisdn(
+                    normalized_msisdn
+                ),
                 amount,
             )
 
@@ -620,8 +712,9 @@ class AirtelCollectionService:
             airtel_tx.raw_response = {
                 "local_only": True,
                 "message": (
-                    "AIRTEL_AUTH_TOKEN is not configured; "
-                    "transaction was created locally."
+                    "AIRTEL_AUTH_TOKEN is not "
+                    "configured; transaction was "
+                    "created locally."
                 ),
             }
 
@@ -643,7 +736,8 @@ class AirtelCollectionService:
 
         except Exception as exc:
             logger.warning(
-                "Airtel collection API failed for %s: %s",
+                "Airtel collection API failed "
+                "for %s: %s",
                 internal_reference,
                 exc.__class__.__name__,
             )
@@ -669,7 +763,9 @@ class AirtelCollectionService:
         body = response.get("body", {})
 
         refs = extract_airtel_references(
-            body if isinstance(body, dict) else {}
+            body
+            if isinstance(body, dict)
+            else {}
         )
 
         airtel_tx.raw_response = response
@@ -710,6 +806,7 @@ class AirtelCollectionService:
                 business_failed
                 or int(str(business_code)) >= 400
             )
+
         except (TypeError, ValueError):
             pass
 
@@ -724,12 +821,15 @@ class AirtelCollectionService:
             )
 
             if (
-                "agent" in business_message.lower()
-                or "merchant" in business_message.lower()
+                "agent"
+                in business_message.lower()
+                or "merchant"
+                in business_message.lower()
             ):
                 airtel_tx.processing_note = (
-                    "Provider configuration error reported "
-                    "during collection initiation."
+                    "Provider configuration error "
+                    "reported during collection "
+                    "initiation."
                 )
 
         if (
@@ -749,13 +849,18 @@ class AirtelCollectionService:
             )
 
             airtel_tx.processing_note = (
-                "Collection request accepted; awaiting "
-                "callback or enquiry confirmation."
+                "Collection request accepted; "
+                "awaiting callback or enquiry "
+                "confirmation."
             )
 
         for field, value in refs.items():
             if value:
-                setattr(airtel_tx, field, value)
+                setattr(
+                    airtel_tx,
+                    field,
+                    value,
+                )
 
         airtel_tx.save()
 
@@ -794,7 +899,9 @@ class AirtelTransactionEnquiryService:
             AirtelTransaction.objects
             .select_for_update()
             .get(
-                internal_reference=internal_reference
+                internal_reference=(
+                    internal_reference
+                )
             )
         )
 
@@ -814,20 +921,27 @@ class AirtelTransactionEnquiryService:
         )
 
         response = self.client.get(path)
+
         body = response.get("body", {})
 
         airtel_tx.raw_response = response
 
         if isinstance(body, dict):
-            airtel_tx.status = extract_airtel_status(
+            airtel_tx.status = (
+                extract_airtel_status(body)
+            )
+
+            refs = extract_airtel_references(
                 body
             )
 
-            refs = extract_airtel_references(body)
-
             for field, value in refs.items():
                 if value:
-                    setattr(airtel_tx, field, value)
+                    setattr(
+                        airtel_tx,
+                        field,
+                        value,
+                    )
 
         airtel_tx.save()
 
@@ -857,7 +971,8 @@ class AirtelCallbackService:
         config: AirtelConfig | None = None,
     ):
         self.config = (
-            config or AirtelConfig.from_settings()
+            config
+            or AirtelConfig.from_settings()
         )
 
     def verify_signature(
@@ -920,7 +1035,9 @@ class AirtelCallbackService:
                 self.config.callback_hash_key.encode(
                     "utf-8"
                 ),
-                _canonical_callback_payload(parsed),
+                _canonical_callback_payload(
+                    parsed
+                ),
                 hashlib.sha256,
             ).hexdigest()
 
@@ -950,17 +1067,21 @@ class AirtelCallbackService:
             )
         )
 
-        safe_headers = _sanitize_headers(headers)
+        safe_headers = _sanitize_headers(
+            headers
+        )
 
         if len(raw_body or b"") > max_bytes:
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body="",
-                parsed_body=None,
-                processing_error=(
-                    "Airtel callback body exceeds "
-                    "configured size limit."
-                ),
+            log = (
+                AirtelCallbackLog.objects.create(
+                    received_headers=safe_headers,
+                    raw_body="",
+                    parsed_body=None,
+                    processing_error=(
+                        "Airtel callback body exceeds "
+                        "configured size limit."
+                    ),
+                )
             )
 
             return log, False, 400
@@ -978,16 +1099,18 @@ class AirtelCallbackService:
             UnicodeDecodeError,
             json.JSONDecodeError,
         ) as exc:
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body=raw_body.decode(
-                    "utf-8",
-                    errors="replace",
-                ),
-                parsed_body=None,
-                processing_error=(
-                    f"Invalid JSON: {exc}"
-                ),
+            log = (
+                AirtelCallbackLog.objects.create(
+                    received_headers=safe_headers,
+                    raw_body=raw_body.decode(
+                        "utf-8",
+                        errors="replace",
+                    ),
+                    parsed_body=None,
+                    processing_error=(
+                        f"Invalid JSON: {exc}"
+                    ),
+                )
             )
 
             return log, False, 400
@@ -1005,30 +1128,37 @@ class AirtelCallbackService:
                 dict,
             )
         ):
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body=raw_body.decode(
-                    "utf-8",
-                    errors="replace",
-                ),
-                parsed_body=(
-                    parsed
-                    if isinstance(parsed, dict)
-                    else None
-                ),
-                processing_error=(
-                    "Missing Airtel transaction object."
-                ),
+            log = (
+                AirtelCallbackLog.objects.create(
+                    received_headers=safe_headers,
+                    raw_body=raw_body.decode(
+                        "utf-8",
+                        errors="replace",
+                    ),
+                    parsed_body=(
+                        parsed
+                        if isinstance(
+                            parsed,
+                            dict,
+                        )
+                        else None
+                    ),
+                    processing_error=(
+                        "Missing Airtel "
+                        "transaction object."
+                    ),
+                )
             )
 
             return log, False, 400
 
-        signature_valid, signature_found = (
-            self.verify_signature(
-                raw_body,
-                headers,
-                parsed,
-            )
+        (
+            signature_valid,
+            signature_found,
+        ) = self.verify_signature(
+            raw_body,
+            headers,
+            parsed,
         )
 
         log = AirtelCallbackLog.objects.create(
@@ -1052,32 +1182,45 @@ class AirtelCallbackService:
 
             if not signature_found:
                 log.processing_error = (
-                    "Missing Airtel callback signature."
+                    "Missing Airtel callback "
+                    "signature."
                 )
 
             log.save(
-                update_fields=["processing_error"]
+                update_fields=[
+                    "processing_error",
+                ]
             )
 
             return log, True, 401
 
-        airtel_tx = self.find_transaction(parsed)
+        airtel_tx = self.find_transaction(
+            parsed
+        )
 
         if not airtel_tx:
             log.processing_error = (
-                "No matching Airtel transaction found."
+                "No matching Airtel "
+                "transaction found."
             )
 
             log.save(
-                update_fields=["processing_error"]
+                update_fields=[
+                    "processing_error",
+                ]
             )
 
             return log, True, 200
 
         log.transaction = airtel_tx
 
-        status = extract_airtel_status(parsed)
-        refs = extract_airtel_references(parsed)
+        status = extract_airtel_status(
+            parsed
+        )
+
+        refs = extract_airtel_references(
+            parsed
+        )
 
         duplicate = (
             airtel_tx.status
@@ -1087,17 +1230,19 @@ class AirtelCallbackService:
             )
         )
 
-        callback_amount = extract_airtel_amount(
-            parsed
+        callback_amount = (
+            extract_airtel_amount(parsed)
         )
 
         if (
             callback_amount is not None
-            and callback_amount != airtel_tx.amount
+            and callback_amount
+            != airtel_tx.amount
         ):
             log.processing_error = (
-                "Airtel callback amount does not "
-                "match original payment attempt."
+                "Airtel callback amount does "
+                "not match original payment "
+                "attempt."
             )
 
             log.save(
@@ -1112,9 +1257,11 @@ class AirtelCallbackService:
             )
 
             airtel_tx.raw_callback = parsed
+
             airtel_tx.callback_verified = (
                 signature_valid
             )
+
             airtel_tx.callback_received_at = (
                 timezone.now()
             )
@@ -1132,12 +1279,15 @@ class AirtelCallbackService:
             return log, True, 400
 
         airtel_tx.raw_callback = parsed
+
         airtel_tx.callback_verified = (
             signature_valid
         )
+
         airtel_tx.callback_received_at = (
             timezone.now()
         )
+
         airtel_tx.status = status
 
         if status in TERMINAL_FAILURE_STATUSES:
@@ -1152,11 +1302,17 @@ class AirtelCallbackService:
                 or "Airtel transaction failed."
             )[:500]
 
-            airtel_tx.completed_at = timezone.now()
+            airtel_tx.completed_at = (
+                timezone.now()
+            )
 
         for field, value in refs.items():
             if value:
-                setattr(airtel_tx, field, value)
+                setattr(
+                    airtel_tx,
+                    field,
+                    value,
+                )
 
         airtel_tx.save()
 
@@ -1204,7 +1360,9 @@ class AirtelCallbackService:
         self,
         payload: dict[str, Any],
     ) -> AirtelTransaction | None:
-        values = _collect_reference_values(payload)
+        values = _collect_reference_values(
+            payload
+        )
 
         if not values:
             return None
@@ -1237,12 +1395,11 @@ class AirtelCallbackService:
     ) -> AirtelTransaction:
         # Lock only the AirtelTransaction row.
         #
-        # contract and payment_transaction are nullable.
-        # Including them in a select_related() outer join
-        # while using SELECT ... FOR UPDATE causes PostgreSQL:
-        #
-        # FOR UPDATE cannot be applied to the nullable side
-        # of an outer join.
+        # contract and payment_transaction are
+        # nullable relationships. Including them
+        # in a select_related outer join while
+        # applying SELECT FOR UPDATE causes
+        # PostgreSQL to reject the query.
         airtel_tx = (
             AirtelTransaction.objects
             .select_for_update()
@@ -1307,7 +1464,9 @@ class AirtelCallbackService:
                     ]
                 )
 
-        portal_tx = airtel_tx.payment_transaction
+        portal_tx = (
+            airtel_tx.payment_transaction
+        )
 
         if not portal_tx:
             portal_tx = (
@@ -1326,8 +1485,13 @@ class AirtelCallbackService:
                         .TYPE_DEPOSIT
                         else airtel_tx.amount
                     ),
-                    currency=airtel_tx.currency,
-                    phone=airtel_tx.customer_msisdn,
+                    currency=(
+                        airtel_tx.currency
+                    ),
+                    phone=(
+                        airtel_tx
+                        .customer_msisdn
+                    ),
                     network=(
                         PaymentTransaction
                         .NETWORK_AIRTEL
@@ -1366,7 +1530,8 @@ class AirtelCallbackService:
                         if payment_type
                         == PaymentTransaction
                         .TYPE_DEPOSIT
-                        else contract.remaining_amount
+                        else contract
+                        .remaining_amount
                     ),
                 )
             )
@@ -1387,7 +1552,8 @@ class AirtelCallbackService:
 
             portal_tx.provider_reference = (
                 airtel_tx.airtel_money_id
-                or airtel_tx.airtel_transaction_id
+                or airtel_tx
+                .airtel_transaction_id
                 or airtel_tx.provider_reference
                 or ""
             )
@@ -1416,9 +1582,11 @@ class AirtelCallbackService:
             airtel_tx.amount,
             payment_type=payment_type,
             accumulate_partial_days=(
-                airtel_tx.environment == "staging"
+                airtel_tx.environment
+                == "staging"
                 and payment_type
-                == PaymentTransaction.TYPE_REPAYMENT
+                == PaymentTransaction
+                .TYPE_REPAYMENT
             ),
         )
 
@@ -1459,7 +1627,10 @@ class AirtelCallbackService:
         airtel_tx.repayment_posted = True
 
         airtel_tx.full_repayment_days_covered = (
-            result.get("days_extended", 0)
+            result.get(
+                "days_extended",
+                0,
+            )
         )
 
         airtel_tx.partial_credit_balance = (
@@ -1516,9 +1687,9 @@ class AirtelDisbursementService:
             return {
                 "ok": False,
                 "message": (
-                    "Airtel disbursements are disabled "
-                    "until explicit payout approval "
-                    "is enabled."
+                    "Airtel disbursements are "
+                    "disabled until explicit "
+                    "payout approval is enabled."
                 ),
             }
 
@@ -1530,8 +1701,8 @@ class AirtelDisbursementService:
 
 class AirtelMerchantRegistrationService:
     """
-    Reserved for Airtel merchant registration workflows
-    when Airtel enables them.
+    Reserved for Airtel merchant registration
+    workflows when Airtel enables them.
     """
 
     def __init__(
