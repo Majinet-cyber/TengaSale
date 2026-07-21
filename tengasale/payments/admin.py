@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     SalarySchedule, SpinRewardPayout, PaymentApproval, PaymentAuditLog,
-    AirtelTransaction, AirtelCallbackLog, USSDPaymentIntent, USSDSessionLog,
+    AirtelTransaction, AirtelCallbackLog, AirtelEnquiryLog, USSDPaymentIntent, USSDSessionLog,
 )
 
 
@@ -100,6 +100,8 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "internal_reference",
         "raw_request",
         "raw_response",
+        "initiation_response",
+        "initiation_http_status",
         "raw_callback",
         "callback_received_at",
         "failure_reason",
@@ -110,6 +112,7 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
         "last_enquiry_response",
+        "last_enquiry_http_status",
         "last_enquiry_at",
         "last_enquiry_reference",
         "last_enquiry_path",
@@ -133,6 +136,14 @@ class AirtelCallbackLogAdmin(admin.ModelAdmin):
     @admin.display(description="Fingerprint")
     def short_fingerprint(self, obj):
         return obj.body_sha256[:12] if obj.body_sha256 else "not captured"
+
+
+@admin.register(AirtelEnquiryLog)
+class AirtelEnquiryLogAdmin(admin.ModelAdmin):
+    list_display = ["transaction", "created_at", "provider_status", "http_status", "reference", "error_class"]
+    list_filter = ["provider_status", "http_status", "error_class", "created_at"]
+    search_fields = ["transaction__internal_reference", "reference", "path", "error_message"]
+    readonly_fields = [field.name for field in AirtelEnquiryLog._meta.fields]
 
 
 @admin.register(USSDPaymentIntent)

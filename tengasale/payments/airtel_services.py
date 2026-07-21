@@ -20,7 +20,8 @@ from portal.services import apply_payment_to_contract, finalize_paid_transaction
 
 from .airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
 from .mobile_network import PROVIDER_AIRTEL, normalize_malawi_msisdn as normalize_malawi_number
-from .models import AirtelCallbackLog, AirtelTransaction
+from .models import AirtelCallbackLog, AirtelEnquiryLog, AirtelTransaction
+from .callback_diagnostics import candidate_suggestions
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +207,20 @@ def extract_airtel_amount(data: dict[str, Any]) -> Decimal | None:
         return None
 
 
+def extract_airtel_subscriber(data: dict[str, Any]) -> str:
+    value = _extract_nested(data, "data.transaction.subscriber", "transaction.subscriber", "data.transaction.msisdn", "transaction.msisdn", "subscriber", "msisdn")
+    if value:
+        digits = re.sub(r"\D", "", str(value))
+        return digits[-9:] if len(digits) >= 9 else ""
+    message = str(_extract_nested(data, "data.transaction.message", "transaction.message", "message") or "")
+    matches = re.findall(r"(?<!\d)(?:\+?265|0)?([89]\d{8})(?!\d)", message)
+    return matches[-1] if matches else ""
+
+
+def extract_payload_transaction_id(data: dict[str, Any]) -> str:
+    return str(_extract_nested(data, "data.transaction.id", "transaction.id") or "")
+
+
 class AirtelCollectionService:
     def __init__(self, client: AirtelClient | None = None):
         self.client = client or AirtelClient()
@@ -337,7 +352,8 @@ class AirtelCollectionService:
                 "dry_run": True,
                 "message": "AIRTEL_DRY_RUN is enabled; request was validated and not sent to Airtel.",
             }
-            airtel_tx.save(update_fields=["status", "raw_response", "updated_at"])
+            airtel_tx.initiation_response = airtel_tx.raw_response
+            airtel_tx.save(update_fields=["status", "raw_response", "initiation_response", "updated_at"])
             logger.info(
                 "Airtel dry-run collection created ref=%s msisdn=%s amount=%s",
                 internal_reference,
@@ -352,7 +368,8 @@ class AirtelCollectionService:
                 "local_only": True,
                 "message": "AIRTEL_AUTH_TOKEN is not configured; transaction was created locally.",
             }
-            airtel_tx.save(update_fields=["status", "raw_response", "updated_at"])
+            airtel_tx.initiation_response = airtel_tx.raw_response
+            airtel_tx.save(update_fields=["status", "raw_response", "initiation_response", "updated_at"])
             return airtel_tx
 
         try:
@@ -361,11 +378,14 @@ class AirtelCollectionService:
             logger.warning("Airtel collection API failed for %s: %s", internal_reference, exc.__class__.__name__)
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
             airtel_tx.raw_response = {"error": exc.__class__.__name__}
-            airtel_tx.save(update_fields=["status", "raw_response", "updated_at"])
+            airtel_tx.initiation_response = airtel_tx.raw_response
+            airtel_tx.save(update_fields=["status", "raw_response", "initiation_response", "updated_at"])
             return airtel_tx
 
         body = response.get("body", {})
         airtel_tx.raw_response = response
+        airtel_tx.initiation_response = response
+        airtel_tx.initiation_http_status = response.get("http_status")
         airtel_tx.status = extract_airtel_status(body) if isinstance(body, dict) else AirtelTransaction.STATUS_UNKNOWN
         business_code = _extract_nested(body, "status.code", "data.status.code") if isinstance(body, dict) else None
         business_message = str(_extract_nested(body, "status.message", "message") or "") if isinstance(body, dict) else ""
@@ -414,14 +434,17 @@ class AirtelTransactionEnquiryService:
             airtel_tx.reconciliation_required = True
             airtel_tx.last_enquiry_error = "Enquiry attempt limit reached; operator review required."
             airtel_tx.save(update_fields=["reconciliation_required", "last_enquiry_error", "updated_at"])
+            AirtelEnquiryLog.objects.create(transaction=airtel_tx, provider_status=AirtelTransaction.STATUS_UNKNOWN, error_class="AttemptLimit", error_message=airtel_tx.last_enquiry_error)
             return airtel_tx
         if airtel_tx.last_enquiry_at and (timezone.now() - airtel_tx.last_enquiry_at).total_seconds() < min_interval:
+            AirtelEnquiryLog.objects.create(transaction=airtel_tx, provider_status=AirtelTransaction.STATUS_UNKNOWN, error_class="Throttled", error_message="Enquiry skipped by minimum interval protection.")
             return airtel_tx
         airtel_tx.last_enquiry_at = timezone.now()
         airtel_tx.enquiry_attempt_count += 1
         if not self.client.is_configured_for_api_calls:
             airtel_tx.last_enquiry_error = "Airtel API credentials are not configured."
             airtel_tx.save(update_fields=["last_enquiry_at", "enquiry_attempt_count", "last_enquiry_error", "updated_at"])
+            AirtelEnquiryLog.objects.create(transaction=airtel_tx, error_class="ConfigurationError", error_message=airtel_tx.last_enquiry_error)
             return airtel_tx
         candidates = [
             airtel_tx.airtel_money_id,
@@ -438,6 +461,7 @@ class AirtelTransactionEnquiryService:
             airtel_tx.reconciliation_required = True
             airtel_tx.processing_note = "Provider enquiry unavailable; existing status preserved."
             airtel_tx.save()
+            AirtelEnquiryLog.objects.create(transaction=airtel_tx, provider_status=AirtelTransaction.STATUS_UNKNOWN, error_class="MissingProviderIdentifier", error_message=airtel_tx.last_enquiry_error)
             return airtel_tx
         path = self.client.config.enquiry_path_template.format(reference=reference)
         airtel_tx.last_enquiry_reference = reference
@@ -448,10 +472,13 @@ class AirtelTransactionEnquiryService:
             airtel_tx.last_enquiry_error = f"{exc.__class__.__name__}: {exc}"[:1000]
             airtel_tx.reconciliation_required = True
             airtel_tx.save()
+            AirtelEnquiryLog.objects.create(transaction=airtel_tx, reference=reference, path=path, error_class=exc.__class__.__name__, error_message=str(exc)[:1000])
             logger.exception("enquiry_failed internal_reference=%s", airtel_tx.internal_reference)
             return airtel_tx
         body = response.get("body", {})
         airtel_tx.last_enquiry_response = response
+        airtel_tx.last_enquiry_http_status = response.get("http_status")
+        enquiry_status = AirtelTransaction.STATUS_UNKNOWN
         if isinstance(body, dict):
             enquiry_status = extract_airtel_status(body)
             airtel_tx.last_enquiry_status = enquiry_status
@@ -463,6 +490,7 @@ class AirtelTransactionEnquiryService:
                 airtel_tx.reconciliation_required = True
                 airtel_tx.processing_note = "Provider enquiry returned no recognised status; existing status preserved."
         airtel_tx.save()
+        AirtelEnquiryLog.objects.create(transaction=airtel_tx, reference=reference, path=path, http_status=response.get("http_status"), provider_status=enquiry_status, response=response)
         logger.info("airtel_enquiry_completed internal_reference=%s outcome=%s", airtel_tx.internal_reference, airtel_tx.last_enquiry_status)
         if airtel_tx.last_enquiry_status == AirtelTransaction.STATUS_SUCCESS:
             AirtelCallbackService().apply_success(airtel_tx)
@@ -578,7 +606,20 @@ class AirtelCallbackService:
             log.processing_error = match.get("error", "No matching Airtel transaction found.")
             log.processing_state = "AMBIGUOUS" if match.get("ambiguous") else "UNMATCHED"
             log.matching_details = match
-            log.save(update_fields=["processing_error", "processing_state", "matching_details"])
+            subscriber = extract_airtel_subscriber(parsed)
+            callback_amount = extract_airtel_amount(parsed)
+            pool = AirtelTransaction.objects.filter(
+                environment=self.config.environment,
+                status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
+            )
+            if subscriber:
+                pool = pool.filter(customer_msisdn__endswith=subscriber)
+            suggestions = candidate_suggestions(transactions=pool.order_by("-created_at")[:20], subscriber=subscriber, amount=callback_amount, received_at=log.created_at, environment=self.config.environment)
+            log.candidate_suggestions = suggestions
+            if len(suggestions) > 1:
+                log.processing_state = "AMBIGUOUS"
+                log.processing_error = "No strong identifier match; multiple investigation-only candidates found."
+            log.save(update_fields=["processing_error", "processing_state", "matching_details", "candidate_suggestions"])
             logger.warning("airtel_callback_%s callback_log_id=%s", "ambiguous" if match.get("ambiguous") else "unmatched", log.pk)
             return log, True, 200
 

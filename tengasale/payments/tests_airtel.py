@@ -14,10 +14,12 @@ from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
 
 from payments.airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
-from payments.airtel_services import AirtelTransactionEnquiryService, normalize_airtel_status
+from payments.airtel_services import AirtelTransactionEnquiryService, extract_airtel_amount, extract_airtel_references, extract_airtel_status, extract_airtel_subscriber, extract_payload_transaction_id, normalize_airtel_status
+from payments.callback_diagnostics import extract_callback_source_ip
 from payments.mobile_network import PROVIDER_AIRTEL, PROVIDER_TNM, normalize_malawi_msisdn as normalize_mobile_network
 from payments.models import AirtelCallbackLog, AirtelTransaction
 from payments.management.commands.airtel_preflight import validate_callback_url
+from payments.management.commands.airtel_trace import HISTORICAL_INITIATION_NOTICE, build_trace
 from portal.models import PaymentContract, PaymentTransaction, generate_contract_number, generate_payg_number
 
 
@@ -265,6 +267,8 @@ class AirtelApiTests(TestCase):
         tx = AirtelTransaction.objects.get(internal_reference=data["internal_reference"])
         self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
         self.assertEqual(tx.environment, "staging")
+        self.assertEqual(tx.initiation_http_status, 200)
+        self.assertEqual(tx.initiation_response, tx.raw_response)
         self.assertEqual(tx.customer_msisdn, "+265991234567")
         self.assertEqual(post.call_args.kwargs["json"]["subscriber"]["msisdn"], "991234567")
         self.assertIsNotNone(tx.payment_transaction)
@@ -817,6 +821,8 @@ class AirtelApiTests(TestCase):
             status=AirtelTransaction.STATUS_PENDING,
             contract=self.contract,
             airtel_reference_id="ENQ123",
+            initiation_response={"body":{"status":{"message":"Accepted"}},"http_status":200},
+            initiation_http_status=200,
         )
         fake_client = SimpleNamespace(
             is_configured_for_api_calls=True,
@@ -834,6 +840,17 @@ class AirtelApiTests(TestCase):
         self.assertEqual(tx.status, AirtelTransaction.STATUS_SUCCESS)
         self.assertEqual(self.contract.deposit_paid, Decimal("15000"))
         self.assertEqual(PaymentTransaction.objects.count(), 1)
+        self.assertEqual(tx.initiation_response["body"]["status"]["message"],"Accepted")
+        self.assertEqual(tx.last_enquiry_http_status,200)
+        self.assertEqual(tx.enquiry_logs.count(),2)
+
+    def test_historical_trace_does_not_mislabel_enquiry_as_initiation(self):
+        tx=self._status_page_transaction()
+        tx.raw_response={"message":"Transaction Not Found"};tx.last_enquiry_response={"message":"Transaction Not Found"};tx.save(update_fields=["raw_response","last_enquiry_response"])
+        trace=build_trace(tx)
+        self.assertTrue(trace["initiation_response"]["unavailable"])
+        self.assertIn(HISTORICAL_INITIATION_NOTICE,trace["warnings"])
+        self.assertEqual(trace["last_enquiry"]["response"],{"message":"Transaction Not Found"})
 
     @override_settings(
         AIRTEL_CALLBACK_URL="https://tengasale.onrender.com/api/payments/airtel/callback/",
@@ -921,3 +938,29 @@ class AirtelApiTests(TestCase):
         self.assertEqual(first.json()["internal_reference"],second.json()["internal_reference"])
         self.assertEqual(AirtelTransaction.objects.count(),1)
         self.assertEqual(post.call_count,1)
+
+    def test_callback_10_remains_investigation_only(self):
+        payload={"transaction":{"status_code":"TS","code":"DP00800001001","airtel_money_id":"BP260720.0957.360303","id":"1784534223","message":"Your transaction has been successfully processed with MWK 111.00 from 992304851 : Airtel Money Test"}}
+        self.assertEqual(extract_airtel_status(payload),AirtelTransaction.STATUS_SUCCESS)
+        self.assertEqual(extract_airtel_amount(payload),Decimal("111.00"))
+        self.assertEqual(extract_airtel_subscriber(payload),"992304851")
+        self.assertEqual(extract_airtel_references(payload)["airtel_money_id"],"BP260720.0957.360303")
+        self.assertEqual(extract_payload_transaction_id(payload),"1784534223")
+        self.contract.deposit_paid=self.contract.deposit_required;self.contract.save(update_fields=["deposit_paid"])
+        second=make_contract(customer_phone="+265992304851")
+        for index,contract in enumerate((self.contract,second)):
+            AirtelTransaction.objects.create(internal_reference=f"TENGACANDIDATE{index}",environment="staging",customer_msisdn="+265992304851",amount=Decimal("100"),purpose=AirtelTransaction.PURPOSE_INSTALLMENT,status=AirtelTransaction.STATUS_PENDING,contract=contract)
+        response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(signed_payload(payload)),content_type="application/json",HTTP_CF_CONNECTING_IP="41.78.57.4",HTTP_X_FORWARDED_FOR="172.26.131.47, 41.78.57.4")
+        self.assertEqual(response.status_code,200)
+        log=AirtelCallbackLog.objects.get()
+        self.assertIsNone(log.transaction_id)
+        self.assertEqual(log.processing_state,"AMBIGUOUS")
+        self.assertEqual(log.source_ip,"41.78.57.4")
+        self.assertEqual(len(log.candidate_suggestions),2)
+        self.contract.refresh_from_db();second.refresh_from_db()
+        self.assertEqual(self.contract.amount_paid,Decimal("0"));self.assertEqual(second.amount_paid,Decimal("0"))
+        self.assertFalse(AirtelTransaction.objects.filter(repayment_posted=True).exists())
+
+    def test_proxy_source_ip_prefers_proven_public_headers(self):
+        self.assertEqual(extract_callback_source_ip({"X-Forwarded-For":"172.26.131.47, 41.78.57.4"}),"41.78.57.4")
+        self.assertEqual(extract_callback_source_ip({"X-Forwarded-For":"172.26.131.47, 41.78.57.4","True-Client-IP":"41.78.57.5","CF-Connecting-IP":"41.78.57.4"}),"41.78.57.4")

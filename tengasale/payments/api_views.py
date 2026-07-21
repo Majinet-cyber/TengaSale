@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import ipaddress
 import secrets
 import hashlib
 import time
@@ -34,6 +33,7 @@ from .airtel_services import (
     mask_msisdn,
 )
 from .models import AirtelCallbackLog, AirtelTransaction, USSDPaymentIntent, USSDSessionLog
+from .callback_diagnostics import extract_callback_source_ip
 
 logger = logging.getLogger(__name__)
 from .views import _hq_or_finance
@@ -208,10 +208,8 @@ def _safe_callback_headers(headers):
 
 def _finish_callback_response(request, log, status_code, response_body, started):
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    candidate_ip = forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR") or ""
-    try: source_ip = str(ipaddress.ip_address(candidate_ip)) if candidate_ip else None
-    except ValueError: source_ip = None
     headers = dict(request.headers)
+    source_ip = extract_callback_source_ip(headers, request.META.get("REMOTE_ADDR", ""))
     log.request_path=request.path; log.query_string=request.META.get("QUERY_STRING", "")[:4000]
     log.request_method=request.method; log.content_type=request.content_type or ""; log.body_size=len(request.body or b"")
     log.source_ip=source_ip; log.forwarded_for=forwarded[:2000]; log.real_ip=request.META.get("HTTP_X_REAL_IP", "")[:64]

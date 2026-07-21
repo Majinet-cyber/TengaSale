@@ -668,6 +668,8 @@ class AirtelTransaction(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_INITIATED)
     raw_request = models.JSONField(default=dict, blank=True)
     raw_response = models.JSONField(default=dict, blank=True)
+    initiation_response = models.JSONField(null=True, blank=True)
+    initiation_http_status = models.PositiveSmallIntegerField(null=True, blank=True)
     raw_callback = models.JSONField(default=dict, blank=True)
     callback_verified = models.BooleanField(default=False)
     callback_received_at = models.DateTimeField(null=True, blank=True)
@@ -708,6 +710,7 @@ class AirtelTransaction(models.Model):
     last_enquiry_reference = models.CharField(max_length=120, blank=True)
     last_enquiry_path = models.CharField(max_length=255, blank=True)
     last_enquiry_status = models.CharField(max_length=20, blank=True)
+    last_enquiry_http_status = models.PositiveSmallIntegerField(null=True, blank=True)
     last_enquiry_error = models.TextField(blank=True)
     last_enquiry_response = models.JSONField(default=dict, blank=True)
     reconciliation_required = models.BooleanField(default=False)
@@ -772,6 +775,7 @@ class AirtelCallbackLog(models.Model):
     processing_state = models.CharField(max_length=40, default="RECEIVED", db_index=True)
     body_sha256 = models.CharField(max_length=64, blank=True, db_index=True)
     candidate_identifiers = models.JSONField(default=list, blank=True)
+    candidate_suggestions = models.JSONField(default=list, blank=True)
     response_status = models.PositiveSmallIntegerField(null=True, blank=True)
     response_body = models.JSONField(default=dict, blank=True)
     matched_identifier = models.CharField(max_length=120, blank=True)
@@ -796,6 +800,22 @@ class AirtelCallbackLog(models.Model):
     def __str__(self):
         ref = self.transaction.internal_reference if self.transaction_id else "unmatched"
         return f"Airtel callback {ref} - {self.created_at}"
+
+
+class AirtelEnquiryLog(models.Model):
+    """Immutable audit record for each Airtel transaction enquiry attempt."""
+    transaction = models.ForeignKey(AirtelTransaction, on_delete=models.CASCADE, related_name="enquiry_logs")
+    reference = models.CharField(max_length=120, blank=True)
+    path = models.CharField(max_length=255, blank=True)
+    http_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    provider_status = models.CharField(max_length=20, blank=True)
+    response = models.JSONField(null=True, blank=True)
+    error_class = models.CharField(max_length=120, blank=True)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["created_at"]
 
 
 class USSDPaymentIntent(models.Model):
