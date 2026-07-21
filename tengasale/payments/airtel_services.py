@@ -105,6 +105,10 @@ def _canonical_callback_payload(data: dict[str, Any]) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def parse_airtel_callback_body(raw_body: bytes):
+    return json.loads(raw_body.decode("utf-8")) if raw_body else {}
+
+
 def _collect_reference_values(data: dict[str, Any]) -> set[str]:
     values = set()
     names = {
@@ -546,7 +550,7 @@ class AirtelCallbackService:
             return log, False, 413
 
         try:
-            parsed = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+            parsed = parse_airtel_callback_body(raw_body)
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             log.processing_error=f"Invalid JSON: {exc}"
             log.processing_state="INVALID_PAYLOAD"; log.error_class=exc.__class__.__name__
@@ -569,9 +573,10 @@ class AirtelCallbackService:
         log.extracted_amount=extract_airtel_amount(parsed)
         log.extracted_subscriber=extract_airtel_subscriber(parsed)
         log.extracted_provider_identifiers=extract_airtel_references(parsed)
+        log.extracted_airtel_money_id=log.extracted_provider_identifiers.get("airtel_money_id","")[:120]
         log.extracted_provider_identifiers["payload_transaction_id"]=extract_payload_transaction_id(parsed)
         log.provider_transaction_id=extract_payload_transaction_id(parsed)[:120]
-        log.save(update_fields=["parsed_body", "signature_valid", "signature_present", "signature_validation_result", "candidate_identifiers", "extracted_status", "extracted_amount", "extracted_subscriber", "extracted_provider_identifiers", "provider_transaction_id"])
+        log.save(update_fields=["parsed_body", "signature_valid", "signature_present", "signature_validation_result", "candidate_identifiers", "extracted_status", "extracted_amount", "extracted_subscriber", "extracted_airtel_money_id", "extracted_provider_identifiers", "provider_transaction_id"])
 
         if self.config.callback_auth_enabled and not signature_valid:
             log.processing_error = "Invalid or missing Airtel callback signature."

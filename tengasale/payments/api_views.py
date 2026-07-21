@@ -181,12 +181,18 @@ def ussd_callback(request):
 def airtel_callback(request):
     started = time.monotonic()
     headers = {key: value for key, value in request.headers.items()}
-    raw_body = request.body or b""
+    request_id=(request.headers.get("X-Request-ID") or request.headers.get("X-Render-Request-ID") or request.headers.get("Traceparent") or str(uuid.uuid4()))[:120]
+    provider_request_id=(request.headers.get("X-Airtel-Request-ID") or request.headers.get("X-Trace-ID") or request.headers.get("Uber-Trace-Id") or "")[:120]
+    source_ip=extract_callback_source_ip(headers,request.META.get("REMOTE_ADDR",""))
+    body_read_error=None
     try:
-        try:
-            auth_enabled = AirtelConfig.from_settings().callback_auth_enabled
-        except AirtelConfigurationError:
-            auth_enabled = True
+        raw_body=request.body or b""
+    except Exception as exc:
+        raw_body=b"";body_read_error=exc
+    fingerprint=hashlib.sha256(raw_body).hexdigest()
+    entry_metadata={"event":"CALLBACK_RECEIVED","request_id":request_id,"received_at":timezone.now().isoformat(),"method":request.method,"path":request.path,"content_type":request.content_type or "","body_size":len(raw_body),"body_sha256":fingerprint,"source_ip":source_ip,"user_agent":request.META.get("HTTP_USER_AGENT","")[:1000],"provider_request_id":provider_request_id}
+    logger.info("CALLBACK_RECEIVED %s",json.dumps(entry_metadata,sort_keys=True))
+    try:
         lower_headers = {str(key).lower(): str(value) for key, value in headers.items()}
         log = AirtelCallbackLog.objects.create(
             received_headers=_safe_callback_headers(headers),
@@ -196,30 +202,51 @@ def airtel_callback(request):
             request_method=request.method,
             content_type=(request.content_type or "")[:120],
             body_size=len(raw_body),
-            source_ip=extract_callback_source_ip(headers, request.META.get("REMOTE_ADDR", "")),
+            source_ip=source_ip,
             forwarded_for=request.META.get("HTTP_X_FORWARDED_FOR", "")[:2000],
             real_ip=request.META.get("HTTP_X_REAL_IP", "")[:64],
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
-            request_id=(request.headers.get("X-Request-ID") or request.headers.get("X-Render-Request-ID") or request.headers.get("Traceparent") or "")[:120],
-            provider_request_id=(request.headers.get("X-Airtel-Request-ID") or request.headers.get("X-Trace-ID") or request.headers.get("Uber-Trace-Id") or "")[:120],
+            request_id=request_id,
+            provider_request_id=provider_request_id,
             signature_present=any(lower_headers.get(name.lower()) for name in AirtelCallbackService.signature_headers),
-            authentication_mode="CONFIGURED_UNVERIFIED_HMAC" if auth_enabled else "DISABLED_UAT",
-            body_sha256=hashlib.sha256(raw_body).hexdigest(),
+            authentication_mode="PENDING",
+            body_sha256=fingerprint,
             processing_state="RECEIVED",
         )
-    except Exception:
-        logger.critical("airtel_callback_evidence_logging_failed path=%s method=%s", request.path, request.method, exc_info=True)
+    except Exception as exc:
+        failure={**entry_metadata,"event":"CALLBACK_EVIDENCE_INSERT_FAILED","exception_class":exc.__class__.__name__,"fallback_response_status":503}
+        logger.critical("CALLBACK_EVIDENCE_INSERT_FAILED %s",json.dumps(failure,sort_keys=True))
         return JsonResponse({"ok": False, "message": "Callback evidence capture failed."}, status=503)
+    try:
+        auth_enabled=AirtelConfig.from_settings().callback_auth_enabled
+        log.authentication_mode="CONFIGURED_UNVERIFIED_HMAC" if auth_enabled else "DISABLED_UAT"
+    except AirtelConfigurationError:
+        log.authentication_mode="CONFIGURATION_ERROR"
+    if not _save_callback_progress(log,["authentication_mode"],"authentication_mode"):
+        return JsonResponse({"ok":False,"message":"Callback evidence update failed.","log_id":log.id},status=503)
+    if body_read_error:
+        log.processing_state="INVALID_PAYLOAD";log.error_class=body_read_error.__class__.__name__;log.processing_error="Unable to read callback request body."
+        if not _save_callback_progress(log,["processing_state","error_class","processing_error"],"body_read_failure"):
+            return JsonResponse({"ok":False,"message":"Callback evidence update failed.","log_id":log.id},status=503)
+        return _finish_callback_response(request,log,400,{"ok":False,"message":"Invalid callback body.","log_id":log.id},started)
     if request.method != "POST":
         log.processing_state="METHOD_NOT_ALLOWED"; log.processing_error="Airtel callback endpoint accepts POST only."
-        log.save(update_fields=["processing_state", "processing_error"])
+        if not _save_callback_progress(log,["processing_state","processing_error"],"method_rejection"):
+            return JsonResponse({"ok":False,"message":"Callback evidence update failed.","log_id":log.id},status=503)
         return _finish_callback_response(request, log, 405, {"ok": False, "message": "Method not allowed.", "log_id": log.id}, started)
+    content_type=(request.content_type or "").lower()
+    if raw_body and content_type!="application/json" and not content_type.endswith("+json"):
+        log.processing_state="INVALID_PAYLOAD";log.processing_error="Airtel callback Content-Type must be application/json."
+        if not _save_callback_progress(log,["processing_state","processing_error"],"content_type_rejection"):
+            return JsonResponse({"ok":False,"message":"Callback evidence update failed.","log_id":log.id},status=503)
+        return _finish_callback_response(request,log,415,{"ok":False,"message":"Invalid callback Content-Type.","log_id":log.id},started)
     try:
         log, valid_body, status_code = AirtelCallbackService().handle_callback(raw_body, headers, evidence_log=log)
     except Exception as exc:
         logger.exception("airtel_callback_processing_failed request_id=%s", request.headers.get("X-Request-ID", ""))
         log.processing_state="PROCESSING_FAILED"; log.error_class=exc.__class__.__name__; log.processing_error=str(exc)[:1000] or "Unhandled callback processing error."
-        log.save(update_fields=["processing_state", "error_class", "processing_error"])
+        if not _save_callback_progress(log,["processing_state","error_class","processing_error"],"processing_failure"):
+            return JsonResponse({"ok":False,"message":"Callback evidence update failed.","log_id":log.id},status=503)
         return _finish_callback_response(request, log, 500, {"ok": False, "message": "Callback processing failed.", "log_id": log.id}, started)
     response_body = {"ok": status_code < 400, "provider": "airtel_money", "log_id": log.id}
     if not valid_body:
@@ -248,8 +275,19 @@ def _finish_callback_response(request, log, status_code, response_body, started)
     log.response_status=status_code; log.response_body=response_body
     log.processing_duration_ms=max(0, int((time.monotonic()-started)*1000))
     log.processed_at=timezone.now()
-    log.save(update_fields=["response_status", "response_body", "processing_duration_ms", "processed_at"])
+    if not _save_callback_progress(log,["response_status","response_body","processing_duration_ms","processed_at"],"response_finalization"):
+        return JsonResponse({"ok":False,"message":"Callback evidence finalization failed.","log_id":log.id},status=503)
     return JsonResponse(response_body, status=status_code)
+
+
+def _save_callback_progress(log,fields,phase):
+    try:
+        log.save(update_fields=fields)
+        return True
+    except Exception as exc:
+        metadata={"event":"CALLBACK_EVIDENCE_UPDATE_FAILED","callback_id":log.pk,"request_id":log.request_id,"phase":phase,"exception_class":exc.__class__.__name__,"fallback_response_status":503}
+        logger.critical("CALLBACK_EVIDENCE_UPDATE_FAILED %s",json.dumps(metadata,sort_keys=True))
+        return False
 
 
 @csrf_exempt
@@ -685,7 +723,7 @@ def airtel_dashboard(request):
     callback_date=parse_date(callback_filters["callback_date"])
     if callback_date: callback_qs=callback_qs.filter(created_at__date=callback_date)
     if callback_filters["callback_status"]: callback_qs=callback_qs.filter(extracted_status=callback_filters["callback_status"])
-    if callback_filters["airtel_money_id"]: callback_qs=callback_qs.filter(extracted_provider_identifiers__airtel_money_id__icontains=callback_filters["airtel_money_id"])
+    if callback_filters["airtel_money_id"]: callback_qs=callback_qs.filter(extracted_airtel_money_id__icontains=callback_filters["airtel_money_id"])
     if callback_filters["provider_transaction_id"]: callback_qs=callback_qs.filter(provider_transaction_id__icontains=callback_filters["provider_transaction_id"])
     if callback_filters["subscriber"]: callback_qs=callback_qs.filter(extracted_subscriber__endswith=callback_filters["subscriber"][-4:])
     if callback_filters["tengasale_reference"]: callback_qs=callback_qs.filter(Q(transaction__internal_reference__icontains=callback_filters["tengasale_reference"])|Q(matched_identifier__icontains=callback_filters["tengasale_reference"]))

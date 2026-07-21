@@ -786,6 +786,7 @@ class AirtelCallbackLog(models.Model):
     extracted_status = models.CharField(max_length=20, blank=True)
     extracted_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     extracted_subscriber = models.CharField(max_length=32, blank=True, db_index=True)
+    extracted_airtel_money_id = models.CharField(max_length=120, blank=True, db_index=True)
     extracted_provider_identifiers = models.JSONField(default=dict, blank=True)
     provider_transaction_id = models.CharField(max_length=120, blank=True)
     error_class = models.CharField(max_length=120, blank=True)
@@ -808,7 +809,7 @@ class AirtelCallbackLog(models.Model):
     EVIDENCE_FIELDS = {
         "received_headers", "raw_body", "request_path", "query_string", "request_method",
         "content_type", "body_size", "source_ip", "forwarded_for", "real_ip", "user_agent",
-        "request_id", "provider_request_id", "authentication_mode",
+        "request_id", "provider_request_id",
         "body_sha256", "created_at",
     }
 

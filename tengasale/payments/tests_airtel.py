@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.contrib import admin
 from django.db import DatabaseError
 from django.contrib.staticfiles import finders
 from django.test import Client, SimpleTestCase, TestCase, override_settings
@@ -15,7 +16,7 @@ from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
 
 from payments.airtel_client import AirtelClient, AirtelConfig, AirtelConfigurationError
-from payments.airtel_services import AirtelTransactionEnquiryService, extract_airtel_amount, extract_airtel_references, extract_airtel_status, extract_airtel_subscriber, extract_payload_transaction_id, normalize_airtel_status
+from payments.airtel_services import AirtelCallbackService, AirtelTransactionEnquiryService, extract_airtel_amount, extract_airtel_references, extract_airtel_status, extract_airtel_subscriber, extract_payload_transaction_id, normalize_airtel_status, parse_airtel_callback_body
 from payments.callback_diagnostics import extract_callback_source_ip
 from payments.mobile_network import PROVIDER_AIRTEL, PROVIDER_TNM, normalize_malawi_msisdn as normalize_mobile_network
 from payments.models import AirtelCallbackLog, AirtelTransaction
@@ -224,6 +225,13 @@ class AirtelApiTests(TestCase):
         self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"AUTH_FAILED")
         self.assertEqual(AirtelCallbackLog.objects.get().signature_validation_result,"INVALID")
 
+    def test_missing_signature_is_retained_and_never_posts(self):
+        payload={"transaction":{"reference_id":"missing","status_code":"TS","amount":"100"}}
+        response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(response.status_code,401)
+        log=AirtelCallbackLog.objects.get();self.assertEqual(log.processing_state,"AUTH_FAILED");self.assertEqual(log.signature_validation_result,"MISSING")
+        self.assertFalse(AirtelTransaction.objects.filter(repayment_posted=True).exists());self.assertEqual(PaymentTransaction.objects.count(),0)
+
     def test_malformed_json_returns_400(self):
         response = self.client.post(
             "/api/payments/airtel/callback/",
@@ -244,10 +252,13 @@ class AirtelApiTests(TestCase):
     def test_every_request_is_logged_before_method_or_payload_validation(self):
         response=self.client.get("/api/payments/airtel/callback/")
         self.assertEqual(response.status_code,405)
-        log=AirtelCallbackLog.objects.get()
+        put=self.client.put("/api/payments/airtel/callback/",data="{}",content_type="application/json")
+        self.assertEqual(put.status_code,405)
+        log=AirtelCallbackLog.objects.order_by("created_at").first()
         self.assertEqual(log.processing_state,"METHOD_NOT_ALLOWED")
         self.assertEqual(log.request_method,"GET")
         self.assertEqual(log.body_sha256,hashlib.sha256(b"").hexdigest())
+        self.assertEqual(AirtelCallbackLog.objects.filter(processing_state="METHOD_NOT_ALLOWED").count(),2)
 
     def test_logging_failure_is_critical_and_stops_processing(self):
         with patch("payments.api_views.AirtelCallbackLog.objects.create",side_effect=DatabaseError("offline")), patch("payments.airtel_services.AirtelCallbackService.find_transaction_match") as match, self.assertLogs("payments.api_views",level="CRITICAL"):
@@ -258,7 +269,6 @@ class AirtelApiTests(TestCase):
     def test_evidence_exists_before_matching_and_financial_processing(self):
         tx=AirtelTransaction.objects.create(internal_reference="TENGAEVIDENCEORDER",environment="staging",customer_msisdn="+265991234567",amount=Decimal("100"),purpose=AirtelTransaction.PURPOSE_INSTALLMENT,status=AirtelTransaction.STATUS_PENDING,contract=self.contract)
         payload=signed_payload({"transaction":{"reference_id":tx.internal_reference,"status_code":"TS","amount":"100"}})
-        from payments.airtel_services import AirtelCallbackService
         original=AirtelCallbackService.find_transaction_match
         def assert_before_match(service,parsed):
             evidence=AirtelCallbackLog.objects.get()
@@ -272,6 +282,65 @@ class AirtelApiTests(TestCase):
         with patch.object(AirtelCallbackService,"find_transaction_match",autospec=True,side_effect=assert_before_match), patch.object(AirtelCallbackService,"apply_success",autospec=True,side_effect=assert_before_post):
             response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
         self.assertEqual(response.status_code,200)
+
+    def test_evidence_exists_before_parsing_and_authentication(self):
+        payload=signed_payload({"transaction":{"reference_id":"missing","status_code":"TIP"}})
+        def assert_before_parse(value):
+            self.assertEqual(AirtelCallbackLog.objects.count(),1)
+            self.assertEqual(AirtelCallbackLog.objects.values_list("processing_state",flat=True).get(),"RECEIVED")
+            return parse_airtel_callback_body(value)
+        with patch("payments.airtel_services.parse_airtel_callback_body",side_effect=assert_before_parse):
+            parsed_response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(parsed_response.status_code,200)
+        original_verify=AirtelCallbackService.verify_signature
+        def assert_before_auth(service,raw,headers,parsed):
+            self.assertEqual(AirtelCallbackLog.objects.count(),2)
+            self.assertTrue(AirtelCallbackLog.objects.filter(processing_state="RECEIVED").exists())
+            return original_verify(service,raw,headers,parsed)
+        with patch.object(AirtelCallbackService,"verify_signature",autospec=True,side_effect=assert_before_auth):
+            response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(response.status_code,200)
+
+    def test_matching_exception_retains_processing_failed_evidence(self):
+        payload=signed_payload({"transaction":{"reference_id":"missing","status_code":"TS"}})
+        with patch.object(AirtelCallbackService,"find_transaction_match",side_effect=RuntimeError("matching failed")):
+            response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(response.status_code,500)
+        log=AirtelCallbackLog.objects.get();self.assertEqual(log.processing_state,"PROCESSING_FAILED");self.assertEqual(log.error_class,"RuntimeError")
+
+    def test_posting_exception_retains_evidence_and_retry_posts_once(self):
+        tx=AirtelTransaction.objects.create(internal_reference="TENGAPOSTFAILURE",environment="staging",customer_msisdn="+265991234567",amount=Decimal("100"),purpose=AirtelTransaction.PURPOSE_INSTALLMENT,status=AirtelTransaction.STATUS_PENDING,contract=self.contract)
+        payload=signed_payload({"transaction":{"reference_id":tx.internal_reference,"status_code":"TS","amount":"100"}})
+        with patch.object(AirtelCallbackService,"apply_success",side_effect=RuntimeError("posting failed")):
+            first=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(first.status_code,500);self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"PROCESSING_FAILED")
+        self.assertEqual(PaymentTransaction.objects.filter(internal_reference=tx.internal_reference).count(),0)
+        second=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(second.status_code,200)
+        self.assertEqual(PaymentTransaction.objects.filter(internal_reference=tx.internal_reference).count(),1)
+
+    def test_final_evidence_update_failure_is_critical_and_returns_503(self):
+        original_save=AirtelCallbackLog.save
+        def fail_final(instance,*args,**kwargs):
+            if "response_status" in (kwargs.get("update_fields") or []): raise DatabaseError("final update unavailable")
+            return original_save(instance,*args,**kwargs)
+        with patch.object(AirtelCallbackLog,"save",autospec=True,side_effect=fail_final),self.assertLogs("payments.api_views",level="CRITICAL") as captured:
+            response=self.client.post("/api/payments/airtel/callback/",data="{bad",content_type="application/json")
+        self.assertEqual(response.status_code,503);self.assertEqual(AirtelCallbackLog.objects.count(),1)
+        self.assertIn("CALLBACK_EVIDENCE_UPDATE_FAILED","\n".join(captured.output))
+
+    def test_empty_and_wrong_content_type_callbacks_are_retained_without_matching(self):
+        with patch.object(AirtelCallbackService,"find_transaction_match") as match:
+            empty=self.client.generic("POST","/api/payments/airtel/callback/",data=b"",content_type="application/json")
+            wrong=self.client.post("/api/payments/airtel/callback/",data="plain text",content_type="text/plain")
+        self.assertEqual(empty.status_code,400);self.assertEqual(wrong.status_code,415);match.assert_not_called()
+        self.assertEqual(set(AirtelCallbackLog.objects.values_list("processing_state",flat=True)),{"INVALID_PAYLOAD"})
+
+    def test_structured_entry_log_precedes_database_insert(self):
+        with patch("payments.api_views.AirtelCallbackLog.objects.create",side_effect=DatabaseError("offline")),self.assertLogs("payments.api_views",level="INFO") as captured:
+            response=self.client.post("/api/payments/airtel/callback/",data="{}",content_type="application/json",HTTP_X_REQUEST_ID="entry-order")
+        output="\n".join(captured.output)
+        self.assertEqual(response.status_code,503);self.assertLess(output.index("CALLBACK_RECEIVED"),output.index("CALLBACK_EVIDENCE_INSERT_FAILED"));self.assertIn("entry-order",output)
 
     def test_raw_callback_evidence_is_immutable(self):
         self.client.post("/api/payments/airtel/callback/",data="{bad",content_type="application/json")
@@ -767,6 +836,7 @@ class AirtelApiTests(TestCase):
         self.assertEqual(contract.status, PaymentContract.STATUS_OVERDUE)
         self.assertEqual(tx.status, AirtelTransaction.STATUS_FAILED)
         self.assertEqual(PaymentTransaction.objects.count(), 0)
+        self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"PROCESSED")
 
     @override_settings(AIRTEL_ENVIRONMENT="staging", AIRTEL_BASE_URL="https://openapiuat.airtel.mw")
     def test_staging_base_url_is_selected_from_environment(self):
@@ -1000,10 +1070,20 @@ class AirtelApiTests(TestCase):
         self.assertIsNone(log.transaction_id)
         self.assertEqual(log.processing_state,"AMBIGUOUS")
         self.assertEqual(log.source_ip,"41.78.57.4")
+        self.assertEqual(log.extracted_status,AirtelTransaction.STATUS_SUCCESS)
+        self.assertEqual(log.extracted_amount,Decimal("111.00"))
+        self.assertEqual(log.extracted_subscriber,"992304851")
+        self.assertEqual(log.extracted_airtel_money_id,"BP260720.0957.360303")
+        self.assertEqual(log.provider_transaction_id,"1784534223")
+        self.assertFalse(any(value.startswith("TENGA") for value in log.candidate_identifiers))
         self.assertEqual(len(log.candidate_suggestions),2)
         self.contract.refresh_from_db();second.refresh_from_db()
         self.assertEqual(self.contract.amount_paid,Decimal("0"));self.assertEqual(second.amount_paid,Decimal("0"))
         self.assertFalse(AirtelTransaction.objects.filter(repayment_posted=True).exists())
+        output=io.StringIO();call_command("airtel_callbacks",since_minutes=30,latest=True,stdout=output)
+        self.assertIn("BP260720.0957.360303",output.getvalue());self.assertIn("1784534223",output.getvalue());self.assertIn("*****4851",output.getvalue())
+        search_fields=admin.site._registry[AirtelCallbackLog].search_fields
+        self.assertIn("extracted_airtel_money_id",search_fields);self.assertIn("provider_transaction_id",search_fields);self.assertIn("extracted_subscriber",search_fields)
 
     def test_proxy_source_ip_prefers_proven_public_headers(self):
         self.assertEqual(extract_callback_source_ip({"X-Forwarded-For":"172.26.131.47, 41.78.57.4"}),"41.78.57.4")

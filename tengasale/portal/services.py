@@ -1089,7 +1089,7 @@ def _collect_contract_candidates(query: str):
         | Q(national_id__iexact=lookup)
     )
     if phone:
-        application_filter |= Q(customer_phone__endswith=phone)
+        application_filter |= Q(customer_phone__endswith=phone) | Q(next_of_kin_1_phone__endswith=phone) | Q(next_of_kin_2_phone__endswith=phone)
     for application in (
         FinancingApplication.objects.select_related("contract", "payment_contract")
         .filter(application_filter)
@@ -1099,7 +1099,10 @@ def _collect_contract_candidates(query: str):
 
     if phone:
         for contract in PaymentContract.objects.select_related("source_application", "source_application__contract").filter(
-            Q(customer_phone__endswith=phone) | Q(source_application__customer_phone__endswith=phone)
+            Q(customer_phone__endswith=phone)
+            | Q(source_application__customer_phone__endswith=phone)
+            | Q(source_application__next_of_kin_1_phone__endswith=phone)
+            | Q(source_application__next_of_kin_2_phone__endswith=phone)
         ):
             add(_sync_contract_state_from_legal(contract, getattr(contract.source_application, "contract", None)))
 
@@ -1125,6 +1128,9 @@ def resolve_payable_contract(query: str, country: str = "MW") -> ContractResolut
     if not matches:
         return ContractResolution("not_found", None, "not_found", 0)
     if len(matches) > 1:
+        payable=[contract for contract in matches if _payment_contract_resolution_status(contract).status=="payable"]
+        if len(payable)==1:
+            return ContractResolution("payable",payable[0],"unique_payable_match",len(matches))
         logger.warning(
             "Ambiguous payment contract search for query=%s country=%s matched=%s",
             _normalize_identifier(raw_q),

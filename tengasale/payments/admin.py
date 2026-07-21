@@ -130,7 +130,7 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
 class AirtelCallbackLogAdmin(admin.ModelAdmin):
     list_display = ["id", "created_at", "source_ip", "request_id", "short_fingerprint", "extracted_status", "matched_identifier", "matched_field", "response_status", "processing_state", "duplicate", "signature_valid"]
     list_filter = ["processing_state", "response_status", "signature_valid", "processed", "duplicate", "created_at"]
-    search_fields = ["id", "transaction__internal_reference", "matched_identifier", "provider_transaction_id", "request_id", "provider_request_id", "body_sha256", "source_ip", "extracted_status", "raw_body", "processing_error"]
+    search_fields = ["id", "transaction__internal_reference", "matched_identifier", "extracted_airtel_money_id", "provider_transaction_id", "extracted_subscriber", "request_id", "provider_request_id", "body_sha256", "source_ip", "extracted_status", "raw_body", "processing_error"]
     readonly_fields = [field.name for field in AirtelCallbackLog._meta.fields]
 
     def has_delete_permission(self, request, obj=None):
