@@ -17,6 +17,7 @@ from payments.airtel_client import AirtelClient, AirtelConfig, AirtelConfigurati
 from payments.airtel_services import AirtelTransactionEnquiryService, normalize_airtel_status
 from payments.mobile_network import PROVIDER_AIRTEL, PROVIDER_TNM, normalize_malawi_msisdn as normalize_mobile_network
 from payments.models import AirtelCallbackLog, AirtelTransaction
+from payments.management.commands.airtel_preflight import validate_callback_url
 from portal.models import PaymentContract, PaymentTransaction, generate_contract_number, generate_payg_number
 
 
@@ -834,13 +835,57 @@ class AirtelApiTests(TestCase):
         self.assertEqual(self.contract.deposit_paid, Decimal("15000"))
         self.assertEqual(PaymentTransaction.objects.count(), 1)
 
+    @override_settings(
+        AIRTEL_CALLBACK_URL="https://tengasale.onrender.com/api/payments/airtel/callback/",
+        AIRTEL_CALLBACK_AUTH_ENABLED=False,
+        AIRTEL_CALLBACK_HASH_KEY="configured-but-disabled",
+    )
     def test_preflight_passes_when_uat_config_is_complete(self):
+        self.assertFalse(AirtelConfig.from_settings().callback_auth_enabled)
         output = io.StringIO()
         call_command("airtel_preflight", stdout=output)
         text = output.getvalue()
         self.assertIn("PASS", text)
         self.assertIn("Airtel preflight passed", text)
+        self.assertIn("WARNING: Airtel callback authentication is explicitly disabled for UAT; callbacks are not cryptographically verified.", text)
+        self.assertNotIn("FAIL: Callback authentication is enabled.", text)
         self.assertNotIn("testhash", text)
+
+    def test_callback_url_validation_uses_runtime_host_and_normalizes_slash(self):
+        for value in (
+            "https://tengasale.onrender.com/api/payments/airtel/callback/",
+            " https://tengasale.onrender.com/api/payments/airtel/callback ",
+        ):
+            ok, host, normalized = validate_callback_url(value)
+            self.assertTrue(ok)
+            self.assertEqual(host, "tengasale.onrender.com")
+            self.assertEqual(normalized, "https://tengasale.onrender.com/api/payments/airtel/callback/")
+
+    def test_callback_url_validation_rejects_unsafe_or_wrong_urls(self):
+        for value in ("", "http://tengasale.onrender.com/api/payments/airtel/callback/", "https:///api/payments/airtel/callback/", "https://tengasale.onrender.com/wrong/", "https://localhost/api/payments/airtel/callback/"):
+            with self.subTest(value=value):
+                self.assertFalse(validate_callback_url(value)[0])
+
+    def test_strict_callback_host_rejects_old_hostname(self):
+        ok, _, detail = validate_callback_url(
+            "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+            expected_host="tengasale.onrender.com",
+        )
+        self.assertFalse(ok)
+        self.assertIn("host must be tengasale.onrender.com", detail)
+
+    @override_settings(
+        AIRTEL_ENVIRONMENT="production",
+        AIRTEL_PRODUCTION_ENABLED=True,
+        AIRTEL_BASE_URL="https://openapi.airtel.mw",
+        AIRTEL_CALLBACK_URL="https://tengasale.onrender.com/api/payments/airtel/callback/",
+        AIRTEL_CALLBACK_AUTH_ENABLED=False,
+    )
+    def test_preflight_fails_when_production_callback_auth_is_disabled(self):
+        output = io.StringIO()
+        with self.assertRaises(CommandError):
+            call_command("airtel_preflight", stdout=output)
+        self.assertIn("FAIL: Callback authentication is required in production.", output.getvalue())
 
     @override_settings(AIRTEL_CLIENT_ID="")
     def test_preflight_fails_when_required_config_missing(self):

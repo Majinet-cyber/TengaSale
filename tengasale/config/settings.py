@@ -320,8 +320,9 @@ AIRTEL_PRIVATE_KEY = os.environ.get(
 AIRTEL_CALLBACK_SECRET = os.environ.get("AIRTEL_CALLBACK_SECRET", "")
 AIRTEL_CALLBACK_URL = os.environ.get(
     "AIRTEL_CALLBACK_URL",
-    "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+    "https://tengasale.onrender.com/api/payments/airtel/callback/",
 )
+AIRTEL_CALLBACK_EXPECTED_HOST = os.environ.get("AIRTEL_CALLBACK_EXPECTED_HOST", "")
 AIRTEL_CALLBACK_AUTH_ENABLED = _env_bool("AIRTEL_CALLBACK_AUTH_ENABLED", "true")
 AIRTEL_CALLBACK_HASH_KEY = os.environ.get("AIRTEL_CALLBACK_HASH_KEY", AIRTEL_PRIVATE_KEY)
 AIRTEL_CLIENT_ID = os.environ.get("AIRTEL_CLIENT_ID", "")

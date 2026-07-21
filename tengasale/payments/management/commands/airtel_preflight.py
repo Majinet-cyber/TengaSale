@@ -6,6 +6,7 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import Client
 from django.urls import Resolver404, resolve
+from urllib.parse import urlsplit, urlunsplit
 
 from payments.airtel_client import AirtelConfig, AirtelConfigurationError
 from payments.models import AirtelTransaction
@@ -13,9 +14,31 @@ from portal.services import resolve_payable_contract
 
 
 CALLBACK_PATH = "/api/payments/airtel/callback/"
-RENDER_HOST = "tengasale-api.onrender.com"
-RENDER_ORIGIN = "https://tengasale-api.onrender.com"
-CALLBACK_URL = "https://tengasale-api.onrender.com/api/payments/airtel/callback/"
+
+
+def validate_callback_url(value: str, *, expected_host: str = "") -> tuple[bool, str, str]:
+    """Validate the runtime callback URL without assuming an AirtelConfig field."""
+    raw = str(value or "").strip()
+    if not raw:
+        return False, "", "AIRTEL_CALLBACK_URL is blank."
+    try:
+        parsed = urlsplit(raw)
+    except ValueError:
+        return False, "", "AIRTEL_CALLBACK_URL is malformed."
+    host = (parsed.hostname or "").lower()
+    path = "/" + parsed.path.strip("/") + "/"
+    if parsed.scheme.lower() != "https":
+        return False, host, "AIRTEL_CALLBACK_URL must use HTTPS."
+    if not host:
+        return False, host, "AIRTEL_CALLBACK_URL must include a hostname."
+    if path != CALLBACK_PATH:
+        return False, host, f"AIRTEL_CALLBACK_URL must use {CALLBACK_PATH}."
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        return False, host, "AIRTEL_CALLBACK_URL cannot use localhost in staging or production."
+    if expected_host and host != expected_host.strip().lower():
+        return False, host, f"AIRTEL_CALLBACK_URL host must be {expected_host.strip().lower()}."
+    normalized = urlunsplit(("https", parsed.netloc.lower(), CALLBACK_PATH, "", ""))
+    return True, host, normalized
 
 
 class Command(BaseCommand):
@@ -59,8 +82,19 @@ class Command(BaseCommand):
         self._check(bool(config.client_secret), "AIRTEL_CLIENT_SECRET is configured.", failures)
         self._check(bool(config.private_key), "AIRTEL_PRIVATE_KEY or callback secret is configured.", failures)
         self._check(bool(config.merchant_code), "AIRTEL_MERCHANT_CODE is configured.", failures)
-        self._check(getattr(settings, "AIRTEL_CALLBACK_URL", "") == CALLBACK_URL, "AIRTEL_CALLBACK_URL is the permanent Render callback URL.", failures)
-        self._check(config.callback_auth_enabled, "Callback authentication is enabled.", failures)
+        callback_url = getattr(settings, "AIRTEL_CALLBACK_URL", "")
+        expected_host = getattr(settings, "AIRTEL_CALLBACK_EXPECTED_HOST", "")
+        callback_ok, callback_host, callback_detail = validate_callback_url(callback_url, expected_host=expected_host)
+        self._check(callback_ok, "AIRTEL_CALLBACK_URL is a valid HTTPS Airtel callback URL.", failures)
+        if not callback_ok:
+            self._line("FAIL", callback_detail)
+
+        if config.callback_auth_enabled:
+            self._check(bool(config.callback_hash_key), "Callback authentication has required signing configuration.", failures)
+        elif config.is_production:
+            self._check(False, "Callback authentication is required in production.", failures)
+        else:
+            self._line("WARNING", "Airtel callback authentication is explicitly disabled for UAT; callbacks are not cryptographically verified.")
         self._check(bool(config.allowed_test_msisdns), "AIRTEL_ALLOWED_TEST_MSISDNS is configured.", failures)
 
         try:
@@ -91,13 +125,13 @@ class Command(BaseCommand):
         allowed_hosts = list(getattr(settings, "ALLOWED_HOSTS", []))
         csrf_origins = list(getattr(settings, "CSRF_TRUSTED_ORIGINS", []))
         self._check(
-            RENDER_HOST in allowed_hosts or ".onrender.com" in allowed_hosts or "*.onrender.com" in allowed_hosts,
-            "ALLOWED_HOSTS covers tengasale-api.onrender.com.",
+            callback_host in allowed_hosts or ".onrender.com" in allowed_hosts or "*.onrender.com" in allowed_hosts,
+            f"ALLOWED_HOSTS covers {callback_host or 'the configured callback host'}.",
             failures,
         )
         self._check(
-            RENDER_ORIGIN in csrf_origins or "https://*.onrender.com" in csrf_origins,
-            "CSRF_TRUSTED_ORIGINS covers https://tengasale-api.onrender.com.",
+            f"https://{callback_host}" in csrf_origins or "https://*.onrender.com" in csrf_origins,
+            f"CSRF_TRUSTED_ORIGINS covers https://{callback_host or 'the configured callback host'}.",
             failures,
         )
 
