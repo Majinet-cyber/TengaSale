@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import DatabaseError
 from django.contrib.staticfiles import finders
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import Resolver404, resolve, reverse
@@ -220,6 +221,8 @@ class AirtelApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertFalse(AirtelCallbackLog.objects.get().signature_valid)
+        self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"AUTH_FAILED")
+        self.assertEqual(AirtelCallbackLog.objects.get().signature_validation_result,"INVALID")
 
     def test_malformed_json_returns_400(self):
         response = self.client.post(
@@ -236,6 +239,45 @@ class AirtelApiTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"INVALID_PAYLOAD")
+
+    def test_every_request_is_logged_before_method_or_payload_validation(self):
+        response=self.client.get("/api/payments/airtel/callback/")
+        self.assertEqual(response.status_code,405)
+        log=AirtelCallbackLog.objects.get()
+        self.assertEqual(log.processing_state,"METHOD_NOT_ALLOWED")
+        self.assertEqual(log.request_method,"GET")
+        self.assertEqual(log.body_sha256,hashlib.sha256(b"").hexdigest())
+
+    def test_logging_failure_is_critical_and_stops_processing(self):
+        with patch("payments.api_views.AirtelCallbackLog.objects.create",side_effect=DatabaseError("offline")), patch("payments.airtel_services.AirtelCallbackService.find_transaction_match") as match, self.assertLogs("payments.api_views",level="CRITICAL"):
+            response=self.client.post("/api/payments/airtel/callback/",data="{}",content_type="application/json")
+        self.assertEqual(response.status_code,503)
+        match.assert_not_called()
+
+    def test_evidence_exists_before_matching_and_financial_processing(self):
+        tx=AirtelTransaction.objects.create(internal_reference="TENGAEVIDENCEORDER",environment="staging",customer_msisdn="+265991234567",amount=Decimal("100"),purpose=AirtelTransaction.PURPOSE_INSTALLMENT,status=AirtelTransaction.STATUS_PENDING,contract=self.contract)
+        payload=signed_payload({"transaction":{"reference_id":tx.internal_reference,"status_code":"TS","amount":"100"}})
+        from payments.airtel_services import AirtelCallbackService
+        original=AirtelCallbackService.find_transaction_match
+        def assert_before_match(service,parsed):
+            evidence=AirtelCallbackLog.objects.get()
+            self.assertEqual(evidence.processing_state,"RECEIVED")
+            self.assertTrue(evidence.raw_body)
+            return original(service,parsed)
+        def assert_before_post(service,matched):
+            evidence=AirtelCallbackLog.objects.get()
+            self.assertEqual(evidence.processing_state,"MATCHED")
+            self.assertEqual(evidence.transaction_id,matched.pk)
+        with patch.object(AirtelCallbackService,"find_transaction_match",autospec=True,side_effect=assert_before_match), patch.object(AirtelCallbackService,"apply_success",autospec=True,side_effect=assert_before_post):
+            response=self.client.post("/api/payments/airtel/callback/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(response.status_code,200)
+
+    def test_raw_callback_evidence_is_immutable(self):
+        self.client.post("/api/payments/airtel/callback/",data="{bad",content_type="application/json")
+        log=AirtelCallbackLog.objects.get();log.raw_body="changed"
+        with self.assertRaisesMessage(ValueError,"immutable"):
+            log.save()
 
     def test_unknown_internal_transaction_is_logged_safely(self):
         response = self.client.post(
@@ -245,6 +287,7 @@ class AirtelApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("No matching", AirtelCallbackLog.objects.get().processing_error)
+        self.assertEqual(AirtelCallbackLog.objects.get().processing_state,"UNMATCHED")
 
     def test_collection_initiate_stores_airtel_transaction_without_token(self):
         with patch("payments.airtel_client.requests.post") as post:
@@ -669,6 +712,7 @@ class AirtelApiTests(TestCase):
         self.assertEqual(PaymentTransaction.objects.filter(internal_reference=tx.internal_reference).count(), 1)
         self.assertEqual(PaymentTransaction.objects.filter(provider_reference="MP210603.1234.L06941").count(), 1)
         self.assertEqual(AirtelCallbackLog.objects.filter(duplicate=True).count(), 1)
+        self.assertEqual(set(AirtelCallbackLog.objects.values_list("processing_state",flat=True)),{"PROCESSED","DUPLICATE"})
         self.assertTrue(AirtelTransaction.objects.get(pk=tx.pk).repayment_posted)
         self.assertTrue(AirtelTransaction.objects.get(pk=tx.pk).duplicate_callback)
 

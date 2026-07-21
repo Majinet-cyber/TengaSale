@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     SalarySchedule, SpinRewardPayout, PaymentApproval, PaymentAuditLog,
-    AirtelTransaction, AirtelCallbackLog, AirtelEnquiryLog, USSDPaymentIntent, USSDSessionLog,
+    AirtelTransaction, AirtelCallbackLog, AirtelCallbackProcessingAttempt, AirtelEnquiryLog, USSDPaymentIntent, USSDSessionLog,
 )
 
 
@@ -133,6 +133,16 @@ class AirtelCallbackLogAdmin(admin.ModelAdmin):
     search_fields = ["id", "transaction__internal_reference", "matched_identifier", "provider_transaction_id", "request_id", "provider_request_id", "body_sha256", "source_ip", "extracted_status", "raw_body", "processing_error"]
     readonly_fields = [field.name for field in AirtelCallbackLog._meta.fields]
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_fields(self, request, obj=None):
+        fields = list(super().get_fields(request, obj))
+        if not request.user.is_superuser:
+            restricted = {"raw_body", "parsed_body", "received_headers", "response_body"}
+            fields = [field for field in fields if field not in restricted]
+        return fields
+
     @admin.display(description="Fingerprint")
     def short_fingerprint(self, obj):
         return obj.body_sha256[:12] if obj.body_sha256 else "not captured"
@@ -144,6 +154,16 @@ class AirtelEnquiryLogAdmin(admin.ModelAdmin):
     list_filter = ["provider_status", "http_status", "error_class", "created_at"]
     search_fields = ["transaction__internal_reference", "reference", "path", "error_message"]
     readonly_fields = [field.name for field in AirtelEnquiryLog._meta.fields]
+
+
+@admin.register(AirtelCallbackProcessingAttempt)
+class AirtelCallbackProcessingAttemptAdmin(admin.ModelAdmin):
+    list_display = ["callback", "attempt_number", "state", "initiated_by", "started_at", "completed_at"]
+    list_filter = ["state", "started_at"]
+    readonly_fields = [field.name for field in AirtelCallbackProcessingAttempt._meta.fields]
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(USSDPaymentIntent)

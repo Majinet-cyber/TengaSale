@@ -37,6 +37,5 @@ class Command(BaseCommand):
             if updates:
                 changed+=1;self.stdout.write(f"{log.pk}: {', '.join(sorted(updates))}")
                 if o["apply"]:
-                    for key,value in updates.items(): setattr(log,key,value)
-                    log.save(update_fields=list(updates))
+                    AirtelCallbackLog.objects.filter(pk=log.pk).update(**updates)
         self.stdout.write(f"Summary: records_with_changes={changed}, applied={bool(o['apply'])}")

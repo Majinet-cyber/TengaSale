@@ -74,3 +74,13 @@ Ask Airtel for timestamp plus timezone, exact destination URL and method, source
 Production launch checklist: apply migrations; resolve all deployment checks; configure HTTPS callback URL and official authentication; confirm enquiry identifier/path; configure reconciliation interval/limits; confirm Airtel IP/network routing; run health connectivity; perform a controlled real callback; retain evidence; never manually mark UAT money paid.
 
 UAT incident checklist: capture internal reference; tell the customer not to retry; run `airtel_trace`; search callbacks by time, ID and source; export evidence; run reconciliation dry-run; apply only a verified final enquiry; escalate absent ingress using the wording above.
+
+## Callback observability boundary and retention
+
+The callback view commits an `AirtelCallbackLog` evidence row before method validation, JSON parsing, authentication, matching, or financial processing. If that insert fails, processing stops with HTTP 503 and a critical application log. Raw body, selected headers, request metadata, fingerprint, and ingress identifiers are immutable in normal application flows. Authorized reprocessing creates a separate replay callback plus an `AirtelCallbackProcessingAttempt`; it never rewrites the original ingress evidence.
+
+Retain callback evidence for at least `AIRTEL_CALLBACK_EVIDENCE_RETENTION_DAYS` (default 2555 days/seven years), subject to the applicable legal retention schedule. Normal operator screens show only masked subscriber digits. Raw bodies, parsed payloads, headers, and response bodies are restricted to superusers in Django admin. Database backups must use the same access controls and retention schedule. Source IP is retained for incident investigation and is never authentication evidence.
+
+Run `python manage.py airtel_observability_alerts --notify` on a scheduler to alert Django administrators about successful unresolved callbacks, processing failures, and transactions older than `AIRTEL_PENDING_CALLBACK_TIMEOUT_MINUTES` without a callback. Run `python manage.py airtel_reconciliation_report` to compare callback, enquiry, transaction, and repayment-posting evidence without changing financial state.
+
+Django evidence proves only that a request reached Django. Render access logs help investigate requests that reached the service but failed before Django processing. No application can record a callback that Airtel never transmitted or that never reached the hosting infrastructure.

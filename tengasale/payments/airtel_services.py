@@ -105,14 +105,6 @@ def _canonical_callback_payload(data: dict[str, Any]) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
-    sensitive = {"authorization", "x-api-key", "api-key", "cookie"}
-    sanitized = {}
-    for key, value in headers.items():
-        sanitized[key] = "***" if str(key).lower() in sensitive else value
-    return sanitized
-
-
 def _collect_reference_values(data: dict[str, Any]) -> set[str]:
     values = set()
     names = {
@@ -543,55 +535,43 @@ class AirtelCallbackService:
                 return True, True
         return False, True
 
-    def handle_callback(self, raw_body: bytes, headers: dict[str, str]) -> tuple[AirtelCallbackLog, bool, int]:
+    def handle_callback(self, raw_body: bytes, headers: dict[str, str], *, evidence_log: AirtelCallbackLog) -> tuple[AirtelCallbackLog, bool, int]:
         max_bytes = int(getattr(settings, "AIRTEL_CALLBACK_MAX_BYTES", 65536))
-        safe_headers = _sanitize_headers(headers)
+        log = evidence_log
         logger.info("airtel_callback_received body_size=%s", len(raw_body or b""))
         if len(raw_body or b"") > max_bytes:
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body="",
-                parsed_body=None,
-                processing_error="Airtel callback body exceeds configured size limit.",
-                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
-                processing_state="PAYLOAD_TOO_LARGE",
-            )
+            log.processing_error="Airtel callback body exceeds configured size limit."
+            log.processing_state="INVALID_PAYLOAD"
+            log.save(update_fields=["processing_error", "processing_state"])
             return log, False, 413
 
         try:
             parsed = json.loads(raw_body.decode("utf-8")) if raw_body else {}
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body=raw_body.decode("utf-8", errors="replace"),
-                parsed_body=None,
-                processing_error=f"Invalid JSON: {exc}",
-                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
-                processing_state="INVALID_JSON", error_class=exc.__class__.__name__,
-            )
+            log.processing_error=f"Invalid JSON: {exc}"
+            log.processing_state="INVALID_PAYLOAD"; log.error_class=exc.__class__.__name__
+            log.save(update_fields=["processing_error", "processing_state", "error_class"])
             return log, False, 400
 
         if not isinstance(parsed, dict) or not isinstance(_extract_nested(parsed, "data.transaction", "transaction"), dict):
-            log = AirtelCallbackLog.objects.create(
-                received_headers=safe_headers,
-                raw_body=raw_body.decode("utf-8", errors="replace"),
-                parsed_body=parsed if isinstance(parsed, dict) else None,
-                processing_error="Missing Airtel transaction object.",
-                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
-                processing_state="INVALID_PAYLOAD",
-            )
+            log.parsed_body=parsed if isinstance(parsed, dict) else None
+            log.processing_error="Missing Airtel transaction object."; log.processing_state="INVALID_PAYLOAD"
+            log.save(update_fields=["parsed_body", "processing_error", "processing_state"])
             return log, False, 400
 
         signature_valid, signature_found = self.verify_signature(raw_body, headers, parsed)
-        log = AirtelCallbackLog.objects.create(
-            received_headers=safe_headers,
-            raw_body=raw_body.decode("utf-8", errors="replace"),
-            parsed_body=parsed,
-            signature_valid=signature_valid,
-            body_size=len(raw_body or b""),
-            body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
-            candidate_identifiers=sorted(_collect_reference_values(parsed)),
-        )
+        log.parsed_body=parsed
+        log.signature_valid=signature_valid
+        log.signature_present=signature_found
+        log.signature_validation_result="VALID" if signature_valid else "INVALID" if signature_found else "MISSING" if self.config.callback_auth_enabled else "NOT_CHECKED"
+        log.candidate_identifiers=sorted(_collect_reference_values(parsed))
+        log.extracted_status=extract_airtel_status(parsed)
+        log.extracted_amount=extract_airtel_amount(parsed)
+        log.extracted_subscriber=extract_airtel_subscriber(parsed)
+        log.extracted_provider_identifiers=extract_airtel_references(parsed)
+        log.extracted_provider_identifiers["payload_transaction_id"]=extract_payload_transaction_id(parsed)
+        log.provider_transaction_id=extract_payload_transaction_id(parsed)[:120]
+        log.save(update_fields=["parsed_body", "signature_valid", "signature_present", "signature_validation_result", "candidate_identifiers", "extracted_status", "extracted_amount", "extracted_subscriber", "extracted_provider_identifiers", "provider_transaction_id"])
 
         if self.config.callback_auth_enabled and not signature_valid:
             log.processing_error = "Invalid or missing Airtel callback signature."
@@ -633,9 +613,11 @@ class AirtelCallbackService:
 
         callback_amount = extract_airtel_amount(parsed)
         log.extracted_amount = callback_amount
+        log.processing_state = "MATCHED"
+        log.save(update_fields=["transaction", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
         if callback_amount is not None and callback_amount != airtel_tx.amount:
             log.processing_error = "Airtel callback amount does not match original payment attempt."
-            log.processing_state = "AMOUNT_MISMATCH"
+            log.processing_state = "PROCESSING_FAILED"
             log.save(update_fields=["transaction", "processing_error", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
             airtel_tx.failure_reason = "Callback amount mismatch."
             airtel_tx.raw_callback = parsed
@@ -677,13 +659,13 @@ class AirtelCallbackService:
             except Exception as exc:
                 log.processing_error = str(exc)[:1000]
                 log.error_class = exc.__class__.__name__
-                log.processing_state = "FAILED"
+                log.processing_state = "PROCESSING_FAILED"
                 log.save(update_fields=["transaction", "processing_error", "error_class", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
                 logger.exception("callback_processing_failed callback_log_id=%s internal_reference=%s", log.pk, airtel_tx.internal_reference)
                 return log, True, 500
 
         log.processed = True
-        log.processing_state = "PROCESSED" if status != AirtelTransaction.STATUS_UNKNOWN else "UNKNOWN_STATUS"
+        log.processing_state = "PROCESSED" if status != AirtelTransaction.STATUS_UNKNOWN else "MATCHED"
         log.processed_at = timezone.now()
         log.save(update_fields=["transaction", "processed", "processing_state", "processed_at", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
         logger.info("airtel_callback_%s callback_log_id=%s internal_reference=%s", "success_applied" if status == AirtelTransaction.STATUS_SUCCESS else "matched", log.pk, airtel_tx.internal_reference)

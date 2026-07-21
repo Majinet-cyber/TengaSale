@@ -79,7 +79,7 @@
       <tr>
         <td style="font-family:monospace;font-size:12px;">{{ tx.internal_reference }}</td>
         <td>{{ tx.environment }}</td>
-        <td>{{ tx.customer_msisdn }}</td>
+        <td>*****{{ tx.customer_msisdn|slice:"-4:" }}</td>
         <td>MWK {{ tx.amount|intcomma }}</td>
         <td><span class="badge {{ tx.status|lower }}">{{ tx.status }}</span></td>
         <td>{% if tx.callback_verified %}<span class="badge success">verified</span>{% else %}<span class="badge pending">unverified</span>{% endif %}</td>
@@ -96,22 +96,39 @@
 </div>
 
 <div class="pay-table-card">
+  <div class="pay-table-header"><h3>Callback Alerts</h3></div>
+  <p>Successful unresolved: <strong>{{ alerts.success_unresolved }}</strong> &nbsp; Processing failed: <strong>{{ alerts.processing_failed }}</strong> &nbsp; Pending without callback after {{ alerts.pending_timeout_minutes }} minutes: <strong>{{ alerts.pending_without_callback }}</strong></p>
+</div>
+
+<form method="get" class="pay-filter-bar">
+  <div><label>Callback date</label><input type="date" name="callback_date" value="{{ callback_filters.callback_date }}"></div>
+  <div><label>Status</label><input name="callback_status" value="{{ callback_filters.callback_status }}" placeholder="SUCCESS"></div>
+  <div><label>Airtel Money ID</label><input name="airtel_money_id" value="{{ callback_filters.airtel_money_id }}"></div>
+  <div><label>Provider transaction ID</label><input name="provider_transaction_id" value="{{ callback_filters.provider_transaction_id }}"></div>
+  <div><label>Subscriber (last digits)</label><input name="subscriber" value="{{ callback_filters.subscriber }}"></div>
+  <div><label>TengaSale reference</label><input name="tengasale_reference" value="{{ callback_filters.tengasale_reference }}"></div>
+  <div><label>Processing state</label><select name="processing_state"><option value="">All</option>{% for state in callback_states %}<option value="{{ state }}" {% if callback_filters.processing_state == state %}selected{% endif %}>{{ state }}</option>{% endfor %}</select></div>
+  <div><label>&nbsp;</label><button class="btn btn-orange" type="submit">Filter callbacks</button></div>
+</form>
+
+<div class="pay-table-card">
   <div class="pay-table-header"><h3>Recent Callback Logs</h3></div>
   <table class="pay-table">
-    <thead><tr><th>ID</th><th>Transaction</th><th>Signature</th><th>Processed</th><th>Duplicate</th><th>Error</th><th>Date</th></tr></thead>
+    <thead><tr><th>ID</th><th>Transaction</th><th>Subscriber</th><th>Status</th><th>State</th><th>Signature</th><th>Error</th><th>Date</th></tr></thead>
     <tbody>
       {% for log in callback_logs %}
       <tr>
         <td>{{ log.id }}</td>
         <td style="font-family:monospace;font-size:12px;">{{ log.transaction.internal_reference|default:"unmatched" }}</td>
+        <td>*****{{ log.extracted_subscriber|slice:"-4:" }}</td>
+        <td>{{ log.extracted_status|default:"-" }}</td>
+        <td>{{ log.processing_state }}</td>
         <td>{{ log.signature_valid }}</td>
-        <td>{{ log.processed }}</td>
-        <td>{{ log.duplicate }}</td>
         <td>{{ log.processing_error|default:"" }}</td>
         <td>{{ log.created_at|date:"d M Y H:i" }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="7">No callbacks received yet.</td></tr>
+      <tr><td colspan="8">No callbacks received yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

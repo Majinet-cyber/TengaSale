@@ -752,6 +752,7 @@ class AirtelCallbackLog(models.Model):
         blank=True,
         related_name="callback_logs",
     )
+    replay_of = models.ForeignKey("self", on_delete=models.PROTECT, null=True, blank=True, related_name="replays")
     received_headers = models.JSONField(default=dict, blank=True)
     raw_body = models.TextField()
     parsed_body = models.JSONField(null=True, blank=True)
@@ -771,6 +772,7 @@ class AirtelCallbackLog(models.Model):
     request_id = models.CharField(max_length=120, blank=True, db_index=True)
     provider_request_id = models.CharField(max_length=120, blank=True, db_index=True)
     signature_present = models.BooleanField(default=False)
+    signature_validation_result = models.CharField(max_length=20, default="NOT_CHECKED")
     authentication_mode = models.CharField(max_length=40, blank=True)
     processing_state = models.CharField(max_length=40, default="RECEIVED", db_index=True)
     body_sha256 = models.CharField(max_length=64, blank=True, db_index=True)
@@ -783,6 +785,8 @@ class AirtelCallbackLog(models.Model):
     matching_details = models.JSONField(default=dict, blank=True)
     extracted_status = models.CharField(max_length=20, blank=True)
     extracted_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    extracted_subscriber = models.CharField(max_length=32, blank=True, db_index=True)
+    extracted_provider_identifiers = models.JSONField(default=dict, blank=True)
     provider_transaction_id = models.CharField(max_length=120, blank=True)
     error_class = models.CharField(max_length=120, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
@@ -800,6 +804,43 @@ class AirtelCallbackLog(models.Model):
     def __str__(self):
         ref = self.transaction.internal_reference if self.transaction_id else "unmatched"
         return f"Airtel callback {ref} - {self.created_at}"
+
+    EVIDENCE_FIELDS = {
+        "received_headers", "raw_body", "request_path", "query_string", "request_method",
+        "content_type", "body_size", "source_ip", "forwarded_for", "real_ip", "user_agent",
+        "request_id", "provider_request_id", "authentication_mode",
+        "body_sha256", "created_at",
+    }
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values(*self.EVIDENCE_FIELDS, "parsed_body").first()
+            if original and any(getattr(self, field) != value for field, value in original.items()):
+                changed = [field for field, value in original.items() if getattr(self, field) != value]
+                if changed != ["parsed_body"] or original["parsed_body"] is not None:
+                    raise ValueError("Raw Airtel callback evidence is immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("Airtel callback evidence is retained and cannot be deleted through application flows.")
+
+
+class AirtelCallbackProcessingAttempt(models.Model):
+    callback = models.ForeignKey(AirtelCallbackLog, on_delete=models.PROTECT, related_name="processing_attempts")
+    attempt_number = models.PositiveIntegerField()
+    reason = models.TextField(blank=True)
+    initiated_by = models.CharField(max_length=150, blank=True)
+    state = models.CharField(max_length=40, default="RECEIVED")
+    response_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    error_class = models.CharField(max_length=120, blank=True)
+    error_message = models.TextField(blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["started_at"]
+        constraints = [models.UniqueConstraint(fields=["callback", "attempt_number"], name="uniq_airtel_callback_attempt")]
 
 
 class AirtelEnquiryLog(models.Model):

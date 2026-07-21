@@ -6,18 +6,20 @@ import hashlib
 import time
 import uuid
 import logging
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.core.cache import cache
-from django.db import connection
+from django.db import connection, transaction
 from django.db.migrations.executor import MigrationExecutor
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import Resolver404, resolve
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -175,21 +177,49 @@ def ussd_callback(request):
 
 
 @csrf_exempt
+@transaction.non_atomic_requests
 def airtel_callback(request):
     started = time.monotonic()
     headers = {key: value for key, value in request.headers.items()}
-    if request.method != "POST":
+    raw_body = request.body or b""
+    try:
+        try:
+            auth_enabled = AirtelConfig.from_settings().callback_auth_enabled
+        except AirtelConfigurationError:
+            auth_enabled = True
+        lower_headers = {str(key).lower(): str(value) for key, value in headers.items()}
         log = AirtelCallbackLog.objects.create(
-            received_headers=_safe_callback_headers(headers), raw_body="", body_size=0,
-            body_sha256=hashlib.sha256(b"").hexdigest(), processing_state="METHOD_NOT_ALLOWED",
-            processing_error="Airtel callback endpoint accepts POST only.",
+            received_headers=_safe_callback_headers(headers),
+            raw_body=raw_body.decode("utf-8", errors="replace"),
+            request_path=request.path,
+            query_string=request.META.get("QUERY_STRING", "")[:4000],
+            request_method=request.method,
+            content_type=(request.content_type or "")[:120],
+            body_size=len(raw_body),
+            source_ip=extract_callback_source_ip(headers, request.META.get("REMOTE_ADDR", "")),
+            forwarded_for=request.META.get("HTTP_X_FORWARDED_FOR", "")[:2000],
+            real_ip=request.META.get("HTTP_X_REAL_IP", "")[:64],
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
+            request_id=(request.headers.get("X-Request-ID") or request.headers.get("X-Render-Request-ID") or request.headers.get("Traceparent") or "")[:120],
+            provider_request_id=(request.headers.get("X-Airtel-Request-ID") or request.headers.get("X-Trace-ID") or request.headers.get("Uber-Trace-Id") or "")[:120],
+            signature_present=any(lower_headers.get(name.lower()) for name in AirtelCallbackService.signature_headers),
+            authentication_mode="CONFIGURED_UNVERIFIED_HMAC" if auth_enabled else "DISABLED_UAT",
+            body_sha256=hashlib.sha256(raw_body).hexdigest(),
+            processing_state="RECEIVED",
         )
+    except Exception:
+        logger.critical("airtel_callback_evidence_logging_failed path=%s method=%s", request.path, request.method, exc_info=True)
+        return JsonResponse({"ok": False, "message": "Callback evidence capture failed."}, status=503)
+    if request.method != "POST":
+        log.processing_state="METHOD_NOT_ALLOWED"; log.processing_error="Airtel callback endpoint accepts POST only."
+        log.save(update_fields=["processing_state", "processing_error"])
         return _finish_callback_response(request, log, 405, {"ok": False, "message": "Method not allowed.", "log_id": log.id}, started)
     try:
-        log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
+        log, valid_body, status_code = AirtelCallbackService().handle_callback(raw_body, headers, evidence_log=log)
     except Exception as exc:
         logger.exception("airtel_callback_processing_failed request_id=%s", request.headers.get("X-Request-ID", ""))
-        log = AirtelCallbackLog.objects.create(received_headers=_safe_callback_headers(headers), raw_body=request.body.decode("utf-8", errors="replace"), body_size=len(request.body or b""), body_sha256=hashlib.sha256(request.body or b"").hexdigest(), processing_state="FAILED_PROCESSING", error_class=exc.__class__.__name__, processing_error="Unhandled callback processing error.")
+        log.processing_state="PROCESSING_FAILED"; log.error_class=exc.__class__.__name__; log.processing_error=str(exc)[:1000] or "Unhandled callback processing error."
+        log.save(update_fields=["processing_state", "error_class", "processing_error"])
         return _finish_callback_response(request, log, 500, {"ok": False, "message": "Callback processing failed.", "log_id": log.id}, started)
     response_body = {"ok": status_code < 400, "provider": "airtel_money", "log_id": log.id}
     if not valid_body:
@@ -202,27 +232,23 @@ def airtel_callback(request):
 
 
 def _safe_callback_headers(headers):
-    sensitive = {"authorization", "cookie", "x-api-key", "api-key", "proxy-authorization"}
-    return {str(key): "***" if str(key).lower() in sensitive else str(value)[:2000] for key, value in headers.items()}
+    selected = {"content-type", "user-agent", "cf-connecting-ip", "cf-ipcountry", "true-client-ip", "x-real-ip", "x-forwarded-for", "x-request-id", "x-render-request-id", "x-airtel-request-id", "x-trace-id", "uber-trace-id", "traceparent"}
+    signature_names = {name.lower() for name in AirtelCallbackService.signature_headers}
+    result = {}
+    for key, value in headers.items():
+        lower = str(key).lower()
+        if lower in signature_names:
+            result[str(key)] = "***present***"
+        elif lower in selected:
+            result[str(key)] = str(value)[:2000]
+    return result
 
 
 def _finish_callback_response(request, log, status_code, response_body, started):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    headers = dict(request.headers)
-    source_ip = extract_callback_source_ip(headers, request.META.get("REMOTE_ADDR", ""))
-    log.request_path=request.path; log.query_string=request.META.get("QUERY_STRING", "")[:4000]
-    log.request_method=request.method; log.content_type=request.content_type or ""; log.body_size=len(request.body or b"")
-    log.source_ip=source_ip; log.forwarded_for=forwarded[:2000]; log.real_ip=request.META.get("HTTP_X_REAL_IP", "")[:64]
-    log.user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000]
-    log.request_id=(request.headers.get("X-Request-ID") or request.headers.get("X-Render-Request-ID") or request.headers.get("Traceparent") or "")[:120]
-    log.provider_request_id=(request.headers.get("X-Airtel-Request-ID") or request.headers.get("X-Trace-ID") or "")[:120]
-    log.signature_present=any(headers.get(name) for name in AirtelCallbackService.signature_headers) or bool((log.parsed_body or {}).get("hash") or (log.parsed_body or {}).get("Hash"))
-    try: auth_enabled=AirtelConfig.from_settings().callback_auth_enabled
-    except AirtelConfigurationError: auth_enabled=True
-    log.authentication_mode="CONFIGURED_UNVERIFIED_HMAC" if auth_enabled else "DISABLED_UAT"
     log.response_status=status_code; log.response_body=response_body
     log.processing_duration_ms=max(0, int((time.monotonic()-started)*1000))
-    log.save()
+    log.processed_at=timezone.now()
+    log.save(update_fields=["response_status", "response_body", "processing_duration_ms", "processed_at"])
     return JsonResponse(response_body, status=status_code)
 
 
@@ -457,7 +483,9 @@ def airtel_simulate_callback(request):
 
     headers = {key: value for key, value in request.headers.items()}
     headers["X-Airtel-Simulated"] = "true"
-    log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
+    raw_body=request.body or b""
+    log=AirtelCallbackLog.objects.create(received_headers=_safe_callback_headers(headers),raw_body=raw_body.decode("utf-8",errors="replace"),request_path=request.path,request_method=request.method,content_type=request.content_type or "",body_size=len(raw_body),source_ip=extract_callback_source_ip(headers,request.META.get("REMOTE_ADDR","")),user_agent=request.META.get("HTTP_USER_AGENT","")[:1000],body_sha256=hashlib.sha256(raw_body).hexdigest(),authentication_mode="SIMULATION",processing_state="RECEIVED")
+    log, valid_body, status_code = AirtelCallbackService().handle_callback(raw_body, headers, evidence_log=log)
     if not valid_body:
         return JsonResponse({"ok": False, "simulated": True, "message": "Invalid callback body.", "log_id": log.id}, status=400)
     if status_code in (401, 403):
@@ -644,7 +672,33 @@ def airtel_dashboard(request):
         qs = qs.filter(status=status)
 
     page = Paginator(qs.select_related("contract").order_by("-created_at"), 25).get_page(request.GET.get("page"))
-    callback_logs = AirtelCallbackLog.objects.select_related("transaction").order_by("-created_at")[:25]
+    callback_qs = AirtelCallbackLog.objects.select_related("transaction").order_by("-created_at")
+    callback_filters = {
+        "callback_date": request.GET.get("callback_date", "").strip(),
+        "callback_status": request.GET.get("callback_status", "").strip(),
+        "airtel_money_id": request.GET.get("airtel_money_id", "").strip(),
+        "provider_transaction_id": request.GET.get("provider_transaction_id", "").strip(),
+        "subscriber": request.GET.get("subscriber", "").strip(),
+        "tengasale_reference": request.GET.get("tengasale_reference", "").strip(),
+        "processing_state": request.GET.get("processing_state", "").strip(),
+    }
+    callback_date=parse_date(callback_filters["callback_date"])
+    if callback_date: callback_qs=callback_qs.filter(created_at__date=callback_date)
+    if callback_filters["callback_status"]: callback_qs=callback_qs.filter(extracted_status=callback_filters["callback_status"])
+    if callback_filters["airtel_money_id"]: callback_qs=callback_qs.filter(extracted_provider_identifiers__airtel_money_id__icontains=callback_filters["airtel_money_id"])
+    if callback_filters["provider_transaction_id"]: callback_qs=callback_qs.filter(provider_transaction_id__icontains=callback_filters["provider_transaction_id"])
+    if callback_filters["subscriber"]: callback_qs=callback_qs.filter(extracted_subscriber__endswith=callback_filters["subscriber"][-4:])
+    if callback_filters["tengasale_reference"]: callback_qs=callback_qs.filter(Q(transaction__internal_reference__icontains=callback_filters["tengasale_reference"])|Q(matched_identifier__icontains=callback_filters["tengasale_reference"]))
+    if callback_filters["processing_state"]: callback_qs=callback_qs.filter(processing_state=callback_filters["processing_state"])
+    callback_logs = callback_qs[:100]
+    pending_timeout=int(getattr(settings,"AIRTEL_PENDING_CALLBACK_TIMEOUT_MINUTES",30))
+    alert_cutoff=timezone.now()-timedelta(minutes=pending_timeout)
+    alerts={
+        "success_unresolved":AirtelCallbackLog.objects.filter(extracted_status=AirtelTransaction.STATUS_SUCCESS,processing_state__in=["UNMATCHED","AMBIGUOUS"]).count(),
+        "processing_failed":AirtelCallbackLog.objects.filter(processing_state="PROCESSING_FAILED").count(),
+        "pending_without_callback":AirtelTransaction.objects.filter(status__in=[AirtelTransaction.STATUS_INITIATED,AirtelTransaction.STATUS_PENDING],created_at__lte=alert_cutoff,callback_logs__isnull=True).count(),
+        "pending_timeout_minutes":pending_timeout,
+    }
     try:
         config = AirtelConfig.from_settings().safe_summary()
     except AirtelConfigurationError as exc:
@@ -665,6 +719,9 @@ def airtel_dashboard(request):
         "summary": summary,
         "page_obj": page,
         "callback_logs": callback_logs,
+        "callback_filters": callback_filters,
+        "callback_states": ["RECEIVED","METHOD_NOT_ALLOWED","INVALID_PAYLOAD","AUTH_FAILED","UNMATCHED","AMBIGUOUS","MATCHED","PROCESSED","DUPLICATE","PROCESSING_FAILED"],
+        "alerts": alerts,
         "config": config,
         "filter_status": status,
         "status_counts": qs.values("status").annotate(count=Count("id")),
