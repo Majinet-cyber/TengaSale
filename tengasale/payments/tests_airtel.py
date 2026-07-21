@@ -48,11 +48,11 @@ def signed_payload(payload, key="testhash"):
 
 class AirtelStatusMappingTests(TestCase):
     def test_success_statuses(self):
-        for value in ("TS", "SUCCESS", "SUCCESSFUL", "Transaction Successful"):
+        for value in ("TS", "SUCCESS", " SUCCESS ", "Success.", "SUCCESSFUL", "Transaction Successful"):
             self.assertEqual(normalize_airtel_status(value), AirtelTransaction.STATUS_SUCCESS)
 
     def test_pending_statuses(self):
-        for value in ("TIP", "PENDING", "IN_PROGRESS"):
+        for value in ("TIP", "PENDING", "Pending.", "IN_PROGRESS"):
             self.assertEqual(normalize_airtel_status(value), AirtelTransaction.STATUS_PENDING)
 
     def test_expired_statuses(self):
@@ -60,11 +60,13 @@ class AirtelStatusMappingTests(TestCase):
             self.assertEqual(normalize_airtel_status(value), AirtelTransaction.STATUS_EXPIRED)
 
     def test_failed_statuses(self):
-        for value in ("FAILED", "TF", "DECLINED", "REJECTED"):
+        for value in ("FAILED", "Failed.", "TF", "DECLINED", "REJECTED"):
             self.assertEqual(normalize_airtel_status(value), AirtelTransaction.STATUS_FAILED)
 
     def test_unknown_status(self):
         self.assertEqual(normalize_airtel_status("SOMETHING_NEW"), AirtelTransaction.STATUS_UNKNOWN)
+        self.assertEqual(normalize_airtel_status("400"), AirtelTransaction.STATUS_UNKNOWN)
+        self.assertEqual(normalize_airtel_status(None), AirtelTransaction.STATUS_UNKNOWN)
 
 
 class MalawiMobileNetworkTests(SimpleTestCase):
@@ -73,6 +75,20 @@ class MalawiMobileNetworkTests(SimpleTestCase):
         self.assertTrue(normalized.valid)
         self.assertEqual(normalized.provider, PROVIDER_AIRTEL)
         self.assertEqual(normalized.international, "+265991234567")
+
+    def test_supported_airtel_formats_share_one_canonical_number(self):
+        for value in ("0992304851", "992304851", "265992304851", "+265992304851", "0992 304 851", "0992-304-851", "(0992) 304 851"):
+            with self.subTest(value=value):
+                normalized = normalize_mobile_network(value)
+                self.assertTrue(normalized.valid)
+                self.assertEqual(normalized.national, "992304851")
+                self.assertEqual(normalized.international, "+265992304851")
+                self.assertEqual(normalized.display, "265992304851")
+
+    def test_malformed_numbers_are_rejected(self):
+        for value in ("abc0992304851", "265265992304851", "+266992304851", "099230485", "++265992304851"):
+            with self.subTest(value=value):
+                self.assertFalse(normalize_mobile_network(value).valid)
 
     def test_detects_tnm_numbers(self):
         normalized = normalize_mobile_network("+265 88 123 4567")
@@ -248,6 +264,8 @@ class AirtelApiTests(TestCase):
         tx = AirtelTransaction.objects.get(internal_reference=data["internal_reference"])
         self.assertEqual(tx.status, AirtelTransaction.STATUS_PENDING)
         self.assertEqual(tx.environment, "staging")
+        self.assertEqual(tx.customer_msisdn, "+265991234567")
+        self.assertEqual(post.call_args.kwargs["json"]["subscriber"]["msisdn"], "991234567")
         self.assertIsNotNone(tx.payment_transaction)
         self.assertEqual(tx.payment_transaction.status, PaymentTransaction.STATUS_PENDING)
 
@@ -309,7 +327,7 @@ class AirtelApiTests(TestCase):
             status=AirtelTransaction.STATUS_PENDING,
             contract=self.contract,
         )
-        response = self.client.get(f"/api/payments/{tx.internal_reference}/status/")
+        response = self.client.get(f"/api/payments/{tx.internal_reference}/status/?token={tx.status_token}")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["status"], "pending_customer_approval")
@@ -358,8 +376,9 @@ class AirtelApiTests(TestCase):
             }),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("already pending", response.json()["error"])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["internal_reference"], AirtelTransaction.objects.get().internal_reference)
+        self.assertEqual(AirtelTransaction.objects.count(), 1)
 
     @override_settings(AIRTEL_COLLECTIONS_ENABLED=False)
     def test_collections_disabled_blocks_requests(self):
@@ -466,7 +485,7 @@ class AirtelApiTests(TestCase):
         self.contract.save(update_fields=["deposit_paid"])
         response = self.client.get(f"/pay/contract/{self.contract.contract_number}/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "For Airtel testing, you may enter an amount from MWK 100")
+        self.assertContains(response, 'min="100"')
         self.assertContains(response, "Partial payment — 0 full repayment days covered")
         self.assertNotContains(response, "MWK 100 — 1 day paid")
 
@@ -501,12 +520,12 @@ class AirtelApiTests(TestCase):
 
     def test_pending_status_page_matches_approved_structure(self):
         tx = self._status_page_transaction()
-        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
         self.assertEqual(response.status_code, 200)
         for expected in (
-            "Confirm on your phone", "MWK 100", "+26599***4567",
+            "Airtel Money request sent", "MWK 100", "+26599***4567",
             tx.internal_reference, self.contract.contract_number, self.contract.payg_number,
-            "Request sent", "Enter PIN", "Awaiting confirmation",
+            "Request sent", "Complete phone prompt", "Awaiting confirmation",
             "Return to contract", "Check again", "Your data is protected",
         ):
             self.assertContains(response, expected)
@@ -523,7 +542,7 @@ class AirtelApiTests(TestCase):
 
     def test_dry_run_customer_page_does_not_claim_prompt_sent(self):
         tx = self._status_page_transaction(status=AirtelTransaction.STATUS_DRY_RUN)
-        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
         self.assertContains(response, "Sending payment request")
         self.assertNotContains(response, "dry-run mode")
         self.assertNotContains(response, "test confirmation")
@@ -537,7 +556,7 @@ class AirtelApiTests(TestCase):
         )
         for index, (status, heading) in enumerate(cases):
             tx = self._status_page_transaction(status=status, internal_reference=f"TENGA-AIRTEL-UI-FINAL-{index}")
-            response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+            response = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
             self.assertContains(response, heading)
             self.assertContains(response, "is-payment-failed")
             self.assertNotContains(response, 'class="pay-status-page is-payment-pending"')
@@ -550,7 +569,7 @@ class AirtelApiTests(TestCase):
             completed_at=timezone.now(),
             airtel_money_id="AM-UI-100",
         )
-        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
         self.assertContains(response, "Payment confirmed")
         self.assertContains(response, "AM-UI-100")
         self.assertContains(response, "is-payment-success")
@@ -568,20 +587,20 @@ class AirtelApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         tx = AirtelTransaction.objects.get()
         self.assertEqual(tx.status, AirtelTransaction.STATUS_FAILED)
-        page = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        page = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
         self.assertContains(page, "Payment failed")
         self.assertNotContains(page, "Check your phone")
         self.assertNotContains(page, "Invalid agent code")
 
     def test_polling_script_only_calls_internal_status_endpoint_and_is_bounded(self):
         tx = self._status_page_transaction()
-        response = self.client.get(f"/pay/payment/{tx.internal_reference}/")
+        response = self.client.get(f"/pay/payment/{tx.internal_reference}/?token={tx.status_token}")
         content = response.content.decode("utf-8")
         self.assertIn(f"/api/payments/{tx.internal_reference}/status/", content)
-        self.assertIn("maxAttempts=5", content)
-        self.assertIn("delayMs=6000", content)
+        self.assertIn("maxAttempts=8", content)
+        self.assertIn("delayMs=5000", content)
         self.assertIn("if(inFlight)return", content)
-        self.assertIn("?enquire=1", content)
+        self.assertIn("enquire=1", content)
         self.assertNotIn("collections/initiate", content)
 
     def test_payment_status_stylesheet_is_discoverable(self):
@@ -796,6 +815,7 @@ class AirtelApiTests(TestCase):
             purpose=AirtelTransaction.PURPOSE_DEPOSIT,
             status=AirtelTransaction.STATUS_PENDING,
             contract=self.contract,
+            airtel_reference_id="ENQ123",
         )
         fake_client = SimpleNamespace(
             is_configured_for_api_calls=True,
@@ -803,7 +823,7 @@ class AirtelApiTests(TestCase):
             get=lambda path: {
                 "ok": True,
                 "http_status": 200,
-                "body": {"transaction": {"reference_id": tx.internal_reference, "id": "ENQ-123", "status_code": "TS"}},
+                "body": {"transaction": {"reference_id": "ENQ123", "id": "ENQ-123", "status_code": "TS"}},
             },
         )
         AirtelTransactionEnquiryService(client=fake_client).enquire(tx.internal_reference)
@@ -826,3 +846,33 @@ class AirtelApiTests(TestCase):
     def test_preflight_fails_when_required_config_missing(self):
         with self.assertRaises(CommandError):
             call_command("airtel_preflight", stdout=io.StringIO())
+
+    def test_status_endpoint_requires_non_guessable_token(self):
+        tx = self._status_page_transaction()
+        self.assertEqual(self.client.get(f"/api/payments/{tx.internal_reference}/status/").status_code, 404)
+        self.assertEqual(self.client.get(f"/api/payments/{tx.internal_reference}/status/?token={tx.status_token}").status_code, 200)
+
+    def test_callback_evidence_records_unsupported_method_and_response(self):
+        response = self.client.get("/api/payments/airtel/callback/", HTTP_X_REQUEST_ID="render-123")
+        self.assertEqual(response.status_code, 405)
+        log = AirtelCallbackLog.objects.get()
+        self.assertEqual(log.processing_state, "METHOD_NOT_ALLOWED")
+        self.assertEqual(log.response_status, 405)
+        self.assertEqual(log.request_id, "render-123")
+        self.assertEqual(len(log.body_sha256), 64)
+
+    def test_callback_health_never_alters_payments(self):
+        response = self.client.get("/api/payments/airtel/callback-health/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["request_id"])
+        self.assertEqual(AirtelTransaction.objects.count(), 0)
+
+    def test_repeated_idempotency_key_returns_one_transaction(self):
+        payload={"msisdn":"0991234567","amount":500,"purpose":"INSTALLMENT","contract_id":self.contract.id,"idempotency_key":"browser-attempt-1"}
+        with patch("payments.airtel_client.requests.post") as post:
+            post.return_value.status_code=200;post.return_value.json.return_value={"status":{"code":"200"},"transaction":{"status_code":"TIP"}}
+            first=self.client.post("/api/payments/airtel/collections/initiate/",data=json.dumps(payload),content_type="application/json")
+            second=self.client.post("/api/payments/airtel/collections/initiate/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(first.json()["internal_reference"],second.json()["internal_reference"])
+        self.assertEqual(AirtelTransaction.objects.count(),1)
+        self.assertEqual(post.call_count,1)

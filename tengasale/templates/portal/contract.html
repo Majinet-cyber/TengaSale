@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.1.0">
+<script defer src="{% static 'js/malawi-mobile.js' %}?v=1.0.0"></script>
 {% endblock %}
 
 {% block content %}
@@ -166,6 +167,7 @@
     {% else %}
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
       {% csrf_token %}
+      <input type="hidden" name="idempotency_key" value="{{ payment_idempotency_key }}">
       <input type="hidden" name="payment_type" value="deposit">
       <input type="hidden" name="provider" value="" data-payment-provider>
       <div class="cpd-form-row">
@@ -217,6 +219,7 @@
     </div>
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}" data-min-amount="{{ airtel_test_min_amount|default:'100' }}" data-max-amount="{{ airtel_test_max_amount|default:'1000' }}">
       {% csrf_token %}
+      <input type="hidden" name="idempotency_key" value="{{ payment_idempotency_key }}">
       <input type="hidden" name="payment_type" value="repayment">
       <input type="hidden" name="provider" value="" data-payment-provider>
       <div class="cpd-amount-seg">
@@ -361,6 +364,7 @@
   }
 
   function detectNetwork(value) {
+    if (window.TengaSaleMobile) return window.TengaSaleMobile.normalize(value);
     var digits = String(value || '').replace(/\D/g, '');
     if (digits.indexOf('265') === 0) digits = digits.slice(3);
     digits = digits.replace(/^0+/, '');

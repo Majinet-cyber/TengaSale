@@ -78,13 +78,16 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "purpose",
         "status",
         "airtel_money_id",
+        "initiation_accepted_at",
         "callback_received_at",
         "repayment_posted",
         "duplicate_callback",
         "completed_at",
         "created_at",
+        "last_enquiry_at",
+        "reconciliation_required",
     ]
-    list_filter = ["environment", "status", "purpose", "direction", "callback_verified", "repayment_posted", "duplicate_callback", "created_at"]
+    list_filter = ["environment", "status", "purpose", "direction", "callback_verified", "repayment_posted", "reconciliation_required", "duplicate_callback", "created_at"]
     search_fields = [
         "internal_reference",
         "provider_reference",
@@ -106,6 +109,12 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "completed_at",
         "created_at",
         "updated_at",
+        "last_enquiry_response",
+        "last_enquiry_at",
+        "last_enquiry_reference",
+        "last_enquiry_path",
+        "last_enquiry_status",
+        "last_enquiry_error",
     ]
 
     @admin.display(description="MSISDN")
@@ -116,10 +125,14 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
 
 @admin.register(AirtelCallbackLog)
 class AirtelCallbackLogAdmin(admin.ModelAdmin):
-    list_display = ["id", "transaction", "signature_valid", "processed", "duplicate", "created_at"]
-    list_filter = ["signature_valid", "processed", "duplicate"]
-    search_fields = ["transaction__internal_reference", "raw_body", "processing_error"]
-    readonly_fields = ["received_headers", "raw_body", "parsed_body", "created_at"]
+    list_display = ["id", "created_at", "source_ip", "request_id", "short_fingerprint", "extracted_status", "matched_identifier", "matched_field", "response_status", "processing_state", "duplicate", "signature_valid"]
+    list_filter = ["processing_state", "response_status", "signature_valid", "processed", "duplicate", "created_at"]
+    search_fields = ["id", "transaction__internal_reference", "matched_identifier", "provider_transaction_id", "request_id", "provider_request_id", "body_sha256", "source_ip", "extracted_status", "raw_body", "processing_error"]
+    readonly_fields = [field.name for field in AirtelCallbackLog._meta.fields]
+
+    @admin.display(description="Fingerprint")
+    def short_fingerprint(self, obj):
+        return obj.body_sha256[:12] if obj.body_sha256 else "not captured"
 
 
 @admin.register(USSDPaymentIntent)

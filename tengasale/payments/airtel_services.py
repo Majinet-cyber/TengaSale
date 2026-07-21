@@ -25,14 +25,14 @@ from .models import AirtelCallbackLog, AirtelTransaction
 logger = logging.getLogger(__name__)
 
 SUCCESS_VALUES = {"TS", "SUCCESS", "SUCCESSFUL", "TRANSACTION SUCCESSFUL"}
-PENDING_VALUES = {"TIP", "PENDING", "IN_PROGRESS"}
+PENDING_VALUES = {"TIP", "PENDING", "IN PROGRESS"}
 EXPIRED_VALUES = {"TE", "EXPIRED"}
 FAILED_VALUES = {"FAILED", "TF", "DECLINED", "REJECTED"}
 TERMINAL_FAILURE_STATUSES = {AirtelTransaction.STATUS_FAILED, AirtelTransaction.STATUS_EXPIRED}
 
 
 def normalize_airtel_status(value: Any) -> str:
-    status = str(value or "").strip().upper()
+    status = re.sub(r"[^A-Z0-9]+", " ", str(value or "").strip().upper()).strip()
     if status in SUCCESS_VALUES:
         return AirtelTransaction.STATUS_SUCCESS
     if status in PENDING_VALUES:
@@ -60,7 +60,8 @@ def mask_msisdn(value: str) -> str:
 
 
 def _airtel_api_msisdn(value: str) -> str:
-    return normalize_malawi_msisdn(value).lstrip("+")
+    # Airtel Malawi collections expect the national nine-digit number.
+    return normalize_malawi_msisdn(value)[-9:]
 
 
 def _allowed_test_msisdns(config: AirtelConfig) -> set[str]:
@@ -77,10 +78,10 @@ def generate_airtel_reference() -> str:
     chars = string.ascii_uppercase + string.digits
     for _ in range(100):
         suffix = "".join(secrets.choice(chars) for _ in range(8))
-        ref = f"TENGA-AIRTEL-{timezone.now().strftime('%Y%m%d')}-{suffix}"
+        ref = f"TENGAAIRTEL{timezone.now().strftime('%Y%m%d')}{suffix}"
         if not AirtelTransaction.objects.filter(internal_reference=ref).exists():
             return ref
-    return f"TENGA-AIRTEL-{secrets.token_hex(8).upper()}"
+    return f"TENGAAIRTEL{secrets.token_hex(12).upper()}"[:64]
 
 
 def _extract_nested(data: Any, *paths: str) -> Any:
@@ -159,11 +160,28 @@ def extract_airtel_status(data: dict[str, Any]) -> str:
 
 def extract_airtel_references(data: dict[str, Any]) -> dict[str, str]:
     return {
-        "provider_reference": str(_extract_nested(data, "data.transaction.reference_id", "transaction.reference_id") or ""),
+        "provider_reference": str(_extract_nested(data, "data.transaction.provider_reference", "transaction.provider_reference", "data.transaction.transaction_reference", "transaction.transaction_reference") or ""),
         "airtel_money_id": str(_extract_nested(data, "data.transaction.airtel_money_id", "transaction.airtel_money_id") or ""),
-        "airtel_transaction_id": str(_extract_nested(data, "data.transaction.id", "transaction.id", "id") or ""),
+        "airtel_transaction_id": str(_extract_nested(data, "data.transaction.airtel_transaction_id", "transaction.airtel_transaction_id", "data.transaction.provider_transaction_id", "transaction.provider_transaction_id") or ""),
         "airtel_reference_id": str(_extract_nested(data, "data.transaction.reference_id", "transaction.reference_id", "reference_id") or ""),
     }
+
+
+def store_confirmed_provider_references(airtel_tx: AirtelTransaction, data: dict[str, Any]) -> list[str]:
+    """Store only identifiers returned in explicitly provider-owned fields."""
+    refs = extract_airtel_references(data)
+    changed = []
+    sources = []
+    for field, value in refs.items():
+        if value and value != airtel_tx.internal_reference:
+            setattr(airtel_tx, field, value)
+            changed.append(field)
+            sources.append(field)
+    if sources:
+        airtel_tx.provider_id_confirmed = True
+        airtel_tx.provider_identifier_source = ",".join(sources)
+        changed.extend(["provider_id_confirmed", "provider_identifier_source"])
+    return changed
 
 
 def extract_airtel_amount(data: dict[str, Any]) -> Decimal | None:
@@ -193,7 +211,8 @@ class AirtelCollectionService:
         self.client = client or AirtelClient()
 
     @transaction.atomic
-    def initiate_collection_payment(self, msisdn, amount, purpose, contract=None, customer=None) -> AirtelTransaction:
+    def initiate_collection_payment(self, msisdn, amount, purpose, contract=None, customer=None, idempotency_key=None) -> AirtelTransaction:
+        logger.info("airtel_initiation_started contract_id=%s environment=%s", getattr(contract, "pk", None), self.client.config.environment)
         self.client.config.assert_production_allowed()
         try:
             amount = Decimal(str(amount)).quantize(Decimal("0.01"))
@@ -208,6 +227,11 @@ class AirtelCollectionService:
             raise ValueError("Unsupported Airtel payment purpose.")
 
         normalized_msisdn = normalize_malawi_msisdn(msisdn)
+        idempotency_key = str(idempotency_key or "").strip()[:120] or None
+        if idempotency_key:
+            existing = AirtelTransaction.objects.filter(idempotency_key=idempotency_key).first()
+            if existing:
+                return existing
         if contract is not None:
             contract = contract.__class__.objects.select_for_update().get(pk=contract.pk)
             remaining = contract.deposit_remaining if purpose == AirtelTransaction.PURPOSE_DEPOSIT else contract.remaining_amount
@@ -226,14 +250,16 @@ class AirtelCollectionService:
                 raise ValueError("This contract cannot currently accept payments.")
             if amount > remaining:
                 raise ValueError(f"Payment amount exceeds the outstanding balance of MWK {remaining}.")
-            duplicate_exists = AirtelTransaction.objects.filter(
+            duplicate = AirtelTransaction.objects.filter(
                 contract=contract,
                 direction=AirtelTransaction.DIRECTION_COLLECTION,
                 status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
                 processed_success_at__isnull=True,
-            ).exists()
-            if duplicate_exists:
-                raise ValueError("A payment request is already pending for this contract.")
+                purpose=purpose,
+                amount=amount,
+            ).order_by("-created_at").first()
+            if duplicate:
+                return duplicate
         if not self.client.config.collections_enabled:
             raise ValueError("Airtel collections are disabled by configuration.")
         if self.client.config.environment == "staging":
@@ -277,6 +303,7 @@ class AirtelCollectionService:
             purpose=purpose,
             direction=AirtelTransaction.DIRECTION_COLLECTION,
             status=AirtelTransaction.STATUS_INITIATED,
+            idempotency_key=idempotency_key,
             raw_request=payload,
             contract=contract,
             customer=customer,
@@ -338,7 +365,6 @@ class AirtelCollectionService:
             return airtel_tx
 
         body = response.get("body", {})
-        refs = extract_airtel_references(body if isinstance(body, dict) else {})
         airtel_tx.raw_response = response
         airtel_tx.status = extract_airtel_status(body) if isinstance(body, dict) else AirtelTransaction.STATUS_UNKNOWN
         business_code = _extract_nested(body, "status.code", "data.status.code") if isinstance(body, dict) else None
@@ -353,15 +379,21 @@ class AirtelCollectionService:
             airtel_tx.failure_reason = "Airtel Money could not process this payment request."
             if "agent" in business_message.lower() or "merchant" in business_message.lower():
                 airtel_tx.processing_note = "Provider configuration error reported during collection initiation."
+            logger.warning("airtel_initiation_rejected internal_reference=%s environment=%s", internal_reference, airtel_tx.environment)
         if airtel_tx.status == AirtelTransaction.STATUS_UNKNOWN:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
         if airtel_tx.status == AirtelTransaction.STATUS_SUCCESS:
             airtel_tx.status = AirtelTransaction.STATUS_PENDING
             airtel_tx.processing_note = "Collection request accepted; awaiting callback or enquiry confirmation."
-        for field, value in refs.items():
-            if value:
-                setattr(airtel_tx, field, value)
+        if not business_failed:
+            airtel_tx.initiation_accepted_at = timezone.now()
+            if not airtel_tx.processing_note:
+                airtel_tx.processing_note = "Collection request accepted; awaiting customer confirmation."
+        if isinstance(body, dict):
+            store_confirmed_provider_references(airtel_tx, body)
         airtel_tx.save()
+        if not business_failed:
+            logger.info("airtel_initiation_accepted internal_reference=%s contract_id=%s environment=%s", internal_reference, airtel_tx.contract_id, airtel_tx.environment)
         if airtel_tx.status == AirtelTransaction.STATUS_FAILED and airtel_tx.payment_transaction:
             airtel_tx.payment_transaction.status = PaymentTransaction.STATUS_FAILED
             airtel_tx.payment_transaction.save(update_fields=["status", "updated_at"])
@@ -374,23 +406,71 @@ class AirtelTransactionEnquiryService:
 
     @transaction.atomic
     def enquire(self, internal_reference: str) -> AirtelTransaction:
+        logger.info("airtel_enquiry_started internal_reference=%s", internal_reference)
         airtel_tx = AirtelTransaction.objects.select_for_update().get(internal_reference=internal_reference)
-        if not self.client.is_configured_for_api_calls:
+        min_interval = int(getattr(settings, "AIRTEL_ENQUIRY_MIN_INTERVAL_SECONDS", 30))
+        max_attempts = int(getattr(settings, "AIRTEL_ENQUIRY_MAX_ATTEMPTS", 20))
+        if airtel_tx.enquiry_attempt_count >= max_attempts:
+            airtel_tx.reconciliation_required = True
+            airtel_tx.last_enquiry_error = "Enquiry attempt limit reached; operator review required."
+            airtel_tx.save(update_fields=["reconciliation_required", "last_enquiry_error", "updated_at"])
             return airtel_tx
-        reference = airtel_tx.airtel_transaction_id or airtel_tx.airtel_reference_id or airtel_tx.internal_reference
+        if airtel_tx.last_enquiry_at and (timezone.now() - airtel_tx.last_enquiry_at).total_seconds() < min_interval:
+            return airtel_tx
+        airtel_tx.last_enquiry_at = timezone.now()
+        airtel_tx.enquiry_attempt_count += 1
+        if not self.client.is_configured_for_api_calls:
+            airtel_tx.last_enquiry_error = "Airtel API credentials are not configured."
+            airtel_tx.save(update_fields=["last_enquiry_at", "enquiry_attempt_count", "last_enquiry_error", "updated_at"])
+            return airtel_tx
+        candidates = [
+            airtel_tx.airtel_money_id,
+            airtel_tx.airtel_transaction_id if airtel_tx.provider_id_confirmed else "",
+            airtel_tx.provider_reference if airtel_tx.provider_id_confirmed else "",
+            airtel_tx.airtel_reference_id,
+        ]
+        reference = next((value for value in candidates if value), "")
+        if not reference and bool(getattr(settings, "AIRTEL_ALLOW_MERCHANT_REFERENCE_ENQUIRY", getattr(settings, "AIRTEL_ENQUIRY_SUPPORTS_MERCHANT_REFERENCE", False))):
+            reference = airtel_tx.internal_reference
+        if not reference:
+            airtel_tx.last_enquiry_status = AirtelTransaction.STATUS_UNKNOWN
+            airtel_tx.last_enquiry_error = "No confirmed provider identifier is available for enquiry."
+            airtel_tx.reconciliation_required = True
+            airtel_tx.processing_note = "Provider enquiry unavailable; existing status preserved."
+            airtel_tx.save()
+            return airtel_tx
         path = self.client.config.enquiry_path_template.format(reference=reference)
-        response = self.client.get(path)
+        airtel_tx.last_enquiry_reference = reference
+        airtel_tx.last_enquiry_path = path
+        try:
+            response = self.client.get(path)
+        except Exception as exc:
+            airtel_tx.last_enquiry_error = f"{exc.__class__.__name__}: {exc}"[:1000]
+            airtel_tx.reconciliation_required = True
+            airtel_tx.save()
+            logger.exception("enquiry_failed internal_reference=%s", airtel_tx.internal_reference)
+            return airtel_tx
         body = response.get("body", {})
-        airtel_tx.raw_response = response
+        airtel_tx.last_enquiry_response = response
         if isinstance(body, dict):
-            airtel_tx.status = extract_airtel_status(body)
-            refs = extract_airtel_references(body)
-            for field, value in refs.items():
-                if value:
-                    setattr(airtel_tx, field, value)
+            enquiry_status = extract_airtel_status(body)
+            airtel_tx.last_enquiry_status = enquiry_status
+            airtel_tx.last_enquiry_error = "" if enquiry_status != AirtelTransaction.STATUS_UNKNOWN else str(_extract_nested(body, "status.message", "message") or "Unrecognised provider status")[:1000]
+            store_confirmed_provider_references(airtel_tx, body)
+            if enquiry_status != AirtelTransaction.STATUS_UNKNOWN:
+                airtel_tx.status = enquiry_status
+            else:
+                airtel_tx.reconciliation_required = True
+                airtel_tx.processing_note = "Provider enquiry returned no recognised status; existing status preserved."
         airtel_tx.save()
-        if airtel_tx.status == AirtelTransaction.STATUS_SUCCESS:
+        logger.info("airtel_enquiry_completed internal_reference=%s outcome=%s", airtel_tx.internal_reference, airtel_tx.last_enquiry_status)
+        if airtel_tx.last_enquiry_status == AirtelTransaction.STATUS_SUCCESS:
             AirtelCallbackService().apply_success(airtel_tx)
+            airtel_tx.refresh_from_db()
+            airtel_tx.reconciliation_required = False
+            airtel_tx.reconciliation_completed_at = timezone.now()
+            airtel_tx.processing_note = "Final success confirmed by reconciliation enquiry."
+            airtel_tx.save(update_fields=["reconciliation_required", "reconciliation_completed_at", "processing_note", "updated_at"])
         return airtel_tx
 
 
@@ -435,18 +515,20 @@ class AirtelCallbackService:
                 return True, True
         return False, True
 
-    @transaction.atomic
     def handle_callback(self, raw_body: bytes, headers: dict[str, str]) -> tuple[AirtelCallbackLog, bool, int]:
         max_bytes = int(getattr(settings, "AIRTEL_CALLBACK_MAX_BYTES", 65536))
         safe_headers = _sanitize_headers(headers)
+        logger.info("airtel_callback_received body_size=%s", len(raw_body or b""))
         if len(raw_body or b"") > max_bytes:
             log = AirtelCallbackLog.objects.create(
                 received_headers=safe_headers,
                 raw_body="",
                 parsed_body=None,
                 processing_error="Airtel callback body exceeds configured size limit.",
+                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
+                processing_state="PAYLOAD_TOO_LARGE",
             )
-            return log, False, 400
+            return log, False, 413
 
         try:
             parsed = json.loads(raw_body.decode("utf-8")) if raw_body else {}
@@ -456,6 +538,8 @@ class AirtelCallbackService:
                 raw_body=raw_body.decode("utf-8", errors="replace"),
                 parsed_body=None,
                 processing_error=f"Invalid JSON: {exc}",
+                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
+                processing_state="INVALID_JSON", error_class=exc.__class__.__name__,
             )
             return log, False, 400
 
@@ -465,6 +549,8 @@ class AirtelCallbackService:
                 raw_body=raw_body.decode("utf-8", errors="replace"),
                 parsed_body=parsed if isinstance(parsed, dict) else None,
                 processing_error="Missing Airtel transaction object.",
+                body_size=len(raw_body or b""), body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
+                processing_state="INVALID_PAYLOAD",
             )
             return log, False, 400
 
@@ -474,30 +560,42 @@ class AirtelCallbackService:
             raw_body=raw_body.decode("utf-8", errors="replace"),
             parsed_body=parsed,
             signature_valid=signature_valid,
+            body_size=len(raw_body or b""),
+            body_sha256=hashlib.sha256(raw_body or b"").hexdigest(),
+            candidate_identifiers=sorted(_collect_reference_values(parsed)),
         )
 
         if self.config.callback_auth_enabled and not signature_valid:
             log.processing_error = "Invalid or missing Airtel callback signature."
+            log.processing_state = "AUTH_FAILED"
             if not signature_found:
                 log.processing_error = "Missing Airtel callback signature."
-            log.save(update_fields=["processing_error"])
+            log.save(update_fields=["processing_error", "processing_state"])
             return log, True, 401
 
-        airtel_tx = self.find_transaction(parsed)
+        airtel_tx, match = self.find_transaction_match(parsed)
         if not airtel_tx:
-            log.processing_error = "No matching Airtel transaction found."
-            log.save(update_fields=["processing_error"])
+            log.processing_error = match.get("error", "No matching Airtel transaction found.")
+            log.processing_state = "AMBIGUOUS" if match.get("ambiguous") else "UNMATCHED"
+            log.matching_details = match
+            log.save(update_fields=["processing_error", "processing_state", "matching_details"])
+            logger.warning("airtel_callback_%s callback_log_id=%s", "ambiguous" if match.get("ambiguous") else "unmatched", log.pk)
             return log, True, 200
 
         log.transaction = airtel_tx
         status = extract_airtel_status(parsed)
-        refs = extract_airtel_references(parsed)
         duplicate = airtel_tx.status == AirtelTransaction.STATUS_SUCCESS and bool(airtel_tx.processed_success_at)
+        log.matched_identifier = match["value"]
+        log.matched_field = match["field"]
+        log.matching_details = match
+        log.extracted_status = status
 
         callback_amount = extract_airtel_amount(parsed)
+        log.extracted_amount = callback_amount
         if callback_amount is not None and callback_amount != airtel_tx.amount:
             log.processing_error = "Airtel callback amount does not match original payment attempt."
-            log.save(update_fields=["transaction", "processing_error"])
+            log.processing_state = "AMOUNT_MISMATCH"
+            log.save(update_fields=["transaction", "processing_error", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
             airtel_tx.failure_reason = "Callback amount mismatch."
             airtel_tx.raw_callback = parsed
             airtel_tx.callback_verified = signature_valid
@@ -508,56 +606,77 @@ class AirtelCallbackService:
         airtel_tx.raw_callback = parsed
         airtel_tx.callback_verified = signature_valid
         airtel_tx.callback_received_at = timezone.now()
-        airtel_tx.status = status
+        if status != AirtelTransaction.STATUS_UNKNOWN:
+            airtel_tx.status = status
+        else:
+            airtel_tx.reconciliation_required = True
+            airtel_tx.processing_note = "Callback returned no recognised status; existing status preserved."
         if status in TERMINAL_FAILURE_STATUSES:
             airtel_tx.failure_reason = str(
                 _extract_nested(parsed, "data.transaction.message", "transaction.message", "message", "status.message")
                 or "Airtel transaction failed."
             )[:500]
             airtel_tx.completed_at = timezone.now()
-        for field, value in refs.items():
-            if value:
-                setattr(airtel_tx, field, value)
+        store_confirmed_provider_references(airtel_tx, parsed)
         airtel_tx.save()
 
         if duplicate:
             log.duplicate = True
             log.processed = True
+            log.processing_state = "DUPLICATE"
+            log.processed_at = timezone.now()
             airtel_tx.duplicate_callback = True
             airtel_tx.save(update_fields=["duplicate_callback", "updated_at"])
-            log.save(update_fields=["transaction", "duplicate", "processed"])
+            log.save(update_fields=["transaction", "duplicate", "processed", "processing_state", "processed_at", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
             return log, True, 200
 
         if status == AirtelTransaction.STATUS_SUCCESS:
-            self.apply_success(airtel_tx)
+            try:
+                self.apply_success(airtel_tx)
+            except Exception as exc:
+                log.processing_error = str(exc)[:1000]
+                log.error_class = exc.__class__.__name__
+                log.processing_state = "FAILED"
+                log.save(update_fields=["transaction", "processing_error", "error_class", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
+                logger.exception("callback_processing_failed callback_log_id=%s internal_reference=%s", log.pk, airtel_tx.internal_reference)
+                return log, True, 500
 
         log.processed = True
-        log.save(update_fields=["transaction", "processed"])
+        log.processing_state = "PROCESSED" if status != AirtelTransaction.STATUS_UNKNOWN else "UNKNOWN_STATUS"
+        log.processed_at = timezone.now()
+        log.save(update_fields=["transaction", "processed", "processing_state", "processed_at", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
+        logger.info("airtel_callback_%s callback_log_id=%s internal_reference=%s", "success_applied" if status == AirtelTransaction.STATUS_SUCCESS else "matched", log.pk, airtel_tx.internal_reference)
         return log, True, 200
 
     def find_transaction(self, payload: dict[str, Any]) -> AirtelTransaction | None:
-        values = _collect_reference_values(payload)
-        if not values:
-            return None
-        query = Q()
-        for value in values:
-            query |= (
-                Q(internal_reference=value)
-                | Q(provider_reference=value)
-                | Q(airtel_money_id=value)
-                | Q(airtel_transaction_id=value)
-                | Q(airtel_reference_id=value)
-            )
-        return AirtelTransaction.objects.select_related("contract", "payment_transaction").filter(query).first()
+        return self.find_transaction_match(payload)[0]
+
+    def find_transaction_match(self, payload: dict[str, Any]) -> tuple[AirtelTransaction | None, dict[str, Any]]:
+        values = sorted(_collect_reference_values(payload))
+        attempts = []
+        fields = ("internal_reference", "provider_reference", "airtel_money_id", "airtel_transaction_id", "airtel_reference_id")
+        for field in fields:
+            for value in values:
+                query = {field: value}
+                if field in {"provider_reference", "airtel_transaction_id"}:
+                    query["provider_id_confirmed"] = True
+                matches = list(AirtelTransaction.objects.filter(**query).order_by("pk")[:2])
+                attempts.append({"field": field, "value": value, "count": len(matches)})
+                if len(matches) > 1:
+                    return None, {"ambiguous": True, "error": "Multiple Airtel transactions matched callback identifier.", "attempts": attempts}
+                if len(matches) == 1:
+                    return matches[0], {"field": field, "value": value, "attempts": attempts}
+        return None, {"error": "No matching Airtel transaction found.", "candidates": values, "attempts": attempts}
 
     @transaction.atomic
     def apply_success(self, airtel_tx: AirtelTransaction) -> AirtelTransaction:
-        airtel_tx = AirtelTransaction.objects.select_for_update().select_related("contract", "payment_transaction").get(
-            pk=airtel_tx.pk
-        )
+        airtel_tx = AirtelTransaction.objects.select_for_update().get(pk=airtel_tx.pk)
         if airtel_tx.processed_success_at:
             return airtel_tx
-        contract = airtel_tx.contract
+        contract = None
+        if airtel_tx.contract_id:
+            contract_model = AirtelTransaction._meta.get_field("contract").remote_field.model
+            contract = contract_model.objects.select_for_update().get(pk=airtel_tx.contract_id)
         if not contract:
             airtel_tx.processed_success_at = timezone.now()
             airtel_tx.completed_at = airtel_tx.processed_success_at
@@ -572,7 +691,9 @@ class AirtelCallbackService:
                 contract.deposit_access_days = 14
                 contract.save(update_fields=["deposit_access_days"])
 
-        portal_tx = airtel_tx.payment_transaction
+        portal_tx = None
+        if airtel_tx.payment_transaction_id:
+            portal_tx = PaymentTransaction.objects.select_for_update().get(pk=airtel_tx.payment_transaction_id)
         if not portal_tx:
             portal_tx = PaymentTransaction.objects.create(
                 payment_contract=contract,
@@ -613,10 +734,7 @@ class AirtelCallbackService:
         )
         portal_tx.balance_after = contract.deposit_remaining if payment_type == PaymentTransaction.TYPE_DEPOSIT else contract.remaining_amount
         portal_tx.save(update_fields=["balance_after", "updated_at"])
-        try:
-            finalize_paid_transaction_commission(portal_tx)
-        except Exception:
-            logger.exception("Airtel commission finalization failed for %s", airtel_tx.internal_reference)
+        finalize_paid_transaction_commission(portal_tx)
         airtel_tx.processed_success_at = timezone.now()
         airtel_tx.completed_at = airtel_tx.processed_success_at
         airtel_tx.repayment_posted = True

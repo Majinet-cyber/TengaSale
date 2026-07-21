@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 import json
+import ipaddress
+import secrets
+import hashlib
+import time
+import uuid
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.paginator import Paginator
+from django.core.cache import cache
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.db.models import Count, Sum
@@ -27,6 +34,8 @@ from .airtel_services import (
     mask_msisdn,
 )
 from .models import AirtelCallbackLog, AirtelTransaction, USSDPaymentIntent, USSDSessionLog
+
+logger = logging.getLogger(__name__)
 from .views import _hq_or_finance
 
 
@@ -166,17 +175,71 @@ def ussd_callback(request):
 
 
 @csrf_exempt
-@require_POST
 def airtel_callback(request):
+    started = time.monotonic()
     headers = {key: value for key, value in request.headers.items()}
-    log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
+    if request.method != "POST":
+        log = AirtelCallbackLog.objects.create(
+            received_headers=_safe_callback_headers(headers), raw_body="", body_size=0,
+            body_sha256=hashlib.sha256(b"").hexdigest(), processing_state="METHOD_NOT_ALLOWED",
+            processing_error="Airtel callback endpoint accepts POST only.",
+        )
+        return _finish_callback_response(request, log, 405, {"ok": False, "message": "Method not allowed.", "log_id": log.id}, started)
+    try:
+        log, valid_body, status_code = AirtelCallbackService().handle_callback(request.body, headers)
+    except Exception as exc:
+        logger.exception("airtel_callback_processing_failed request_id=%s", request.headers.get("X-Request-ID", ""))
+        log = AirtelCallbackLog.objects.create(received_headers=_safe_callback_headers(headers), raw_body=request.body.decode("utf-8", errors="replace"), body_size=len(request.body or b""), body_sha256=hashlib.sha256(request.body or b"").hexdigest(), processing_state="FAILED_PROCESSING", error_class=exc.__class__.__name__, processing_error="Unhandled callback processing error.")
+        return _finish_callback_response(request, log, 500, {"ok": False, "message": "Callback processing failed.", "log_id": log.id}, started)
+    response_body = {"ok": status_code < 400, "provider": "airtel_money", "log_id": log.id}
     if not valid_body:
-        return JsonResponse({"ok": False, "message": "Invalid callback body.", "log_id": log.id}, status=400)
-    if status_code in (401, 403):
-        return JsonResponse({"ok": False, "message": "Invalid callback signature.", "log_id": log.id}, status=status_code)
-    if status_code >= 400:
-        return JsonResponse({"ok": False, "message": log.processing_error or "Callback rejected.", "log_id": log.id}, status=status_code)
-    return JsonResponse({"ok": True, "provider": "airtel_money", "log_id": log.id}, status=200)
+        response_body = {"ok": False, "message": "Invalid callback body.", "log_id": log.id}
+    elif status_code in (401, 403):
+        response_body = {"ok": False, "message": "Invalid callback signature.", "log_id": log.id}
+    elif status_code >= 400:
+        response_body = {"ok": False, "message": log.processing_error or "Callback rejected.", "log_id": log.id}
+    return _finish_callback_response(request, log, status_code, response_body, started)
+
+
+def _safe_callback_headers(headers):
+    sensitive = {"authorization", "cookie", "x-api-key", "api-key", "proxy-authorization"}
+    return {str(key): "***" if str(key).lower() in sensitive else str(value)[:2000] for key, value in headers.items()}
+
+
+def _finish_callback_response(request, log, status_code, response_body, started):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    candidate_ip = forwarded.split(",")[0].strip() or request.META.get("REMOTE_ADDR") or ""
+    try: source_ip = str(ipaddress.ip_address(candidate_ip)) if candidate_ip else None
+    except ValueError: source_ip = None
+    headers = dict(request.headers)
+    log.request_path=request.path; log.query_string=request.META.get("QUERY_STRING", "")[:4000]
+    log.request_method=request.method; log.content_type=request.content_type or ""; log.body_size=len(request.body or b"")
+    log.source_ip=source_ip; log.forwarded_for=forwarded[:2000]; log.real_ip=request.META.get("HTTP_X_REAL_IP", "")[:64]
+    log.user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000]
+    log.request_id=(request.headers.get("X-Request-ID") or request.headers.get("X-Render-Request-ID") or request.headers.get("Traceparent") or "")[:120]
+    log.provider_request_id=(request.headers.get("X-Airtel-Request-ID") or request.headers.get("X-Trace-ID") or "")[:120]
+    log.signature_present=any(headers.get(name) for name in AirtelCallbackService.signature_headers) or bool((log.parsed_body or {}).get("hash") or (log.parsed_body or {}).get("Hash"))
+    try: auth_enabled=AirtelConfig.from_settings().callback_auth_enabled
+    except AirtelConfigurationError: auth_enabled=True
+    log.authentication_mode="CONFIGURED_UNVERIFIED_HMAC" if auth_enabled else "DISABLED_UAT"
+    log.response_status=status_code; log.response_body=response_body
+    log.processing_duration_ms=max(0, int((time.monotonic()-started)*1000))
+    log.save()
+    return JsonResponse(response_body, status=status_code)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "HEAD"])
+def airtel_callback_health(request):
+    correlation_id=str(uuid.uuid4())
+    source=request.META.get("REMOTE_ADDR", "unknown")
+    key=f"airtel-callback-health:{source}"
+    count=cache.get(key, 0)
+    if count >= 30:
+        return JsonResponse({"ok": False, "request_id": correlation_id}, status=429)
+    cache.set(key, count+1, 60)
+    logger.info("airtel_callback_health request_id=%s method=%s", correlation_id, request.method)
+    return JsonResponse({"ok": True, "service": "airtel-callback-connectivity", "request_id": correlation_id})
 
 
 @require_GET
@@ -314,7 +377,6 @@ def airtel_readiness(request):
     return JsonResponse(payload, status=status_code)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def airtel_collection_initiate(request):
     data, error = _json_body(request)
@@ -360,6 +422,7 @@ def airtel_collection_initiate(request):
             purpose=data.get("purpose", AirtelTransaction.PURPOSE_TEST),
             contract=contract,
             customer=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+            idempotency_key=request.headers.get("Idempotency-Key") or data.get("idempotency_key"),
         )
     except AirtelConfigurationError as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=503)
@@ -373,6 +436,7 @@ def airtel_collection_initiate(request):
         "status": tx.status,
         "dry_run": tx.status == AirtelTransaction.STATUS_DRY_RUN,
         "message": "Dry-run Airtel request recorded; nothing was sent." if tx.status == AirtelTransaction.STATUS_DRY_RUN else "Payment request sent. Please approve on your phone.",
+        "status_token": tx.status_token,
     })
 
 
@@ -408,6 +472,10 @@ def airtel_simulate_callback(request):
 @require_http_methods(["GET"])
 def airtel_transaction_enquiry(request, internal_reference):
     tx = get_object_or_404(AirtelTransaction, internal_reference=internal_reference)
+    user = getattr(request, "user", None)
+    staff = bool(user and user.is_authenticated and user.is_staff)
+    if not staff and not secrets.compare_digest(str(request.GET.get("token", "")), tx.status_token):
+        return JsonResponse({"success": False, "error": "Not found."}, status=404)
     try:
         tx = AirtelTransactionEnquiryService().enquire(tx.internal_reference)
     except Exception:
@@ -447,12 +515,12 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         ),
         AirtelTransaction.STATUS_INITIATED: (
             "request_sent",
-            "Airtel Money request has been sent. Please approve it on your phone.",
+            "Airtel Money request sent. Complete any prompt on the Airtel phone. Awaiting final confirmation; do not pay again.",
             False,
         ),
         AirtelTransaction.STATUS_PENDING: (
             "pending_customer_approval",
-            "Approve the prompt on your phone. Your balance updates only after Airtel confirms.",
+            "Airtel Money request sent. Complete any prompt on the Airtel phone. Awaiting final confirmation; do not pay again.",
             False,
         ),
     }
@@ -473,6 +541,12 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
             public_status = "pending_provider_confirmation"
             message = "Airtel returned a success status and TengaSale is finishing confirmation. Do not pay again yet."
             final = False
+    if not final and tx.reconciliation_required:
+        public_status = "reconciliation_required"
+        message = "Airtel reported payment activity, but final confirmation has not reached TengaSale. Do not pay again."
+    elif not final and tx.created_at and (timezone.now() - tx.created_at).total_seconds() >= int(getattr(settings, "AIRTEL_PENDING_RECONCILIATION_MINUTES", 10)) * 60:
+        public_status = "confirmation_delayed"
+        message = "Do not submit another payment. Use the reference below if you contact support."
     if portal_tx and portal_tx.status == PaymentTransaction.STATUS_CANCELLED:
         public_status = "cancelled"
         message = "This payment request was cancelled. No money has been applied to this contract."
@@ -480,9 +554,11 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
 
     state_ui = {
         "request_sending": ("Sending payment request", 1),
-        "request_sent": ("Confirm on your phone", 2),
-        "pending_customer_approval": ("Confirm on your phone", 2),
+        "request_sent": ("Airtel Money request sent", 2),
+        "pending_customer_approval": ("Airtel Money request sent", 2),
         "pending_provider_confirmation": ("Waiting for Airtel confirmation", 3),
+        "confirmation_delayed": ("Your payment is still being confirmed", 3),
+        "reconciliation_required": ("Awaiting Airtel confirmation", 3),
         "successful": ("Payment confirmed", 3),
         "failed": ("Payment failed", 3),
         "cancelled": ("Payment cancelled", 3),
@@ -529,6 +605,8 @@ def payment_transaction_status(request, transaction_id):
         AirtelTransaction.objects.select_related("contract", "payment_transaction"),
         internal_reference=transaction_id,
     )
+    if not secrets.compare_digest(str(request.GET.get("token", "")), tx.status_token):
+        return JsonResponse({"success": False, "error": "Not found."}, status=404)
     if request.GET.get("enquire") == "1" and tx.status not in {
         AirtelTransaction.STATUS_SUCCESS,
         AirtelTransaction.STATUS_FAILED,

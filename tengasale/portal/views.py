@@ -11,13 +11,14 @@ Contract-number routes (/pay/contract/TS-MW-XXXXXXXX/) remain for backward compa
 import json
 import logging
 import re
+import secrets
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -304,6 +305,7 @@ def portal_contract(request, contract_number):
         )
 
     return render(request, "portal/contract.html", {
+        "payment_idempotency_key": secrets.token_urlsafe(24),
         "contract": contract,
         "remaining": remaining,
         "early_options": early_options,
@@ -606,6 +608,7 @@ def portal_payment(request, contract_number):
             purpose=purpose,
             contract=contract,
             customer=request.user if request.user.is_authenticated else None,
+            idempotency_key=request.POST.get("idempotency_key"),
         )
     except AirtelConfigurationError:
         logger.exception("Airtel configuration error while initiating contract payment %s", contract_number)
@@ -641,9 +644,9 @@ def portal_payment(request, contract_number):
     else:
         messages.info(
             request,
-            f"Airtel Money prompt sent to {mask_msisdn(airtel_tx.customer_msisdn)}. Enter your PIN to confirm MWK {amount:,.0f}."
+            f"Airtel Money request sent to {mask_msisdn(airtel_tx.customer_msisdn)}. Complete any prompt on the phone and do not pay again while final confirmation is pending. Reference: {airtel_tx.internal_reference}."
         )
-    return redirect("portal_payment_wait", internal_reference=airtel_tx.internal_reference)
+    return redirect(f"{redirect('portal_payment_wait', internal_reference=airtel_tx.internal_reference).url}?token={airtel_tx.status_token}")
 
 
 def portal_payment_wait(request, internal_reference):
@@ -652,6 +655,8 @@ def portal_payment_wait(request, internal_reference):
         AirtelTransaction.objects.select_related("contract", "payment_transaction"),
         internal_reference=internal_reference,
     )
+    if not secrets.compare_digest(str(request.GET.get("token", "")), airtel_tx.status_token):
+        raise Http404
     contract = airtel_tx.contract
     from deals.brand_utils import get_brand_logo
     from payments.api_views import customer_payment_status_payload
@@ -675,7 +680,7 @@ def portal_payment_wait(request, internal_reference):
             "status_data": status_data,
             "is_staff_view": bool(request.user.is_authenticated and request.user.is_staff),
             "is_dry_run": airtel_tx.status == AirtelTransaction.STATUS_DRY_RUN,
-            "status_url": f"/api/payments/{airtel_tx.internal_reference}/status/",
+            "status_url": f"/api/payments/{airtel_tx.internal_reference}/status/?token={airtel_tx.status_token}",
             "return_url": (
                 redirect("portal_contract", contract_number=contract.contract_number).url
                 if contract

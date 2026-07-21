@@ -20,6 +20,10 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+
+
+def generate_status_token():
+    return secrets.token_urlsafe(24)
 from django.utils import timezone
 
 
@@ -647,7 +651,9 @@ class AirtelTransaction(models.Model):
         (STATUS_UNKNOWN, "Unknown"),
     ]
 
-    internal_reference = models.CharField(max_length=60, unique=True, db_index=True)
+    internal_reference = models.CharField(max_length=64, unique=True, db_index=True)
+    idempotency_key = models.CharField(max_length=120, null=True, blank=True, unique=True)
+    status_token = models.CharField(max_length=64, default=generate_status_token, unique=True, editable=False, null=True)
     environment = models.CharField(max_length=20, default="staging", db_index=True)
     provider = models.CharField(max_length=30, default="airtel_money", db_index=True)
     provider_reference = models.CharField(max_length=120, null=True, blank=True, db_index=True)
@@ -694,6 +700,18 @@ class AirtelTransaction(models.Model):
     processed_success_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     processing_note = models.TextField(blank=True)
+    initiation_accepted_at = models.DateTimeField(null=True, blank=True)
+    provider_id_confirmed = models.BooleanField(default=False)
+    provider_identifier_source = models.CharField(max_length=120, blank=True)
+    last_enquiry_at = models.DateTimeField(null=True, blank=True)
+    enquiry_attempt_count = models.PositiveIntegerField(default=0)
+    last_enquiry_reference = models.CharField(max_length=120, blank=True)
+    last_enquiry_path = models.CharField(max_length=255, blank=True)
+    last_enquiry_status = models.CharField(max_length=20, blank=True)
+    last_enquiry_error = models.TextField(blank=True)
+    last_enquiry_response = models.JSONField(default=dict, blank=True)
+    reconciliation_required = models.BooleanField(default=False)
+    reconciliation_completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -738,10 +756,42 @@ class AirtelCallbackLog(models.Model):
     processed = models.BooleanField(default=False)
     duplicate = models.BooleanField(default=False)
     processing_error = models.TextField(null=True, blank=True)
+    request_path = models.CharField(max_length=255, blank=True)
+    query_string = models.TextField(blank=True)
+    request_method = models.CharField(max_length=12, blank=True)
+    content_type = models.CharField(max_length=120, blank=True)
+    body_size = models.PositiveIntegerField(default=0)
+    source_ip = models.GenericIPAddressField(null=True, blank=True)
+    forwarded_for = models.TextField(blank=True)
+    real_ip = models.CharField(max_length=64, blank=True)
+    user_agent = models.TextField(blank=True)
+    request_id = models.CharField(max_length=120, blank=True, db_index=True)
+    provider_request_id = models.CharField(max_length=120, blank=True, db_index=True)
+    signature_present = models.BooleanField(default=False)
+    authentication_mode = models.CharField(max_length=40, blank=True)
+    processing_state = models.CharField(max_length=40, default="RECEIVED", db_index=True)
+    body_sha256 = models.CharField(max_length=64, blank=True, db_index=True)
+    candidate_identifiers = models.JSONField(default=list, blank=True)
+    response_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    response_body = models.JSONField(default=dict, blank=True)
+    matched_identifier = models.CharField(max_length=120, blank=True)
+    matched_field = models.CharField(max_length=80, blank=True)
+    matching_details = models.JSONField(default=dict, blank=True)
+    extracted_status = models.CharField(max_length=20, blank=True)
+    extracted_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    provider_transaction_id = models.CharField(max_length=120, blank=True)
+    error_class = models.CharField(max_length=120, blank=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processing_duration_ms = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["response_status", "created_at"]),
+            models.Index(fields=["processing_state", "created_at"]),
+        ]
 
     def __str__(self):
         ref = self.transaction.internal_reference if self.transaction_id else "unmatched"
