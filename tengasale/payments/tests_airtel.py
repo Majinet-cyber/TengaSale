@@ -740,7 +740,7 @@ class AirtelApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("allowlisted", response.json()["error"])
 
-    def test_successful_deposit_callback_grants_14_day_access_and_is_idempotent(self):
+    def test_successful_deposit_callback_grants_7_day_access_and_is_idempotent(self):
         tx = AirtelTransaction.objects.create(
             internal_reference="TENGA-AIRTEL-20260611-ABC12345",
             customer_msisdn="+265991234567",
@@ -775,9 +775,9 @@ class AirtelApiTests(TestCase):
         self.assertIsNotNone(tx.completed_at)
         self.assertEqual(self.contract.deposit_paid, Decimal("15000"))
         self.assertEqual(self.contract.status, PaymentContract.STATUS_ACTIVE)
-        self.assertEqual(self.contract.deposit_access_days, 14)
+        self.assertEqual(self.contract.deposit_access_days, 7)
         self.assertIsNotNone(self.contract.access_expires_at)
-        self.assertGreaterEqual((self.contract.access_expires_at - before).days, 13)
+        self.assertGreaterEqual((self.contract.access_expires_at - before).days, 6)
         self.assertEqual(PaymentTransaction.objects.filter(internal_reference=tx.internal_reference).count(), 1)
         self.assertEqual(PaymentTransaction.objects.filter(provider_reference="MP210603.1234.L06941").count(), 1)
         self.assertEqual(AirtelCallbackLog.objects.filter(duplicate=True).count(), 1)

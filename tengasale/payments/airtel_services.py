@@ -261,6 +261,9 @@ class AirtelCollectionService:
                 raise ValueError("This contract cannot currently accept payments.")
             if amount > remaining:
                 raise ValueError(f"Payment amount exceeds the outstanding balance of MWK {remaining}.")
+            from datetime import timedelta
+            expiry_minutes = int(getattr(settings, "AIRTEL_PENDING_EXPIRY_MINUTES", 15))
+            freshness_cutoff = timezone.now() - timedelta(minutes=expiry_minutes)
             duplicate = AirtelTransaction.objects.filter(
                 contract=contract,
                 direction=AirtelTransaction.DIRECTION_COLLECTION,
@@ -268,7 +271,29 @@ class AirtelCollectionService:
                 processed_success_at__isnull=True,
                 purpose=purpose,
                 amount=amount,
+                created_at__gte=freshness_cutoff,
             ).order_by("-created_at").first()
+            # Expire any stale attempts that are still blocking but have passed the lifetime window.
+            stale_attempts = AirtelTransaction.objects.filter(
+                contract=contract,
+                direction=AirtelTransaction.DIRECTION_COLLECTION,
+                status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
+                processed_success_at__isnull=True,
+                purpose=purpose,
+                created_at__lt=freshness_cutoff,
+            )
+            if stale_attempts.exists():
+                stale_attempts.update(
+                    status=AirtelTransaction.STATUS_EXPIRED,
+                    processing_note="Automatically expired after exceeding AIRTEL_PENDING_EXPIRY_MINUTES; customer may safely retry.",
+                    reconciliation_required=True,
+                )
+                logger.info(
+                    "airtel_attempt_expired count=%d contract_id=%s purpose=%s",
+                    stale_attempts.count(),
+                    contract.pk,
+                    purpose,
+                )
             if duplicate:
                 return duplicate
         if not self.client.config.collections_enabled:
@@ -371,11 +396,42 @@ class AirtelCollectionService:
         try:
             response = self.client.post(self.client.config.collection_path, payload)
         except Exception as exc:
-            logger.warning("Airtel collection API failed for %s: %s", internal_reference, exc.__class__.__name__)
-            airtel_tx.status = AirtelTransaction.STATUS_PENDING
-            airtel_tx.raw_response = {"error": exc.__class__.__name__}
+            exc_name = exc.__class__.__name__
+            logger.warning("Airtel collection API failed for %s: %s", internal_reference, exc_name)
+            # Distinguish transport/timeout ambiguity from definite local failures.
+            # A read timeout means the request may have been transmitted; mark unknown.
+            # Connection errors before delivery are definite local failures.
+            import requests as _requests
+            if isinstance(exc, _requests.Timeout):
+                # Request may have reached Airtel; status is ambiguous pending reconciliation.
+                new_status = AirtelTransaction.STATUS_UNKNOWN
+                failure_note = (
+                    f"Network timeout ({exc_name}); the request may have reached Airtel. "
+                    "Do not re-submit without operator review — reconciliation required."
+                )
+                new_reconciliation = True
+            elif isinstance(exc, _requests.ConnectionError):
+                # Delivery failure before transmission — definite local error.
+                new_status = AirtelTransaction.STATUS_FAILED
+                failure_note = f"Network connection error ({exc_name}); request was not delivered to Airtel."
+                new_reconciliation = False
+            else:
+                # All other transport/programming errors — treat as ambiguous.
+                new_status = AirtelTransaction.STATUS_UNKNOWN
+                failure_note = (
+                    f"Unexpected error ({exc_name}) during collection initiation. "
+                    "Reconciliation required; do not re-submit without review."
+                )
+                new_reconciliation = True
+            airtel_tx.status = new_status
+            airtel_tx.failure_reason = failure_note
+            airtel_tx.raw_response = {"error": exc_name, "note": failure_note}
             airtel_tx.initiation_response = airtel_tx.raw_response
-            airtel_tx.save(update_fields=["status", "raw_response", "initiation_response", "updated_at"])
+            airtel_tx.reconciliation_required = new_reconciliation
+            airtel_tx.save(update_fields=["status", "failure_reason", "raw_response", "initiation_response", "reconciliation_required", "updated_at"])
+            if airtel_tx.payment_transaction:
+                airtel_tx.payment_transaction.status = PaymentTransaction.STATUS_FAILED
+                airtel_tx.payment_transaction.save(update_fields=["status", "updated_at"])
             return airtel_tx
 
         body = response.get("body", {})
@@ -626,13 +682,15 @@ class AirtelCallbackService:
             log.save(update_fields=["transaction", "processing_error", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
             airtel_tx.failure_reason = "Callback amount mismatch."
             airtel_tx.raw_callback = parsed
-            airtel_tx.callback_verified = signature_valid
+            # callback_verified is True only when auth is explicitly enabled and the signature is valid.
+            # Auth disabled (NOT_CHECKED) is not the same as verified.
+            airtel_tx.callback_verified = signature_valid and self.config.callback_auth_enabled
             airtel_tx.callback_received_at = timezone.now()
             airtel_tx.save(update_fields=["failure_reason", "raw_callback", "callback_verified", "callback_received_at", "updated_at"])
             return log, True, 400
 
         airtel_tx.raw_callback = parsed
-        airtel_tx.callback_verified = signature_valid
+        airtel_tx.callback_verified = signature_valid and self.config.callback_auth_enabled
         airtel_tx.callback_received_at = timezone.now()
         if status != AirtelTransaction.STATUS_UNKNOWN:
             airtel_tx.status = status
@@ -706,18 +764,34 @@ class AirtelCallbackService:
             contract_model = AirtelTransaction._meta.get_field("contract").remote_field.model
             contract = contract_model.objects.select_for_update().get(pk=airtel_tx.contract_id)
         if not contract:
-            airtel_tx.processed_success_at = timezone.now()
-            airtel_tx.completed_at = airtel_tx.processed_success_at
-            airtel_tx.processing_note = "Success received; no linked contract to credit."
-            airtel_tx.save(update_fields=["processed_success_at", "completed_at", "processing_note", "updated_at"])
+            # TEST purpose transactions may complete as non-financial evidence.
+            # DEPOSIT and INSTALLMENT transactions require a linked contract for financial posting;
+            # without one they must enter reconciliation, not be silently marked processed.
+            if airtel_tx.purpose == AirtelTransaction.PURPOSE_TEST:
+                airtel_tx.processed_success_at = timezone.now()
+                airtel_tx.completed_at = airtel_tx.processed_success_at
+                airtel_tx.processing_note = "Test success received; no financial posting required."
+                airtel_tx.save(update_fields=["processed_success_at", "completed_at", "processing_note", "updated_at"])
+            else:
+                airtel_tx.reconciliation_required = True
+                airtel_tx.processing_note = (
+                    f"Success received for {airtel_tx.purpose} but no linked contract exists; "
+                    "manual reconciliation required — do not credit without operator review."
+                )
+                airtel_tx.save(update_fields=["reconciliation_required", "processing_note", "updated_at"])
+                logger.warning(
+                    "airtel_success_no_contract internal_reference=%s purpose=%s",
+                    airtel_tx.internal_reference,
+                    airtel_tx.purpose,
+                )
             return airtel_tx
 
         payment_type = PaymentTransaction.TYPE_REPAYMENT
         if airtel_tx.purpose == AirtelTransaction.PURPOSE_DEPOSIT:
             payment_type = PaymentTransaction.TYPE_DEPOSIT
-            if getattr(contract, "deposit_access_days", 0) < 14:
-                contract.deposit_access_days = 14
-                contract.save(update_fields=["deposit_access_days"])
+            # Deposit access days are determined by the central contract policy
+            # (contract.deposit_access_days, defaulting to DEFAULT_DEPOSIT_ACCESS_DAYS=7).
+            # Do not override them here. apply_payment_to_contract uses get_deposit_access_days().
 
         portal_tx = None
         if airtel_tx.payment_transaction_id:
