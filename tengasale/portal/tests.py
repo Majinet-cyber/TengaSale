@@ -48,6 +48,7 @@ from portal.services import (
     calculate_remaining_amount,
     calculate_early_settlement_options,
     apply_payment_to_contract,
+    compute_lock_state,
     search_payment_contract,
 )
 from portal.payment_providers import MockPaymentProvider
@@ -1180,8 +1181,8 @@ class DepositPaymentTest(TestCase):
         client = Client()
         res = client.get(f"/pay/contract/{c.contract_number}/")
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "Deposit Required")
-        self.assertContains(res, "Pay deposit")
+        self.assertContains(res, "Deposit required")
+        self.assertContains(res, "Send Airtel request")
 
     def test_contract_page_shows_deposit_complete_when_paid(self):
         c = self._make_contract(deposit_required=Decimal("5000"), deposit_paid=Decimal("5000"))
@@ -1291,3 +1292,82 @@ class IMEISearchTest(TestCase):
         result = search_payment_contract(cn)
         self.assertIsNotNone(result)
         self.assertEqual(result.pk, self.contract.pk)
+
+
+# ---------------------------------------------------------------------------
+# compute_lock_state parity + device-status page
+# ---------------------------------------------------------------------------
+
+class ComputeLockStateParityTest(TestCase):
+    """Parity coverage for the extracted compute_lock_state helper."""
+
+    def _make(self, **kwargs):
+        defaults = {
+            "customer_name": "Lock State Customer",
+            "customer_phone": "+265999111222",
+            "total_amount": Decimal("100000"),
+            "amount_paid": Decimal("10000"),
+            "daily_price": Decimal("1000"),
+            "deposit_required": Decimal("0"),
+            "deposit_paid": Decimal("0"),
+            "status": PaymentContract.STATUS_ACTIVE,
+        }
+        defaults.update(kwargs)
+        return PaymentContract.objects.create(**defaults)
+
+    def test_completed_when_fully_paid(self):
+        c = self._make(amount_paid=Decimal("100000"), status=PaymentContract.STATUS_COMPLETED)
+        state = compute_lock_state(c)
+        self.assertEqual(state.status, "completed")
+        self.assertTrue(state.fully_paid)
+        self.assertIsNone(state.warning)
+
+    def test_overdue_when_access_expired(self):
+        c = self._make(access_expires_at=timezone.now() - timedelta(days=1))
+        state = compute_lock_state(c)
+        self.assertEqual(state.status, "overdue")
+        self.assertIsNotNone(state.warning)
+        self.assertEqual(state.warning.amount, state.remaining)
+
+    def test_warning_within_four_days(self):
+        c = self._make(access_expires_at=timezone.now() + timedelta(days=2))
+        state = compute_lock_state(c)
+        self.assertEqual(state.status, "warning")
+        self.assertIsNotNone(state.warning)
+        self.assertGreaterEqual(state.warning.days, 1)
+
+    def test_safe_when_far_from_lock(self):
+        c = self._make(access_expires_at=timezone.now() + timedelta(days=14))
+        state = compute_lock_state(c)
+        self.assertEqual(state.status, "safe")
+        self.assertIsNone(state.warning)
+
+    def test_deposit_pending_overrides_safe(self):
+        c = self._make(
+            deposit_required=Decimal("20000"),
+            deposit_paid=Decimal("0"),
+            access_expires_at=timezone.now() + timedelta(days=14),
+        )
+        state = compute_lock_state(c)
+        self.assertEqual(state.status, "deposit_pending")
+        self.assertIsNone(state.warning)
+
+    def test_device_status_page_renders(self):
+        c = _ensure_test_payg(self._make(access_expires_at=timezone.now() + timedelta(days=14)))
+        client = Client()
+        res = client.get(f"/pay/contract/{c.contract_number}/status/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Device status")
+        self.assertContains(res, "Device active")
+
+    def test_contract_page_links_to_device_status(self):
+        c = _ensure_test_payg(self._make(access_expires_at=timezone.now() + timedelta(days=14)))
+        client = Client()
+        res = client.get(f"/pay/contract/{c.contract_number}/")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, f"/pay/contract/{c.contract_number}/status/")
+        self.assertContains(res, "portal-premium.css")
+
+    def test_expired_payment_badge_mapping(self):
+        from core.templatetags.ts_filters import payment_badge
+        self.assertEqual(payment_badge("expired"), "badge-cancelled")

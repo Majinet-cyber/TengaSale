@@ -1,0 +1,35 @@
+{% load ts_filters %}
+{# Shared premium hero status header.
+   Scalars via `with`: hero_variant (success|warning|danger|info|neutral), hero_icon,
+   hero_eyebrow, hero_title, hero_desc, hero_live (bool), hero_live_label.
+   List via context: hero_meta (list of plain strings), rendered as a compact strip. #}
+<header class="cpd-hero cpd-hero--{{ hero_variant|default:"neutral" }}" role="status" aria-live="polite">
+  <div class="cpd-hero__top">
+    <span class="cpd-hero__icon" aria-hidden="true">
+      {% ts_icon hero_icon %}
+    </span>
+    <div>
+      {% if hero_eyebrow %}<div class="cpd-hero__eyebrow">{{ hero_eyebrow }}</div>{% endif %}
+      <h1 class="cpd-hero__title">{{ hero_title }}</h1>
+    </div>
+  </div>
+
+  {% if hero_desc %}<p class="cpd-hero__desc">{{ hero_desc }}</p>{% endif %}
+
+  {% if hero_live %}
+  <div class="cpd-live">
+    <span class="cpd-live__dot" aria-hidden="true"></span>
+    <span>{{ hero_live_label|default:"Checking securely" }}</span>
+    <span class="cpd-live__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+  </div>
+  {% endif %}
+
+  {% if hero_meta %}
+  <div class="cpd-hero__meta">
+    {% for item in hero_meta %}
+      {% if not forloop.first %}<span class="cpd-hero__meta-sep" aria-hidden="true"></span>{% endif %}
+      <span>{{ item }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</header>

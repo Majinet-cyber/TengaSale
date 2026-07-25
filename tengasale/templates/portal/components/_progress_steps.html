@@ -1,0 +1,19 @@
+{% load ts_filters %}
+{# 3-stage progress indicator (e.g. Request sent -> Customer action -> Payment confirmed).
+   Pass `steps` in context: list of exactly 3 dicts {label, state: done|current|failed|pending}. #}
+<div class="cpd-steps" role="list" aria-label="Payment progress">
+  {% for step in steps %}
+  <div class="cpd-steps__step is-{{ step.state|default:"pending" }}" role="listitem">
+    <span class="cpd-steps__icon" aria-hidden="true">
+      {% if step.state == "done" %}
+        {% ts_icon "check" %}
+      {% elif step.state == "failed" %}
+        {% ts_icon "x-circle" %}
+      {% else %}
+        {{ forloop.counter }}
+      {% endif %}
+    </span>
+    <span class="cpd-steps__label">{{ step.label }}</span>
+  </div>
+  {% endfor %}
+</div>

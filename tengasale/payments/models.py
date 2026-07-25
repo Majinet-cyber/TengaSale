@@ -715,6 +715,24 @@ class AirtelTransaction(models.Model):
     last_enquiry_response = models.JSONField(default=dict, blank=True)
     reconciliation_required = models.BooleanField(default=False)
     reconciliation_completed_at = models.DateTimeField(null=True, blank=True)
+    # Retry / supersession lifecycle: one customer payment action may span multiple
+    # AirtelTransaction rows over time (stale attempt -> fresh replacement). These
+    # fields make that relationship explicit and queryable instead of inferring it
+    # from amount/phone/contract proximity.
+    expired_at = models.DateTimeField(null=True, blank=True)
+    retry_of = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="retries",
+        help_text="The prior attempt (for the same customer payment action) that this transaction replaces.",
+    )
+    superseded_by = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="supersedes",
+        help_text="The newer attempt that replaced this one after it went stale.",
+    )
+    superseded_at = models.DateTimeField(null=True, blank=True)
+    potential_overpayment = models.BooleanField(
+        default=False,
+        help_text="A confirmed success arrived after another attempt in the same retry chain already posted. Requires operator review.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -724,6 +742,7 @@ class AirtelTransaction(models.Model):
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["purpose", "direction"]),
             models.Index(fields=["environment", "status"]),
+            models.Index(fields=["reconciliation_required", "created_at"]),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -740,6 +759,95 @@ class AirtelTransaction(models.Model):
 
     def __str__(self):
         return f"{self.internal_reference} - {self.status}"
+
+    ACTIVE_STATUSES = {STATUS_INITIATED, STATUS_PENDING}
+
+    def is_active_attempt(self, *, expiry_minutes: int | None = None) -> bool:
+        """True if this attempt is still within its configured active lifetime and
+        may legitimately be reused/shown to the customer as "already in progress"."""
+        if self.status not in self.ACTIVE_STATUSES or self.processed_success_at:
+            return False
+        if expiry_minutes is None:
+            expiry_minutes = int(getattr(settings, "AIRTEL_PENDING_EXPIRY_MINUTES", 15))
+        from datetime import timedelta
+        return self.created_at >= timezone.now() - timedelta(minutes=expiry_minutes)
+
+    def is_stale_attempt(self, *, expiry_minutes: int | None = None) -> bool:
+        """True if this attempt is still nominally 'in flight' (INITIATED/PENDING)
+        but has exceeded its active lifetime and must not keep blocking retries."""
+        if self.status not in self.ACTIVE_STATUSES or self.processed_success_at:
+            return False
+        return not self.is_active_attempt(expiry_minutes=expiry_minutes)
+
+    def may_retry(self) -> bool:
+        """True if a customer may safely start a brand-new attempt in place of this one.
+
+        STATUS_UNKNOWN is deliberately excluded from immediate retry: an
+        ambiguous outcome means the original request may already have reached
+        Airtel, so an unsafe immediate retry could double-charge the customer.
+        An UNKNOWN attempt only becomes retryable once reconciliation resolves
+        it to a definite terminal state (FAILED/EXPIRED) — e.g. via a
+        successful enquiry or explicit operator action.
+        """
+        if self.processed_success_at:
+            return False
+        return self.status in {self.STATUS_FAILED, self.STATUS_EXPIRED} or self.is_stale_attempt()
+
+    def expire_for_retry(self, *, new_attempt: "AirtelTransaction | None" = None, reason: str = "") -> "AirtelTransaction":
+        """Mark this attempt EXPIRED, link it to its replacement, and cascade the
+        expiry to the linked portal PaymentTransaction so it does not remain PENDING."""
+        now = timezone.now()
+        self.status = self.STATUS_EXPIRED
+        self.expired_at = now
+        self.superseded_at = now
+        self.reconciliation_required = True
+        self.processing_note = reason or (
+            "Automatically expired after exceeding the configured active-attempt lifetime; "
+            "customer may safely retry with a new attempt."
+        )
+        update_fields = ["status", "expired_at", "superseded_at", "reconciliation_required", "processing_note", "updated_at"]
+        if new_attempt is not None:
+            self.superseded_by = new_attempt
+            update_fields.append("superseded_by")
+        self.save(update_fields=update_fields)
+        if self.payment_transaction_id:
+            from portal.models import PaymentTransaction as _PaymentTransaction
+            portal_tx = self.payment_transaction
+            if portal_tx.status in (
+                _PaymentTransaction.STATUS_PENDING,
+                _PaymentTransaction.STATUS_TENGA_PROCESSING,
+                _PaymentTransaction.STATUS_PROCESSING,
+            ):
+                portal_tx.status = _PaymentTransaction.STATUS_EXPIRED
+                portal_tx.save(update_fields=["status", "updated_at"])
+        return self
+
+    def retry_chain(self) -> list["AirtelTransaction"]:
+        """Return every AirtelTransaction connected to this one via retry/supersession
+        relationships (in either direction), including self, ordered by creation time.
+        Used to enforce exactly-once posting across a chain of retried attempts.
+        """
+        model = type(self)
+        visited = {self.pk: self}
+        frontier = [self]
+        while frontier:
+            next_frontier = []
+            neighbour_ids = set()
+            for node in frontier:
+                if node.retry_of_id:
+                    neighbour_ids.add(node.retry_of_id)
+                if node.superseded_by_id:
+                    neighbour_ids.add(node.superseded_by_id)
+                neighbour_ids.update(node.retries.values_list("pk", flat=True))
+                neighbour_ids.update(node.supersedes.values_list("pk", flat=True))
+            neighbour_ids -= set(visited)
+            if not neighbour_ids:
+                break
+            for obj in model.objects.filter(pk__in=neighbour_ids):
+                visited[obj.pk] = obj
+                next_frontier.append(obj)
+            frontier = next_frontier
+        return sorted(visited.values(), key=lambda t: t.created_at)
 
 
 class AirtelCallbackLog(models.Model):

@@ -1,62 +1,37 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}Payment History — {{ contract.payg_number }}{% endblock %}
+{% block page_title %}Payment History — {{ contract.payg_number|default:contract.contract_number }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.0.0">
+<link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.1.0">
+<link rel="stylesheet" href="{% static 'css/portal-premium.css' %}?v=1.0.0">
 {% endblock %}
 
 {% block content %}
-<div class="cpd-shell">
-
-
+<div class="cpd-page">
   <div class="cpd-nav-row">
     <a href="{% url 'portal_contract' contract.contract_number %}" class="cpd-back-link">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      {% ts_icon "back" %}
       Back
     </a>
     <span class="cpd-nav-label">Payment History</span>
   </div>
 
+  <header class="cpd-section" style="border-top:none;padding-top:0;">
+    <div class="cpd-label">TengaSale PayG</div>
+    <h1 class="cpd-contract-num">{{ contract.payg_number|default:contract.contract_number }}</h1>
+    {% if contract.customer_name %}<p class="cpd-payg-customer">{{ contract.customer_name }}</p>{% endif %}
+    {% include "portal/components/_financial_summary.html" with fin_items=history_fin_items fin_percent=contract.progress_percent %}
+  </header>
 
-  <div class="cpd-progress-card">
-    <div class="cpd-progress-card__header">
-      <div class="cpd-progress-card__title-group">
-        <div class="cpd-label">TengaSale PayG</div>
-        <div class="cpd-contract-num">{{ contract.payg_number }}</div>
-        {% if contract.customer_name %}<div class="cpd-payg-customer">{{ contract.customer_name }}</div>{% endif %}
-      </div>
-      <div class="cpd-status-badge cpd-status-badge--{{ contract.status }}">{{ contract.get_status_display }}</div>
-    </div>
-    <div class="cpd-quick-stats" style="margin-top:16px;">
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.amount_paid|mwk }}</span>
-        <span class="cpd-label">Instalments</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ deposit_summary.confirmed_paid_amount|mwk }}</span>
-        <span class="cpd-label">Confirmed Deposit</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.remaining_amount|mwk }}</span>
-        <span class="cpd-label">Remaining</span>
-      </div>
-      <div class="cpd-quick-stat">
-        <span class="cpd-quick-stat__val">{{ contract.progress_percent }}%</span>
-        <span class="cpd-label">Complete</span>
-      </div>
-    </div>
-  </div>
-
-
-  <div class="cpd-section-card">
-    <form method="get" class="cpd-filter-row">
-      <div class="cpd-field" style="flex:1;min-width:140px;">
+  <section class="cpd-section" aria-label="Filters">
+    <form method="get" class="cpd-filter-row" style="padding:0;">
+      <div class="cpd-field" style="flex:1;min-width:140px;padding:0;">
         <label class="cpd-field-label">Month</label>
         <input type="month" name="month" class="cpd-input" value="{{ month_filter }}">
       </div>
-      <div class="cpd-field" style="flex:1;min-width:140px;">
+      <div class="cpd-field" style="flex:1;min-width:140px;padding:0;">
         <label class="cpd-field-label">Method</label>
         <select name="method" class="cpd-select">
           <option value="">All Methods</option>
@@ -65,68 +40,33 @@
           {% endfor %}
         </select>
       </div>
-      <div class="cpd-field" style="align-self:flex-end;">
+      <div class="cpd-field" style="align-self:flex-end;padding:0;">
         <button type="submit" class="cpd-filter-btn">Filter</button>
       </div>
       {% if month_filter or method_filter %}
-      <div class="cpd-field" style="align-self:flex-end;">
+      <div class="cpd-field" style="align-self:flex-end;padding:0;">
         <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-filter-btn cpd-filter-btn--ghost">Clear</a>
       </div>
       {% endif %}
     </form>
-  </div>
+  </section>
 
-
-  <div class="cpd-section-card">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Transactions</div>
-      <div class="cpd-section-card__sub">{{ transactions|length }} record(s)</div>
+  <section class="cpd-section" aria-label="Transactions">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Transactions</h2>
+      <span class="cpd-section__link" style="pointer-events:none;">{{ transactions|length }} record(s)</span>
     </div>
 
-    {% if transactions %}
-    <div class="cpd-history-list cpd-history-list--full">
-      {% for tx in transactions %}
-      <div class="cpd-hist-row {% if tx.status == 'paid' %}cpd-hist-row--success{% elif tx.status == 'failed' %}cpd-hist-row--failed{% else %}cpd-hist-row--pending{% endif %}">
-        <div class="cpd-hist-row__icon">
-          {% if tx.status == 'paid' %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          {% elif tx.status == 'failed' %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          {% else %}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          {% endif %}
-        </div>
-        <div class="cpd-hist-row__body">
-          <div class="cpd-hist-row__top">
-            <span class="cpd-hist-row__amount">{{ tx.amount|mwk }}</span>
-            <span class="cpd-hist-status cpd-hist-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
-            {% if tx.payment_type %}
-            <span class="cpd-hist-type cpd-hist-type--{{ tx.payment_type }}">{{ tx.get_payment_type_display }}</span>
-            {% endif %}
-          </div>
-          <div class="cpd-hist-row__meta">
-            {{ tx.paid_at|date:"d M Y, H:i"|default:tx.created_at|date:"d M Y, H:i" }}
-            · {{ tx.get_provider_display }}
-            {% if tx.phone %}· {{ tx.masked_phone }}{% endif %}
-            · {{ tx.internal_reference }}
-          </div>
-          {% if tx.status == 'paid' and tx.balance_after is not None %}
-          <div class="cpd-hist-row__balance">Balance after: {{ tx.balance_after|mwk }}</div>
-          {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
+    {% if history_events %}
+      {% include "portal/components/_timeline.html" with events=history_events timeline_empty_text="No payments recorded for this period." %}
     {% else %}
     <div class="cpd-empty-state">
       <div class="cpd-empty-state__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        {% ts_icon "receipt" %}
       </div>
       <div class="cpd-empty-state__text">No payments recorded for this period.</div>
-      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-filter-btn" style="margin-top:8px;">View all</a>
     </div>
     {% endif %}
-  </div>
-
+  </section>
 </div>
 {% endblock %}

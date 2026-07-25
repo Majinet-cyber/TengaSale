@@ -141,6 +141,237 @@ def calculate_remaining_amount(contract) -> Decimal:
     return max(remaining, Decimal("0"))
 
 
+@dataclass(frozen=True)
+class LockWarning:
+    date: object | None
+    amount: Decimal
+    days: int
+    hours: int
+
+
+@dataclass(frozen=True)
+class LockState:
+    status: str  # "safe" | "warning" | "overdue" | "completed" | "deposit_pending"
+    warning: LockWarning | None
+    remaining: Decimal
+    fully_paid: bool
+
+
+def compute_lock_state(contract) -> LockState:
+    """
+    Determine the customer-facing device lock status for a contract.
+
+    This is a pure extraction of the lock-calculation block that used to live
+    inline in portal_contract — behaviour is intentionally unchanged so both
+    the contract page and the dedicated device-status page render identical
+    lock state from one authoritative source. Do not alter the thresholds or
+    precedence below without updating both call sites' tests.
+    """
+    from datetime import datetime, time as time_type
+
+    now = timezone.now()
+    remaining = calculate_remaining_amount(contract)
+    fully_paid = remaining <= Decimal("0")
+
+    warning = None
+    status = "safe"
+    if fully_paid or contract.status == "completed":
+        status = "completed"
+    elif contract.access_expires_at or contract.lock_date:
+        lock_at = contract.access_expires_at
+        if lock_at is None and contract.lock_date:
+            lock_at = timezone.make_aware(
+                datetime.combine(contract.lock_date, time_type.min),
+                timezone.get_current_timezone(),
+            )
+        seconds_until_lock = (lock_at - now).total_seconds() if lock_at else 0
+        hours_until_lock = int(seconds_until_lock // 3600)
+        days_until_lock = int(seconds_until_lock // 86400)
+        if seconds_until_lock < 0:
+            status = "overdue"
+            warning = LockWarning(
+                date=lock_at,
+                amount=remaining,
+                days=days_until_lock,
+                hours=hours_until_lock,
+            )
+        elif seconds_until_lock <= 4 * 86400:
+            status = "warning"
+            warning = LockWarning(
+                date=lock_at,
+                amount=(
+                    contract.daily_price * max(days_until_lock, 0)
+                    if contract.daily_price else remaining
+                ),
+                days=days_until_lock,
+                hours=hours_until_lock,
+            )
+        else:
+            status = "safe"
+
+    deposit_summary = get_deposit_summary(contract)
+    deposit_required = deposit_summary.required_amount
+    deposit_pending = deposit_required > 0 and not deposit_summary.is_fully_paid
+    if deposit_pending:
+        status = "deposit_pending"
+        warning = None
+
+    return LockState(status=status, warning=warning, remaining=remaining, fully_paid=fully_paid)
+
+
+_LOCK_EVENT_LABELS = {
+    "enroll_requested": ("Device enrollment requested", "plain"),
+    "enroll_success": ("Device enrolled", "done"),
+    "enroll_failed": ("Device enrollment failed", "failed"),
+    "lock_requested": ("Lock requested", "plain"),
+    "lock_success": ("Device locked", "failed"),
+    "lock_failed": ("Lock request failed", "failed"),
+    "unlock_requested": ("Unlock scheduled", "current"),
+    "unlock_success": ("Device unlocked", "done"),
+    "unlock_failed": ("Unlock request failed", "failed"),
+    "release_requested": ("Device release requested", "plain"),
+    "release_success": ("Device released — ownership transferred", "done"),
+    "release_failed": ("Release request failed", "failed"),
+    "status_sync": ("Device status synced", "plain"),
+    "webhook_received": ("Provider update received", "plain"),
+    "manual_override": ("Manual override applied", "plain"),
+}
+
+
+def build_device_timeline(contract, limit: int = 12) -> list[dict]:
+    """
+    Merge payment activity and (best-effort) device-lock events into one
+    reverse-chronological timeline for the device-status page. Read-only —
+    never writes, never invents a status that isn't already on a real record.
+    """
+    from portal.models import PaymentTransaction
+
+    events = []
+
+    if contract.start_date:
+        from datetime import datetime as datetime_type, time as time_type
+
+        started_at = timezone.make_aware(
+            datetime_type.combine(contract.start_date, time_type.min),
+            timezone.get_current_timezone(),
+        )
+        events.append({
+            "title": "Contract started",
+            "desc": contract.device_model or "",
+            "time": started_at,
+            "state": "done",
+            "_sort": started_at,
+        })
+
+    paid_types = {
+        PaymentTransaction.STATUS_PAID: ("done", "confirmed"),
+        PaymentTransaction.STATUS_FAILED: ("failed", "failed"),
+        PaymentTransaction.STATUS_PROCESSING: ("current", "processing"),
+        PaymentTransaction.STATUS_PENDING: ("current", "pending"),
+    }
+    for tx in contract.transactions.order_by("-created_at")[:limit]:
+        state, _ = paid_types.get(tx.status, ("plain", tx.status))
+        kind = "Deposit" if tx.payment_type == PaymentTransaction.TYPE_DEPOSIT else "Repayment"
+        if tx.status == PaymentTransaction.STATUS_PAID:
+            title = f"{kind} confirmed — MWK {tx.amount:,.0f}"
+            when = tx.paid_at or tx.created_at
+        elif tx.status == PaymentTransaction.STATUS_FAILED:
+            title = f"{kind} attempt failed — MWK {tx.amount:,.0f}"
+            when = tx.updated_at or tx.created_at
+        else:
+            title = f"{kind} attempt in progress — MWK {tx.amount:,.0f}"
+            when = tx.created_at
+        events.append({
+            "title": title,
+            "desc": f"{tx.get_provider_display()} · {tx.internal_reference}" if tx.internal_reference else tx.get_provider_display(),
+            "time": when,
+            "state": state,
+            "_sort": when,
+        })
+
+    try:
+        app = contract.source_application
+        profile = getattr(app, "device_lock_profile", None) if app else None
+        if profile:
+            for ev in profile.events.order_by("-created_at")[:limit]:
+                label, state = _LOCK_EVENT_LABELS.get(ev.event_type, (ev.get_event_type_display(), "plain"))
+                events.append({
+                    "title": label,
+                    "desc": ev.notes or "",
+                    "time": ev.created_at,
+                    "state": state,
+                    "_sort": ev.created_at,
+                })
+    except Exception:
+        logger.debug("Device lock events unavailable for contract %s", contract.contract_number, exc_info=True)
+
+    def _sort_key(event):
+        value = event.get("_sort") or event.get("time")
+        return value or timezone.now()
+
+    events.sort(key=_sort_key, reverse=True)
+    for event in events:
+        event.pop("_sort", None)
+    return events[:limit]
+
+
+def get_lock_provider_label(contract) -> str:
+    """Human-readable device-lock provider name, shared by contract and device-status pages."""
+    if not contract.device_lock_provider:
+        return "Device setup pending"
+    provider_labels = {
+        "mock": "Sandbox",
+        "knox": "Knox",
+        "nuovopay": "NuovoPay",
+        "upya": "Upya",
+    }
+    return provider_labels.get(
+        contract.device_lock_provider, contract.device_lock_provider.replace("_", " ").title()
+    )
+
+
+def get_device_info(contract) -> dict:
+    """
+    Assemble device/application display info for a contract. Extracted from
+    portal_contract's inline block so the contract page and the dedicated
+    device-status page read identical device details from one place.
+    """
+    app = contract.source_application
+    device_info = {
+        "model": contract.device_model or "—",
+        "imei": contract.imei_number or "",
+        "brand": "",
+        "merchant_name": "",
+        "merchant_branch": "",
+        "underwriter_name": "",
+    }
+    if app:
+        if not device_info["imei"]:
+            device_info["imei"] = getattr(app, "imei_number", "") or ""
+        if app.deal_id:
+            try:
+                device_info["brand"] = app.deal.brand.name
+                device_info["model"] = str(app.deal)
+            except Exception:
+                pass
+        if not device_info["brand"]:
+            device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
+        if not device_info["model"] and contract.device_model:
+            device_info["model"] = contract.device_model
+        if app.created_by:
+            try:
+                profile = app.created_by.profile
+                if hasattr(profile, "merchant") and profile.merchant:
+                    device_info["merchant_name"] = str(profile.merchant)
+            except Exception:
+                pass
+        try:
+            device_info["underwriter_name"] = app.underwriter_name or ""
+        except Exception:
+            pass
+    return device_info
+
+
 def calculate_lock_date(contract) -> "date | None":
     """
     Lock date = due_date + 3 grace days (configurable).

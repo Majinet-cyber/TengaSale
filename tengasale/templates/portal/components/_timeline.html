@@ -1,0 +1,23 @@
+{# Event timeline (payment + lock activity).
+   Pass `events` in context: list of dicts {title, desc (optional), time (optional),
+   state (optional: done|current|failed, default plain)}.
+   Pass `timeline_empty_text` (optional) for the empty state. #}
+<div class="cpd-activity ts-motion-stagger">
+  {% for event in events %}
+  <div class="cpd-activity__item{% if event.state %} is-{{ event.state }}{% endif %}">
+    <div class="cpd-activity__rail">
+      <span class="cpd-activity__dot" aria-hidden="true"></span>
+      <span class="cpd-activity__line" aria-hidden="true"></span>
+    </div>
+    <div class="cpd-activity__body">
+      <div class="cpd-activity__top">
+        <span class="cpd-activity__title">{{ event.title }}</span>
+        {% if event.time %}<span class="cpd-activity__time">{% if event.time_display %}{{ event.time_display }}{% else %}{{ event.time|date:"d M Y, H:i" }}{% endif %}</span>{% endif %}
+      </div>
+      {% if event.desc %}<div class="cpd-activity__desc">{{ event.desc }}</div>{% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="cpd-activity__empty">{{ timeline_empty_text|default:"No activity yet." }}</div>
+  {% endfor %}
+</div>

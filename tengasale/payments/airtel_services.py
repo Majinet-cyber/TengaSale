@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import errno as _errno
 import hashlib
 import hmac
 import json
 import logging
 import re
 import secrets
+import socket as _socket
 import string
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -30,6 +32,145 @@ PENDING_VALUES = {"TIP", "PENDING", "IN PROGRESS"}
 EXPIRED_VALUES = {"TE", "EXPIRED"}
 FAILED_VALUES = {"FAILED", "TF", "DECLINED", "REJECTED"}
 TERMINAL_FAILURE_STATUSES = {AirtelTransaction.STATUS_FAILED, AirtelTransaction.STATUS_EXPIRED}
+
+# Tri-state callback signature verification outcome. "NOT_CHECKED" (auth disabled)
+# is explicitly NOT the same as "VERIFIED" — see AirtelCallbackService.verify_signature.
+SIGNATURE_STATE_VERIFIED = "VERIFIED"
+SIGNATURE_STATE_NOT_CHECKED = "NOT_CHECKED"
+SIGNATURE_STATE_INVALID = "INVALID"
+SIGNATURE_STATE_MISSING = "MISSING"
+
+try:
+    from urllib3.exceptions import NewConnectionError as _NewConnectionError
+    from urllib3.exceptions import ProtocolError as _ProtocolError
+except Exception:  # pragma: no cover - urllib3 always ships with requests
+    _NewConnectionError = ()
+    _ProtocolError = ()
+
+# errno values that *prove* a connection attempt never succeeded (the request
+# could not have been transmitted): DNS/connect-time failures.
+_PRESEND_ERRNOS = {
+    _errno.ECONNREFUSED,   # connection actively refused before any data sent
+    _errno.ENETUNREACH,    # network unreachable
+    _errno.EHOSTUNREACH,   # no route to host
+    _errno.ENETDOWN,       # network is down
+}
+# errno values that indicate the connection was already established (or whose
+# state at send-time cannot be proven) before it failed — the request may
+# already have reached Airtel.
+_AMBIGUOUS_ERRNOS = {
+    _errno.ECONNRESET,     # connection reset by peer, possibly mid-request
+    _errno.EPIPE,          # broken pipe — data may already have been written
+    _errno.ETIMEDOUT,      # timed out at an indeterminate point
+}
+
+# Message substrings are retained only as *diagnostic, non-authoritative*
+# evidence for cases where the underlying exception chain does not expose a
+# structured type or errno (e.g. some platforms/mocks stringify the failure
+# without preserving the original OSError). Per policy, message wording must
+# never be the *primary* basis for a definite FAILED classification.
+_PROVABLY_PRESEND_ERROR_MARKERS = (
+    "failed to establish a new connection",
+    "name or service not known",
+    "connection refused",
+    "nodename nor servname",
+    "getaddrinfo failed",
+    "no route to host",
+    "network is unreachable",
+    "temporary failure in name resolution",
+)
+_AMBIGUOUS_TRANSPORT_ERROR_MARKERS = (
+    "connection aborted",
+    "remote end closed",
+    "connection reset",
+    "broken pipe",
+    "connection broken",
+    "proxyerror",
+    "tunnel connection failed",
+    "sslerror",
+    "ssl: ",
+    "certificate_verify_failed",
+    "handshake",
+)
+
+
+def _walk_exception_chain(exc: Exception):
+    """Yield exc and every wrapped exception (cause/context/urllib3 .reason/.args),
+    de-duplicated, so nested requests -> urllib3 -> socket errors are all visible."""
+    seen_ids: set[int] = set()
+    frontier = [exc]
+    while frontier:
+        node = frontier.pop(0)
+        if node is None or id(node) in seen_ids:
+            continue
+        seen_ids.add(id(node))
+        yield node
+        for attr in ("__cause__", "__context__", "reason"):
+            nested = getattr(node, attr, None)
+            if isinstance(nested, BaseException):
+                frontier.append(nested)
+        for arg in getattr(node, "args", ()) or ():
+            if isinstance(arg, BaseException):
+                frontier.append(arg)
+
+
+def classify_connection_error(exc: Exception) -> bool:
+    """Return True only if `exc` provably occurred before any bytes were sent to
+    Airtel (e.g. DNS failure, connection refused). Return False for anything else,
+    including cases we cannot prove — an uncertain outcome must never be treated
+    as a definite non-delivery for a financial transaction.
+
+    Classification order (structured evidence first, message text only as a
+    last-resort diagnostic fallback):
+      1. socket.gaierror anywhere in the chain -> DNS resolution failure -> True.
+      2. A deterministic pre-send errno (ECONNREFUSED/ENETUNREACH/EHOSTUNREACH/
+         ENETDOWN) -> True. An ambiguous errno (ECONNRESET/EPIPE/ETIMEDOUT) ->
+         False, and short-circuits before any message-text fallback.
+      3. ConnectionRefusedError type anywhere in the chain -> True.
+      4. ConnectionResetError / BrokenPipeError type -> False.
+      5. urllib3.exceptions.NewConnectionError (raised only when the TCP
+         connection itself could not be created) -> True.
+      6. urllib3.exceptions.ProtocolError (raised once a connection existed) ->
+         False.
+      7. Message-text markers -> lowest-priority diagnostic fallback only.
+      8. Anything else -> False (uncertain defaults to "not provably failed").
+    """
+    nodes = list(_walk_exception_chain(exc))
+
+    for node in nodes:
+        if isinstance(node, _socket.gaierror):
+            return True
+
+    for node in nodes:
+        node_errno = getattr(node, "errno", None)
+        if node_errno in _AMBIGUOUS_ERRNOS:
+            return False
+        if node_errno in _PRESEND_ERRNOS:
+            return True
+
+    for node in nodes:
+        if isinstance(node, ConnectionResetError) or isinstance(node, BrokenPipeError):
+            return False
+    for node in nodes:
+        if isinstance(node, ConnectionRefusedError):
+            return True
+
+    if _NewConnectionError and any(isinstance(node, _NewConnectionError) for node in nodes):
+        return True
+    if _ProtocolError and any(isinstance(node, _ProtocolError) for node in nodes):
+        return False
+
+    # Diagnostic-only fallback: no structured proof was available (common in
+    # tests/mocks that construct a bare requests.ConnectionError("...") string
+    # without a real underlying OSError/urllib3 exception chain).
+    text = " ".join(f"{node} {node.__class__.__name__}" for node in nodes).lower()
+    if any(marker in text for marker in _AMBIGUOUS_TRANSPORT_ERROR_MARKERS):
+        return False
+    if any(marker in text for marker in _PROVABLY_PRESEND_ERROR_MARKERS):
+        return True
+    # Default to ambiguous: we cannot prove non-delivery, and for a financial
+    # integration the safe assumption is "unknown", not "definitely failed".
+    return False
 
 
 def normalize_airtel_status(value: Any) -> str:
@@ -164,6 +305,48 @@ def extract_airtel_references(data: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def get_confirmed_enquiry_reference(airtel_tx: AirtelTransaction) -> str:
+    """Return the single value that may safely be used for display, receipts, or
+    an Airtel transaction enquiry — the central, single-source-of-truth helper
+    required for every enquiry candidate in the codebase.
+
+    A value is only ever returned when *all three* safety conditions hold:
+      1. It was written by store_confirmed_provider_references() from an
+         explicitly provider-owned response/callback field (airtel_money_id,
+         airtel_transaction_id, provider_reference, or airtel_reference_id) —
+         never a merchant-echoed value.
+      2. airtel_tx.provider_id_confirmed is True for this transaction (i.e.
+         Airtel itself returned the value; it is not merely present because a
+         field was seeded with our own merchant reference at initiation).
+      3. The value is not equal to TengaSale's own internal_reference — a
+         provider must never be trusted merely for echoing back what we sent.
+
+    airtel_reference_id receives no looser treatment than the other three
+    fields: TengaSale's own AIRTEL_OPERATIONS.md documents that
+    provider_reference, airtel_transaction_id, airtel_reference_id, and
+    airtel_money_id are "populated only from explicit provider-owned response
+    fields" — there is no basis for treating airtel_reference_id as always
+    provider-owned regardless of confirmation state.
+    """
+    if not airtel_tx.provider_id_confirmed:
+        return ""
+    for value in (
+        airtel_tx.airtel_money_id,
+        airtel_tx.airtel_transaction_id,
+        airtel_tx.provider_reference,
+        airtel_tx.airtel_reference_id,
+    ):
+        if value and value != airtel_tx.internal_reference:
+            return value
+    return ""
+
+
+# Backward-compatible alias: existing callers (receipts, admin, management
+# commands) that ask for "the confirmed provider reference" get exactly the
+# same value and the same safety guarantees as the enquiry helper.
+confirmed_provider_reference = get_confirmed_enquiry_reference
+
+
 def store_confirmed_provider_references(airtel_tx: AirtelTransaction, data: dict[str, Any]) -> list[str]:
     """Store only identifiers returned in explicitly provider-owned fields."""
     refs = extract_airtel_references(data)
@@ -222,7 +405,10 @@ class AirtelCollectionService:
         self.client = client or AirtelClient()
 
     @transaction.atomic
-    def initiate_collection_payment(self, msisdn, amount, purpose, contract=None, customer=None, idempotency_key=None) -> AirtelTransaction:
+    def initiate_collection_payment(
+        self, msisdn, amount, purpose, contract=None, customer=None,
+        idempotency_key=None, retry_of_reference=None,
+    ) -> AirtelTransaction:
         logger.info("airtel_initiation_started contract_id=%s environment=%s", getattr(contract, "pk", None), self.client.config.environment)
         self.client.config.assert_production_allowed()
         try:
@@ -243,6 +429,26 @@ class AirtelCollectionService:
             existing = AirtelTransaction.objects.filter(idempotency_key=idempotency_key).first()
             if existing:
                 return existing
+
+        # Explicit customer-action identity only: a retry is linked to its parent
+        # attempt only when the caller (a "Retry payment" action tied to a specific
+        # expired/failed attempt reference) explicitly names that attempt. We never
+        # infer a retry chain merely because two transactions share a contract,
+        # purpose, phone number, or amount — that would incorrectly merge two
+        # unrelated legitimate installments into the same chain.
+        retry_parent = None
+        retry_of_reference = str(retry_of_reference or "").strip() or None
+        if retry_of_reference:
+            retry_parent = AirtelTransaction.objects.select_for_update().filter(
+                internal_reference=retry_of_reference,
+            ).first()
+            if retry_parent is None:
+                raise ValueError("The payment attempt you are retrying could not be found.")
+            if contract is not None and retry_parent.contract_id != getattr(contract, "pk", None):
+                raise ValueError("That payment attempt does not belong to this contract.")
+            if not retry_parent.may_retry():
+                raise ValueError("That payment attempt cannot be retried right now.")
+
         if contract is not None:
             contract = contract.__class__.objects.select_for_update().get(pk=contract.pk)
             remaining = contract.deposit_remaining if purpose == AirtelTransaction.PURPOSE_DEPOSIT else contract.remaining_amount
@@ -264,38 +470,25 @@ class AirtelCollectionService:
             from datetime import timedelta
             expiry_minutes = int(getattr(settings, "AIRTEL_PENDING_EXPIRY_MINUTES", 15))
             freshness_cutoff = timezone.now() - timedelta(minutes=expiry_minutes)
-            duplicate = AirtelTransaction.objects.filter(
-                contract=contract,
-                direction=AirtelTransaction.DIRECTION_COLLECTION,
-                status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
-                processed_success_at__isnull=True,
-                purpose=purpose,
-                amount=amount,
-                created_at__gte=freshness_cutoff,
-            ).order_by("-created_at").first()
-            # Expire any stale attempts that are still blocking but have passed the lifetime window.
-            stale_attempts = AirtelTransaction.objects.filter(
-                contract=contract,
-                direction=AirtelTransaction.DIRECTION_COLLECTION,
-                status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
-                processed_success_at__isnull=True,
-                purpose=purpose,
-                created_at__lt=freshness_cutoff,
-            )
-            if stale_attempts.exists():
-                stale_attempts.update(
-                    status=AirtelTransaction.STATUS_EXPIRED,
-                    processing_note="Automatically expired after exceeding AIRTEL_PENDING_EXPIRY_MINUTES; customer may safely retry.",
-                    reconciliation_required=True,
+            if retry_parent is None:
+                # Only ever short-circuit to an *existing* attempt when it is
+                # unambiguously the same customer action: still active (not stale)
+                # and for the exact same amount. This is double-submit protection
+                # (e.g. an impatient second click of "Pay") — it reuses the same
+                # object rather than creating a second one, so no retry chain is
+                # ever fabricated by it. Two attempts of a different amount, or an
+                # attempt made after the first has gone stale, always create an
+                # independent record with no retry_of link.
+                active_pool = AirtelTransaction.objects.select_for_update().filter(
+                    contract=contract,
+                    direction=AirtelTransaction.DIRECTION_COLLECTION,
+                    status__in=[AirtelTransaction.STATUS_INITIATED, AirtelTransaction.STATUS_PENDING],
+                    processed_success_at__isnull=True,
+                    purpose=purpose,
                 )
-                logger.info(
-                    "airtel_attempt_expired count=%d contract_id=%s purpose=%s",
-                    stale_attempts.count(),
-                    contract.pk,
-                    purpose,
-                )
-            if duplicate:
-                return duplicate
+                duplicate = active_pool.filter(amount=amount, created_at__gte=freshness_cutoff).order_by("-created_at").first()
+                if duplicate:
+                    return duplicate
         if not self.client.config.collections_enabled:
             raise ValueError("Airtel collections are disabled by configuration.")
         if self.client.config.environment == "staging":
@@ -343,7 +536,26 @@ class AirtelCollectionService:
             raw_request=payload,
             contract=contract,
             customer=customer,
+            retry_of=retry_parent,
         )
+        if retry_parent is not None:
+            # The customer explicitly retried this specific attempt: expire it and
+            # cascade to its linked PaymentTransaction so it does not remain stuck
+            # PENDING. This is the only path that creates a retry_of link.
+            retry_parent.expire_for_retry(
+                new_attempt=airtel_tx,
+                reason=(
+                    f"Explicitly retried by the customer via new attempt {internal_reference}; "
+                    "the original attempt is superseded."
+                ),
+            )
+            logger.info(
+                "airtel_attempt_explicitly_retried old_reference=%s new_reference=%s contract_id=%s purpose=%s",
+                retry_parent.internal_reference,
+                internal_reference,
+                getattr(contract, "pk", None),
+                purpose,
+            )
         if contract is not None:
             payment_type = (
                 PaymentTransaction.TYPE_DEPOSIT
@@ -399,30 +611,43 @@ class AirtelCollectionService:
             exc_name = exc.__class__.__name__
             logger.warning("Airtel collection API failed for %s: %s", internal_reference, exc_name)
             # Distinguish transport/timeout ambiguity from definite local failures.
-            # A read timeout means the request may have been transmitted; mark unknown.
-            # Connection errors before delivery are definite local failures.
+            # A read timeout means the request may have been transmitted; ambiguous.
+            # A connection error is only a definite non-delivery when we can prove
+            # it happened before any bytes were sent (see classify_connection_error).
+            # Any outcome we cannot prove is treated as INITIATION_UNKNOWN and routed
+            # to reconciliation — never silently downgraded to ordinary PENDING, and
+            # never assumed to be a safe-to-retry FAILED without positive proof.
             import requests as _requests
             if isinstance(exc, _requests.Timeout):
-                # Request may have reached Airtel; status is ambiguous pending reconciliation.
                 new_status = AirtelTransaction.STATUS_UNKNOWN
                 failure_note = (
                     f"Network timeout ({exc_name}); the request may have reached Airtel. "
                     "Do not re-submit without operator review — reconciliation required."
                 )
                 new_reconciliation = True
-            elif isinstance(exc, _requests.ConnectionError):
-                # Delivery failure before transmission — definite local error.
+                portal_status = PaymentTransaction.STATUS_PROCESSING
+            elif isinstance(exc, _requests.ConnectionError) and classify_connection_error(exc):
+                # Provably occurred before any bytes were sent (DNS/connect-time
+                # failure) — a definite, non-ambiguous local failure.
                 new_status = AirtelTransaction.STATUS_FAILED
-                failure_note = f"Network connection error ({exc_name}); request was not delivered to Airtel."
+                failure_note = (
+                    f"Network connection error ({exc_name}); the request could not be "
+                    "delivered to Airtel (connection could not be established)."
+                )
                 new_reconciliation = False
+                portal_status = PaymentTransaction.STATUS_FAILED
             else:
-                # All other transport/programming errors — treat as ambiguous.
+                # Timeout aside, this covers ConnectionError cases we cannot prove were
+                # pre-send (e.g. connection reset mid-request) and any other transport
+                # or unexpected error — all ambiguous, all require reconciliation.
                 new_status = AirtelTransaction.STATUS_UNKNOWN
                 failure_note = (
-                    f"Unexpected error ({exc_name}) during collection initiation. "
+                    f"Ambiguous network error ({exc_name}) during collection initiation; "
+                    "it cannot be proven whether Airtel received the request. "
                     "Reconciliation required; do not re-submit without review."
                 )
                 new_reconciliation = True
+                portal_status = PaymentTransaction.STATUS_PROCESSING
             airtel_tx.status = new_status
             airtel_tx.failure_reason = failure_note
             airtel_tx.raw_response = {"error": exc_name, "note": failure_note}
@@ -430,7 +655,11 @@ class AirtelCollectionService:
             airtel_tx.reconciliation_required = new_reconciliation
             airtel_tx.save(update_fields=["status", "failure_reason", "raw_response", "initiation_response", "reconciliation_required", "updated_at"])
             if airtel_tx.payment_transaction:
-                airtel_tx.payment_transaction.status = PaymentTransaction.STATUS_FAILED
+                # Only a definite FAILED airtel_tx may downgrade the portal transaction
+                # to FAILED. An ambiguous/UNKNOWN outcome must not encourage an unsafe
+                # retry by looking identical to a normal failure — it moves to
+                # external_processing (awaiting reconciliation) instead.
+                airtel_tx.payment_transaction.status = portal_status
                 airtel_tx.payment_transaction.save(update_fields=["status", "updated_at"])
             return airtel_tx
 
@@ -498,14 +727,18 @@ class AirtelTransactionEnquiryService:
             airtel_tx.save(update_fields=["last_enquiry_at", "enquiry_attempt_count", "last_enquiry_error", "updated_at"])
             AirtelEnquiryLog.objects.create(transaction=airtel_tx, error_class="ConfigurationError", error_message=airtel_tx.last_enquiry_error)
             return airtel_tx
-        candidates = [
-            airtel_tx.airtel_money_id,
-            airtel_tx.airtel_transaction_id if airtel_tx.provider_id_confirmed else "",
-            airtel_tx.provider_reference if airtel_tx.provider_id_confirmed else "",
-            airtel_tx.airtel_reference_id,
-        ]
-        reference = next((value for value in candidates if value), "")
+        # The only sanctioned source of an enquiry-safe identifier — every
+        # candidate must be an explicitly provider-owned, confirmed value that
+        # is not merely our own internal_reference echoed back.
+        reference = get_confirmed_enquiry_reference(airtel_tx)
         if not reference and bool(getattr(settings, "AIRTEL_ALLOW_MERCHANT_REFERENCE_ENQUIRY", getattr(settings, "AIRTEL_ENQUIRY_SUPPORTS_MERCHANT_REFERENCE", False))):
+            # Explicit, administrator-configured exception: some Airtel
+            # collections deployments accept enquiry by the same merchant
+            # transaction ID (X-Reference-Id) that was submitted at initiation.
+            # This is not a "confirmed provider identifier" — it is a distinct,
+            # opt-in fallback that only takes effect when an operator has
+            # verified this behaviour against Airtel's own sandbox/production
+            # API for this merchant configuration.
             reference = airtel_tx.internal_reference
         if not reference:
             airtel_tx.last_enquiry_status = AirtelTransaction.STATUS_UNKNOWN
@@ -567,9 +800,15 @@ class AirtelCallbackService:
     def __init__(self, config: AirtelConfig | None = None):
         self.config = config or AirtelConfig.from_settings()
 
-    def verify_signature(self, raw_body: bytes, headers: dict[str, str], parsed: dict[str, Any] | None = None) -> tuple[bool, bool]:
+    def verify_signature(self, raw_body: bytes, headers: dict[str, str], parsed: dict[str, Any] | None = None) -> tuple[str, bool]:
+        """Return (state, signature_found).
+
+        state is one of SIGNATURE_STATE_VERIFIED / NOT_CHECKED / INVALID / MISSING.
+        NOT_CHECKED (authentication disabled) is explicitly NOT the same as VERIFIED —
+        callers must never treat NOT_CHECKED as a verified signature.
+        """
         if not self.config.callback_auth_enabled:
-            return True, False
+            return SIGNATURE_STATE_NOT_CHECKED, False
         provided = ""
         lower_headers = {str(k).lower(): str(v).strip() for k, v in headers.items()}
         for name in self.signature_headers:
@@ -579,11 +818,11 @@ class AirtelCallbackService:
         if not provided and isinstance(parsed, dict):
             provided = str(parsed.get("hash") or parsed.get("Hash") or "").strip()
         if not provided or not self.config.callback_hash_key:
-            return False, False
+            return SIGNATURE_STATE_MISSING, False
 
         raw_digest = hmac.new(self.config.callback_hash_key.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
         if hmac.compare_digest(provided.lower(), raw_digest.lower()):
-            return True, True
+            return SIGNATURE_STATE_VERIFIED, True
 
         if isinstance(parsed, dict):
             canonical_digest = hmac.new(
@@ -592,8 +831,8 @@ class AirtelCallbackService:
                 hashlib.sha256,
             ).hexdigest()
             if hmac.compare_digest(provided.lower(), canonical_digest.lower()):
-                return True, True
-        return False, True
+                return SIGNATURE_STATE_VERIFIED, True
+        return SIGNATURE_STATE_INVALID, True
 
     def handle_callback(self, raw_body: bytes, headers: dict[str, str], *, evidence_log: AirtelCallbackLog) -> tuple[AirtelCallbackLog, bool, int]:
         max_bytes = int(getattr(settings, "AIRTEL_CALLBACK_MAX_BYTES", 65536))
@@ -619,11 +858,12 @@ class AirtelCallbackService:
             log.save(update_fields=["parsed_body", "processing_error", "processing_state"])
             return log, False, 400
 
-        signature_valid, signature_found = self.verify_signature(raw_body, headers, parsed)
+        signature_state, signature_found = self.verify_signature(raw_body, headers, parsed)
+        signature_valid = signature_state == SIGNATURE_STATE_VERIFIED
         log.parsed_body=parsed
         log.signature_valid=signature_valid
         log.signature_present=signature_found
-        log.signature_validation_result="VALID" if signature_valid else "INVALID" if signature_found else "MISSING" if self.config.callback_auth_enabled else "NOT_CHECKED"
+        log.signature_validation_result=signature_state
         log.candidate_identifiers=sorted(_collect_reference_values(parsed))
         log.extracted_status=extract_airtel_status(parsed)
         log.extracted_amount=extract_airtel_amount(parsed)
@@ -682,15 +922,15 @@ class AirtelCallbackService:
             log.save(update_fields=["transaction", "processing_error", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
             airtel_tx.failure_reason = "Callback amount mismatch."
             airtel_tx.raw_callback = parsed
-            # callback_verified is True only when auth is explicitly enabled and the signature is valid.
-            # Auth disabled (NOT_CHECKED) is not the same as verified.
-            airtel_tx.callback_verified = signature_valid and self.config.callback_auth_enabled
+            # callback_verified is True only when signature_state == VERIFIED.
+            # Auth disabled (NOT_CHECKED) is explicitly not the same as verified.
+            airtel_tx.callback_verified = signature_valid
             airtel_tx.callback_received_at = timezone.now()
             airtel_tx.save(update_fields=["failure_reason", "raw_callback", "callback_verified", "callback_received_at", "updated_at"])
             return log, True, 400
 
         airtel_tx.raw_callback = parsed
-        airtel_tx.callback_verified = signature_valid and self.config.callback_auth_enabled
+        airtel_tx.callback_verified = signature_valid
         airtel_tx.callback_received_at = timezone.now()
         if status != AirtelTransaction.STATUS_UNKNOWN:
             airtel_tx.status = status
@@ -726,9 +966,20 @@ class AirtelCallbackService:
                 log.save(update_fields=["transaction", "processing_error", "error_class", "processing_state", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
                 logger.exception("callback_processing_failed callback_log_id=%s internal_reference=%s", log.pk, airtel_tx.internal_reference)
                 return log, True, 500
+            # apply_success mutates and saves its own locked copy of the row; reload
+            # so this local reflects reconciliation_required/repayment_posted/etc.
+            airtel_tx.refresh_from_db()
 
         log.processed = True
-        log.processing_state = "PROCESSED" if status != AirtelTransaction.STATUS_UNKNOWN else "MATCHED"
+        if status == AirtelTransaction.STATUS_SUCCESS and not airtel_tx.repayment_posted and airtel_tx.reconciliation_required:
+            # apply_success declined to post money (no linked contract, or a retry-chain
+            # sibling already posted this customer action). This is not an ordinary
+            # PROCESSED success — it must be visible as a distinct review outcome.
+            log.processing_state = "MANUAL_REVIEW" if airtel_tx.potential_overpayment else "RECONCILIATION_REQUIRED"
+        elif status == AirtelTransaction.STATUS_UNKNOWN:
+            log.processing_state = "MATCHED"
+        else:
+            log.processing_state = "PROCESSED"
         log.processed_at = timezone.now()
         log.save(update_fields=["transaction", "processed", "processing_state", "processed_at", "matched_identifier", "matched_field", "matching_details", "extracted_status", "extracted_amount"])
         logger.info("airtel_callback_%s callback_log_id=%s internal_reference=%s", "success_applied" if status == AirtelTransaction.STATUS_SUCCESS else "matched", log.pk, airtel_tx.internal_reference)
@@ -759,6 +1010,32 @@ class AirtelCallbackService:
         airtel_tx = AirtelTransaction.objects.select_for_update().get(pk=airtel_tx.pk)
         if airtel_tx.processed_success_at:
             return airtel_tx
+
+        # Exactly-once protection across a retry chain: a stale attempt and the
+        # fresh attempt that replaced it represent one customer payment action.
+        # A late success for either must not double-credit if a sibling in the
+        # same chain already posted. Lock siblings to serialize concurrent
+        # postings within the same chain (no double credit under concurrency).
+        chain = airtel_tx.retry_chain()
+        sibling_ids = [t.pk for t in chain if t.pk != airtel_tx.pk]
+        if sibling_ids:
+            siblings = list(AirtelTransaction.objects.select_for_update().filter(pk__in=sibling_ids))
+            posted_sibling = next((t for t in siblings if t.repayment_posted and t.processed_success_at), None)
+            if posted_sibling:
+                airtel_tx.potential_overpayment = True
+                airtel_tx.reconciliation_required = True
+                airtel_tx.processing_note = (
+                    f"Potential duplicate/overpayment: retry-chain attempt {posted_sibling.internal_reference} "
+                    "already posted this customer action. Manual review required before any further credit."
+                )
+                airtel_tx.save(update_fields=["potential_overpayment", "reconciliation_required", "processing_note", "updated_at"])
+                logger.warning(
+                    "airtel_success_review_required internal_reference=%s posted_sibling=%s",
+                    airtel_tx.internal_reference,
+                    posted_sibling.internal_reference,
+                )
+                return airtel_tx
+
         contract = None
         if airtel_tx.contract_id:
             contract_model = AirtelTransaction._meta.get_field("contract").remote_field.model
@@ -807,7 +1084,7 @@ class AirtelCallbackService:
                 phone=airtel_tx.customer_msisdn,
                 network=PaymentTransaction.NETWORK_AIRTEL,
                 internal_reference=airtel_tx.internal_reference[:30],
-                provider_reference=airtel_tx.airtel_money_id or airtel_tx.airtel_transaction_id or airtel_tx.provider_reference or "",
+                provider_reference=confirmed_provider_reference(airtel_tx),
                 status=PaymentTransaction.STATUS_PAID,
                 raw_request=airtel_tx.raw_request,
                 raw_response=airtel_tx.raw_response,
@@ -820,7 +1097,7 @@ class AirtelCallbackService:
         elif portal_tx.status != PaymentTransaction.STATUS_PAID:
             portal_tx.status = PaymentTransaction.STATUS_PAID
             portal_tx.paid_at = timezone.now()
-            portal_tx.provider_reference = airtel_tx.airtel_money_id or airtel_tx.airtel_transaction_id or airtel_tx.provider_reference or ""
+            portal_tx.provider_reference = confirmed_provider_reference(airtel_tx)
             portal_tx.webhook_payload = airtel_tx.raw_callback
             portal_tx.raw_response = airtel_tx.raw_response
             portal_tx.save(update_fields=["status", "paid_at", "provider_reference", "webhook_payload", "raw_response", "updated_at"])

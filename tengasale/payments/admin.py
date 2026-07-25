@@ -86,8 +86,11 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "created_at",
         "last_enquiry_at",
         "reconciliation_required",
+        "potential_overpayment",
+        "retry_of",
+        "superseded_by",
     ]
-    list_filter = ["environment", "status", "purpose", "direction", "callback_verified", "repayment_posted", "reconciliation_required", "duplicate_callback", "created_at"]
+    list_filter = ["environment", "status", "purpose", "direction", "callback_verified", "repayment_posted", "reconciliation_required", "potential_overpayment", "duplicate_callback", "created_at"]
     search_fields = [
         "internal_reference",
         "provider_reference",
@@ -111,6 +114,11 @@ class AirtelTransactionAdmin(admin.ModelAdmin):
         "completed_at",
         "created_at",
         "updated_at",
+        "expired_at",
+        "superseded_at",
+        "retry_of",
+        "superseded_by",
+        "potential_overpayment",
         "last_enquiry_response",
         "last_enquiry_http_status",
         "last_enquiry_at",

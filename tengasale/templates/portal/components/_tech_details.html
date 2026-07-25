@@ -1,0 +1,13 @@
+{% load ts_filters %}
+{# Collapsible technical-evidence drawer. Default closed — keeps the default UI simple.
+   Scalars via `with`: tech_summary_label (default "View technical details").
+   List via context: tech_rows — same shape as metadata rows: {label, value, tone, mono}. #}
+<details class="cpd-tech">
+  <summary>
+    {{ tech_summary_label|default:"View technical details" }}
+    {% ts_icon "chevron-down" %}
+  </summary>
+  <div class="cpd-tech__body">
+    {% include "portal/components/_metadata_rows.html" with rows=tech_rows %}
+  </div>
+</details>

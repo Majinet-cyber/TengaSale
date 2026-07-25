@@ -19,6 +19,67 @@ class AirtelConfigurationError(RuntimeError):
     """Raised when Airtel-specific settings are unsafe or incomplete."""
 
 
+# Only these diagnostic/correlation headers are ever retained from an Airtel HTTP
+# response. Everything else (including anything not on this list) is dropped —
+# this is an explicit allowlist, not a denylist, so unknown headers never leak.
+SAFE_RESPONSE_HEADER_ALLOWLIST = {
+    "x-request-id",
+    "x-correlation-id",
+    "request-id",
+    "traceparent",
+    "tracestate",
+    "x-amzn-trace-id",
+    "date",
+    "server-timing",
+    "cf-ray",
+    "via",
+}
+
+# Defence in depth: even if a future allowlist entry were added carelessly, never
+# retain anything that looks like a credential or session artifact.
+_FORBIDDEN_HEADER_MARKERS = ("authorization", "cookie", "secret", "token", "key", "credential")
+
+
+def sanitize_response_headers(headers: Any) -> dict[str, str]:
+    """Return only allowlisted, non-sensitive diagnostic headers from an HTTP response.
+
+    Never includes Authorization, Set-Cookie/Cookie, or any credential/token/secret
+    header, even if such a header were ever added to the allowlist by mistake.
+    """
+    if not headers:
+        return {}
+    try:
+        items = list(headers.items())
+    except (AttributeError, TypeError):
+        try:
+            items = list(headers)
+        except TypeError:
+            return {}
+    safe: dict[str, str] = {}
+    for entry in items:
+        try:
+            key, value = entry
+        except (TypeError, ValueError):
+            continue
+        lower = str(key).strip().lower()
+        if lower not in SAFE_RESPONSE_HEADER_ALLOWLIST:
+            continue
+        if any(marker in lower for marker in _FORBIDDEN_HEADER_MARKERS):
+            continue
+        safe[str(key)] = str(value)
+    return safe
+
+
+def extract_provider_trace_id(headers: Any) -> str:
+    """Best-effort extraction of a correlation/trace id from safe response headers."""
+    safe = sanitize_response_headers(headers)
+    for name in ("X-Request-ID", "X-Correlation-ID", "Request-ID", "CF-Ray", "X-Amzn-Trace-Id", "Traceparent"):
+        for key, value in safe.items():
+            if key.lower() == name.lower() and value:
+                return value
+    return ""
+
+
 def mask_secret(value: str) -> str:
     if not value:
         return ""
@@ -261,8 +322,13 @@ class AirtelClient:
             body = response.json()
         except ValueError:
             body = {"raw": response.text}
+        safe_headers = sanitize_response_headers(getattr(response, "headers", None))
+        # Backward-compatible keys (http_status/ok/body) are preserved for existing
+        # consumers; additional safe diagnostic metadata is added alongside them.
         return {
             "http_status": response.status_code,
             "ok": 200 <= response.status_code < 300,
             "body": body,
+            "sanitized_headers": safe_headers,
+            "provider_trace_id": extract_provider_trace_id(getattr(response, "headers", None)),
         }

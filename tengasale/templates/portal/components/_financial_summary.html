@@ -1,0 +1,20 @@
+{# Flat financial summary line — replaces boxed money grids.
+   Pass `fin_items` in context: list of dicts {label, value, tone (optional), emphasis (optional bool)}.
+   Scalars via `with`: fin_percent (0-100, optional progress bar), fin_percent_tone (success|warning),
+   fin_caption (optional small text under the bar). #}
+<div class="cpd-fin">
+  <div class="cpd-fin__line">
+    {% for item in fin_items %}
+    <div class="cpd-fin__item{% if item.emphasis %} cpd-fin__item--emphasis{% endif %}">
+      <span class="cpd-fin__label">{{ item.label }}</span>
+      <span class="cpd-fin__value{% if item.tone %} cpd-fin__value--{{ item.tone }}{% endif %}">{{ item.value }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% if fin_percent is not None %}
+  <div class="cpd-fin__bar" role="progressbar" aria-valuenow="{{ fin_percent }}" aria-valuemin="0" aria-valuemax="100">
+    <div class="cpd-fin__bar-fill{% if fin_percent_tone %} cpd-fin__bar-fill--{{ fin_percent_tone }}{% endif %}" style="width:{{ fin_percent }}%;"></div>
+  </div>
+  {% endif %}
+  {% if fin_caption %}<div class="cpd-fin__caption">{{ fin_caption }}</div>{% endif %}
+</div>

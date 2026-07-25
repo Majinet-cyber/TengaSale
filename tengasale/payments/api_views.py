@@ -485,6 +485,7 @@ def airtel_collection_initiate(request):
             contract=contract,
             customer=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
             idempotency_key=request.headers.get("Idempotency-Key") or data.get("idempotency_key"),
+            retry_of_reference=data.get("retry_of") or data.get("retry_of_reference"),
         )
     except AirtelConfigurationError as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=503)
@@ -605,7 +606,15 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
             public_status = "pending_provider_confirmation"
             message = "Airtel returned a success status and TengaSale is finishing confirmation. Do not pay again yet."
             final = False
-    if not final and tx.reconciliation_required:
+    if tx.potential_overpayment:
+        # A confirmed success arrived after a retry-chain sibling already posted
+        # this customer action. This is neither a routine pending state nor a
+        # normal success — it must be shown as under manual review, and the
+        # customer must never be encouraged to pay again while it is unresolved.
+        public_status = "manual_review"
+        message = "This payment is under manual review by TengaSale. Do not make another payment while this is being checked."
+        final = False
+    elif not final and tx.reconciliation_required:
         public_status = "reconciliation_required"
         message = "Airtel reported payment activity, but final confirmation has not reached TengaSale. Do not pay again."
     elif not final and tx.created_at and (timezone.now() - tx.created_at).total_seconds() >= int(getattr(settings, "AIRTEL_PENDING_RECONCILIATION_MINUTES", 10)) * 60:
@@ -628,8 +637,16 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         "cancelled": ("Payment cancelled", 3),
         "expired": ("Payment request expired", 3),
         "reversed": ("Payment reversed", 3),
+        "manual_review": ("Payment under review", 3),
     }
     status_label, current_step = state_ui.get(public_status, ("Still confirming payment", 3))
+    # may_retry() is the single source of truth for retry eligibility: it is
+    # True for definite terminal failures (FAILED/EXPIRED/UNKNOWN) *and* for an
+    # attempt that is nominally still PENDING/INITIATED but has exceeded its
+    # active lifetime (a stale attempt the customer never got confirmation
+    # for). A fresh, still-active attempt never qualifies — unsafe immediate
+    # retry stays blocked while confirmation could still legitimately arrive.
+    can_retry = tx.may_retry()
     return {
         "success": True,
         "transaction_id": tx.internal_reference,
@@ -660,6 +677,7 @@ def customer_payment_status_payload(tx: AirtelTransaction) -> dict:
         "created_at": tx.created_at.isoformat() if tx.created_at else "",
         "confirmed_at": tx.completed_at.isoformat() if tx.completed_at else "",
         "can_check_again": not final,
+        "can_retry": can_retry,
     }
 
 

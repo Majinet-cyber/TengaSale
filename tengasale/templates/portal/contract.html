@@ -1,25 +1,27 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}{{ contract.payg_number }} | TengaSale PayG{% endblock %}
+{% block page_title %}{{ contract.payg_number|default:contract.contract_number }} | TengaSale PayG{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.1.0">
+<link rel="stylesheet" href="{% static 'css/portal-premium.css' %}?v=1.0.0">
 <script defer src="{% static 'js/malawi-mobile.js' %}?v=1.0.0"></script>
 {% endblock %}
 
 {% block content %}
-<div class="cpd-shell cpd-shell--simple{% if deposit_focus %} cpd-shell--deposit-focus{% endif %}">
+<div class="cpd-page{% if deposit_focus %} cpd-shell--deposit-focus{% endif %}">
   <div class="cpd-nav-row">
     <a href="{% url 'portal_search' %}" class="cpd-back-link">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      {% ts_icon "back" %}
       Back
     </a>
     <span class="cpd-nav-label">{% if deposit_focus %}Deposit Payment{% else %}My Contract{% endif %}</span>
     <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-nav-action">History</a>
   </div>
 
-  <section class="cpd-card-clean cpd-summary-card">
+  {# ── Identity header ───────────────────────────────────────── #}
+  <header class="cpd-section" style="border-top:none;padding-top:0;">
     <div class="cpd-summary-top">
       <div>
         <div class="cpd-label">{% if deposit_focus %}TengaSale Contract{% else %}TengaSale PayG{% endif %}</div>
@@ -36,6 +38,7 @@
         {% if contract.customer_name %}
         <p class="cpd-payg-customer">{{ contract.customer_name }}</p>
         {% endif %}
+        <p class="cpd-payg-customer" style="margin-top:4px;">{{ contract.device_model|default:"Device" }}{% if device_info.imei %} · IMEI {{ device_info.imei }}{% endif %}</p>
       </div>
       <span class="cpd-status-badge cpd-status-badge--{{ contract.status }}">
         {% if deposit_pending %}Pending activation
@@ -46,124 +49,73 @@
         {% else %}{{ contract.get_status_display }}{% endif %}
       </span>
     </div>
+  </header>
 
-    <div class="cpd-device-row cpd-device-row--compact">
-      <div class="cpd-device-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
-      </div>
-      <div class="cpd-device-info">
-        <div class="cpd-device-name">{{ contract.device_model|default:"Device" }}</div>
-        {% if device_info.imei %}<div class="cpd-device-imei">IMEI: {{ device_info.imei }}</div>{% endif %}
-      </div>
-    </div>
-
-    <div class="cpd-progress-simple">
-      <div class="cpd-prog-bar">
-        <div class="cpd-prog-fill {% if contract.progress_percent >= 80 %}cpd-prog-fill--green{% elif contract.progress_percent >= 50 %}cpd-prog-fill--orange{% else %}cpd-prog-fill--red{% endif %}" style="width: {{ contract.progress_percent }}%"></div>
-      </div>
-      <span>{{ contract.progress_percent }}% paid</span>
-    </div>
-
-    <div class="cpd-money-grid">
-      <div><span class="cpd-label">Paid</span><strong class="cpd-val--green">{% if pricing_complete %}{{ contract.amount_paid|mwk }}{% else %}—{% endif %}</strong></div>
-      <div><span class="cpd-label">Remaining</span><strong class="{% if contract.status == 'overdue' %}cpd-val--danger{% else %}cpd-val--navy{% endif %}">{% if pricing_complete %}{{ remaining|mwk }}{% else %}—{% endif %}</strong></div>
-      <div><span class="cpd-label">Total</span><strong>{{ contract.total_amount|mwk_if }}</strong></div>
-    </div>
-
+  {# ── Financial summary ─────────────────────────────────────── #}
+  <section class="cpd-section" aria-label="Financial summary">
+    {% include "portal/components/_financial_summary.html" with fin_items=fin_items fin_percent=contract.progress_percent fin_percent_tone=fin_bar_tone %}
     {% if pricing_complete and next_required_amount %}
-    <div class="cpd-next-payment-card">
-      <span class="cpd-next-payment-card__label">Amount due{% if next_required_date %} by {{ next_required_date|date:"d M Y" }}{% endif %}</span>
-      <strong>{{ next_required_amount|mwk }}</strong>
-      <small>{% if deposit_pending %}Deposit required before regular repayments begin.{% else %}Paying this amount keeps your device access up to date.{% endif %}</small>
+    <div class="cpd-notice cpd-notice--{% if deposit_pending %}warning{% else %}info{% endif %}" role="status" style="margin-top:4px;">
+      {% ts_icon "info" %}
+      <span>
+        Amount due{% if next_required_date %} by {{ next_required_date|date:"d M Y" }}{% endif %}:
+        <strong>{{ next_required_amount|mwk }}</strong>
+        — {% if deposit_pending %}Deposit required before regular repayments begin.{% else %}Paying this amount keeps your device access up to date.{% endif %}
+      </span>
     </div>
     {% endif %}
-
     {% if last_paid_tx %}
-    <div class="cpd-last-payment-row">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div class="cpd-last-payment-row" style="border-top:none;margin-top:0;padding-top:0;">
+      {% ts_icon "check" %}
       <span>Last payment: <strong>{{ last_paid_tx.amount|mwk }}</strong> on {{ last_paid_tx.paid_at|date:"d M Y" }}</span>
     </div>
     {% endif %}
-    {% if pricing_complete and contract.deposit_required > 0 %}
-    <div class="cpd-meta-grid" style="margin-top:10px;">
-      <div><span class="cpd-label">Deposit required</span><strong>{{ contract.deposit_required|mwk }}</strong></div>
-      <div><span class="cpd-label">Confirmed deposit</span><strong>{{ deposit_paid_amt|mwk }}</strong></div>
-    </div>
-    {% endif %}
-
-    <div class="cpd-meta-grid">
-      {% if contract.start_date %}
-      <div><span class="cpd-label">Started</span><strong>{{ contract.start_date|date:"d M Y" }}</strong></div>
-      {% endif %}
-      {% if contract.due_date %}
-      <div><span class="cpd-label">Paid Through</span><strong>{{ contract.due_date|date:"d M Y" }}</strong></div>
-      {% endif %}
-      <div><span class="cpd-label">Term</span><strong>{{ contract.term_months }} months</strong></div>
-      <div><span class="cpd-label">Daily Rate</span><strong>{{ contract.daily_price|daily_mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit Access</span><strong>{{ contract.deposit_access_days|default:7 }} days</strong></div>
-      {% if contract.access_expires_at %}
-      <div><span class="cpd-label">Access valid until</span><strong>{{ contract.access_expires_at|date:"d M Y H:i" }}</strong></div>
-      {% endif %}
-    </div>
   </section>
 
-  {% if deposit_pending %}
-    <section class="cpd-alert-card cpd-alert-card--warning" data-deposit-account-state="{{ deposit_summary.status }}">
-      <strong>{% if deposit_summary.status == 'pending_confirmation' %}Deposit payment pending{% elif deposit_summary.status == 'partially_paid' %}Deposit partly paid{% else %}Deposit not paid{% endif %}</strong>
-      <span>Contract is not active yet. {% if deposit_summary.status == 'pending_confirmation' %}Waiting for payment confirmation—do not pay again yet.{% else %}Pay the full deposit to activate this contract.{% endif %}</span>
-    </section>
-  {% elif fully_paid %}
-    <section class="cpd-alert-card cpd-alert-card--safe">
-      <strong>Contract fully paid</strong>
-      <span>No payment is currently required.</span>
-    </section>
-  {% elif inactive_reason %}
-    <section class="cpd-alert-card cpd-alert-card--warning">
-      <strong>Payment unavailable</strong>
-      <span>This contract cannot currently accept payments: {{ inactive_reason }}.</span>
-    </section>
-  {% else %}
-    {% if lock_status == 'overdue' %}
-    <section class="cpd-alert-card cpd-alert-card--danger">
-      <strong>Device payment is overdue</strong>
-      <span>Your device may lock at any time. Pay now to restore full access.</span>
-      {% if last_paid_tx %}<small>Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }}</small>{% endif %}
-    </section>
-    {% elif lock_status == 'warning' and lock_warning %}
-    <section class="cpd-alert-card cpd-alert-card--warning">
-      <strong>Device will lock in {{ lock_warning.days }} day{{ lock_warning.days|pluralize }}</strong>
-      <span>Pay {{ lock_warning.amount|mwk }} before {{ lock_warning.date|date:"d M Y H:i" }} to keep your device unlocked.</span>
-      {% if last_paid_tx %}<small>Last payment: {{ last_paid_tx.paid_at|date:"d M Y" }} · {{ last_paid_tx.amount|mwk }}</small>{% endif %}
-    </section>
+  {# ── Device state band (links to dedicated page) ───────────── #}
+  <section class="cpd-section" aria-label="Device status">
+    {% if deposit_pending %}
+      {% include "portal/components/_device_state_band.html" with band_tone="warning" band_title="Deposit pending — device not activated" band_desc="Pay the deposit to activate this contract and unlock device access." band_meta="View status" band_url=device_status_url %}
+    {% elif fully_paid or lock_status == "completed" %}
+      {% include "portal/components/_device_state_band.html" with band_tone="success" band_title="Contract completed" band_desc="Device access is fully paid. Ownership transfers after full repayment." band_meta="View status" band_url=device_status_url %}
+    {% elif lock_status == "overdue" or contract.status == "locked" %}
+      {% include "portal/components/_device_state_band.html" with band_tone="danger" band_title="Device payment overdue" band_desc="Your device may lock at any time. Pay now to restore full access." band_meta="View status" band_url=device_status_url %}
+    {% elif lock_status == "warning" and lock_warning %}
+      {% include "portal/components/_device_state_band.html" with band_tone="warning" band_title="Device will lock soon" band_desc="Pay before the lock date to keep your device unlocked." band_meta=lock_band_meta band_url=device_status_url %}
     {% else %}
-    <section class="cpd-alert-card cpd-alert-card--safe">
-      <strong>Your device is safe</strong>
-      <span>{% if contract.access_expires_at %}Next payment due {{ contract.access_expires_at|date:"d M Y H:i" }}.{% elif contract.due_date %}Next payment due {{ contract.due_date|date:"d M Y" }}.{% else %}Your account is in good standing.{% endif %}</span>
-    </section>
+      {% include "portal/components/_device_state_band.html" with band_tone="success" band_title="Device is active" band_desc="Your account is in good standing. Tap for lock dates and timeline." band_meta="View status" band_url=device_status_url %}
     {% endif %}
+  </section>
+
+  {# ── Status notices ────────────────────────────────────────── #}
+  {% if deposit_pending %}
+    {% if deposit_summary.status == 'pending_confirmation' %}
+      {% include "portal/components/_inline_status_notice.html" with notice_tone="warning" notice_icon="clock" notice_text="Contract is not active yet. Deposit payment pending confirmation — do not pay again yet." %}
+    {% elif deposit_summary.status == 'partially_paid' %}
+      {% include "portal/components/_inline_status_notice.html" with notice_tone="warning" notice_icon="alert" notice_text="Contract is not active yet. Deposit partly paid. Complete the remaining deposit to activate this contract." %}
+    {% else %}
+      {% include "portal/components/_inline_status_notice.html" with notice_tone="warning" notice_icon="alert" notice_text="Deposit not paid. Contract is not active yet. Pay the full deposit to activate this contract." %}
+    {% endif %}
+  {% elif fully_paid %}
+    {% include "portal/components/_inline_status_notice.html" with notice_tone="success" notice_icon="check-circle" notice_text="Contract fully paid. No payment is currently required." %}
+  {% elif inactive_reason %}
+    {% include "portal/components/_inline_status_notice.html" with notice_tone="warning" notice_icon="alert" notice_text=inactive_payment_notice %}
   {% endif %}
 
+  {# ── Deposit payment action ────────────────────────────────── #}
   {% if deposit_pending and not fully_paid and not inactive_reason %}
-  <section class="cpd-card-clean cpd-make-payment-card" id="make-payment">
-    <div class="cpd-section-card__header">
-      <div>
-        <div class="cpd-section-card__title">Make Payment</div>
-        <div class="cpd-section-card__sub">Deposit required to activate this contract</div>
-      </div>
-      <span class="cpd-status-badge cpd-status-badge--overdue">Pending</span>
+  <section class="cpd-section" id="make-payment" aria-label="Make deposit payment">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Make payment</h2>
+      <span class="cpd-status-badge cpd-status-badge--overdue">Deposit</span>
     </div>
-    <div class="cpd-money-grid cpd-money-grid--deposit">
-      <div><span class="cpd-label">Deposit Required</span><strong class="cpd-val--due">{{ deposit_required|mwk }}</strong></div>
-      <div><span class="cpd-label">Confirmed Amount</span><strong class="{% if deposit_paid_amt %}cpd-val--green{% else %}cpd-val--navy{% endif %}">{{ deposit_paid_amt|mwk }}</strong></div>
-      <div><span class="cpd-label">Deposit Remaining</span><strong class="{% if deposit_complete %}cpd-val--green{% else %}cpd-val--due{% endif %}">{{ deposit_remaining|mwk }}</strong></div>
-    </div>
-    <div class="cpd-deposit-progress" aria-label="Deposit {{ deposit_summary.percentage_paid|floatformat:0 }}% paid">
-      <div><span style="width:{{ deposit_summary.percentage_paid }}%"></span></div>
-      <strong>{{ deposit_summary.percentage_paid|floatformat:0 }}% paid</strong>
-      <small>{{ deposit_remaining|mwk }} outstanding</small>
-    </div>
+    {% include "portal/components/_financial_summary.html" with fin_items=deposit_fin_items fin_percent=deposit_summary.percentage_paid fin_percent_tone="amber" fin_caption=deposit_fin_caption %}
     {% if deposit_summary.status == 'pending_confirmation' %}
-    <button type="button" class="cpd-pay-btn" disabled>Deposit confirmation pending</button>
+      {% if pending_deposit_attempt %}
+      <a class="cpd-pay-btn" href="/pay/payment/{{ pending_deposit_attempt.internal_reference }}/?token={{ pending_deposit_attempt.status_token }}">Check payment status</a>
+      {% else %}
+      <button type="button" class="cpd-pay-btn" disabled>Deposit confirmation pending</button>
+      {% endif %}
     {% else %}
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-recommended="{{ deposit_remaining|floatformat:0 }}">
       {% csrf_token %}
@@ -191,8 +143,9 @@
         <label class="cpd-field-label">Amount</label>
         <input type="number" name="amount" class="cpd-input cpd-input--amount" min="100" step="1" value="{{ deposit_remaining|floatformat:0 }}" required data-payment-amount>
       </div>
-      <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit" disabled data-payment-submit>
-        {% if deposit_summary.status == 'partially_paid' %}Complete deposit{% else %}Pay deposit{% endif %} — <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
+      {% include "portal/components/_inline_status_notice.html" with notice_tone="info" notice_icon="phone" notice_text="Sending the request is not final success. The customer must approve the Airtel Money prompt on their phone." %}
+      <button type="submit" class="cpd-pay-btn cpd-pay-btn--deposit ts-motion-tap" disabled data-payment-submit>
+        {% if deposit_summary.status == 'partially_paid' %}Complete deposit{% else %}Send Airtel request{% endif %} — <span data-payment-submit-label>{{ deposit_remaining|mwk }}</span>
       </button>
       <div class="cpd-payment-progress" hidden data-payment-progress>
         <div class="cpd-payment-progress__row cpd-payment-progress__row--active"><span></span>Sending payment prompt</div>
@@ -205,17 +158,15 @@
     {% endif %}
   </section>
   {% elif deposit_required and deposit_complete and not fully_paid %}
-  <section class="cpd-alert-card cpd-alert-card--safe">
-    <strong>Deposit paid &#10003;</strong>
-    <span>Deposit of {{ deposit_required|mwk }} is complete. Deposit unlocks the device for 7 days{% if contract.deposit_unlock_expires_at %}, until {{ contract.deposit_unlock_expires_at|date:"d M Y H:i" }}{% endif %}.</span>
-  </section>
+    {% include "portal/components/_inline_status_notice.html" with notice_tone="success" notice_icon="check-circle" notice_text=deposit_paid_notice %}
   {% endif %}
 
+  {# ── Regular repayment ─────────────────────────────────────── #}
   {% if not fully_paid and not inactive_reason and not deposit_pending and pricing_complete %}
-  <section class="cpd-card-clean">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Make a Payment</div>
-      <div class="cpd-section-card__sub">Each payment extends your device access</div>
+  <section class="cpd-section" aria-label="Make a payment">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Make a payment</h2>
+      <span class="cpd-section__link" style="pointer-events:none;">Extends device access</span>
     </div>
     <form method="post" action="{% url 'portal_payment' contract.contract_number %}" class="cpd-payment-form" data-payment-form data-daily="{{ contract.daily_price|floatformat:0 }}" data-thirty="{{ contract.thirty_day_price|floatformat:0 }}" data-remaining="{{ remaining|floatformat:0 }}" data-recommended="{{ recommended_amount|floatformat:0 }}" data-min-amount="{{ airtel_test_min_amount|default:'100' }}" data-max-amount="{{ airtel_test_max_amount|default:'1000' }}">
       {% csrf_token %}
@@ -249,18 +200,38 @@
         {% if airtel_staging %}<div class="cpd-field-hint">For Airtel testing, you may enter an amount from MWK {{ airtel_test_min_amount|default:'100' }}. The daily amount above is guidance, not a minimum.</div>{% endif %}
         <div class="cpd-field-hint" data-payment-hint hidden></div>
       </div>
-      <button type="submit" class="cpd-pay-btn" disabled data-payment-submit>
+      <button type="submit" class="cpd-pay-btn ts-motion-tap" disabled data-payment-submit>
         Pay amount due — <span data-payment-submit-label></span>
       </button>
     </form>
   </section>
   {% endif %}
 
+  {# ── Contract metadata ─────────────────────────────────────── #}
+  <section class="cpd-section" aria-label="Contract details">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Contract details</h2>
+    </div>
+    {% include "portal/components/_metadata_rows.html" with rows=contract_rows %}
+  </section>
+
+  {# ── Recent activity ───────────────────────────────────────── #}
+  {% if recent_events %}
+  <section class="cpd-section" aria-label="Recent activity">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Recent activity</h2>
+      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-section__link">View all</a>
+    </div>
+    {% include "portal/components/_timeline.html" with events=recent_events timeline_empty_text="No payments yet." %}
+  </section>
+  {% endif %}
+
+  {# ── Early settlement (optional, simplified) ───────────────── #}
   {% if not fully_paid and not inactive_reason and early_options and pricing_complete %}
-  <section class="cpd-card-clean">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Pay Early, Pay Less</div>
-      <div class="cpd-section-card__sub">Optional payoff plans</div>
+  <section class="cpd-section" aria-label="Pay early options">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Pay early, pay less</h2>
+      <span class="cpd-section__link" style="pointer-events:none;">Optional</span>
     </div>
     <div class="cpd-early-strip">
       {% for opt in early_options %}
@@ -280,79 +251,14 @@
   </section>
   {% endif %}
 
-  {% if recent_transactions %}
-  <section class="cpd-card-clean">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Recent Payment History</div>
-      <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-section-link">View all</a>
-    </div>
-    <div class="cpd-history-list">
-      {% for tx in recent_transactions %}
-      <div class="cpd-hist-row">
-        <div class="cpd-hist-row__body">
-          <div class="cpd-hist-row__top">
-            <span class="cpd-hist-row__amount">{{ tx.amount|mwk }}</span>
-            <span class="cpd-hist-status cpd-hist-status--{{ tx.status }}">{{ tx.get_status_display }}</span>
-          </div>
-          <div class="cpd-hist-row__meta">{{ tx.paid_at|date:"d M Y, H:i"|default:tx.created_at|date:"d M Y, H:i" }} · {{ tx.get_provider_display }}{% if tx.phone %} · {{ tx.masked_phone }}{% endif %}{% if tx.internal_reference %} · {{ tx.internal_reference }}{% endif %}</div>
-        </div>
+  <section class="cpd-section" aria-label="Support">
+    <div class="cpd-support-card cpd-support-card--simple" style="box-shadow:none;border:none;padding:0;background:transparent;">
+      <div>
+        <div class="cpd-support-card__title">Need help?</div>
+        <div class="cpd-support-card__desc">Contact us if you need help with your contract or payments.</div>
       </div>
-      {% endfor %}
+      <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">WhatsApp support</a>
     </div>
-  </section>
-  {% endif %}
-
-  {% if behaviour.payment_count > 0 and health.reasons %}
-  <section class="cpd-card-clean">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Payment Health</div>
-      <span class="cpd-health-grade cpd-health-grade--{{ health.grade|lower|cut:' ' }}">{{ health.grade }}</span>
-    </div>
-    <div class="cpd-money-grid">
-      <div><span class="cpd-label">Consistency</span><strong>{{ behaviour.consistency }}%</strong></div>
-      <div><span class="cpd-label">Payments</span><strong>{{ behaviour.payment_count }}</strong></div>
-      <div><span class="cpd-label">Average</span><strong>{{ behaviour.average_payment|mwk }}</strong></div>
-    </div>
-  </section>
-  {% endif %}
-
-  <section class="cpd-card-clean">
-    <div class="cpd-section-card__header">
-      <div class="cpd-section-card__title">Contract Details</div>
-    </div>
-    <div class="cpd-detail-grid cpd-detail-grid--simple">
-      <div class="cpd-detail-item"><span class="cpd-label">Contract number</span><span class="cpd-detail-val cpd-detail-val--mono">{{ contract.contract_number }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">PayG number</span><span class="cpd-detail-val cpd-detail-val--mono">{% if contract.payg_number %}{{ contract.payg_number }}{% else %}Pending device setup{% endif %}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Primary phone</span><span class="cpd-detail-val">{{ contract.masked_phone }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Customer name</span><span class="cpd-detail-val">{{ contract.customer_name|default:"Not captured" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Device model</span><span class="cpd-detail-val">{% if device_info.model or contract.device_model %}{{ device_info.model|default:contract.device_model }}{% else %}Not captured{% endif %}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Brand</span><span class="cpd-detail-val">{% if device_info.brand %}{{ device_info.brand }}{% else %}Not captured{% endif %}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">IMEI</span><span class="cpd-detail-val cpd-detail-val--mono">{% if device_info.imei %}{{ device_info.imei }}{% else %}Not entered yet{% endif %}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Contract start</span><span class="cpd-detail-val">{{ contract.start_date|date:"d M Y" }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Lock provider</span><span class="cpd-detail-val">{{ lock_provider_label }}</span></div>
-      <div class="cpd-detail-item"><span class="cpd-label">Device status</span><span class="cpd-detail-val">{% if contract.device_lock_status and contract.device_lock_status != 'unknown' %}{{ contract.device_lock_status|capfirst }}{% else %}Not synced yet{% endif %}</span></div>
-    </div>
-  </section>
-
-  {% if contract.status == 'completed' %}
-  <section class="cpd-alert-card cpd-alert-card--safe">
-    <strong>Contract completed</strong>
-    <span>Ownership transfers only after the full contract balance is paid. View your payment statement anytime.</span>
-    <a href="{% url 'portal_history' contract.contract_number %}" class="cpd-inline-action">View statement</a>
-  </section>
-  {% endif %}
-
-  <section class="cpd-alert-card cpd-alert-card--safe">
-    <strong>Ownership notice</strong>
-    <span>Ownership is retained by TengaSale until full repayment. Customer has conditional possession and use while the agreement remains active.</span>
-  </section>
-
-  <section class="cpd-support-card cpd-support-card--simple">
-    <div>
-      <div class="cpd-support-card__title">Need help?</div>
-      <div class="cpd-support-card__desc">Contact us if you need help with your contract or payments.</div>
-    </div>
-    <a href="{{ tengasale_whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="cpd-support-link cpd-support-link--whatsapp">WhatsApp support</a>
   </section>
 </div>
 
@@ -393,7 +299,6 @@
     var hint = form.querySelector('[data-payment-hint]');
     var networkHint = form.querySelector('[data-network-hint]');
 
-    // Populate dynamic labels
     var lbl1d = form.querySelector('[data-label-1d]');
     var lbl7d = form.querySelector('[data-label-7d]');
     var lbl14d = form.querySelector('[data-label-14d]');

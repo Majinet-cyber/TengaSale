@@ -10,12 +10,14 @@ urlpatterns = [
     path("contract/<str:contract_number>/", views.portal_contract, name="portal_contract"),
     path("contract/<str:contract_number>/payment/", views.portal_payment, name="portal_payment"),
     path("contract/<str:contract_number>/history/", views.portal_history, name="portal_history"),
+    path("contract/<str:contract_number>/status/", views.portal_device_status, name="portal_device_status"),
 
     # Customer-facing PayG routes (primary customer payment URL)
     # e.g. /pay/payg/EXGH4456/
     path("payg/<str:payg_number>/", views.portal_payg, name="portal_payg"),
     path("payg/<str:payg_number>/payment/", views.portal_payg_payment, name="portal_payg_payment"),
     path("payg/<str:payg_number>/history/", views.portal_payg_history, name="portal_payg_history"),
+    path("payg/<str:payg_number>/status/", views.portal_payg_device_status, name="portal_payg_device_status"),
 
     # Payment return / status pages
     path("payment/<str:internal_reference>/", views.portal_payment_wait, name="portal_payment_wait"),

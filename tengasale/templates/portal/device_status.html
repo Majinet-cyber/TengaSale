@@ -1,0 +1,64 @@
+{% extends "base/base.html" %}
+{% load static ts_filters %}
+
+{% block page_title %}Device status | {{ contract.payg_number|default:contract.contract_number }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/portal_customer.css' %}?v=2.1.0">
+<link rel="stylesheet" href="{% static 'css/portal-premium.css' %}?v=1.0.0">
+{% endblock %}
+
+{% block content %}
+<div class="cpd-page">
+  <div class="cpd-nav-row">
+    <a href="{% url 'portal_contract' contract.contract_number %}" class="cpd-back-link">
+      {% ts_icon "back" %}
+      Contract
+    </a>
+    <span class="cpd-nav-label">Device status</span>
+  </div>
+
+  {% include "portal/components/_hero_status.html" with hero_variant=hero_variant hero_icon=hero_icon hero_eyebrow="Device status" hero_title=hero_title hero_desc=hero_desc hero_live=hero_live hero_live_label=hero_live_label hero_meta=hero_meta %}
+
+  {% if pending_attempt %}
+  <section class="cpd-section" aria-label="Payment verification">
+    {% include "portal/components/_inline_status_notice.html" with notice_tone="warning" notice_icon="clock" notice_text="A payment is currently being verified. Do not pay again until confirmation arrives." %}
+  </section>
+  {% endif %}
+
+  <section class="cpd-section" aria-label="Outstanding balance">
+    {% include "portal/components/_financial_summary.html" with fin_items=fin_items %}
+  </section>
+
+  <section class="cpd-section" aria-label="Status details">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Details</h2>
+    </div>
+    {% include "portal/components/_metadata_rows.html" with rows=meta_rows %}
+  </section>
+
+  <section class="cpd-section" aria-label="Payment and lock timeline">
+    <div class="cpd-section__head">
+      <h2 class="cpd-section__title">Activity</h2>
+    </div>
+    {% include "portal/components/_timeline.html" with events=timeline_events timeline_empty_text="No payment or lock events yet." %}
+  </section>
+
+  {% if tech_rows %}
+  <section class="cpd-section" aria-label="Technical details">
+    {% include "portal/components/_tech_details.html" with tech_rows=tech_rows tech_summary_label="View device technical details" %}
+  </section>
+  {% endif %}
+
+  {% include "portal/components/_action_bar.html" with actionbar_sticky=True actions=actions %}
+</div>
+
+<script>
+(function(){
+  var bar=document.querySelector('[data-action-bar]');if(!bar)return;
+  function sync(){bar.classList.toggle('is-scrolled',(window.scrollY||window.pageYOffset||0)>8);}
+  window.addEventListener('scroll',sync,{passive:true});
+  sync();
+})();
+</script>
+{% endblock %}

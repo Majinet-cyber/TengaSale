@@ -162,6 +162,7 @@
 .cpd-status-badge--overdue   { background: var(--cpd-red-lt);    color: var(--cpd-red); }
 .cpd-status-badge--locked    { background: var(--cpd-red-lt);    color: var(--cpd-red); }
 .cpd-status-badge--cancelled { background: #f1f5f9;              color: var(--cpd-muted); }
+.cpd-status-badge--pending_activation { background: var(--cpd-amber-lt); color: var(--cpd-amber); }
 
 /* Device row inside progress card */
 .cpd-device-row {

@@ -1,8 +1,11 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static ts_filters %}
 
 {% block page_title %}Payment confirmation | TengaSale{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/payment-status.css' %}?v=1.0.0">{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/portal-premium.css' %}?v=1.0.0">
+<link rel="stylesheet" href="{% static 'css/payment-status.css' %}?v=2.0.0">
+{% endblock %}
 {% block topbar %}{% endblock %}
 
 {% block content %}
@@ -15,45 +18,108 @@
       </span>
     </header>
 
-    <section class="pay-status-card pay-status-hero">
+    {# A. Premium status hero #}
+    <section class="pay-status-card pay-status-hero" aria-label="Payment status">
       <span class="pay-status-badge"><span class="pay-status-badge-dot"></span><span data-status-badge>{% if status_data.is_final %}{{ status_data.status_label|upper }}{% else %}PENDING CONFIRMATION{% endif %}</span></span>
       <div class="pay-status-live" data-live-indicator role="status" aria-live="polite">
-        <span class="pay-status-live-ring" aria-hidden="true"><span class="pay-status-live-core"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 18h4"/></svg></span></span>
-        <span class="pay-status-live-text"><strong data-live-title>{% if status_data.is_final %}{{ status_data.status_label }}{% else %}Waiting for confirmation{% endif %}</strong><span data-live-copy>{% if status_data.is_final %}{{ status_data.message }}{% else %}Checking Airtel securely<span class="pay-status-dots" aria-hidden="true"><i></i><i></i><i></i></span>{% endif %}</span></span>
+        <span class="pay-status-live-ring" aria-hidden="true">
+          <span class="pay-status-live-core">
+            {% if status_data.status == "successful" %}
+            <span class="cpd-success-ring">
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <circle class="cpd-success-ring__track" cx="32" cy="32" r="28"></circle>
+                <circle class="cpd-success-ring__fill" cx="32" cy="32" r="28"></circle>
+                <polyline class="cpd-success-ring__check" points="20 33 28 41 44 23"></polyline>
+              </svg>
+            </span>
+            {% else %}
+            <svg class="pay-status-live-icon pay-status-live-icon--pending" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 18h4"/></svg>
+            <svg class="pay-status-live-icon pay-status-live-icon--success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg class="pay-status-live-icon pay-status-live-icon--failed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            {% endif %}
+          </span>
+        </span>
+        <span class="pay-status-live-text">
+          <strong data-live-title>{% if status_data.is_final %}{{ status_data.status_label }}{% else %}Waiting for confirmation{% endif %}</strong>
+          <span data-live-copy>{% if status_data.is_final %}{{ status_data.message }}{% else %}Checking Airtel securely<span class="pay-status-dots" aria-hidden="true"><i></i><i></i><i></i></span>{% endif %}</span>
+        </span>
       </div>
       <h1 class="pay-status-title" data-payment-title>{{ status_data.status_label }}</h1>
       <p class="pay-status-copy" data-payment-copy>{{ status_data.message }}</p>
+      {% if status_data.status == "successful" and status_data.payment_type == "deposit" %}
+      <div class="cpd-notice cpd-notice--success" role="status" style="margin-top:8px;">
+        {% ts_icon "check-circle" %}
+        <span>Deposit confirmed · Contract updated · {{ deposit_access_days }} access days active</span>
+      </div>
+      {% endif %}
     </section>
 
-    <section class="pay-status-card pay-status-stepper" aria-label="Payment progress">
-      <div class="pay-status-step" data-step="1"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="pay-status-step-label">Request sent</span></div>
-      <div class="pay-status-step" data-step="2"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 6h4M10 10h.01M14 10h.01M10 14h.01M14 14h.01"/></svg></span><span class="pay-status-step-label">Complete phone prompt</span></div>
-      <div class="pay-status-step" data-step="3"><span class="pay-status-step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="pay-status-step-label">Awaiting confirmation</span></div>
+    {# B. Three-stage progress #}
+    <section class="pay-status-card" aria-label="Payment progress" style="padding:18px 16px;">
+      {% include "portal/components/_progress_steps.html" with steps=progress_steps %}
     </section>
 
+    {# Amount strip #}
     <section class="pay-status-card pay-status-amount">
       <span class="pay-status-amount-label">Amount</span>
-      <div class="pay-status-amount-value">{{ airtel_tx.currency }} {{ amount_display }}</div>
+      <div class="pay-status-amount-value cpd-settle">{{ airtel_tx.currency }} {{ amount_display }}</div>
       <span class="pay-status-provider"><img class="pay-status-provider-logo" src="{{ provider_logo_url }}" alt="" aria-hidden="true">{{ provider_name }}</span>
     </section>
 
-    <section class="pay-status-card pay-status-details" aria-label="Payment details">
-      <div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 18h4"/></svg></span><span class="pay-status-detail-label">Phone</span><span class="pay-status-detail-value">{{ masked_phone }}</span></div>
-      <div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span><span class="pay-status-detail-label">Reference</span><span class="pay-status-detail-value is-code">{{ transaction_reference }}</span></div>
-      <div class="pay-status-detail"><span class="pay-status-detail-label">Initiated</span><span class="pay-status-detail-value">{{ airtel_tx.created_at|date:"d M Y, H:i T" }}</span></div>
-      <div class="pay-status-detail"><span class="pay-status-detail-label">Last checked</span><span class="pay-status-detail-value">{{ airtel_tx.updated_at|date:"d M Y, H:i T" }}</span></div>
-      {% if contract_reference %}<div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="pay-status-detail-label">Contract</span><span class="pay-status-detail-value is-code">{{ contract_reference }}</span></div>{% endif %}
-      {% if payg_code %}<div class="pay-status-detail"><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M10 3 8 21M16 3l-2 18M4 9h16M3 15h16"/></svg></span><span class="pay-status-detail-label">PayG Code</span><span class="pay-status-detail-value is-code">{{ payg_code }}</span></div>{% endif %}
-      <div class="pay-status-detail" data-provider-id-row {% if not status_data.airtel_money_id %}hidden{% endif %}><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5"/></svg></span><span class="pay-status-detail-label">Airtel transaction ID</span><span class="pay-status-detail-value is-code" data-provider-id>{{ status_data.airtel_money_id }}</span></div>
-      <div class="pay-status-detail" data-balance-row {% if not status_data.balance_after %}hidden{% endif %}><span class="pay-status-detail-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4zM4 10h16M16 14h2"/></svg></span><span class="pay-status-detail-label">Updated balance</span><span class="pay-status-detail-value" data-balance>{{ status_data.currency }} {{ status_data.balance_after }}</span></div>
+    {# C. Compact divided info list #}
+    <section class="pay-status-card" aria-label="Payment details" style="padding:8px 20px;">
+      {% include "portal/components/_metadata_rows.html" with rows=detail_rows %}
+      <div class="cpd-rows">
+        <div class="cpd-rows__row" data-balance-row {% if not status_data.balance_after %}hidden{% endif %}>
+          <span class="cpd-rows__label">Updated balance</span>
+          <span class="cpd-rows__value cpd-rows__value--success cpd-settle" data-balance>{{ status_data.currency }} {{ status_data.balance_after }}</span>
+        </div>
+        <div class="cpd-rows__row">
+          <span class="cpd-rows__label">Last checked</span>
+          <span class="cpd-rows__value" data-last-checked>{{ airtel_tx.updated_at|date:"d M Y, H:i T" }}</span>
+        </div>
+        <div class="cpd-rows__row">
+          <span class="cpd-rows__label">Payment status</span>
+          <span class="cpd-rows__value" data-status-text>{{ status_data.status_label }}</span>
+        </div>
+      </div>
     </section>
+
+    {# D. Technical evidence drawer #}
+    <details class="cpd-tech pay-status-tech">
+      <summary>
+        View technical details
+        {% ts_icon "chevron-down" %}
+      </summary>
+      <div class="cpd-tech__body">
+        <div class="cpd-rows">
+          <div class="cpd-rows__row" data-provider-id-row {% if not airtel_money_id %}hidden{% endif %}>
+            <span class="cpd-rows__label">Airtel transaction ID</span>
+            <span class="cpd-rows__value cpd-rows__value--mono" data-provider-id>{{ airtel_money_id }}</span>
+          </div>
+        </div>
+        {% include "portal/components/_metadata_rows.html" with rows=tech_rows %}
+      </div>
+    </details>
 
     <div class="pay-status-message" data-payment-message role="status" aria-live="polite">{{ status_data.message }}</div>
     {% if is_staff_view and is_dry_run %}<div class="pay-status-message">Internal preview mode is active for this transaction.</div>{% endif %}
 
-    <div class="pay-status-actions">
-      {% if return_url %}<a class="pay-status-button" href="{{ return_url }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Return to contract</a>{% endif %}
-      <button type="button" class="pay-status-button pay-status-button--primary" data-payment-check {% if status_data.is_final %}disabled{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9m2 6a7 7 0 0 0 12 2.5L20 15"/></svg><span data-check-label>Check again</span></button>
+    {# Ambiguous / delayed states #}
+    {% if not status_data.is_final and status_data.status in ambiguous_statuses %}
+      {% include "portal/components/_inline_status_notice.html" with notice_tone="info" notice_icon="shield" notice_text="We're checking this payment securely. Please do not make another payment while this is in progress." %}
+    {% endif %}
+
+    {# E. Sticky mobile action area + safe retry #}
+    <div class="pay-status-actions-group" data-action-bar>
+      <div class="pay-status-actions">
+        {% if return_url %}<a class="pay-status-button" href="{{ return_url }}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Return to contract</a>{% endif %}
+        <button type="button" class="pay-status-button pay-status-button--primary ts-motion-tap" data-payment-check {% if status_data.is_final %}disabled{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9m2 6a7 7 0 0 0 12 2.5L20 15"/></svg><span data-check-label>Check again</span></button>
+      </div>
+
+      {% if status_data.can_retry and contract %}
+      {% include "portal/components/_retry_banner.html" with retry_title="This attempt is no longer active" retry_desc=retry_desc retry_action_url=retry_action_url retry_button_label="Retry this payment" retry_fields=retry_fields %}
+      {% endif %}
     </div>
 
     <footer class="pay-status-footer"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Secure <span aria-hidden="true">•</span> Your data is protected</footer>
@@ -65,13 +131,97 @@
   var page=document.querySelector('[data-payment-wait]');if(!page)return;
   var statusUrl=page.dataset.statusUrl,title=page.querySelector('[data-payment-title]'),copy=page.querySelector('[data-payment-copy]'),message=page.querySelector('[data-payment-message]'),badge=page.querySelector('[data-status-badge]'),button=page.querySelector('[data-payment-check]'),buttonLabel=page.querySelector('[data-check-label]'),liveTitle=page.querySelector('[data-live-title]'),liveCopy=page.querySelector('[data-live-copy]');
   var attempts=0,maxAttempts=8,delayMs=5000,timer=null,inFlight=false,isFinal=button?button.disabled:false;
-  function renderSteps(current,final,failed){page.classList.toggle('is-payment-pending',!final);page.classList.toggle('is-payment-success',final&&!failed);page.classList.toggle('is-payment-failed',final&&failed);page.querySelectorAll('[data-step]').forEach(function(step){var number=Number(step.dataset.step);step.classList.toggle('is-complete',(final&&!failed)||number<current);step.classList.toggle('is-current',(!final&&number===current)||(final&&failed&&number===current));step.classList.toggle('is-failed',failed&&number===current);});}
-  function render(data,stopped){var state=data.status||'pending_provider_confirmation',failed=['failed','cancelled','expired','reversed'].indexOf(state)!==-1;isFinal=!!data.final;page.dataset.state=state;page.classList.toggle('is-polling-stopped',!!stopped&&!isFinal);title.textContent=stopped&&!data.final?'Still waiting for Airtel':(data.status_label||'Waiting for Airtel');copy.textContent=stopped&&!data.final?'Still waiting. Do not pay again yet.':(data.message||'Still checking the previous request. Please do not pay again.');message.textContent=copy.textContent;message.classList.toggle('is-success',state==='successful');message.classList.toggle('is-pending',!isFinal);message.classList.toggle('is-failed',failed);badge.textContent=data.final?(data.status_label||state).toUpperCase():'PENDING CONFIRMATION';if(liveTitle)liveTitle.textContent=state==='successful'?'Payment confirmed':failed?(data.status_label||'Payment failed'):stopped?'Still waiting for Airtel':'Waiting for confirmation';if(liveCopy)liveCopy.textContent=state==='successful'?'Balance update complete':failed?'This request is final':'Checking Airtel securely';renderSteps(Number(data.current_step||3),isFinal,failed);button.disabled=isFinal||inFlight;var providerId=page.querySelector('[data-provider-id]'),providerRow=page.querySelector('[data-provider-id-row]');if(providerId&&data.airtel_money_id){providerId.textContent=data.airtel_money_id;providerRow.hidden=false;}var balance=page.querySelector('[data-balance]'),balanceRow=page.querySelector('[data-balance-row]');if(balance&&data.balance_after){balance.textContent=(data.currency||'MWK')+' '+data.balance_after;balanceRow.hidden=false;}}
-  function setLoading(loading){inFlight=loading;if(button){button.disabled=loading||isFinal;button.classList.toggle('is-checking',loading);buttonLabel.textContent=loading?'Checking Airtel…':'Check again';var old=button.querySelector('.pay-status-button-spinner');if(loading&&!old){var spinner=document.createElement('span');spinner.className='pay-status-button-spinner';button.insertBefore(spinner,button.firstChild);}else if(!loading&&old){old.remove();}}}
-  function poll(enquire){if(!statusUrl||inFlight)return;setLoading(true);var requestUrl=statusUrl+(enquire?(statusUrl.indexOf('?')===-1?'?':'&')+'enquire=1':'');fetch(requestUrl,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(response){if(!response.ok)throw new Error('status');return response.json();}).then(function(data){attempts+=1;delayMs=Math.min(30000,Math.round(delayMs*1.5));var stopped=attempts>=maxAttempts;render(data,stopped);if(!data.final&&!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);}).catch(function(){attempts+=1;var stopped=attempts>=maxAttempts;render({status:'confirmation_delayed',status_label:'Your payment is still being confirmed',current_step:3,final:false,message:'We could not refresh the status. Do not submit another payment.'},stopped);if(!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);}).finally(function(){setLoading(false);});}
+  function renderSteps(current,final,failed){
+    page.classList.toggle('is-payment-pending',!final);
+    page.classList.toggle('is-payment-success',final&&!failed);
+    page.classList.toggle('is-payment-failed',final&&failed);
+    var steps=page.querySelectorAll('.cpd-steps__step');
+    if(steps.length){
+      steps.forEach(function(step,idx){
+        var number=idx+1;
+        var state='pending';
+        if(final&&!failed){state='done';}
+        else if(failed&&number===current){state='failed';}
+        else if(number<current){state='done';}
+        else if(number===current){state='current';}
+        step.className='cpd-steps__step is-'+state;
+      });
+      return;
+    }
+    page.querySelectorAll('[data-step]').forEach(function(step){
+      var number=Number(step.dataset.step);
+      step.classList.toggle('is-complete',(final&&!failed)||number<current);
+      step.classList.toggle('is-current',(!final&&number===current)||(final&&failed&&number===current));
+      step.classList.toggle('is-failed',failed&&number===current);
+    });
+  }
+  function render(data,stopped){
+    var state=data.status||'pending_provider_confirmation';
+    var failed=['failed','cancelled','expired','reversed'].indexOf(state)!==-1;
+    isFinal=!!data.final;
+    page.dataset.state=state;
+    page.classList.toggle('is-polling-stopped',!!stopped&&!isFinal);
+    title.textContent=stopped&&!data.final?'Still waiting for Airtel':(data.status_label||'Waiting for Airtel');
+    copy.textContent=stopped&&!data.final?'Still waiting. Do not pay again yet.':(data.message||'Still checking the previous request. Please do not pay again.');
+    message.textContent=copy.textContent;
+    message.classList.toggle('is-success',state==='successful');
+    message.classList.toggle('is-pending',!isFinal);
+    message.classList.toggle('is-failed',failed);
+    badge.textContent=data.final?(data.status_label||state).toUpperCase():'PENDING CONFIRMATION';
+    if(liveTitle)liveTitle.textContent=state==='successful'?'Payment confirmed':failed?(data.status_label||'Payment failed'):stopped?'Still waiting for Airtel':'Waiting for confirmation';
+    if(liveCopy)liveCopy.textContent=state==='successful'?'Balance update complete':failed?'This request is final':'Checking Airtel securely';
+    renderSteps(Number(data.current_step||3),isFinal,failed);
+    button.disabled=isFinal||inFlight;
+    var statusText=page.querySelector('[data-status-text]');
+    if(statusText)statusText.textContent=data.status_label||state;
+    var lastChecked=page.querySelector('[data-last-checked]');
+    if(lastChecked&&data.updated_at){try{lastChecked.textContent=new Date(data.updated_at).toLocaleString();}catch(e){}}
+    var providerId=page.querySelector('[data-provider-id]'),providerRow=page.querySelector('[data-provider-id-row]');
+    if(providerId&&data.airtel_money_id){providerId.textContent=data.airtel_money_id;if(providerRow)providerRow.hidden=false;}
+    var balance=page.querySelector('[data-balance]'),balanceRow=page.querySelector('[data-balance-row]');
+    if(balance&&data.balance_after){balance.textContent=(data.currency||'MWK')+' '+data.balance_after;balanceRow.hidden=false;}
+  }
+  function setLoading(loading){
+    inFlight=loading;
+    if(button){
+      button.disabled=loading||isFinal;
+      button.classList.toggle('is-checking',loading);
+      buttonLabel.textContent=loading?'Checking Airtel…':'Check again';
+      var old=button.querySelector('.pay-status-button-spinner');
+      if(loading&&!old){var spinner=document.createElement('span');spinner.className='pay-status-button-spinner';button.insertBefore(spinner,button.firstChild);}
+      else if(!loading&&old){old.remove();}
+    }
+  }
+  function poll(enquire){
+    if(!statusUrl||inFlight)return;
+    setLoading(true);
+    var requestUrl=statusUrl+(enquire?(statusUrl.indexOf('?')===-1?'?':'&')+'enquire=1':'');
+    fetch(requestUrl,{headers:{Accept:'application/json'},credentials:'same-origin'})
+      .then(function(response){if(!response.ok)throw new Error('status');return response.json();})
+      .then(function(data){
+        attempts+=1;delayMs=Math.min(30000,Math.round(delayMs*1.5));
+        var stopped=attempts>=maxAttempts;
+        render(data,stopped);
+        if(!data.final&&!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);
+      })
+      .catch(function(){
+        attempts+=1;var stopped=attempts>=maxAttempts;
+        render({status:'confirmation_delayed',status_label:'Your payment is still being confirmed',current_step:3,final:false,message:'We could not refresh the status. Do not submit another payment.'},stopped);
+        if(!stopped)timer=window.setTimeout(function(){poll(false);},delayMs);
+      })
+      .finally(function(){setLoading(false);});
+  }
   if(button)button.addEventListener('click',function(){if(inFlight)return;if(timer)window.clearTimeout(timer);attempts=Math.min(attempts,maxAttempts-1);poll(true);});
   render({status:page.dataset.state,status_label:title.textContent,current_step:Number(page.dataset.currentStep||2),final:isFinal,message:copy.textContent},false);
   if(button&&!button.disabled)poll(false);
+})();
+</script>
+<script>
+(function(){
+  var bar=document.querySelector('[data-action-bar]');if(!bar)return;
+  function sync(){bar.classList.toggle('is-scrolled',(window.scrollY||window.pageYOffset||0)>4);}
+  window.addEventListener('scroll',sync,{passive:true});
+  sync();
 })();
 </script>
 {% endblock %}

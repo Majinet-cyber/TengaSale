@@ -12,7 +12,6 @@ import json
 import logging
 import re
 import secrets
-from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
@@ -36,7 +35,11 @@ from .services import (
     calculate_payment_behaviour,
     calculate_health_score,
     calculate_customer_insights,
+    build_device_timeline,
+    compute_lock_state,
     get_deposit_summary,
+    get_device_info,
+    get_lock_provider_label,
     resolve_payable_contract,
     search_payment_contract,
 )
@@ -149,9 +152,7 @@ def portal_contract(request, contract_number):
 
     today = timezone.localdate()
     now = timezone.now()
-    remaining = calculate_remaining_amount(contract)
     early_options = calculate_early_settlement_options(contract)
-    fully_paid = remaining <= Decimal("0")
     deposit_summary = get_deposit_summary(contract)
     inactive_statuses = {
         PaymentContract.STATUS_CANCELLED,
@@ -164,42 +165,12 @@ def portal_contract(request, contract_number):
     }
     inactive_reason = contract.get_status_display() if contract.status in inactive_statuses else ""
 
-    # Lock status warning
-    lock_warning = None
-    lock_status = "safe"
-    if fully_paid or contract.status == "completed":
-        lock_status = "completed"
-    elif contract.access_expires_at or contract.lock_date:
-        lock_at = contract.access_expires_at
-        if lock_at is None and contract.lock_date:
-            lock_at = timezone.make_aware(
-                datetime.combine(contract.lock_date, time.min),
-                timezone.get_current_timezone(),
-            )
-        seconds_until_lock = (lock_at - now).total_seconds() if lock_at else 0
-        hours_until_lock = int(seconds_until_lock // 3600)
-        days_until_lock = int(seconds_until_lock // 86400)
-        if seconds_until_lock < 0:
-            lock_status = "overdue"
-            lock_warning = {
-                "date": lock_at,
-                "amount": remaining,
-                "days": days_until_lock,
-                "hours": hours_until_lock,
-            }
-        elif seconds_until_lock <= 4 * 86400:
-            lock_status = "warning"
-            lock_warning = {
-                "date": lock_at,
-                "amount": (
-                    contract.daily_price * max(days_until_lock, 0)
-                    if contract.daily_price else remaining
-                ),
-                "days": days_until_lock,
-                "hours": hours_until_lock,
-            }
-        else:
-            lock_status = "safe"
+    # Lock status warning — shared with the dedicated device-status page.
+    lock_state = compute_lock_state(contract)
+    remaining = lock_state.remaining
+    fully_paid = lock_state.fully_paid
+    lock_status = lock_state.status
+    lock_warning = lock_state.warning
 
     # All paid transactions (for analytics + recent display)
     all_paid = list(
@@ -223,39 +194,7 @@ def portal_contract(request, contract_number):
         recommended_amount = int(remaining)
 
     # Device / application info
-    app = contract.source_application
-    device_info = {
-        "model": contract.device_model or "—",
-        "imei": contract.imei_number or "",
-        "brand": "",
-        "merchant_name": "",
-        "merchant_branch": "",
-        "underwriter_name": "",
-    }
-    if app:
-        if not device_info["imei"]:
-            device_info["imei"] = getattr(app, "imei_number", "") or ""
-        if app.deal_id:
-            try:
-                device_info["brand"] = app.deal.brand.name
-                device_info["model"] = str(app.deal)
-            except Exception:
-                pass
-        if not device_info["brand"]:
-            device_info["brand"] = getattr(app, "imei_api_brand", "") or ""
-        if not device_info["model"] and contract.device_model:
-            device_info["model"] = contract.device_model
-        if app.created_by:
-            try:
-                profile = app.created_by.profile
-                if hasattr(profile, "merchant") and profile.merchant:
-                    device_info["merchant_name"] = str(profile.merchant)
-            except Exception:
-                pass
-        try:
-            device_info["underwriter_name"] = app.underwriter_name or ""
-        except Exception:
-            pass
+    device_info = get_device_info(contract)
 
     # Authoritative deposit state comes from confirmed ledger transactions.
     deposit_required = deposit_summary.required_amount
@@ -265,15 +204,13 @@ def portal_contract(request, contract_number):
     deposit_pending = deposit_required > 0 and not deposit_complete
     payment_type = request.GET.get("payment_type", "").strip().lower()
     deposit_focus = payment_type == "deposit" and deposit_pending
-    if deposit_pending:
-        lock_status = "deposit_pending"
-        lock_warning = None
 
     # Last payment info for lock card
     last_paid_tx = all_paid[0] if all_paid else None
 
     from core.commercial import pricing_from_application
 
+    app = contract.source_application
     commercial = pricing_from_application(app) if app else None
     if commercial is None and contract.pricing_complete:
         commercial = {
@@ -289,20 +226,116 @@ def portal_contract(request, contract_number):
     next_required_amount = deposit_remaining if deposit_pending else recommended_amount
     next_required_date = contract.access_expires_at or contract.lock_date or contract.due_date
     if lock_warning:
-        next_required_amount = lock_warning["amount"]
-        next_required_date = lock_warning["date"]
+        next_required_amount = lock_warning.amount
+        next_required_date = lock_warning.date
 
-    lock_provider_label = "Device setup pending"
-    if contract.device_lock_provider:
-        provider_labels = {
-            "mock": "Sandbox",
-            "knox": "Knox",
-            "nuovopay": "NuovoPay",
-            "upya": "Upya",
-        }
-        lock_provider_label = provider_labels.get(
-            contract.device_lock_provider, contract.device_lock_provider.replace("_", " ").title()
+    # If the deposit is awaiting confirmation, surface a link back to the live
+    # status page for the specific attempt instead of a dead-end disabled
+    # button — customers must always have a path to check status or (once the
+    # attempt qualifies) retry, never be stuck looking at a permanently
+    # disabled control with no next step.
+    pending_deposit_attempt = None
+    if deposit_pending and deposit_summary.status == "pending_confirmation":
+        pending_deposit_attempt = (
+            AirtelTransaction.objects.filter(
+                contract=contract,
+                purpose=AirtelTransaction.PURPOSE_DEPOSIT,
+                direction=AirtelTransaction.DIRECTION_COLLECTION,
+            )
+            .exclude(status=AirtelTransaction.STATUS_EXPIRED)
+            .order_by("-created_at")
+            .first()
         )
+
+    lock_provider_label = get_lock_provider_label(contract)
+    from core.formatting import format_mwk
+
+    def _mwk(value):
+        if value is None:
+            return "—"
+        return format_mwk(value) or "—"
+
+    fin_items = [
+        {"label": "Paid", "value": _mwk(contract.amount_paid) if pricing_complete else "—", "tone": "success"},
+        {
+            "label": "Remaining",
+            "value": _mwk(remaining) if pricing_complete else "—",
+            "tone": "danger" if contract.status == "overdue" else "",
+            "emphasis": True,
+        },
+        {"label": "Total", "value": _mwk(contract.total_amount) if pricing_complete and contract.total_amount else "Pending setup"},
+    ]
+    fin_bar_tone = "green" if contract.progress_percent >= 80 else ""
+
+    deposit_fin_items = [
+        {"label": "Deposit required", "value": _mwk(deposit_required), "tone": "warning"},
+        {"label": "Confirmed", "value": _mwk(deposit_paid_amt), "tone": "success" if deposit_paid_amt else ""},
+        {"label": "Remaining", "value": _mwk(deposit_remaining), "tone": "success" if deposit_complete else "warning", "emphasis": True},
+    ]
+    deposit_fin_caption = f"{deposit_remaining:,.0f} MWK outstanding" if deposit_remaining else "Deposit complete"
+    deposit_access_days = contract.deposit_access_days or 7
+    deposit_paid_notice = (
+        f"Deposit of {_mwk(deposit_required)} is complete. Deposit unlocks the device for "
+        f"{deposit_access_days} day{'s' if deposit_access_days != 1 else ''}"
+    )
+    if contract.deposit_unlock_expires_at:
+        deposit_paid_notice += f", until {timezone.localtime(contract.deposit_unlock_expires_at).strftime('%d %b %Y %H:%M')}."
+    else:
+        deposit_paid_notice += "."
+
+    contract_rows = [
+        {"label": "Contract number", "value": contract.contract_number, "mono": True},
+        {"label": "PayG number", "value": contract.payg_number or "Pending device setup", "mono": True},
+        {"label": "Primary phone", "value": contract.masked_phone},
+        {"label": "Customer name", "value": contract.customer_name or "Not captured"},
+        {"label": "Device model", "value": device_info.get("model") or contract.device_model or "Not captured"},
+        {"label": "Brand", "value": device_info.get("brand") or "Not captured"},
+        {"label": "IMEI", "value": device_info.get("imei") or "Not entered yet", "mono": True},
+        {"label": "Contract start", "value": contract.start_date.strftime("%d %b %Y") if contract.start_date else "—"},
+        {"label": "Daily rate", "value": _mwk(contract.daily_price) if contract.daily_price else "Pending setup"},
+        {"label": "Deposit access", "value": f"{deposit_access_days} days"},
+        {"label": "Lock provider", "value": lock_provider_label},
+        {
+            "label": "Device status",
+            "value": (
+                contract.device_lock_status.capitalize()
+                if contract.device_lock_status and contract.device_lock_status != "unknown"
+                else "Not synced yet"
+            ),
+        },
+    ]
+    if contract.access_expires_at:
+        contract_rows.insert(
+            -2,
+            {
+                "label": "Access valid until",
+                "value": timezone.localtime(contract.access_expires_at).strftime("%d %b %Y %H:%M"),
+            },
+        )
+
+    recent_events = []
+    for tx in recent_transactions:
+        when = tx.paid_at or tx.created_at
+        recent_events.append({
+            "title": f"{tx.amount:,.0f} MWK · {tx.get_status_display()}",
+            "desc": " · ".join(filter(None, [
+                when.strftime("%d %b %Y, %H:%M") if when else "",
+                tx.get_provider_display(),
+                tx.masked_phone if getattr(tx, "phone", None) else "",
+                tx.internal_reference or "",
+            ])),
+            "time": when,
+            "state": (
+                "done" if tx.status == PaymentTransaction.STATUS_PAID
+                else "failed" if tx.status == PaymentTransaction.STATUS_FAILED
+                else "current"
+            ),
+        })
+
+    lock_band_meta = "View status"
+    if lock_warning and lock_status == "warning":
+        days = lock_warning.days
+        lock_band_meta = f"{days} day{'s' if days != 1 else ''}"
 
     return render(request, "portal/contract.html", {
         "payment_idempotency_key": secrets.token_urlsafe(24),
@@ -312,6 +345,7 @@ def portal_contract(request, contract_number):
         "lock_warning": lock_warning,
         "lock_status": lock_status,
         "recent_transactions": recent_transactions,
+        "recent_events": recent_events,
         "behaviour": behaviour,
         "health": health,
         "insights": insights,
@@ -319,7 +353,6 @@ def portal_contract(request, contract_number):
         "device_info": device_info,
         "last_paid_tx": last_paid_tx,
         "today": today,
-        # Deposit context
         "deposit_required": deposit_required,
         "deposit_paid_amt": deposit_paid_amt,
         "deposit_remaining": deposit_remaining,
@@ -339,9 +372,241 @@ def portal_contract(request, contract_number):
         "lock_provider_label": lock_provider_label,
         "fully_paid": fully_paid,
         "inactive_reason": inactive_reason,
+        "inactive_payment_notice": (
+            f"This contract cannot currently accept payments: {inactive_reason}."
+            if inactive_reason else ""
+        ),
+        "pending_deposit_attempt": pending_deposit_attempt,
         "airtel_test_min_amount": getattr(settings, "AIRTEL_TEST_MIN_AMOUNT", "100"),
         "airtel_test_max_amount": getattr(settings, "AIRTEL_TEST_MAX_AMOUNT", "1000"),
         "airtel_staging": getattr(settings, "AIRTEL_ENVIRONMENT", "staging").lower() == "staging",
+        "fin_items": fin_items,
+        "fin_bar_tone": fin_bar_tone,
+        "deposit_fin_items": deposit_fin_items,
+        "deposit_fin_caption": deposit_fin_caption,
+        "deposit_paid_notice": deposit_paid_notice,
+        "contract_rows": contract_rows,
+        "device_status_url": f"/pay/contract/{contract.contract_number}/status/",
+        "lock_band_meta": lock_band_meta,
+    })
+
+
+def portal_device_status(request, contract_number):
+    """
+    Dedicated device/lock status page — the authoritative customer-facing
+    view of current device state, outstanding balance, next lock date, last
+    successful payment, and the payment/lock timeline. Read-only: it renders
+    the same lock_state and deposit data portal_contract already computes,
+    from the shared compute_lock_state()/get_deposit_summary() helpers, so
+    the two pages can never disagree about lock status.
+    """
+    contract = get_object_or_404(PaymentContract, contract_number=contract_number)
+
+    lock_state = compute_lock_state(contract)
+    deposit_summary = get_deposit_summary(contract)
+    device_info = get_device_info(contract)
+    lock_provider_label = get_lock_provider_label(contract)
+    timeline = build_device_timeline(contract)
+
+    all_paid = list(
+        contract.transactions.filter(status=PaymentTransaction.STATUS_PAID).order_by("-paid_at")
+    )
+    last_paid_tx = all_paid[0] if all_paid else None
+
+    # Any payment attempt currently awaiting confirmation, for either deposit
+    # or a regular repayment — surfaced so the customer always has a "check
+    # status" path instead of a dead end while a payment is in flight.
+    pending_attempt = (
+        AirtelTransaction.objects.filter(
+            contract=contract,
+            direction=AirtelTransaction.DIRECTION_COLLECTION,
+        )
+        .exclude(status__in=[
+            AirtelTransaction.STATUS_SUCCESS,
+            AirtelTransaction.STATUS_FAILED,
+            AirtelTransaction.STATUS_EXPIRED,
+            AirtelTransaction.STATUS_REVERSED,
+        ])
+        .order_by("-created_at")
+        .first()
+    )
+
+    from core.formatting import format_mwk
+
+    def _mwk(value):
+        if value is None:
+            return "—"
+        return format_mwk(value) or "—"
+
+    status = lock_state.status
+    warning = lock_state.warning
+    remaining = lock_state.remaining
+    device_lock = (contract.device_lock_status or "").lower()
+
+    # Map backend lock_status + device_lock_status onto a single customer hero.
+    # Never claim immediate unlock when the provider still reports pending.
+    if status == "deposit_pending":
+        hero_variant, hero_icon = "warning", "alert"
+        hero_title = "Deposit required"
+        hero_desc = "Pay the deposit to activate this contract and unlock device access."
+    elif status == "completed" or lock_state.fully_paid:
+        hero_variant, hero_icon = "success", "check-circle"
+        hero_title = "Contract completed"
+        hero_desc = "Full repayment is complete. Ownership transfers after the agreement is closed."
+    elif device_lock == "locked" or status == "overdue" or contract.status == "locked":
+        hero_variant, hero_icon = "danger", "lock"
+        hero_title = "Device locked" if device_lock == "locked" or contract.status == "locked" else "Payment overdue"
+        hero_desc = "Pay the outstanding balance to restore device access. Unlock timing follows the lock provider schedule."
+    elif device_lock == "pending":
+        hero_variant, hero_icon = "info", "clock"
+        hero_title = "Unlock pending"
+        hero_desc = "A payment was confirmed and unlock has been scheduled with the lock provider. This is not always immediate."
+    elif status == "warning" and warning:
+        hero_variant, hero_icon = "warning", "clock"
+        days = warning.days
+        hero_title = f"Device locks in {days} day{'s' if days != 1 else ''}"
+        hero_desc = f"Pay {_mwk(warning.amount)} before the lock date to keep your device unlocked."
+    else:
+        hero_variant, hero_icon = "success", "unlock"
+        hero_title = "Device active"
+        hero_desc = "Your account is in good standing. Keep payments current to avoid lock."
+
+    hero_live = bool(pending_attempt) or device_lock == "pending"
+    hero_live_label = "Payment being verified" if pending_attempt else ("Unlock in progress" if device_lock == "pending" else "")
+    hero_meta = [item for item in [
+        contract.payg_number or contract.contract_number,
+        device_info.get("model") or contract.device_model or "",
+        f"Outstanding {_mwk(remaining)}" if remaining else "",
+    ] if item]
+
+    fin_items = [
+        {"label": "Outstanding", "value": _mwk(remaining), "tone": "danger" if status in {"overdue", "warning"} else "brand", "emphasis": True},
+        {"label": "Paid", "value": _mwk(contract.amount_paid), "tone": "success"},
+        {"label": "Daily rate", "value": _mwk(contract.daily_price) if contract.daily_price else "—"},
+    ]
+
+    meta_rows = []
+    if warning and warning.date:
+        meta_rows.append({
+            "label": "Next lock date",
+            "value": (
+                timezone.localtime(warning.date).strftime("%d %b %Y %H:%M")
+                if hasattr(warning.date, "hour")
+                else warning.date.strftime("%d %b %Y")
+            ),
+            "tone": "danger" if status == "overdue" else "warning",
+        })
+    elif contract.access_expires_at:
+        meta_rows.append({
+            "label": "Access valid until",
+            "value": timezone.localtime(contract.access_expires_at).strftime("%d %b %Y %H:%M"),
+        })
+    if last_paid_tx:
+        meta_rows.append({
+            "label": "Last successful payment",
+            "value": f"{_mwk(last_paid_tx.amount)} · {(last_paid_tx.paid_at or last_paid_tx.created_at).strftime('%d %b %Y')}",
+            "tone": "success",
+        })
+    if warning:
+        meta_rows.append({"label": "Days remaining", "value": str(max(warning.days, 0)), "tone": "warning" if warning.days >= 0 else "danger"})
+    meta_rows.extend([
+        {"label": "Deposit access", "value": f"{contract.deposit_access_days or 7} days"},
+        {"label": "Device lock status", "value": device_lock.capitalize() if device_lock and device_lock != "unknown" else "Not synced yet"},
+        {"label": "Lock provider", "value": lock_provider_label},
+        {"label": "IMEI", "value": device_info.get("imei") or "Not entered yet", "mono": True},
+    ])
+    if deposit_summary.required_amount:
+        meta_rows.insert(0, {
+            "label": "Deposit",
+            "value": (
+                "Fully paid" if deposit_summary.is_fully_paid
+                else f"{_mwk(deposit_summary.remaining_amount)} remaining"
+            ),
+            "tone": "success" if deposit_summary.is_fully_paid else "warning",
+        })
+
+    timeline_events = []
+    for event in timeline:
+        when = event.get("time")
+        timeline_events.append({
+            "title": event.get("title", ""),
+            "desc": event.get("desc", ""),
+            "time": when,
+            "time_display": timezone.localtime(when).strftime("%d %b %Y, %H:%M") if when else "",
+            "state": event.get("state") or "plain",
+        })
+
+    tech_rows = [
+        {"label": "Contract number", "value": contract.contract_number, "mono": True},
+        {"label": "PayG number", "value": contract.payg_number or "Pending", "mono": True},
+        {"label": "Provider contract ref", "value": contract.provider_contract_reference or "—", "mono": True},
+        {"label": "Provider device ref", "value": contract.provider_device_reference or "—", "mono": True},
+        {"label": "Enrollment status", "value": (contract.device_enrollment_status or "none").replace("_", " ").capitalize()},
+        {
+            "label": "Last lock sync",
+            "value": (
+                timezone.localtime(contract.last_lock_sync_at).strftime("%d %b %Y %H:%M")
+                if contract.last_lock_sync_at else "Never"
+            ),
+        },
+    ]
+    if contract.last_lock_error:
+        tech_rows.append({"label": "Last lock error", "value": contract.last_lock_error, "tone": "danger"})
+
+    contract_url = f"/pay/contract/{contract.contract_number}/"
+    actions = []
+    if pending_attempt and pending_attempt.status_token:
+        actions.append({
+            "type": "link",
+            "label": "Check payment status",
+            "icon": "refresh",
+            "url": f"/pay/payment/{pending_attempt.internal_reference}/?token={pending_attempt.status_token}",
+            "variant": "primary",
+        })
+    elif not lock_state.fully_paid and status != "completed":
+        pay_url = contract_url
+        if status == "deposit_pending":
+            pay_url = f"{contract_url}?payment_type=deposit"
+        actions.append({
+            "type": "link",
+            "label": "Pay deposit" if status == "deposit_pending" else "Pay now",
+            "icon": "receipt",
+            "url": pay_url,
+            "variant": "primary",
+        })
+    actions.append({
+        "type": "link",
+        "label": "Back to contract",
+        "icon": "back",
+        "url": contract_url,
+        "variant": "secondary",
+    })
+
+    return render(request, "portal/device_status.html", {
+        "contract": contract,
+        "lock_state": lock_state,
+        "lock_status": status,
+        "lock_warning": warning,
+        "remaining": remaining,
+        "fully_paid": lock_state.fully_paid,
+        "deposit_summary": deposit_summary,
+        "device_info": device_info,
+        "lock_provider_label": lock_provider_label,
+        "timeline": timeline,
+        "timeline_events": timeline_events,
+        "last_paid_tx": last_paid_tx,
+        "pending_attempt": pending_attempt,
+        "hero_variant": hero_variant,
+        "hero_icon": hero_icon,
+        "hero_title": hero_title,
+        "hero_desc": hero_desc,
+        "hero_live": hero_live,
+        "hero_live_label": hero_live_label,
+        "hero_meta": hero_meta,
+        "fin_items": fin_items,
+        "meta_rows": meta_rows,
+        "tech_rows": tech_rows,
+        "actions": actions,
     })
 
 
@@ -564,6 +829,8 @@ def portal_payment(request, contract_number):
         messages.error(request, f"Minimum payment is MWK {minimum:,.0f}.")
         return redirect("portal_contract", contract_number=contract_number)
 
+    retry_of_reference = (request.POST.get("retry_of") or "").strip()
+
     from portal.services import calculate_deposit_payment_type
     payment_type = calculate_deposit_payment_type(contract, payment_type_raw)
     if payment_type == PaymentTransaction.TYPE_DEPOSIT:
@@ -572,7 +839,12 @@ def portal_payment(request, contract_number):
         if deposit_remaining <= Decimal("0"):
             messages.info(request, "Deposit is already fully paid.")
             return redirect("portal_contract", contract_number=contract_number)
-        if deposit_state.status == "pending_confirmation":
+        # An explicit retry (customer clicked "Retry" from a specific stale/failed
+        # attempt) is always allowed through — the service layer independently
+        # validates that the referenced attempt actually qualifies for retry. A
+        # plain "pay again" submission (no retry_of) is still blocked while a
+        # deposit payment is genuinely pending confirmation.
+        if deposit_state.status == "pending_confirmation" and not retry_of_reference:
             messages.info(request, "A deposit payment is still awaiting confirmation. Do not pay again yet.")
             return redirect("portal_contract", contract_number=contract_number)
         if amount > deposit_remaining:
@@ -609,6 +881,7 @@ def portal_payment(request, contract_number):
             contract=contract,
             customer=request.user if request.user.is_authenticated else None,
             idempotency_key=request.POST.get("idempotency_key"),
+            retry_of_reference=retry_of_reference or None,
         )
     except AirtelConfigurationError:
         logger.exception("Airtel configuration error while initiating contract payment %s", contract_number)
@@ -662,12 +935,95 @@ def portal_payment_wait(request, internal_reference):
     from payments.api_views import customer_payment_status_payload
 
     status_data = customer_payment_status_payload(airtel_tx)
+    retry_payment_type = (
+        "deposit" if airtel_tx.purpose == AirtelTransaction.PURPOSE_DEPOSIT else "repayment"
+    )
+    current_step = int(status_data.get("current_step") or 2)
+    is_final = bool(status_data.get("is_final"))
+    failed = status_data.get("status") in {"failed", "cancelled", "expired", "reversed"}
+
+    def _step_state(step_number):
+        if is_final and not failed:
+            return "done"
+        if failed and step_number == current_step:
+            return "failed"
+        if step_number < current_step:
+            return "done"
+        if step_number == current_step:
+            return "current"
+        return "pending"
+
+    progress_steps = [
+        {"label": "Request sent", "state": _step_state(1)},
+        {"label": "Customer action", "state": _step_state(2)},
+        {"label": "Payment confirmed", "state": _step_state(3)},
+    ]
+
+    payment_type_label = {
+        "deposit": "Deposit",
+        "partial_repayment": "Partial repayment",
+    }.get(status_data.get("payment_type"), "Repayment")
+
+    detail_rows = [
+        {"label": "Phone", "value": mask_msisdn(airtel_tx.customer_msisdn)},
+        {"label": "Payment type", "value": payment_type_label},
+        {"label": "Network", "value": "Airtel Money"},
+        {"label": "Amount", "value": f"{airtel_tx.currency} {airtel_tx.amount:,.0f}"},
+    ]
+    if contract:
+        detail_rows.append({"label": "Contract", "value": contract.contract_number, "mono": True})
+        if contract.payg_number:
+            detail_rows.append({"label": "PayG code", "value": contract.payg_number, "mono": True})
+    detail_rows.extend([
+        {"label": "Reference", "value": airtel_tx.internal_reference, "mono": True},
+        {"label": "Initiated", "value": timezone.localtime(airtel_tx.created_at).strftime("%d %b %Y, %H:%M %Z")},
+    ])
+
+    tech_rows = [
+        {"label": "Internal reference", "value": airtel_tx.internal_reference, "mono": True},
+    ]
+    if airtel_tx.provider_reference:
+        tech_rows.append({"label": "Provider reference", "value": airtel_tx.provider_reference, "mono": True})
+    initiation = airtel_tx.initiation_response or {}
+    if isinstance(initiation, dict) and initiation.get("provider_trace_id"):
+        tech_rows.append({"label": "Provider trace ID", "value": initiation["provider_trace_id"], "mono": True})
+    tech_rows.append({
+        "label": "Callback status",
+        "value": (
+            f"Received{' & verified' if airtel_tx.callback_verified else ''} · "
+            f"{timezone.localtime(airtel_tx.callback_received_at).strftime('%d %b %Y, %H:%M')}"
+            if airtel_tx.callback_received_at else "Not yet received"
+        ),
+        "tone": "muted",
+    })
+    if airtel_tx.reconciliation_required and airtel_tx.processing_note:
+        tech_rows.append({"label": "Reconciliation note", "value": airtel_tx.processing_note, "tone": "warning"})
+
+    if status_data.get("status") == "expired":
+        retry_desc = (
+            "The previous attempt expired before it could be confirmed and can no longer receive "
+            "a late confirmation. Starting a new request is safe — it will not double-charge you."
+        )
+    elif status_data.get("status") == "failed":
+        retry_desc = (
+            "The previous attempt failed or was declined and can no longer receive a late confirmation. "
+            "Starting a new request is safe — it will not double-charge you."
+        )
+    else:
+        retry_desc = (
+            "The previous attempt ended without a successful confirmation and can no longer receive "
+            "a late confirmation. Starting a new request is safe — it will not double-charge you."
+        )
+
+    deposit_access_days = (contract.deposit_access_days if contract else None) or 7
+
     return render(
         request,
         "portal/payment_wait.html",
         {
             "airtel_tx": airtel_tx,
             "contract": contract,
+            "retry_payment_type": retry_payment_type,
             "provider_label": "Airtel Money",
             "provider_name": "Airtel Money",
             "provider_slug": "airtel_money",
@@ -686,6 +1042,27 @@ def portal_payment_wait(request, internal_reference):
                 if contract
                 else ""
             ),
+            "progress_steps": progress_steps,
+            "detail_rows": detail_rows,
+            "tech_rows": tech_rows,
+            "retry_desc": retry_desc,
+            "retry_action_url": (
+                f"/pay/contract/{contract.contract_number}/payment/" if contract else ""
+            ),
+            "retry_fields": [
+                {"name": "phone", "value": airtel_tx.customer_msisdn},
+                {"name": "amount", "value": str(airtel_tx.amount)},
+                {"name": "payment_type", "value": retry_payment_type},
+                {"name": "retry_of", "value": airtel_tx.internal_reference},
+            ],
+            "ambiguous_statuses": {
+                "confirmation_delayed",
+                "reconciliation_required",
+                "manual_review",
+                "pending_provider_confirmation",
+            },
+            "deposit_access_days": deposit_access_days,
+            "airtel_money_id": status_data.get("airtel_money_id") or "",
         },
     )
 
@@ -738,10 +1115,49 @@ def portal_history(request, contract_number):
     # Reverse for display (newest first)
     all_txns.reverse()
 
+    deposit_summary = get_deposit_summary(contract)
+    from core.formatting import format_mwk
+
+    def _mwk(value):
+        if value is None:
+            return "—"
+        return format_mwk(value) or "—"
+
+    history_fin_items = [
+        {"label": "Instalments", "value": _mwk(contract.amount_paid), "tone": "success"},
+        {"label": "Confirmed deposit", "value": _mwk(deposit_summary.confirmed_paid_amount)},
+        {"label": "Remaining", "value": _mwk(contract.remaining_amount), "emphasis": True},
+        {"label": "Complete", "value": f"{contract.progress_percent}%"},
+    ]
+
+    history_events = []
+    for tx in all_txns:
+        when = tx.paid_at or tx.created_at
+        state = (
+            "done" if tx.status == PaymentTransaction.STATUS_PAID
+            else "failed" if tx.status == PaymentTransaction.STATUS_FAILED
+            else "current"
+        )
+        history_events.append({
+            "title": f"{_mwk(tx.amount)} · {tx.get_status_display()}",
+            "desc": " · ".join(filter(None, [
+                tx.get_payment_type_display() if tx.payment_type else "",
+                tx.get_provider_display(),
+                tx.masked_phone if getattr(tx, "phone", None) else "",
+                tx.internal_reference or "",
+                f"Balance after {_mwk(tx.balance_after)}" if tx.status == PaymentTransaction.STATUS_PAID and tx.balance_after is not None else "",
+            ])),
+            "time": when,
+            "time_display": timezone.localtime(when).strftime("%d %b %Y, %H:%M") if when else "",
+            "state": state,
+        })
+
     return render(request, "portal/history.html", {
         "contract": contract,
-        "deposit_summary": get_deposit_summary(contract),
+        "deposit_summary": deposit_summary,
         "transactions": all_txns,
+        "history_fin_items": history_fin_items,
+        "history_events": history_events,
         "month_filter": month_filter,
         "method_filter": method_filter,
         "providers": PaymentTransaction.PROVIDER_CHOICES,
@@ -816,6 +1232,18 @@ def portal_payg_history(request, payg_number):
             "error": "PayG contract not found. Please check the number or contact support.",
         }, status=404)
     return portal_history(request, contract.contract_number)
+
+
+def portal_payg_device_status(request, payg_number):
+    """Device/lock status page for a PayG number."""
+    contract, err = _get_contract_by_payg(payg_number)
+    if err:
+        return render(request, "portal/search.html", {
+            "searched": True,
+            "query": payg_number,
+            "error": "PayG contract not found. Please check the number or contact support.",
+        }, status=404)
+    return portal_device_status(request, contract.contract_number)
 
 
 # ---------------------------------------------------------------------------
