@@ -1,7 +1,15 @@
-{# Flat financial summary line — replaces boxed money grids.
-   Pass `fin_items` in context: list of dicts {label, value, tone (optional), emphasis (optional bool)}.
-   Scalars via `with`: fin_percent (0-100, optional progress bar), fin_percent_tone (success|warning),
-   fin_caption (optional small text under the bar). #}
+{% comment %}
+Flat financial summary line — replaces boxed money grids.
+
+Pass fin_items in context with:
+label, value, tone and optional emphasis.
+
+Optional values:
+fin_percent
+fin_percent_tone
+fin_caption
+{% endcomment %}
+
 <div class="cpd-fin">
   <div class="cpd-fin__line">
     {% for item in fin_items %}
