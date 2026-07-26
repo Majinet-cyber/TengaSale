@@ -1,13 +1,21 @@
 {% load ts_filters %}
-{# Concise device-status band shown on contract.html, linking to the full device_status.html page.
-   Scalars via `with`: band_tone (success|warning|danger|info), band_icon, band_title, band_desc,
-   band_meta (right-aligned short text), band_url. #}
-<a href="{{ band_url }}" class="cpd-band cpd-band--{{ band_tone|default:"info" }}">
+
+<a href="{{ band_url }}" class="cpd-band cpd-band--{{ band_tone|default:'info' }}">
   <span class="cpd-band__dot" aria-hidden="true"></span>
+
   <span class="cpd-band__body">
     <span class="cpd-band__title">{{ band_title }}</span>
-    {% if band_desc %}<span class="cpd-band__desc">{{ band_desc }}</span>{% endif %}
+
+    {% if band_desc %}
+      <span class="cpd-band__desc">{{ band_desc }}</span>
+    {% endif %}
   </span>
-  {% if band_meta %}<span class="cpd-band__meta">{{ band_meta }}</span>{% endif %}
-  <span class="cpd-band__chev" aria-hidden="true">{% ts_icon "chevron-right" %}</span>
+
+  {% if band_meta %}
+    <span class="cpd-band__meta">{{ band_meta }}</span>
+  {% endif %}
+
+  <span class="cpd-band__chev" aria-hidden="true">
+    {% ts_icon "chevron-right" %}
+  </span>
 </a>

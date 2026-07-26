@@ -1,6 +1,5 @@
 {% load ts_filters %}
-{# Small inline notice for ambiguous / informational states.
-   Scalars via `with`: notice_tone (info|warning|danger|success), notice_icon, notice_text. #}
+
 <div class="cpd-notice cpd-notice--{{ notice_tone|default:"info" }}" role="status">
   {% ts_icon notice_icon|default:"info" %}
   <span>{{ notice_text }}</span>

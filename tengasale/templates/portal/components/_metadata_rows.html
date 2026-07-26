@@ -1,10 +1,13 @@
-{# Flat divided label/value rows — replaces boxed meta grids.
-   Pass `rows` in context: list of dicts {label, value, tone (optional: success|warning|danger|muted), mono (optional bool)}. #}
 <div class="cpd-rows">
   {% for row in rows %}
-  <div class="cpd-rows__row">
-    <span class="cpd-rows__label">{{ row.label }}</span>
-    <span class="cpd-rows__value{% if row.tone %} cpd-rows__value--{{ row.tone }}{% endif %}{% if row.mono %} cpd-rows__value--mono{% endif %}">{{ row.value }}</span>
-  </div>
+    <div class="cpd-rows__row">
+      <span class="cpd-rows__label">
+        {{ row.label }}
+      </span>
+
+      <span class="cpd-rows__value{% if row.tone %} cpd-rows__value--{{ row.tone }}{% endif %}{% if row.mono %} cpd-rows__value--mono{% endif %}">
+        {{ row.value }}
+      </span>
+    </div>
   {% endfor %}
 </div>

@@ -1,16 +1,31 @@
 {% load ts_filters %}
-{# "This attempt is stale/expired — retry safely" banner.
-   Scalars via `with`: retry_title, retry_desc, retry_action_url, retry_button_label.
-   List via context: retry_fields — list of dicts {name, value} rendered as hidden inputs. #}
+
 <div class="cpd-retry">
-  <div class="cpd-retry__title">{{ retry_title|default:"Start a fresh attempt" }}</div>
-  <div class="cpd-retry__desc">{{ retry_desc }}</div>
-  <form class="cpd-retry__form" method="post" action="{{ retry_action_url }}" data-retry-payment>
+  <div class="cpd-retry__title">
+    {{ retry_title|default:"Start a fresh attempt" }}
+  </div>
+
+  <div class="cpd-retry__desc">
+    {{ retry_desc }}
+  </div>
+
+  <form
+    class="cpd-retry__form"
+    method="post"
+    action="{{ retry_action_url }}"
+    data-retry-payment
+  >
     {% csrf_token %}
+
     {% for field in retry_fields %}
-    <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+      <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
     {% endfor %}
-    <button type="submit" class="cpd-actionbar__btn cpd-actionbar__btn--primary" data-retry-button>
+
+    <button
+      type="submit"
+      class="cpd-actionbar__btn cpd-actionbar__btn--primary"
+      data-retry-button
+    >
       {% ts_icon "refresh" %}
       {{ retry_button_label|default:"Retry this payment" }}
     </button>

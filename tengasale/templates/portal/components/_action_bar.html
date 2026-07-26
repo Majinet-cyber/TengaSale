@@ -1,21 +1,17 @@
 {% load ts_filters %}
-{# Sticky-on-mobile / inline-on-desktop action row.
-   Scalars via `with`: actionbar_sticky (bool).
-   List via context: actions — list of dicts:
-     {type: "link"|"button", label, icon (optional), url (for link), variant (primary|secondary|danger-outline),
-      disabled (bool, optional), attrs (optional literal HTML attribute string, server-controlled only)}. #}
+
 <div class="cpd-actionbar{% if actionbar_sticky %} cpd-actionbar--sticky{% endif %}" data-action-bar>
   {% for action in actions %}
     {% if action.type == "link" %}
-    <a href="{{ action.url }}" class="cpd-actionbar__btn{% if action.variant %} cpd-actionbar__btn--{{ action.variant }}{% endif %}"{% if action.attrs %} {{ action.attrs|safe }}{% endif %}>
-      {% if action.icon %}{% ts_icon action.icon %}{% endif %}
-      <span>{{ action.label }}</span>
-    </a>
+      <a href="{{ action.url }}" class="cpd-actionbar__btn{% if action.variant %} cpd-actionbar__btn--{{ action.variant }}{% endif %}"{% if action.attrs %} {{ action.attrs|safe }}{% endif %}>
+        {% if action.icon %}{% ts_icon action.icon %}{% endif %}
+        <span>{{ action.label }}</span>
+      </a>
     {% else %}
-    <button type="{{ action.button_type|default:"button" }}" class="cpd-actionbar__btn{% if action.variant %} cpd-actionbar__btn--{{ action.variant }}{% endif %}"{% if action.disabled %} disabled{% endif %}{% if action.attrs %} {{ action.attrs|safe }}{% endif %}>
-      {% if action.icon %}{% ts_icon action.icon %}{% endif %}
-      <span>{{ action.label }}</span>
-    </button>
+      <button type="{{ action.button_type|default:'button' }}" class="cpd-actionbar__btn{% if action.variant %} cpd-actionbar__btn--{{ action.variant }}{% endif %}"{% if action.disabled %} disabled{% endif %}{% if action.attrs %} {{ action.attrs|safe }}{% endif %}>
+        {% if action.icon %}{% ts_icon action.icon %}{% endif %}
+        <span>{{ action.label }}</span>
+      </button>
     {% endif %}
   {% endfor %}
 </div>
