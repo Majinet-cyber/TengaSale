@@ -384,8 +384,8 @@ def airtel_readiness_status() -> tuple[dict, int]:
         "merchant_code_configured": bool(config.merchant_code),
         "allowed_test_numbers_configured": bool(config.allowed_test_msisdns),
         "callback_configured": bool(getattr(settings, "AIRTEL_CALLBACK_URL", "")),
-        "callback_url_exact": getattr(settings, "AIRTEL_CALLBACK_URL", "")
-        == "https://tengasale-api.onrender.com/api/payments/airtel/callback/",
+        "callback_url_exact": getattr(settings, "AIRTEL_CALLBACK_URL", "").strip()
+        == "https://tengasale.onrender.com/api/payments/airtel/callback/",
         "country_is_mw": config.country == "MW",
         "currency_is_mwk": config.currency == "MWK",
         "test_max_configured": bool(
