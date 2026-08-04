@@ -158,8 +158,7 @@ class PublicSiteTests(TestCase):
         response = self.client.get(reverse("website_landing"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        # The TS brand image (large marketing image) should appear on landing
-        self.assertIn("tengasale-logo-icon", content,
+        self.assertIn("tengasale-logo-full.svg", content,
             "TS brand image not found on landing page")
 
     def test_careers_page_no_dark_hero_class(self):
@@ -210,12 +209,19 @@ class LandingPageUIRegressionTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
-    def test_v4_landing_preserves_required_copy_and_payment_destination(self):
+    def test_v4_landing_preserves_required_copy_and_internal_payment_route(self):
         response = self.client.get("/")
         self.assertContains(response, "2× monthly income")
-        self.assertContains(response, "https://pay.tengasale.africa")
+        self.assertEqual(response.content.decode().count(f'href="{reverse("portal_search")}"'), 7)
+        self.assertNotContains(response, "https://pay.tengasale.africa")
         self.assertContains(response, "css/tenga-landing-v4.css")
         self.assertContains(response, "js/tenga-landing-v4.js")
+
+    def test_v4_landing_uses_previous_official_logo_without_collage_asset(self):
+        response = self.client.get("/")
+        content = response.content.decode()
+        self.assertEqual(content.count('src="/static/images/brand/tengasale-logo-full.svg"'), 2)
+        self.assertNotContains(response, "images/brand/tengasale-logo-icon.png")
 
     def test_v4_application_form_uses_existing_application_flow(self):
         response = self.client.get("/")

@@ -16,9 +16,7 @@
   <header class="site-header" id="top">
     <nav class="nav shell" aria-label="Main navigation">
       <a class="brand" href="#top" aria-label="Tenga home">
-        <img class="brand-logo" src="{% static 'images/brand/tengasale-logo-icon.png' %}" alt="" width="34" height="34" />
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span class="brand-word">tenga</span>
+        <img class="brand-logo brand-logo--wordmark" src="{% static 'images/brand/tengasale-logo-full.svg' %}" alt="TengaSale" width="236" height="48" />
       </a>
 
       <div class="nav-links" id="navLinks">
@@ -27,10 +25,12 @@
         <a href="#phones">Phones</a>
         <a href="#map">Map</a>
         <a href="#company">Company</a>
+        <a class="mobile-only" href="{% url 'portal_search' %}">Payment Gateway</a>
+        <a class="mobile-only" href="{% url 'new_application' %}">Get Started</a>
       </div>
 
       <div class="nav-actions">
-        <a class="button button-payment desktop-only" href="https://pay.tengasale.africa" target="_blank" rel="noopener">Payment Gateway</a>
+        <a class="button button-payment desktop-only" href="{% url 'portal_search' %}">Payment Gateway</a>
         <a class="button button-primary" href="{% url 'new_application' %}">Get Started</a>
         <button class="menu-button" id="menuButton" aria-label="Open menu" aria-expanded="false">
           <span></span><span></span>
@@ -65,7 +65,7 @@
 
           <div class="hero-actions">
             <a class="button button-primary button-large" href="#phones">Explore Phones</a>
-            <a class="button button-payment button-large" href="https://pay.tengasale.africa" target="_blank" rel="noopener">Make a Payment</a>
+            <a class="button button-payment button-large" href="{% url 'portal_search' %}">Make a Payment</a>
           </div>
 
           <div class="hero-inline-stats">
@@ -112,7 +112,7 @@
                   <div><small>Plan</small><strong>Daily</strong></div>
                   <div><small>Status</small><strong>Active</strong></div>
                 </div>
-                <a class="screen-button" href="https://pay.tengasale.africa" target="_blank" rel="noopener">Pay now</a>
+                <a class="screen-button" href="{% url 'portal_search' %}">Pay now</a>
                 <div class="screen-pill-row"><span>Support</span><span>Plan</span><span>History</span></div>
               </div>
             </div>
@@ -346,7 +346,7 @@
 
         <div class="payment-band reveal">
           <div><p class="kicker">Need to pay?</p><h3>Use the Tenga payment gateway.</h3></div>
-          <a class="button button-payment button-large" href="https://pay.tengasale.africa" target="_blank" rel="noopener">Open Payment Gateway</a>
+          <a class="button button-payment button-large" href="{% url 'portal_search' %}">Open Payment Gateway</a>
         </div>
       </div>
     </section>
@@ -374,7 +374,7 @@
           </div>
           <label class="checkbox-line"><input type="checkbox" required /><span>I agree to be contacted by Tenga.</span></label>
           <button class="button button-primary button-large submit-button" type="submit">Continue to application</button>
-          <a class="button button-payment button-large secondary-submit" href="https://pay.tengasale.africa" target="_blank" rel="noopener">Go to payment gateway</a>
+          <a class="button button-payment button-large secondary-submit" href="{% url 'portal_search' %}">Go to payment gateway</a>
           <small class="footnote">Continue securely into TengaSale's existing application flow. No payment is collected from this form.</small>
         </form>
       </div>
@@ -385,10 +385,10 @@
   <footer class="site-footer">
     <div class="shell footer-layout">
       <div class="footer-brand">
-        <a class="brand footer-brand-link" href="#top"><img class="brand-logo" src="{% static 'images/brand/tengasale-logo-icon.png' %}" alt="" width="34" height="34" /><span class="brand-mark"><span></span><span></span><span></span></span><span class="brand-word">tenga</span></a>
+        <a class="brand footer-brand-link" href="#top"><img class="brand-logo brand-logo--wordmark" src="{% static 'images/brand/tengasale-logo-full.svg' %}" alt="TengaSale" width="236" height="48" /></a>
         <p>Smartphone access for the mobile-money economy of Southern Africa.</p>
       </div>
-      <div class="footer-links"><a href="#why">Why</a><a href="#process">Process</a><a href="#phones">Phones</a><a href="#map">Map</a><a href="{% url 'website_merchant_signup' %}">Merchants</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'website_privacy' %}">Privacy</a><a href="{% url 'portal_support' %}">Support</a><a href="https://pay.tengasale.africa" target="_blank" rel="noopener">Payment Gateway</a></div>
+      <div class="footer-links"><a href="#why">Why</a><a href="#process">Process</a><a href="#phones">Phones</a><a href="#map">Map</a><a href="{% url 'website_merchant_signup' %}">Merchants</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'website_privacy' %}">Privacy</a><a href="{% url 'portal_support' %}">Support</a><a href="{% url 'portal_search' %}">Payment Gateway</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built for Malawi</span></div>
     </div>
   </footer>
