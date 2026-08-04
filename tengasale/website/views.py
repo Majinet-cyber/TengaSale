@@ -1,7 +1,19 @@
 """Website views — public-facing pages for /site/."""
+import hashlib
+import logging
 import os
-from django.shortcuts import render, redirect
+
+from django.conf import settings
 from django.core.cache import cache
+from django.core.mail import EmailMessage
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils import timezone
+
+from .forms import WebsiteEnquiryForm
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_landing_stats():
@@ -58,32 +70,135 @@ def _get_landing_stats():
     return stats
 
 
+def _landing_context(request, *, section="", support_form=None):
+    initial_category = request.GET.get("category", "")
+    valid_categories = {value for value, _label in WebsiteEnquiryForm.CATEGORY_CHOICES}
+    if support_form is None:
+        initial = {"category": initial_category} if initial_category in valid_categories else None
+        support_form = WebsiteEnquiryForm(initial=initial)
+    return {
+        "section": section,
+        "support_form": support_form,
+        "support_email": settings.TENGA_SUPPORT_EMAIL,
+        "support_delivery_available": settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED,
+        "support_success": request.GET.get("support") == "sent",
+    }
+
+
+def _render_landing(request, *, section="", support_form=None):
+    return render(
+        request,
+        "website/landing.html",
+        _landing_context(request, section=section, support_form=support_form),
+    )
+
+
 def landing(request):
-    return render(request, "website/landing.html")
+    return _render_landing(request)
 
 
 def about(request):
-    return render(request, "website/landing.html", {"section": "about"})
+    return _render_landing(request, section="why")
 
 
 def how_it_works(request):
-    return render(request, "website/landing.html", {"section": "how_it_works"})
+    return _render_landing(request, section="process")
 
 
 def merchants(request):
-    return render(request, "website/landing.html", {"section": "merchants"})
+    return _render_landing(request, section="support")
 
 
 def customers(request):
-    return render(request, "website/landing.html", {"section": "customers"})
+    return _render_landing(request, section="company")
 
 
 def faq(request):
-    return render(request, "website/landing.html", {"section": "faq"})
+    return _render_landing(request, section="faq")
+
+
+def _support_rate_limited(request):
+    remote_address = request.META.get("REMOTE_ADDR", "unknown")
+    digest = hashlib.sha256(remote_address.encode("utf-8", errors="ignore")).hexdigest()[:24]
+    key = f"website-support:{digest}"
+    if cache.add(key, 1, timeout=settings.TENGA_SUPPORT_RATE_WINDOW):
+        return False
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, timeout=settings.TENGA_SUPPORT_RATE_WINDOW)
+        count = 1
+    return count > settings.TENGA_SUPPORT_RATE_LIMIT
+
+
+def _send_support_enquiry(request, form):
+    category_label = form.category_label
+    subject = (
+        f"[Tenga Website][{category_label}] {form.cleaned_data['subject']}"
+        f" — {form.cleaned_data['full_name']}"
+    )
+    originating_page = request.POST.get("originating_page", "").strip()[:500]
+    if not originating_page:
+        originating_page = request.META.get("HTTP_REFERER", "")[:500] or request.build_absolute_uri("/")
+    body = "\n".join(
+        [
+            "Tenga public website enquiry",
+            "",
+            f"Full name: {form.cleaned_data['full_name']}",
+            f"Email: {form.cleaned_data['email']}",
+            f"Phone: {form.cleaned_data.get('phone') or 'Not provided'}",
+            f"Category: {category_label}",
+            f"Subject: {form.cleaned_data['subject']}",
+            f"Consent: {'Yes' if form.cleaned_data['consent'] else 'No'}",
+            f"Submitted at: {timezone.now().isoformat()}",
+            f"Originating page: {originating_page}",
+            "",
+            "Message:",
+            form.cleaned_data["message"],
+        ]
+    )
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[settings.TENGA_SUPPORT_EMAIL],
+        reply_to=[form.cleaned_data["email"]],
+    )
+    return email.send(fail_silently=False)
 
 
 def contact(request):
-    return render(request, "website/landing.html", {"section": "contact"})
+    if request.method != "POST":
+        return _render_landing(request, section="support")
+
+    form = WebsiteEnquiryForm(request.POST)
+    if form.is_valid():
+        if form.cleaned_data.get("website"):
+            form.add_error(None, "We could not submit that enquiry. Please email support directly.")
+        elif _support_rate_limited(request):
+            form.add_error(
+                None,
+                "Too many enquiries were submitted from this connection. Please wait a few minutes or email support directly.",
+            )
+        elif not settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED:
+            form.add_error(
+                None,
+                "Online email delivery is temporarily unavailable. Please use the email link below so your enquiry reaches support.",
+            )
+        else:
+            try:
+                delivered = _send_support_enquiry(request, form)
+            except Exception:
+                logger.exception("Public website support email delivery failed")
+                delivered = 0
+            if delivered == 1:
+                return redirect(f"{reverse('public_home')}?support=sent#support")
+            form.add_error(
+                None,
+                "We could not deliver your enquiry. Your details are still shown below; please email support directly.",
+            )
+
+    return _render_landing(request, section="support", support_form=form)
 
 
 def terms(request):

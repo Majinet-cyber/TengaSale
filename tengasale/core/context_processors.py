@@ -24,6 +24,7 @@ def tengasale_support(request):
     return {
         "tengasale_whatsapp_link": settings.TENGASALE_WHATSAPP_LINK,
         "tengasale_whatsapp_number": settings.TENGASALE_WHATSAPP_NUMBER,
+        "tenga_support_email": settings.TENGA_SUPPORT_EMAIL,
         "current_tengasale_role": get_tengasale_role(request.user),
         "current_user_is_hq": get_tengasale_role(request.user) == "hq",
         "current_user_can_use_django_admin": request.user.is_authenticated

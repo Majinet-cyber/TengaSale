@@ -253,6 +253,17 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1",
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "apikey")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")  # SendGrid API key
 
+# Public website enquiries.  Delivery is enabled automatically only for a
+# credentialed SMTP backend; this prevents console/file test backends from
+# presenting a successful submission as a delivered message.
+TENGA_SUPPORT_EMAIL = os.environ.get("TENGA_SUPPORT_EMAIL", "support@emajinet.africa")
+TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED = os.environ.get(
+    "TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED",
+    "true" if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend" and EMAIL_HOST_PASSWORD else "false",
+).lower() in ("true", "1", "yes")
+TENGA_SUPPORT_RATE_LIMIT = int(os.environ.get("TENGA_SUPPORT_RATE_LIMIT", "5"))
+TENGA_SUPPORT_RATE_WINDOW = int(os.environ.get("TENGA_SUPPORT_RATE_WINDOW", "900"))
+
 TENGASALE_WHATSAPP_NUMBER = os.environ.get("TENGASALE_WHATSAPP_NUMBER", "+265883596135")
 TENGASALE_WHATSAPP_LINK = f"https://wa.me/{''.join(char for char in TENGASALE_WHATSAPP_NUMBER if char.isdigit())}"
 

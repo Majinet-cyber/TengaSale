@@ -173,6 +173,44 @@ function showToast(title, text) {
 
 document.getElementById("year").textContent = new Date().getFullYear();
 
+const supportForm = document.getElementById("supportForm");
+const supportCategory = document.getElementById("id_category");
+const originatingPage = document.getElementById("originatingPage");
+
+if (originatingPage) originatingPage.value = window.location.href;
+
+document.querySelectorAll("[data-support-category]").forEach(link => {
+  link.addEventListener("click", event => {
+    const category = link.dataset.supportCategory;
+    if (!supportCategory || !category) return;
+    event.preventDefault();
+    supportCategory.value = category;
+    const requestedSubject = link.dataset.supportSubject;
+    const subjectInput = document.getElementById("id_subject");
+    if (requestedSubject && subjectInput && !subjectInput.value) subjectInput.value = requestedSubject;
+    document.getElementById("support").scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => document.getElementById("id_subject")?.focus(), 550);
+  });
+});
+
+document.querySelectorAll(".faq-item").forEach(item => {
+  const summary = item.querySelector("summary");
+  if (!summary) return;
+  summary.setAttribute("aria-expanded", String(item.open));
+  item.addEventListener("toggle", () => summary.setAttribute("aria-expanded", String(item.open)));
+});
+
+const routeState = document.getElementById("landingRouteState");
+if (routeState?.dataset.section && !window.location.hash) {
+  window.requestAnimationFrame(() => {
+    document.getElementById(routeState.dataset.section)?.scrollIntoView({ behavior: "auto" });
+  });
+}
+
+if (supportForm?.querySelector(".field-error, .form-notice--error")) {
+  document.getElementById("support")?.scrollIntoView({ behavior: "auto" });
+}
+
 
 // subtle auto-drift on the metric ribbon for a more alive feel
 const ribbon = document.querySelector('.metric-ribbon');

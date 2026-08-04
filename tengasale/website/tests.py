@@ -1,5 +1,8 @@
 """Website app tests — public pages, lead forms, branding, and HQ page checks."""
-from django.test import TestCase, Client
+from unittest.mock import patch
+
+from django.core.cache import cache
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from .models import MerchantLead, CareerLead
 
@@ -40,6 +43,16 @@ class PublicSiteTests(TestCase):
         response = self.client.get(reverse("website_landing"))
         careers_url = reverse("website_careers")
         self.assertContains(response, careers_url)
+
+    def test_premium_navigation_restores_login_and_careers_named_routes(self):
+        response = self.client.get(reverse("website_landing"))
+        content = response.content.decode()
+        nav = content[content.index('class="nav-links"'):content.index('class="nav-actions"')]
+
+        self.assertIn(f'href="{reverse("website_careers")}"', nav)
+        self.assertIn(f'href="{reverse("login")}"', nav)
+        self.assertGreaterEqual(content.count(f'href="{reverse("website_careers")}"'), 2)
+        self.assertGreaterEqual(content.count(f'href="{reverse("login")}"'), 2)
 
     # ── /site/merchant-signup/ ───────────────────────────────────
 
@@ -379,6 +392,121 @@ class LandingPageUIRegressionTests(TestCase):
         response = self.client.get("/tengasale/underwriter/", follow=False)
         self.assertIn(response.status_code, [302, 301, 200, 404],
             "Underwriter dashboard returned an unexpected error status")
+
+
+class PublicSupportEnquiryTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+        self.payload = {
+            "full_name": "Thoko Mbewe",
+            "email": "thoko@example.com",
+            "phone": "+265991234567",
+            "category": "payment_help",
+            "subject": "Payment is not reflecting",
+            "message": "My mobile money payment was completed but is not showing yet.",
+            "consent": "on",
+            "website": "",
+            "originating_page": "https://example.test/#support",
+        }
+
+    def test_landing_has_support_form_faq_and_visible_fallback(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="support"')
+        self.assertContains(response, 'id="supportForm"')
+        self.assertContains(response, "support@emajinet.africa")
+        self.assertContains(response, "mailto:support@emajinet.africa")
+        self.assertEqual(response.content.decode().count('class="faq-item"'), 7)
+
+    @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=False)
+    @patch("website.views.EmailMessage")
+    def test_non_delivering_backend_never_claims_success_and_preserves_data(self, email_message):
+        response = self.client.post(reverse("website_contact"), self.payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Direct form delivery is not configured here")
+        self.assertContains(response, "Payment is not reflecting")
+        self.assertContains(response, "support@emajinet.africa")
+        email_message.assert_not_called()
+
+    @override_settings(
+        TENGA_SUPPORT_EMAIL="support@emajinet.africa",
+        TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True,
+    )
+    @patch("website.views.EmailMessage")
+    def test_valid_enquiry_uses_emailmessage_recipient_reply_to_subject_and_body(self, email_message):
+        email_message.return_value.send.return_value = 1
+        response = self.client.post(reverse("website_contact"), self.payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/?support=sent#support")
+
+        kwargs = email_message.call_args.kwargs
+        self.assertEqual(kwargs["to"], ["support@emajinet.africa"])
+        self.assertEqual(kwargs["reply_to"], ["thoko@example.com"])
+        self.assertEqual(
+            kwargs["subject"],
+            "[Tenga Website][Payment help] Payment is not reflecting — Thoko Mbewe",
+        )
+        self.assertIn("Full name: Thoko Mbewe", kwargs["body"])
+        self.assertIn("Phone: +265991234567", kwargs["body"])
+        self.assertIn("Category: Payment help", kwargs["body"])
+        self.assertIn("Originating page: https://example.test/#support", kwargs["body"])
+        email_message.return_value.send.assert_called_once_with(fail_silently=False)
+
+    @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
+    @patch("website.views.EmailMessage")
+    def test_phone_is_required_for_payment_application_and_merchant_categories(self, email_message):
+        for category in ("payment_help", "new_application", "merchant_partnership"):
+            with self.subTest(category=category):
+                data = {**self.payload, "category": category, "phone": ""}
+                response = self.client.post(reverse("website_contact"), data)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "A phone number is required")
+        email_message.assert_not_called()
+
+    @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
+    @patch("website.views.EmailMessage")
+    def test_honeypot_blocks_delivery(self, email_message):
+        response = self.client.post(
+            reverse("website_contact"),
+            {**self.payload, "website": "https://spam.example"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "could not submit")
+        email_message.assert_not_called()
+
+    @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True, TENGA_SUPPORT_RATE_LIMIT=2)
+    @patch("website.views.EmailMessage")
+    def test_rate_limit_blocks_excess_delivery(self, email_message):
+        email_message.return_value.send.return_value = 1
+        self.assertEqual(self.client.post(reverse("website_contact"), self.payload).status_code, 302)
+        self.assertEqual(self.client.post(reverse("website_contact"), self.payload).status_code, 302)
+        response = self.client.post(reverse("website_contact"), self.payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Too many enquiries")
+        self.assertEqual(email_message.return_value.send.call_count, 2)
+
+    def test_contact_post_requires_csrf(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        response = csrf_client.post(reverse("website_contact"), self.payload)
+        self.assertEqual(response.status_code, 403)
+
+    def test_public_support_and_legal_pages_use_required_email(self):
+        pages = [
+            reverse("website_terms"),
+            reverse("website_privacy"),
+            reverse("website_payment_terms"),
+            reverse("website_merchant_terms"),
+            reverse("website_careers"),
+            reverse("website_merchant_signup_success"),
+            reverse("portal_support"),
+        ]
+        for url in pages:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "support@emajinet.africa")
+                self.assertNotContains(response, "support@tengasale.africa")
 
 
 class MerchantLeadModelTests(TestCase):

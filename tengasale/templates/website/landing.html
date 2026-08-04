@@ -4,7 +4,12 @@
 {% block site_title %}Tenga — Smartphone Access for Digital Life{% endblock %}
 {% block site_description %}Tenga gives Malawi a premium, clear and mobile-money-first way to access smartphones.{% endblock %}
 {% block site_head %}
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=4.0" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Tenga — Smartphone Access for Digital Life" />
+  <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
+  <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/brand/tengasale-logo-full.svg' %}" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=4.1" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -25,6 +30,9 @@
         <a href="#phones">Phones</a>
         <a href="#map">Map</a>
         <a href="#company">Company</a>
+        <a href="{% url 'website_careers' %}">Careers</a>
+        <a href="#support">Support</a>
+        <a href="{% url 'login' %}">Login</a>
         <a class="mobile-only" href="{% url 'portal_search' %}">Payment Gateway</a>
         <a class="mobile-only" href="{% url 'new_application' %}">Get Started</a>
       </div>
@@ -41,6 +49,7 @@
 {% endblock %}
 
 {% block site_content %}
+    <div id="landingRouteState" data-section="{{ section|default:'' }}" hidden></div>
     <section class="hero section-dark">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-glow glow-1" aria-hidden="true"></div>
@@ -50,7 +59,7 @@
 
       <div class="shell hero-layout">
         <div class="hero-copy reveal">
-          <div class="hero-badge"><span class="live-dot"></span> Live in Southern Africa</div>
+          <div class="hero-badge"><span class="live-dot"></span> Live in Malawi. Built for Southern Africa.</div>
           <p class="kicker">Why Tenga exists</p>
           <h1>A smartphone is <span>not a luxury.</span></h1>
           <p class="hero-text">
@@ -339,15 +348,114 @@
         </div>
 
         <div class="audience-grid">
-          <article class="audience-card reveal"><span>Customers</span><h3>Clear and premium.</h3><p>Easy to understand. Easy to trust.</p></article>
-          <article class="audience-card reveal reveal-delay-sm"><span>Investors & partners</span><h3>Disciplined and scalable.</h3><p>Strong process and regional ambition.</p></article>
-          <article class="audience-card reveal reveal-delay-md"><span>Team</span><h3>Useful work. Serious ambition.</h3><p>A mission worth building around.</p></article>
+          <article class="audience-card reveal"><span>Customers</span><h3>Clear and premium.</h3><p>Easy to understand. Easy to trust.</p><a class="audience-link" href="#support" data-support-category="customer_support">Get customer support <span aria-hidden="true">→</span></a></article>
+          <article class="audience-card reveal reveal-delay-sm"><span>Investors & partners</span><h3>Disciplined and scalable.</h3><p>Strong process and regional ambition.</p><div class="audience-actions"><a class="audience-link" href="#support" data-support-category="merchant_partnership">Partner conversation <span aria-hidden="true">→</span></a><a class="audience-link" href="#support" data-support-category="investor_media">Investor enquiry <span aria-hidden="true">→</span></a></div></article>
+          <article class="audience-card reveal reveal-delay-md"><span>Team</span><h3>Useful work. Serious ambition.</h3><p>A mission worth building around.</p><a class="audience-link" href="#support" data-support-category="careers">Join the team <span aria-hidden="true">→</span></a></article>
         </div>
 
         <div class="payment-band reveal">
           <div><p class="kicker">Need to pay?</p><h3>Use the Tenga payment gateway.</h3></div>
           <a class="button button-payment button-large" href="{% url 'portal_search' %}">Open Payment Gateway</a>
         </div>
+      </div>
+    </section>
+
+    <section class="faq-section section-soft" id="faq">
+      <div class="shell faq-layout">
+        <div class="section-head reveal compact-head">
+          <p class="kicker">Frequently asked questions</p>
+          <h2>Clear answers.<br /><span>Less uncertainty.</span></h2>
+          <p class="lead">The essentials about applications, payments, protection and working with Tenga.</p>
+        </div>
+        <div class="faq-list reveal reveal-delay-sm">
+          <details class="faq-item">
+            <summary>How do I get a phone through Tenga?</summary>
+            <p>Choose a phone, submit your details through the existing application flow, complete identity and affordability checks, then receive the confirmed deposit and payment plan.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How much is the deposit?</summary>
+            <p>Deposits and instalments depend on the phone and final assessment. Website prices are illustrative; Tenga confirms the exact amount before you commit.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I pay daily, weekly or monthly?</summary>
+            <p>Yes. Available plans are designed around real income rhythms and use mobile money. Your confirmed agreement shows the cadence and amount that apply to you.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What happens if a payment is late?</summary>
+            <p>Tenga reminds first and gives you a clear way to pay. Responsible device protection may apply under your agreement, with access restored after a confirmed payment.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What if my payment is not showing?</summary>
+            <p>Keep the transaction reference, check the payment gateway, and contact support under Payment help if it still has not reflected.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How can my business become a Tenga merchant?</summary>
+            <p>Use the merchant partnership option below or complete the existing merchant onboarding form. The team will review your business details and follow up.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How do I contact Tenga about careers, media or investment?</summary>
+            <p>Select Careers or Investor or media in the support form. Your enquiry is addressed to the same public support team for routing.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="support-section section-light" id="support">
+      <div class="shell support-layout">
+        <div class="support-copy reveal">
+          <p class="kicker">Support & enquiries</p>
+          <h2>Reach the right team.</h2>
+          <p class="lead">Customer help, applications, payments, partnerships, careers and media — one clear place to start.</p>
+          <div class="support-direct">
+            <span>Direct email fallback</span>
+            <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+            <p>Use this link at any time if the form cannot send.</p>
+          </div>
+          <div class="support-shortcuts" aria-label="Enquiry shortcuts">
+            <a href="#support" data-support-category="payment_help">Payment help</a>
+            <a href="#support" data-support-category="merchant_partnership">Merchant partnership</a>
+            <a href="#support" data-support-category="careers">Careers</a>
+          </div>
+        </div>
+
+        <form class="support-form reveal reveal-delay" action="{% url 'website_contact' %}" method="post" id="supportForm" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="originating_page" id="originatingPage" value="" />
+          <div class="support-honeypot" aria-hidden="true">{{ support_form.website }}</div>
+          <div class="form-head"><h3>Send an enquiry</h3><span>Public support</span></div>
+
+          {% if support_success %}
+            <div class="form-notice form-notice--success" role="status">
+              <strong>Your enquiry was sent.</strong>
+              <span>The Tenga support team will reply using the details you provided.</span>
+            </div>
+          {% endif %}
+          {% if support_form.non_field_errors %}
+            <div class="form-notice form-notice--error" role="alert">
+              {% for error in support_form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
+            </div>
+          {% endif %}
+          {% if not support_delivery_available %}
+            <div class="form-notice form-notice--warning" role="status">
+              <strong>Direct form delivery is not configured here.</strong>
+              <span>Email <a href="mailto:{{ support_email }}">{{ support_email }}</a> so your message reaches support.</span>
+            </div>
+          {% endif %}
+
+          <div class="support-form-row">
+            <label for="{{ support_form.full_name.id_for_label }}">{{ support_form.full_name.label }}{{ support_form.full_name }}{% for error in support_form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+            <label for="{{ support_form.email.id_for_label }}">{{ support_form.email.label }}{{ support_form.email }}{% for error in support_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+          </div>
+          <div class="support-form-row">
+            <label for="{{ support_form.phone.id_for_label }}">{{ support_form.phone.label }} <small>Optional for general enquiries</small>{{ support_form.phone }}{% for error in support_form.phone.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+            <label for="{{ support_form.category.id_for_label }}">{{ support_form.category.label }}{{ support_form.category }}{% for error in support_form.category.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+          </div>
+          <label for="{{ support_form.subject.id_for_label }}">{{ support_form.subject.label }}{{ support_form.subject }}{% for error in support_form.subject.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+          <label for="{{ support_form.message.id_for_label }}">{{ support_form.message.label }}{{ support_form.message }}{% for error in support_form.message.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+          <label class="checkbox-line support-consent" for="{{ support_form.consent.id_for_label }}">{{ support_form.consent }}<span>{{ support_form.consent.label }}{% for error in support_form.consent.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</span></label>
+          <button class="button button-payment button-large support-submit" type="submit">Send to Tenga Support</button>
+          <p class="support-fallback">Prefer email? <a href="mailto:{{ support_email }}">Write directly to {{ support_email }}</a>.</p>
+        </form>
       </div>
     </section>
 
@@ -383,18 +491,23 @@
 
 {% block site_footer %}
   <footer class="site-footer">
-    <div class="shell footer-layout">
+    <div class="shell footer-layout footer-layout--complete">
       <div class="footer-brand">
         <a class="brand footer-brand-link" href="#top"><img class="brand-logo brand-logo--wordmark" src="{% static 'images/brand/tengasale-logo-full.svg' %}" alt="TengaSale" width="236" height="48" /></a>
         <p>Smartphone access for the mobile-money economy of Southern Africa.</p>
+        <a class="footer-email" href="mailto:{{ support_email }}">{{ support_email }}</a>
       </div>
-      <div class="footer-links"><a href="#why">Why</a><a href="#process">Process</a><a href="#phones">Phones</a><a href="#map">Map</a><a href="{% url 'website_merchant_signup' %}">Merchants</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'website_privacy' %}">Privacy</a><a href="{% url 'portal_support' %}">Support</a><a href="{% url 'portal_search' %}">Payment Gateway</a></div>
-      <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built for Malawi</span></div>
+      <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
+      <div class="footer-group"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
+      <div class="footer-group"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors & media</a></div>
+      <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Roadmap</a><a href="#map">Zimbabwe — Roadmap</a></div>
+      <div class="footer-group"><strong>Legal</strong><a href="{% url 'website_terms' %}">Terms</a><a href="{% url 'website_privacy' %}">Privacy & KYC</a><a href="{% url 'website_payment_terms' %}">Payment terms</a><a href="{% url 'website_merchant_terms' %}">Merchant terms</a><a href="#protection">Device protection</a></div>
+      <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built in Malawi. Designed for Southern Africa.</span></div>
     </div>
   </footer>
 {% endblock %}
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=4.0" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=4.1" defer></script>
 {% endblock %}
