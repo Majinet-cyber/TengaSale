@@ -1,6 +1,7 @@
 
 const PHONE_OFFERS = [
   {
+    brand: "itel",
     name: "itel A50C",
     badge: "Accessible",
     spec: "64GB · 6.6-inch display",
@@ -9,6 +10,7 @@ const PHONE_OFFERS = [
     colors: { glow: "#ddebff", grad: "linear-gradient(135deg,#6b7cff,#17c8ff)", accent: "#49d9ff", a: "#6856ff", b: "#1f2146" }
   },
   {
+    brand: "Tecno",
     name: "Tecno Spark 50",
     badge: "Popular",
     spec: "128GB · 6.78-inch display",
@@ -17,6 +19,7 @@ const PHONE_OFFERS = [
     colors: { glow: "#e8dcff", grad: "linear-gradient(135deg,#8d63ff,#ff74a2)", accent: "#ff6ca6", a: "#171b35", b: "#7a4cff" }
   },
   {
+    brand: "Samsung",
     name: "Samsung Galaxy A15",
     badge: "Premium",
     spec: "128GB · 6.5-inch AMOLED",
@@ -32,6 +35,11 @@ const phoneGrid = document.getElementById("phoneGrid");
 const deviceSelect = document.getElementById("deviceSelect");
 const pageProgress = document.getElementById("pageProgress");
 const header = document.querySelector(".site-header");
+const BRAND_LOGOS = {
+  itel: phoneGrid.dataset.logoItel,
+  Tecno: phoneGrid.dataset.logoTecno,
+  Samsung: phoneGrid.dataset.logoSamsung
+};
 
 let activeCadence = "daily";
 
@@ -51,6 +59,9 @@ function renderPhones() {
       <div class="phone-body">
         <div class="phone-top">
           <div>
+            <span class="phone-brand" aria-label="${phone.brand}">
+              <img src="${BRAND_LOGOS[phone.brand]}" alt="" width="96" height="28">
+            </span>
             <h3>${phone.name}</h3>
             <div class="spec">${phone.spec}</div>
           </div>

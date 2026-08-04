@@ -259,7 +259,10 @@
           <button class="cadence-button" data-cadence="monthly">Monthly</button>
         </div>
 
-        <div class="phone-grid" id="phoneGrid"></div>
+        <div class="phone-grid" id="phoneGrid"
+             data-logo-itel="{% static 'img/brands/itel.svg' %}"
+             data-logo-tecno="{% static 'img/brands/tecno.svg' %}"
+             data-logo-samsung="{% static 'img/brands/samsung.svg' %}"></div>
       </div>
     </section>
 
@@ -354,7 +357,14 @@
         </div>
 
         <div class="payment-band reveal">
-          <div><p class="kicker">Need to pay?</p><h3>Use the Tenga payment gateway.</h3></div>
+          <div>
+            <p class="kicker">Need to pay?</p>
+            <h3>Use the Tenga payment gateway.</h3>
+            <div class="payment-networks" aria-label="Supported mobile-money options">
+              <span class="payment-network"><img src="{% static 'tengasale/assets/logos/airtel-logo.svg' %}" alt="" width="24" height="26" /><span>Airtel Money</span></span>
+              <span class="payment-network"><img src="{% static 'tengasale/assets/logos/tnm-logo.svg' %}" alt="" width="29" height="26" /><span>TNM Mpamba</span></span>
+            </div>
+          </div>
           <a class="button button-payment button-large" href="{% url 'portal_search' %}">Open Payment Gateway</a>
         </div>
       </div>

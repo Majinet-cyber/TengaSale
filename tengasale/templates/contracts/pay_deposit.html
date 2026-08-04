@@ -91,6 +91,7 @@
 .operator-chip.airtel { background: #fff0e8; color: #ff5a00; }
 .operator-chip.tnm { background: #e8f5e9; color: #16a34a; }
 .operator-chip.unknown { background: #f3f4f6; color: #9ca3af; }
+.operator-chip img, .payment-method-chip img { display:block; width:auto; height:20px; max-width:24px; object-fit:contain; flex:0 0 auto; }
 
 /* Pay button */
 .pay-deposit-btn {
@@ -369,17 +370,17 @@
           />
         </div>
         <div x-show="operator === 'airtel'" class="operator-chip airtel">
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <img src="{% static 'tengasale/assets/logos/airtel-logo.svg' %}" alt="" width="19" height="20">
           Airtel Money
         </div>
         <div x-show="operator === 'tnm'" class="operator-chip tnm">
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          <img src="{% static 'tengasale/assets/logos/tnm-logo.svg' %}" alt="" width="23" height="20">
           TNM Mpamba
         </div>
         <div x-show="!operator && phone.length > 2" class="operator-chip unknown">Enter a valid Malawi number</div>
         <div class="payment-method-row" aria-label="Payment methods">
-          <span class="payment-method-chip payment-method-chip--active">Airtel Money</span>
-          <span class="payment-method-chip payment-method-chip--active">TNM Mpamba</span>
+          <span class="payment-method-chip payment-method-chip--active"><img src="{% static 'tengasale/assets/logos/airtel-logo.svg' %}" alt="" width="19" height="20">Airtel Money</span>
+          <span class="payment-method-chip payment-method-chip--active"><img src="{% static 'tengasale/assets/logos/tnm-logo.svg' %}" alt="" width="23" height="20">TNM Mpamba</span>
         </div>
         <p style="font-size:12px;color:#6b7280;margin:10px 0 0;">Starting checkout is not final success. Complete the secure payment page, then wait for confirmation.</p>
         <template x-if="phoneError">

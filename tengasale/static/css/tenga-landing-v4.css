@@ -319,6 +319,8 @@ section{position:relative}
 .phone-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .phone-top h3{margin:0;font-size:24px;letter-spacing:-.04em}
 .phone-top span{color:var(--muted);font-size:12px}
+.phone-brand{display:inline-flex!important;align-items:center;min-height:30px;margin-bottom:8px;padding:3px 8px;border-radius:8px;background:#fff;border:1px solid rgba(22,30,55,.08)}
+.phone-brand img{display:block;width:auto;height:22px;max-width:92px;object-fit:contain}
 .spec{margin-top:8px;color:var(--muted);font-size:13px}
 .pricing{
   margin-top:24px;padding-top:22px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1px 1fr;gap:16px
@@ -417,6 +419,9 @@ section{position:relative}
   margin-top:28px;padding:26px 30px;border-radius:28px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(135deg,#fff3e9,#f6f7ff);border:1px solid rgba(255,107,0,.12)
 }
 .payment-band h3{margin:12px 0 0;font-size:32px;letter-spacing:-.04em}
+.payment-networks{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.payment-network{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:5px 11px 5px 8px;border-radius:10px;background:#fff;border:1px solid rgba(22,30,55,.09);color:var(--ink);font-size:12px;font-weight:750}
+.payment-network img{display:block;width:auto;height:26px;max-width:30px;object-fit:contain}
 
 .apply-section{overflow:hidden}
 .apply-glow{
