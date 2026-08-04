@@ -210,6 +210,17 @@ class LandingPageUIRegressionTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
+    def test_v4_landing_preserves_required_copy_and_payment_destination(self):
+        response = self.client.get("/")
+        self.assertContains(response, "2× monthly income")
+        self.assertContains(response, "https://pay.tengasale.africa")
+        self.assertContains(response, "css/tenga-landing-v4.css")
+        self.assertContains(response, "js/tenga-landing-v4.js")
+
+    def test_v4_application_form_uses_existing_application_flow(self):
+        response = self.client.get("/")
+        self.assertContains(response, f'action="{reverse("new_application")}"')
+
     # ── Removed broken sections must be absent ────────────────────
 
     def test_landing_no_live_stats_strip(self):
@@ -289,18 +300,16 @@ class LandingPageUIRegressionTests(TestCase):
     # ── Section structure ─────────────────────────────────────────
 
     def test_landing_hero_headline_present(self):
-        """Hero headline must be present (reference commit: 729da8bd)."""
+        """Approved v4 hero headline must be present."""
         response = self._get_landing()
-        # Reference commit landing headline: "Finance Phones. Track Payments. Grow Faster."
-        self.assertContains(response, "Finance Phones")
-        self.assertContains(response, "Track Payments")
+        self.assertContains(response, "A smartphone is")
+        self.assertContains(response, "not a luxury.")
 
     def test_landing_how_it_works_section_present(self):
-        """How it works section must be present."""
+        """The approved v4 process section must be present."""
         response = self._get_landing()
-        self.assertContains(response, "how-it-works")
-        # Reference commit step 1 title: "Choose a device"
-        self.assertContains(response, "Choose a device")
+        self.assertContains(response, 'id="process"')
+        self.assertContains(response, "Choose phone")
 
     def test_landing_no_internal_tooling_exposed(self):
         """Public landing must not expose internal systems."""
@@ -322,9 +331,9 @@ class LandingPageUIRegressionTests(TestCase):
             self.assertNotIn(term, content, f"Internal term '{term}' found on public landing")
 
     def test_landing_primary_cta_present(self):
-        """Primary CTA links to login (reference commit: 729da8bd uses Get Started → login)."""
+        """Primary CTA connects to the existing application route."""
         response = self._get_landing()
-        self.assertContains(response, reverse("login"))
+        self.assertContains(response, reverse("new_application"))
         self.assertContains(response, "Get Started")
 
     def test_anonymous_start_application_redirects_to_login(self):
