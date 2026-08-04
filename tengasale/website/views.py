@@ -16,6 +16,52 @@ from .forms import WebsiteEnquiryForm
 logger = logging.getLogger(__name__)
 
 
+def _get_public_phone_offers():
+    """Expose only approved customer-facing catalogue values to the landing page."""
+    try:
+        from deals.brand_utils import canonical_brand, get_brand_logo
+        from deals.models import DeviceDeal
+
+        deals = (
+            DeviceDeal.objects.filter(is_active=True, brand__is_active=True)
+            .exclude(stock_status=DeviceDeal.STOCK_OUT)
+            .select_related("brand")
+            .order_by("-is_featured", "-popularity_score", "brand__name", "model_name")
+        )
+        offers = []
+        seen_brands = set()
+        for deal in deals:
+            brand = canonical_brand(deal.brand.name)
+            logo = get_brand_logo(brand)
+            if not logo:
+                continue
+            if brand in seen_brands:
+                continue
+            seen_brands.add(brand)
+            offers.append(
+                {
+                    "id": deal.pk,
+                    "brand": brand,
+                    "name": f"{brand} {deal.model_name}" if brand.lower() not in deal.model_name.lower() else deal.model_name,
+                    "spec": deal.specs,
+                    "deposit": int(round(deal.deposit_amount)),
+                    "payments": {
+                        "daily": int(round(deal.daily_payment)),
+                        "weekly": int(round(deal.weekly_payment)),
+                        "monthly": int(round(deal.monthly_payment)),
+                    },
+                    "status": deal.get_stock_status_display(),
+                    "logo": logo,
+                }
+            )
+            if len(offers) == 6:
+                break
+        return offers
+    except Exception:
+        logger.exception("Could not load the public phone catalogue")
+        return []
+
+
 def _get_landing_stats():
     """Return cached landing page stats dict. Cached for 1 hour. Safe if models are empty."""
     cached = cache.get("landing_stats")
@@ -82,6 +128,7 @@ def _landing_context(request, *, section="", support_form=None):
         "support_email": settings.TENGA_SUPPORT_EMAIL,
         "support_delivery_available": settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED,
         "support_success": request.GET.get("support") == "sent",
+        "public_phone_offers": _get_public_phone_offers(),
     }
 
 
@@ -195,7 +242,7 @@ def contact(request):
                 return redirect(f"{reverse('public_home')}?support=sent#support")
             form.add_error(
                 None,
-                "We could not deliver your enquiry. Your details are still shown below; please email support directly.",
+                f"We could not send your enquiry. Please email {settings.TENGA_SUPPORT_EMAIL} directly.",
             )
 
     return _render_landing(request, section="support", support_form=form)

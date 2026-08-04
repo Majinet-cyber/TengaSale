@@ -1,33 +1,12 @@
 
-const PHONE_OFFERS = [
-  {
-    brand: "itel",
-    name: "itel A50C",
-    badge: "Accessible",
-    spec: "64GB · 6.6-inch display",
-    deposit: 120000,
-    payments: { daily: 2450, weekly: 17150, monthly: 73500 },
-    colors: { glow: "#ddebff", grad: "linear-gradient(135deg,#6b7cff,#17c8ff)", accent: "#49d9ff", a: "#6856ff", b: "#1f2146" }
-  },
-  {
-    brand: "Tecno",
-    name: "Tecno Spark 50",
-    badge: "Popular",
-    spec: "128GB · 6.78-inch display",
-    deposit: 175000,
-    payments: { daily: 3100, weekly: 21700, monthly: 93000 },
-    colors: { glow: "#e8dcff", grad: "linear-gradient(135deg,#8d63ff,#ff74a2)", accent: "#ff6ca6", a: "#171b35", b: "#7a4cff" }
-  },
-  {
-    brand: "Samsung",
-    name: "Samsung Galaxy A15",
-    badge: "Premium",
-    spec: "128GB · 6.5-inch AMOLED",
-    deposit: 220000,
-    payments: { daily: 4250, weekly: 29750, monthly: 127500 },
-    colors: { glow: "#def7f1", grad: "linear-gradient(135deg,#2fd8a4,#2d7bff)", accent: "#4bdcab", a: "#163a43", b: "#2a3c91" }
-  }
-];
+const phoneOffersNode = document.getElementById("publicPhoneOffers");
+const PHONE_OFFERS = phoneOffersNode ? JSON.parse(phoneOffersNode.textContent) : [];
+const BRAND_COLORS = {
+  Tecno: { glow: "#ddebff", grad: "linear-gradient(135deg,#1868ff,#17c8ff)", accent: "#49d9ff", a: "#193b78", b: "#1f2146" },
+  Itel: { glow: "#ffe4e4", grad: "linear-gradient(135deg,#ff7a5c,#ff3232)", accent: "#ff7a5c", a: "#56204a", b: "#1f2146" },
+  Samsung: { glow: "#def7f1", grad: "linear-gradient(135deg,#2fd8a4,#2d7bff)", accent: "#4bdcab", a: "#163a43", b: "#2a3c91" },
+  "Redmi/Xiaomi": { glow: "#f2e2ff", grad: "linear-gradient(135deg,#8d63ff,#ff74a2)", accent: "#ff6ca6", a: "#171b35", b: "#7a4cff" }
+};
 
 const money = value => `MWK ${new Intl.NumberFormat("en-US").format(value)}`;
 const cadenceButtons = [...document.querySelectorAll(".cadence-button")];
@@ -35,22 +14,23 @@ const phoneGrid = document.getElementById("phoneGrid");
 const deviceSelect = document.getElementById("deviceSelect");
 const pageProgress = document.getElementById("pageProgress");
 const header = document.querySelector(".site-header");
-const BRAND_LOGOS = {
-  itel: phoneGrid.dataset.logoItel,
-  Tecno: phoneGrid.dataset.logoTecno,
-  Samsung: phoneGrid.dataset.logoSamsung
-};
+const calculatorPhone = document.getElementById("calculatorPhone");
+const calculatorDeposit = document.getElementById("calculatorDeposit");
 
 let activeCadence = "daily";
 
 function renderPhones() {
+  if (!PHONE_OFFERS.length) {
+    phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
+    return;
+  }
   phoneGrid.innerHTML = PHONE_OFFERS.map(phone => `
     <article class="phone-card reveal visible" style="
-      --soft-glow:${phone.colors.glow};
-      --grad:${phone.colors.grad};
-      --accent:${phone.colors.accent};
-      --screen-a:${phone.colors.a};
-      --screen-b:${phone.colors.b};
+      --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
+      --grad:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).grad};
+      --accent:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).accent};
+      --screen-a:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).a};
+      --screen-b:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).b};
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
@@ -60,12 +40,12 @@ function renderPhones() {
         <div class="phone-top">
           <div>
             <span class="phone-brand" aria-label="${phone.brand}">
-              <img src="${BRAND_LOGOS[phone.brand]}" alt="" width="96" height="28">
+              <img src="${phone.logo}" alt="" width="96" height="28">
             </span>
             <h3>${phone.name}</h3>
             <div class="spec">${phone.spec}</div>
           </div>
-          <span>${phone.badge}</span>
+          <span>${phone.status}</span>
         </div>
         <div class="pricing">
           <div class="price-box">
@@ -86,6 +66,8 @@ function renderPhones() {
   document.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {
       deviceSelect.value = button.dataset.device;
+      calculatorPhone.value = button.dataset.device;
+      updateCalculator();
       document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
       setTimeout(() => document.querySelector('[name="name"]').focus(), 650);
     });
@@ -94,15 +76,31 @@ function renderPhones() {
 
 function populateDeviceSelect() {
   deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+  calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+}
+function updateCalculator() {
+  const phone = PHONE_OFFERS.find(item => item.name === calculatorPhone.value) || PHONE_OFFERS[0];
+  if (!phone) return;
+  calculatorDeposit.innerHTML = `<option value="${phone.deposit}">${money(phone.deposit)}</option>`;
+  document.getElementById("calculatorModel").textContent = phone.name;
+  document.getElementById("calculatorSpec").textContent = phone.spec;
+  document.getElementById("calculatorStatus").textContent = phone.status;
+  document.getElementById("calculatorDepositValue").textContent = money(phone.deposit);
+  document.getElementById("calculatorPaymentLabel").textContent = `${activeCadence.charAt(0).toUpperCase() + activeCadence.slice(1)} payment`;
+  document.getElementById("calculatorPaymentValue").textContent = money(phone.payments[activeCadence]);
+  deviceSelect.value = phone.name;
 }
 populateDeviceSelect();
 renderPhones();
+updateCalculator();
+calculatorPhone.addEventListener("change", updateCalculator);
 
 cadenceButtons.forEach(button => {
   button.addEventListener("click", () => {
     activeCadence = button.dataset.cadence;
     cadenceButtons.forEach(item => item.classList.toggle("active", item === button));
     renderPhones();
+    updateCalculator();
   });
 });
 

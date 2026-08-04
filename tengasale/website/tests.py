@@ -1,10 +1,13 @@
 """Website app tests — public pages, lead forms, branding, and HQ page checks."""
 from unittest.mock import patch
+from decimal import Decimal
 
+from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from .models import MerchantLead, CareerLead
+from deals.models import DeviceBrand, DeviceDeal
 
 # CSS classes known to cause giant/broken logo rendering
 BROKEN_LOGO_CLASSES = [
@@ -32,6 +35,34 @@ class PublicSiteTests(TestCase):
         response = self.client.get(reverse("website_landing"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "/pay/")
+
+    def test_landing_calculator_uses_active_device_deal_public_values_only(self):
+        brand = DeviceBrand.objects.create(name="Tecno")
+        deal = DeviceDeal.objects.create(
+            brand=brand, model_name="Spark Test", specs="4GB / 128GB",
+            cash_price=Decimal("500000"), min_cash_price=Decimal("450000"),
+            max_cash_price=Decimal("550000"), default_cash_price=Decimal("500000"),
+            deposit_percent=Decimal("13"), loan_multiplier=Decimal("2.5"),
+            term_months=12, total_12_month_price=Decimal("1250000"),
+            is_active=True, stock_status=DeviceDeal.STOCK_IN,
+        )
+        response = self.client.get(reverse("website_landing"))
+        self.assertContains(response, 'id="planCalculator"')
+        self.assertContains(response, "Tecno Spark Test")
+        self.assertContains(response, str(int(deal.deposit_amount)))
+        content = response.content.decode()
+        self.assertNotIn('"loan_multiplier"', content)
+        self.assertNotIn('"commission"', content)
+
+    def test_landing_has_local_market_flags_and_accurate_statuses(self):
+        response = self.client.get(reverse("website_landing"))
+        for country in ("malawi", "zambia", "zimbabwe"):
+            self.assertContains(response, f"img/flags/{country}.svg")
+        self.assertContains(response, "Flag of Malawi")
+        self.assertContains(response, "Flag of Zambia")
+        self.assertContains(response, "Flag of Zimbabwe")
+        self.assertEqual(response.content.decode().count("<small>Live</small>"), 1)
+        self.assertEqual(response.content.decode().count("<small>Next</small>"), 2)
 
     def test_landing_page_become_merchant_links_to_signup(self):
         response = self.client.get(reverse("website_landing"))
@@ -452,6 +483,19 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertIn("Category: Payment help", kwargs["body"])
         self.assertIn("Originating page: https://example.test/#support", kwargs["body"])
         email_message.return_value.send.assert_called_once_with(fail_silently=False)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        TENGA_SUPPORT_EMAIL="support@emajinet.africa",
+        TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True,
+    )
+    def test_valid_enquiry_is_delivered_by_django_email_backend(self):
+        response = self.client.post(reverse("website_contact"), self.payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, ["support@emajinet.africa"])
+        self.assertEqual(message.reply_to, ["thoko@example.com"])
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
     @patch("website.views.EmailMessage")

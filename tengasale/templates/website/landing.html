@@ -156,22 +156,22 @@
         </div>
 
         <div class="problem-grid">
-          <article class="problem-card reveal">
-            <div class="problem-icon">01</div>
-            <h3>Most people do not earn in a formal way.</h3>
+          <article class="problem-card problem-card--income reveal">
+            <div class="problem-card__metric"><strong>≈78%</strong><span class="metric-ring" aria-hidden="true"></span></div>
+            <h3>Informal or self-employed.</h3>
             <p>Income is real — just not shaped like a payslip.</p>
           </article>
 
-          <article class="problem-card reveal reveal-delay-sm">
-            <div class="problem-icon">02</div>
-            <h3>Traditional finance leaves too many people out.</h3>
+          <article class="problem-card problem-card--access reveal reveal-delay-sm">
+            <div class="problem-card__metric"><strong>Many</strong><span class="metric-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
+            <h3>Unbanked or underbanked.</h3>
             <p>No bank history. No collateral. No fair path in.</p>
           </article>
 
-          <article class="problem-card reveal reveal-delay-md">
-            <div class="problem-icon">03</div>
-            <h3>A smartphone is now basic infrastructure.</h3>
-            <p>Without one, people are locked out of modern opportunity.</p>
+          <article class="problem-card problem-card--cost reveal reveal-delay-md">
+            <div class="problem-card__metric"><strong>2×</strong><span class="metric-phone" aria-hidden="true"></span></div>
+            <h3>Monthly income for a smartphone.</h3>
+            <p>Yet work, school, banking and payments are digital.</p>
           </article>
         </div>
 
@@ -253,16 +253,36 @@
           <p class="lead">Illustrative plans only. Final device availability and pricing are confirmed during application.</p>
         </div>
 
-        <div class="cadence-switcher reveal" role="group" aria-label="Payment frequency">
-          <button class="cadence-button active" data-cadence="daily">Daily</button>
-          <button class="cadence-button" data-cadence="weekly">Weekly</button>
-          <button class="cadence-button" data-cadence="monthly">Monthly</button>
+        {{ public_phone_offers|json_script:"publicPhoneOffers" }}
+        <div class="plan-calculator reveal" id="planCalculator">
+          <div class="calculator-controls">
+            <p class="kicker">Plan calculator</p><h3>Find a plan that fits.</h3><p>Choose a phone, approved deposit and payment rhythm.</p>
+            <label for="calculatorPhone">Phone model<select id="calculatorPhone"></select></label>
+            <label for="calculatorDeposit">Approved deposit<select id="calculatorDeposit"></select></label>
+            <fieldset><legend>Payment frequency</legend><div class="cadence-switcher" role="group" aria-label="Payment frequency">
+              <button class="cadence-button active" type="button" data-cadence="daily">Daily</button>
+              <button class="cadence-button" type="button" data-cadence="weekly">Weekly</button>
+              <button class="cadence-button" type="button" data-cadence="monthly">Monthly</button>
+            </div></fieldset>
+          </div>
+          <div class="calculator-summary" aria-live="polite">
+            <div class="calculator-device" aria-hidden="true"><div class="css-phone"><div class="css-screen"></div></div></div>
+            <span class="calculator-status" id="calculatorStatus">Available</span><h3 id="calculatorModel">Select a phone</h3><p id="calculatorSpec"></p>
+            <div class="calculator-values"><div><small>Deposit</small><strong id="calculatorDepositValue">—</strong></div><div><small id="calculatorPaymentLabel">Daily payment</small><strong id="calculatorPaymentValue">—</strong></div></div>
+            <a class="button button-primary button-large" href="{% url 'new_application' %}" id="calculatorApply">Continue to application</a>
+          </div>
         </div>
 
-        <div class="phone-grid" id="phoneGrid"
-             data-logo-itel="{% static 'img/brands/itel.svg' %}"
-             data-logo-tecno="{% static 'img/brands/tecno.svg' %}"
-             data-logo-samsung="{% static 'img/brands/samsung.svg' %}"></div>
+        <div class="phone-grid" id="phoneGrid"></div>
+
+        <div class="ecosystem reveal" aria-labelledby="ecosystem-title">
+          <div class="ecosystem-head"><p class="kicker">Technology ecosystem</p><h3 id="ecosystem-title">Trusted networks, device brands and secure verification.</h3><p>Supported options and available brands — not partnership claims.</p></div>
+          <div class="ecosystem-groups">
+            <div class="ecosystem-group ecosystem-group--payments"><strong>Payment networks</strong><div class="ecosystem-marks"><span><img src="{% static 'tengasale/assets/logos/airtel-logo.svg' %}" alt="Airtel Money" width="28" height="30"><small>Airtel Money</small></span><span><img src="{% static 'tengasale/assets/logos/tnm-logo.svg' %}" alt="TNM Mpamba" width="34" height="30"><small>TNM Mpamba</small></span></div></div>
+            <div class="ecosystem-group ecosystem-group--devices"><strong>Device brands</strong><div class="ecosystem-marks"><span><img src="{% static 'img/brands/tecno.svg' %}" alt="Tecno" width="100" height="24"></span><span><img src="{% static 'img/brands/redmi.svg' %}" alt="Redmi by Xiaomi" width="72" height="28"></span><span><img src="{% static 'img/brands/itel.svg' %}" alt="itel" width="38" height="28"></span><span><img src="{% static 'img/brands/samsung.svg' %}" alt="Samsung" width="100" height="24"></span></div></div>
+            <div class="ecosystem-group ecosystem-group--identity"><strong>Identity & KYC</strong><div class="identity-neutral"><span aria-hidden="true">✓</span><div>Secure identity verification<small>Provider shown only when configured</small></div></div></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -335,9 +355,9 @@
           </div>
 
           <div class="map-sidebar">
-            <article class="map-item active"><div class="map-code">MW</div><div><h3>Malawi</h3><p>Home market.</p><small>Live</small></div></article>
-            <article class="map-item"><div class="map-code">ZM</div><div><h3>Zambia</h3><p>Priority expansion.</p><small>Next</small></div></article>
-            <article class="map-item"><div class="map-code">ZW</div><div><h3>Zimbabwe</h3><p>Regional roadmap.</p><small>Next</small></div></article>
+            <article class="map-item active"><img class="market-flag" src="{% static 'img/flags/malawi.svg' %}" alt="Flag of Malawi" width="48" height="32"><div><h3>Malawi</h3><p>Home market.</p><small>Live</small></div></article>
+            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zambia.svg' %}" alt="Flag of Zambia" width="48" height="32"><div><h3>Zambia</h3><p>Priority expansion.</p><small>Next</small></div></article>
+            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zimbabwe.svg' %}" alt="Flag of Zimbabwe" width="48" height="24"><div><h3>Zimbabwe</h3><p>Regional roadmap.</p><small>Next</small></div></article>
           </div>
         </div>
       </div>
@@ -436,8 +456,8 @@
 
           {% if support_success %}
             <div class="form-notice form-notice--success" role="status">
-              <strong>Your enquiry was sent.</strong>
-              <span>The Tenga support team will reply using the details you provided.</span>
+              <strong>Thank you. Your enquiry has been sent to Tenga Support.</strong>
+              <span>The team can reply directly to the email address you provided.</span>
             </div>
           {% endif %}
           {% if support_form.non_field_errors %}
