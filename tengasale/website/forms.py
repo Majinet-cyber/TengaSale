@@ -10,6 +10,8 @@ class WebsiteEnquiryForm(forms.Form):
     CATEGORY_MERCHANT = "merchant_partnership"
     CATEGORY_INVESTOR = "investor_media"
     CATEGORY_CAREERS = "careers"
+    CATEGORY_TRADE_UPGRADE = "trade_in_upgrade"
+    CATEGORY_TRADE_CASH = "trade_in_cash_quote"
     CATEGORY_GENERAL = "general"
 
     CATEGORY_CHOICES = (
@@ -19,12 +21,16 @@ class WebsiteEnquiryForm(forms.Form):
         (CATEGORY_MERCHANT, "Merchant partnership"),
         (CATEGORY_INVESTOR, "Investor or media"),
         (CATEGORY_CAREERS, "Careers"),
+        (CATEGORY_TRADE_UPGRADE, "Trade-in / Upgrade"),
+        (CATEGORY_TRADE_CASH, "Trade-in / Cash quote"),
         (CATEGORY_GENERAL, "General enquiry"),
     )
     PHONE_REQUIRED_CATEGORIES = {
         CATEGORY_APPLICATION,
         CATEGORY_PAYMENT,
         CATEGORY_MERCHANT,
+        CATEGORY_TRADE_UPGRADE,
+        CATEGORY_TRADE_CASH,
     }
 
     full_name = forms.CharField(

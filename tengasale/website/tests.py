@@ -64,6 +64,29 @@ class PublicSiteTests(TestCase):
         self.assertEqual(response.content.decode().count("<small>Live</small>"), 1)
         self.assertEqual(response.content.decode().count("<small>Next</small>"), 2)
 
+    def test_tenga_loop_sits_between_phones_and_fair_protection(self):
+        response = self.client.get(reverse("website_landing"))
+        content = response.content.decode()
+
+        phones_position = content.index('id="phones"')
+        loop_position = content.index('id="upgrade"')
+        protection_position = content.index('id="protection"')
+        self.assertLess(phones_position, loop_position)
+        self.assertLess(loop_position, protection_position)
+        self.assertContains(response, "Finance → Own → Trade → Upgrade")
+        self.assertContains(response, "Inspection required")
+        self.assertContains(response, "Indicative")
+        self.assertContains(response, reverse("new_application"))
+
+    def test_tenga_loop_does_not_publish_a_binding_trade_in_value(self):
+        response = self.client.get(reverse("website_landing"))
+        content = response.content.decode()
+        loop = content[content.index('id="upgrade"'):content.index('id="protection"')]
+
+        self.assertIn("Estimate only", loop)
+        self.assertIn("physical inspection", loop)
+        self.assertNotIn("Guaranteed", loop)
+
     def test_landing_page_become_merchant_links_to_signup(self):
         response = self.client.get(reverse("website_landing"))
         self.assertEqual(response.status_code, 200)
@@ -499,14 +522,37 @@ class PublicSupportEnquiryTests(TestCase):
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
     @patch("website.views.EmailMessage")
-    def test_phone_is_required_for_payment_application_and_merchant_categories(self, email_message):
-        for category in ("payment_help", "new_application", "merchant_partnership"):
+    def test_phone_is_required_for_payment_application_merchant_and_trade_in_categories(self, email_message):
+        for category in (
+            "payment_help", "new_application", "merchant_partnership",
+            "trade_in_upgrade", "trade_in_cash_quote",
+        ):
             with self.subTest(category=category):
                 data = {**self.payload, "category": category, "phone": ""}
                 response = self.client.post(reverse("website_contact"), data)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, "A phone number is required")
         email_message.assert_not_called()
+
+    @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
+    @patch("website.views.EmailMessage")
+    def test_trade_in_enquiries_use_support_delivery_and_clear_category_labels(self, email_message):
+        email_message.return_value.send.return_value = 1
+        categories = {
+            "trade_in_upgrade": "Trade-in / Upgrade",
+            "trade_in_cash_quote": "Trade-in / Cash quote",
+        }
+        for category, label in categories.items():
+            with self.subTest(category=category):
+                cache.clear()
+                response = self.client.post(
+                    reverse("website_contact"),
+                    {**self.payload, "category": category},
+                )
+                self.assertEqual(response.status_code, 302)
+                kwargs = email_message.call_args.kwargs
+                self.assertIn(f"[{label}]", kwargs["subject"])
+                self.assertIn(f"Category: {label}", kwargs["body"])
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
     @patch("website.views.EmailMessage")

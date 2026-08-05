@@ -234,3 +234,65 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
     ribbon.scrollTo({left: Math.max(0, drift), behavior: 'smooth'});
   }, 2800);
 }
+
+/* Tenga Loop quote UI: isolated and deliberately free of client-side valuation formulas. */
+(() => {
+  const root = document.querySelector(".tenga-loop-section");
+  if (!root) return;
+  const brand = root.querySelector("#loopBrand");
+  const model = root.querySelector("#loopModel");
+  const condition = root.querySelector("#loopCondition");
+  const device = root.querySelector("#loopDevice");
+  const cta = root.querySelector("#loopCta");
+  const summary = root.querySelector("#loopUseSummary");
+  const useButtons = [...root.querySelectorAll(".tenga-loop-use")];
+  const catalogue = PHONE_OFFERS.length ? PHONE_OFFERS : [{ brand: "Other", name: "Device not listed" }];
+  const brands = [...new Set(catalogue.map(item => item.brand))];
+  let selectedUse = "deposit";
+
+  const outcomes = {
+    deposit: { title: "Use it toward your next deposit", text: "After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.", label: "Start an upgrade", category: "" },
+    swap: { title: "Request a direct swap review", text: "Tenga Support will arrange ownership, IMEI and physical checks before any approved swap value.", label: "Request a swap review", category: "trade_in_upgrade" },
+    cash: { title: "Request a verified cash quote", text: "No online amount is binding. A cash quote follows ownership verification and physical inspection.", label: "Request a cash quote", category: "trade_in_cash_quote" }
+  };
+
+  function populateModels() {
+    const matches = catalogue.filter(item => item.brand === brand.value);
+    model.innerHTML = matches.map(item => `<option value="${item.name}">${item.name}</option>`).join("");
+    updateDevice();
+  }
+
+  function updateDevice() {
+    device.textContent = `${model.value || "Device not listed"} · ${condition.value}`;
+  }
+
+  function selectOutcome(button) {
+    selectedUse = button.dataset.loopUse;
+    useButtons.forEach(item => item.classList.toggle("active", item === button));
+    const outcome = outcomes[selectedUse];
+    summary.querySelector("strong").textContent = outcome.title;
+    summary.querySelector("p").textContent = outcome.text;
+    cta.textContent = outcome.label;
+    cta.href = outcome.category ? "#support" : cta.dataset.applicationUrl;
+  }
+
+  brand.innerHTML = brands.map(name => `<option value="${name}">${name}</option>`).join("");
+  brand.addEventListener("change", populateModels);
+  model.addEventListener("change", updateDevice);
+  condition.addEventListener("change", updateDevice);
+  useButtons.forEach(button => button.addEventListener("click", () => selectOutcome(button)));
+  cta.addEventListener("click", event => {
+    const outcome = outcomes[selectedUse];
+    if (!outcome.category) return;
+    event.preventDefault();
+    const categoryField = document.getElementById("id_category");
+    const subjectField = document.getElementById("id_subject");
+    const messageField = document.getElementById("id_message");
+    if (categoryField) categoryField.value = outcome.category;
+    if (subjectField && !subjectField.value) subjectField.value = outcome.title;
+    if (messageField && !messageField.value) messageField.value = `Device: ${model.value}. Condition: ${condition.value}. I would like Tenga to contact me about this non-binding quote request.`;
+    document.getElementById("support")?.scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => document.getElementById("id_full_name")?.focus(), 550);
+  });
+  populateModels();
+})();
