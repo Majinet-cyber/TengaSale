@@ -69,11 +69,13 @@ class PublicSiteTests(TestCase):
         content = response.content.decode()
 
         phones_position = content.index('id="phones"')
-        loop_position = content.index('id="upgrade"')
+        loop_position = content.index('id="trade-upgrade"')
         protection_position = content.index('id="protection"')
         self.assertLess(phones_position, loop_position)
         self.assertLess(loop_position, protection_position)
         self.assertContains(response, "Finance → Own → Trade → Upgrade")
+        self.assertContains(response, "TENGA_UNIFIED_CREDIT_LOOP_V1")
+        self.assertContains(response, "Verified customer. Verified device. Smarter upgrade.")
         self.assertContains(response, "Inspection required")
         self.assertContains(response, "Indicative")
         self.assertContains(response, reverse("new_application"))
@@ -81,7 +83,7 @@ class PublicSiteTests(TestCase):
     def test_tenga_loop_does_not_publish_a_binding_trade_in_value(self):
         response = self.client.get(reverse("website_landing"))
         content = response.content.decode()
-        loop = content[content.index('id="upgrade"'):content.index('id="protection"')]
+        loop = content[content.index('id="trade-upgrade"'):content.index('id="protection"')]
 
         self.assertIn("Estimate only", loop)
         self.assertIn("physical inspection", loop)
@@ -283,6 +285,8 @@ class LandingPageUIRegressionTests(TestCase):
         self.assertNotContains(response, "https://pay.tengasale.africa")
         self.assertContains(response, "css/tenga-landing-v4.css")
         self.assertContains(response, "js/tenga-landing-v4.js")
+        self.assertContains(response, "tenga-landing-v4.css?v=5.0")
+        self.assertContains(response, "tenga-landing-v4.js?v=5.0")
 
     def test_v4_landing_uses_previous_official_logo_without_collage_asset(self):
         response = self.client.get("/")
@@ -471,14 +475,15 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertContains(response, 'id="supportForm"')
         self.assertContains(response, "support@emajinet.africa")
         self.assertContains(response, "mailto:support@emajinet.africa")
-        self.assertEqual(response.content.decode().count('class="faq-item"'), 7)
+        self.assertEqual(response.content.decode().count('class="faq-item"'), 9)
+        self.assertNotContains(response, "Direct form delivery is not configured here")
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=False)
     @patch("website.views.EmailMessage")
     def test_non_delivering_backend_never_claims_success_and_preserves_data(self, email_message):
         response = self.client.post(reverse("website_contact"), self.payload)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Direct form delivery is not configured here")
+        self.assertContains(response, "We could not send your enquiry right now")
         self.assertContains(response, "Payment is not reflecting")
         self.assertContains(response, "support@emajinet.africa")
         email_message.assert_not_called()

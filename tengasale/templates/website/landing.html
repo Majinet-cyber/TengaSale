@@ -9,7 +9,7 @@
   <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/brand/tengasale-logo-full.svg' %}" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=4.1" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=5.0" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -28,7 +28,7 @@
         <a href="#why">Why</a>
         <a href="#process">Process</a>
         <a href="#phones">Phones</a>
-        <a href="#upgrade">Upgrade</a>
+        <a href="#trade-upgrade">Trade &amp; Upgrade</a>
         <a href="#map">Map</a>
         <a href="#company">Company</a>
         <a href="{% url 'website_careers' %}">Careers</a>
@@ -70,7 +70,7 @@
 
           <div class="hero-quote-card">
             <strong>Digital life needs a smartphone.</strong>
-            <p>Tenga makes access clear, flexible and premium.</p>
+            <p>Tenga makes access clear, flexible and premium. Own today. Upgrade tomorrow.</p>
           </div>
 
           <div class="hero-actions">
@@ -287,17 +287,19 @@
       </div>
     </section>
 
-    <section class="tenga-loop-section section-dark" id="upgrade" aria-labelledby="loopTitle">
+    <!-- TENGA_UNIFIED_CREDIT_LOOP_V1 -->
+    <section class="tenga-loop-section section-dark" id="trade-upgrade" aria-labelledby="loopTitle">
       <div class="tenga-loop-grid" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--one" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--two" aria-hidden="true"></div>
       <div class="shell tenga-loop-shell">
-        <div class="tenga-loop-heading reveal">
-          <div><div class="tenga-loop-badge"><span></span>Tenga Loop</div><p class="kicker kicker-dark">Credit meets recommerce</p><h2 id="loopTitle">Your phone can fund<br><em>your next one.</em></h2></div>
-          <p class="tenga-loop-lead">Finish your Tenga plan, trade in a verified device and use its approved value toward your next deposit.</p>
+        <div class="tenga-loop-heading">
+          <div><div class="tenga-loop-badge"><span></span>Tenga Loop</div><p class="kicker kicker-dark">Credit meets recommerce</p><h2 id="loopTitle" aria-label="Your phone can fund your next one.">Your phone can fund<br><em>your next one.</em></h2></div>
+          <div><p class="tenga-loop-lead">Finish your Tenga plan, trade in a verified device and use its approved value toward your next deposit.</p><p class="tenga-loop-promise">Verified customer. Verified device. Smarter upgrade.</p></div>
         </div>
+        <p class="tenga-loop-lifecycle">Finance → Own → Trade → Upgrade → Refurbish → Finance again</p>
         <div class="tenga-loop-layout">
-          <div class="tenga-loop-story reveal">
+          <div class="tenga-loop-story">
             <div class="tenga-loop-cycle" aria-label="Finance → Own → Trade → Upgrade → Refurbish → Finance again through Tenga">
               <div class="tenga-loop-cycle-line" aria-hidden="true"><i></i></div>
               <article class="tenga-loop-cycle-step active"><span>01</span><div><strong>Finance</strong><small>Get a phone through Tenga.</small></div></article>
@@ -305,16 +307,18 @@
               <article class="tenga-loop-cycle-step"><span>03</span><div><strong>Trade</strong><small>Verify, inspect and value it.</small></div></article>
               <article class="tenga-loop-cycle-step"><span>04</span><div><strong>Upgrade</strong><small>Use approved value toward the next phone.</small></div></article>
             </div>
-            <div class="tenga-loop-trust"><span><i>✓</i> Verified ownership only</span><span><i>✓</i> IMEI and identity checked</span><span><i>✓</i> Final value after inspection</span></div>
-            <div class="tenga-loop-benefits"><article><small>Returning customers</small><strong>A faster path to the next phone.</strong></article><article><small>Tenga Certified</small><strong>Refurbished phones at lower payments.</strong></article><article><small>Device second life</small><strong>Refurbish, finance again, reduce waste.</strong></article></div>
+            <div class="tenga-loop-trust"><span><i>✓</i> Valid identification</span><span><i>✓</i> Lawful ownership proof</span><span><i>✓</i> IMEI and device verification</span><span><i>✓</i> Physical inspection</span></div>
+            <p class="tenga-loop-safety"><strong>No stolen or blacklisted devices accepted.</strong> Final value is confirmed only after verification and inspection.</p>
+            <div class="tenga-loop-benefits"><article><small>Next deposit</small><strong>Use approved trade-in value toward your next phone.</strong></article><article><small>Direct swap</small><strong>Request a verified phone-swap review.</strong></article><article><small>Cash quote</small><strong>Ask Tenga Support for a non-binding quote.</strong></article></div>
+            <div class="tenga-loop-certified"><small>Tenga Certified</small><p>Devices are inspected, graded, securely data-wiped, repaired where necessary and prepared for another customer.</p></div>
           </div>
-          <div class="tenga-loop-estimator reveal reveal-delay" id="loopEstimator">
+          <div class="tenga-loop-estimator" id="loopEstimator">
             <div class="tenga-loop-estimator-head"><div><small>Quote request</small><h3>What could your phone unlock?</h3></div><span class="tenga-loop-status"><i></i> Indicative</span></div>
             <div class="tenga-loop-form-grid"><label>Brand<select id="loopBrand"></select></label><label>Model<select id="loopModel"></select></label><label class="tenga-loop-condition">Condition<select id="loopCondition"><option>Excellent</option><option selected>Good</option><option>Fair</option><option>Needs repair</option></select></label></div>
             <div class="tenga-loop-value"><div><small>Online valuation</small><strong id="loopValue">Inspection required</strong><span id="loopDevice">Choose your device and outcome</span></div><div class="tenga-loop-value-ring"><span>Quote</span></div></div>
             <div class="tenga-loop-use-tabs" role="group" aria-label="How to use an approved device value"><button type="button" class="tenga-loop-use active" data-loop-use="deposit">Next deposit</button><button type="button" class="tenga-loop-use" data-loop-use="swap">Direct swap</button><button type="button" class="tenga-loop-use" data-loop-use="cash">Cash quote</button></div>
             <div class="tenga-loop-use-summary" id="loopUseSummary"><strong>Use it toward your next deposit</strong><p>After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.</p></div>
-            <a href="{% url 'new_application' %}" class="button button-primary button-large tenga-loop-cta" id="loopCta" data-application-url="{% url 'new_application' %}">Start an upgrade</a>
+            <a href="#support" class="button button-primary button-large tenga-loop-cta" id="loopCta">Request an upgrade quote</a>
             <p class="tenga-loop-fine-print">Estimate only. Final value follows ownership proof, IMEI checks, secure data removal and physical inspection.</p>
           </div>
         </div>
@@ -403,6 +407,7 @@
         <div class="section-head reveal centered compact-head">
           <p class="kicker">Built for more than one audience</p>
           <h2>Simple for customers.<br />Confident for investors.<br />Magnetic for talent.</h2>
+          <p class="lead">Tenga supports the smartphone lifecycle from first access to ownership, trade-in and the next upgrade.</p>
         </div>
 
         <div class="audience-grid">
@@ -450,6 +455,14 @@
             <p>Tenga reminds first and gives you a clear way to pay. Responsible device protection may apply under your agreement, with access restored after a confirmed payment.</p>
           </details>
           <details class="faq-item">
+            <summary>Can I trade in my Tenga phone?</summary>
+            <p>Yes, after completing the applicable plan. Tenga verifies your identity, lawful ownership and device IMEI, then inspects the phone before confirming any upgrade, swap or cash quote.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How is my phone valued?</summary>
+            <p>Online guidance is indicative only. Final value depends on lawful ownership, IMEI status, condition and a physical inspection. Stolen or blacklisted devices are never accepted.</p>
+          </details>
+          <details class="faq-item">
             <summary>What if my payment is not showing?</summary>
             <p>Keep the transaction reference, check the payment gateway, and contact support under Payment help if it still has not reflected.</p>
           </details>
@@ -480,6 +493,8 @@
             <a href="#support" data-support-category="payment_help">Payment help</a>
             <a href="#support" data-support-category="merchant_partnership">Merchant partnership</a>
             <a href="#support" data-support-category="careers">Careers</a>
+            <a href="#support" data-support-category="trade_in_upgrade">Trade-in / Upgrade</a>
+            <a href="#support" data-support-category="trade_in_cash_quote">Trade-in / Cash quote</a>
           </div>
         </div>
 
@@ -500,13 +515,6 @@
               {% for error in support_form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
             </div>
           {% endif %}
-          {% if not support_delivery_available %}
-            <div class="form-notice form-notice--warning" role="status">
-              <strong>Direct form delivery is not configured here.</strong>
-              <span>Email <a href="mailto:{{ support_email }}">{{ support_email }}</a> so your message reaches support.</span>
-            </div>
-          {% endif %}
-
           <div class="support-form-row">
             <label for="{{ support_form.full_name.id_for_label }}">{{ support_form.full_name.label }}{{ support_form.full_name }}{% for error in support_form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
             <label for="{{ support_form.email.id_for_label }}">{{ support_form.email.label }}{{ support_form.email }}{% for error in support_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
@@ -562,7 +570,7 @@
         <p>Smartphone access for the mobile-money economy of Southern Africa.</p>
         <a class="footer-email" href="mailto:{{ support_email }}">{{ support_email }}</a>
       </div>
-      <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#upgrade">Upgrade / Trade-in</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
+      <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#trade-upgrade">Trade &amp; Upgrade</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
       <div class="footer-group"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
       <div class="footer-group"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors & media</a></div>
       <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Roadmap</a><a href="#map">Zimbabwe — Roadmap</a></div>
@@ -574,5 +582,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=4.1" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=5.0" defer></script>
 {% endblock %}

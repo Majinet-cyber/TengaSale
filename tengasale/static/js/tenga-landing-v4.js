@@ -251,7 +251,7 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
   let selectedUse = "deposit";
 
   const outcomes = {
-    deposit: { title: "Use it toward your next deposit", text: "After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.", label: "Start an upgrade", category: "" },
+    deposit: { title: "Use it toward your next deposit", text: "After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.", label: "Request an upgrade quote", category: "trade_in_upgrade" },
     swap: { title: "Request a direct swap review", text: "Tenga Support will arrange ownership, IMEI and physical checks before any approved swap value.", label: "Request a swap review", category: "trade_in_upgrade" },
     cash: { title: "Request a verified cash quote", text: "No online amount is binding. A cash quote follows ownership verification and physical inspection.", label: "Request a cash quote", category: "trade_in_cash_quote" }
   };
@@ -273,7 +273,7 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
     summary.querySelector("strong").textContent = outcome.title;
     summary.querySelector("p").textContent = outcome.text;
     cta.textContent = outcome.label;
-    cta.href = outcome.category ? "#support" : cta.dataset.applicationUrl;
+    cta.href = "#support";
   }
 
   brand.innerHTML = brands.map(name => `<option value="${name}">${name}</option>`).join("");
@@ -283,7 +283,6 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
   useButtons.forEach(button => button.addEventListener("click", () => selectOutcome(button)));
   cta.addEventListener("click", event => {
     const outcome = outcomes[selectedUse];
-    if (!outcome.category) return;
     event.preventDefault();
     const categoryField = document.getElementById("id_category");
     const subjectField = document.getElementById("id_subject");

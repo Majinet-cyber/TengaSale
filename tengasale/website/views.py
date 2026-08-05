@@ -230,7 +230,7 @@ def contact(request):
         elif not settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED:
             form.add_error(
                 None,
-                "Online email delivery is temporarily unavailable. Please use the email link below so your enquiry reaches support.",
+                f"We could not send your enquiry right now. Please email {settings.TENGA_SUPPORT_EMAIL}.",
             )
         else:
             try:
@@ -242,7 +242,7 @@ def contact(request):
                 return redirect(f"{reverse('public_home')}?support=sent#support")
             form.add_error(
                 None,
-                f"We could not send your enquiry. Please email {settings.TENGA_SUPPORT_EMAIL} directly.",
+                f"We could not send your enquiry right now. Please email {settings.TENGA_SUPPORT_EMAIL}.",
             )
 
     return _render_landing(request, section="support", support_form=form)
