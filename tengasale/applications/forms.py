@@ -1,17 +1,20 @@
 import base64
 import binascii
 import uuid
+import json
 from datetime import date
 from decimal import Decimal
 
 from django import forms
 from django.core.files.base import ContentFile
+from django.core.exceptions import ValidationError
 from django.db import OperationalError, ProgrammingError
 
 from geography.models import District, Region, TraditionalAuthority
 from geography.data import DISTRICTS_BY_REGION
 
 from .models import FinancingApplication
+from .income_bands import INCOME_BANDS as CANONICAL_INCOME_BANDS, client_income_band_rules, validate_income_band_amount
 
 
 INCOME_BANDS = [
@@ -26,6 +29,8 @@ INCOME_BANDS = [
     ("400k_600k", "MWK 400,000 – MWK 600,000"),
     ("more_than_600k", "More than MWK 600,000"),
 ]
+
+INCOME_BANDS = CANONICAL_INCOME_BANDS
 
 REGIONS = [
     ("", "Select region"),
@@ -215,6 +220,8 @@ class CustomerDetailsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["income_band"].widget.attrs["data-income-band"] = "true"
+        self.fields["exact_monthly_income"].widget.attrs.update({"data-exact-income": "true", "data-income-band-rules": json.dumps(client_income_band_rules()), "inputmode": "numeric", "step": "1"})
         existing_occupation = self.instance.occupation if self.instance.pk else ""
         if existing_occupation and existing_occupation not in OCCUPATION_VALUES:
             self.fields["occupation"].initial = "Other"
@@ -249,6 +256,13 @@ class CustomerDetailsForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        band = cleaned_data.get("income_band")
+        amount = cleaned_data.get("exact_monthly_income")
+        if band and amount is not None:
+            try:
+                cleaned_data["exact_monthly_income"] = validate_income_band_amount(band, amount)
+            except ValidationError as exc:
+                self.add_error("exact_monthly_income", exc)
         occupation = cleaned_data.get("occupation")
         occupation_other = (cleaned_data.get("occupation_other") or "").strip()
         if occupation == "Other":

@@ -97,6 +97,21 @@ def primary_role(user):
 
 
 def role_redirect_url(user):
+    try:
+        recommerce_code = getattr(getattr(user.profile, "staff_role", None), "code", "")
+    except ObjectDoesNotExist:
+        recommerce_code = ""
+    recommerce_routes = {
+        "recommerce_intake": "recommerce:intake_workspace",
+        "recommerce_assessor": "recommerce:assessment_workspace",
+        "recommerce_technician": "recommerce:refurbishment_workspace",
+        "recommerce_qa": "recommerce:qa_workspace",
+        "recommerce_inventory": "recommerce:inventory_workspace",
+        "recommerce_supervisor": "recommerce:operations_workspace",
+        "recommerce_hq": "recommerce:hq_overview",
+    }
+    if recommerce_code in recommerce_routes:
+        return reverse(recommerce_routes[recommerce_code])
     role = primary_role(user)
     try:
         profile = user.profile

@@ -100,7 +100,9 @@ def whatsapp_simulate(request):
     if not _has_support_permission(request.user):
         return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
     data = request.POST if request.method == "POST" else request.GET
-    phone = data.get("phone", "").strip() or "+265883596135"
+    phone = data.get("phone", "").strip()
+    if not phone:
+        return JsonResponse({"ok": False, "error": "phone is required"}, status=400)
     message = data.get("message") or data.get("body") or data.get("Body") or "Hi"
     payload = {
         "From": f"whatsapp:{phone}",

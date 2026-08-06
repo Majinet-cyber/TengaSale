@@ -359,7 +359,7 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Home")
         self.assertContains(response, "NEW APPLICATION")
         self.assertContains(response, "Applications")
-        self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
+        self.assertNotContains(response, 'data-testid="topbar-whatsapp"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
         self.assertContains(response, 'bi-whatsapp')
         self.assertContains(response, 'bi-bell')

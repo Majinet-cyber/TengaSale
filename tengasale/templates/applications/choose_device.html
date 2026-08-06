@@ -26,13 +26,13 @@
             <h2>Choose brand</h2>
             <div class="brand-card-grid" role="list">
                 {% for card in brand_cards %}
-                    <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" role="listitem">
+                    <button class="brand-card brand-card--{{ card.name|lower|cut:" "|cut:"/" }}" type="button" data-brand="{{ card.name }}" data-brand-component="official-deal-brand" role="listitem">
                         <span class="brand-card-logo">
                             {% if card.logo_url %}
                                 <img src="{{ card.logo_url }}" alt="{{ card.label }}" class="brand-card-logo-img" width="56" height="32" data-brand-logo>
-                                <span class="brand-card-logo-badge" data-brand-fallback hidden>{{ card.label|slice:":3" }}</span>
+                                <span class="brand-card-logo-badge" data-brand-fallback hidden>{{ card.label }}</span>
                             {% else %}
-                                <span class="brand-card-logo-badge">{{ card.label|slice:":3" }}</span>
+                                <span class="brand-card-logo-badge">{{ card.label }}</span>
                             {% endif %}
                         </span>
                         <span class="brand-card-name">{{ card.label }}</span>

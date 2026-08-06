@@ -63,7 +63,7 @@ class EarningsPageTests(TestCase):
         self.assertContains(response, "MWK 10,000")
         self.assertContains(response, "Rewards")
         self.assertNotContains(response, "SPIN &amp; WIN")
-        self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
+        self.assertNotContains(response, 'data-testid="topbar-whatsapp"')
         self.assertContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
         self.assertContains(response, "notification-button")

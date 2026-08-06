@@ -89,9 +89,8 @@ class AllDealsPageTests(TestCase):
         self.assertContains(response, "deal-detail-brand-logo")
         self.assertContains(response, "Verified early-payment saving")
         self.assertContains(response, "Continue — MWK")
-        self.assertContains(response, f'href="{settings.TENGASALE_WHATSAPP_LINK}"')
-        self.assertContains(response, 'class="icon-button whatsapp-button"')
-        self.assertContains(response, 'aria-label="WhatsApp support"')
+        self.assertEqual(settings.TENGA_WHATSAPP_NUMBER, "")
+        self.assertNotContains(response, 'class="icon-button whatsapp-button"')
         self.assertContains(response, "notification-button")
         self.assertContains(response, "logout-button")
 

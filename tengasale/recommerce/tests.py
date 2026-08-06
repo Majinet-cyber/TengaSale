@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Department, StaffRole
+from accounts.forms import HQUserForm
+from accounts.utils import role_redirect_url
 from financing.models import Customer
 
 from .models import DeviceInspection, DeviceIntake, RecommerceCommissionPlan, RecommerceEvent, RefurbishmentWorkOrder
@@ -19,7 +21,7 @@ User = get_user_model()
 
 class RecommerceWorkflowTests(TestCase):
     def setUp(self):
-        self.department = Department.objects.create(name="Recommerce", slug="recommerce")
+        self.department, _ = Department.objects.get_or_create(name="Recommerce", defaults={"slug": "recommerce"})
         self.customer = Customer.objects.create(full_name="Tadala Phiri", phone_number="0999000000", customer_id_number="ID-1")
         self.intake_user = self.user_with_role("intake", "recommerce_intake")
         self.assessor = self.user_with_role("assessor", "recommerce_assessor")
@@ -31,7 +33,7 @@ class RecommerceWorkflowTests(TestCase):
 
     def user_with_role(self, username, code):
         user = User.objects.create_user(username=username, password="pass")
-        role = StaffRole.objects.create(code=code, name=code.replace("_", " ").title(), department=self.department, portal_role="hq")
+        role, _ = StaffRole.objects.update_or_create(code=code, defaults={"name": code.replace("_", " ").title(), "department": self.department, "portal_role": "hq"})
         user.profile.staff_role = role
         user.profile.save(update_fields=["staff_role"])
         return user
@@ -78,6 +80,22 @@ class RecommerceWorkflowTests(TestCase):
     def test_hq_can_access_consolidated_overview(self):
         self.client.force_login(self.hq)
         self.assertEqual(self.client.get(reverse("recommerce:hq_overview")).status_code, 200)
+
+    def test_each_recommerce_role_has_a_private_login_destination(self):
+        expected = {
+            "recommerce_intake": "/tengasale/recommerce/intake/", "recommerce_assessor": "/tengasale/recommerce/assessments/",
+            "recommerce_technician": "/tengasale/recommerce/refurbishment/", "recommerce_qa": "/tengasale/recommerce/qa/",
+            "recommerce_inventory": "/tengasale/recommerce/inventory/", "recommerce_supervisor": "/tengasale/recommerce/operations/",
+        }
+        for code, path in expected.items():
+            user = getattr(self, {"recommerce_intake": "intake_user", "recommerce_assessor": "assessor", "recommerce_technician": "technician", "recommerce_qa": "qa", "recommerce_supervisor": "supervisor"}.get(code, "intake_user"))
+            if code == "recommerce_inventory":
+                user = self.user_with_role("inventory", code)
+            self.assertEqual(role_redirect_url(user), path)
+
+    def test_hq_form_exposes_recommerce_roles(self):
+        choices = dict(HQUserForm().fields["role"].choices)
+        self.assertEqual(choices["recommerce_qa"], "Recommerce QA Officer")
 
     def test_public_cannot_access_private_recommerce(self):
         response = self.client.get(reverse("recommerce:home"))

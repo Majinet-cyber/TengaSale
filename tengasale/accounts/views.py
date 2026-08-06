@@ -14,6 +14,12 @@ class UserLoginView(LoginView):
         return role_redirect_url(self.request.user)
 
     def _redirect_matches_role(self, redirect_url):
+        try:
+            staff_role = getattr(self.request.user.profile.staff_role, "code", "")
+        except Exception:
+            staff_role = ""
+        if staff_role.startswith("recommerce_"):
+            return redirect_url.startswith("/recommerce/")
         if redirect_url.startswith("/admin/"):
             return self.request.user.is_staff or self.request.user.is_superuser
         if is_hq(self.request.user):

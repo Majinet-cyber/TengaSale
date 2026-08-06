@@ -21,6 +21,7 @@ from deals.models import DeviceBrand, DeviceDeal
 from .forms import CustomerDetailsForm, LocationForm, WorkForm
 from .models import FinancingApplication
 from .services.device_matching import compare_deal_to_imei_result, compare_devices, descriptor_from_deal
+from .income_bands import INCOME_BAND_RULES, validate_income_band_amount
 
 
 GIF_BYTES = (
@@ -54,6 +55,25 @@ def valid_customer_data(**overrides):
     }
     data.update(overrides)
     return data
+
+
+class IncomeBandConsistencyTests(TestCase):
+    def test_every_configured_band_accepts_a_valid_amount(self):
+        examples = {"less_than_100k": 50000, "100k_150k": 125000, "150k_200k": 175000, "200k_250k": 220000, "250k_300k": 275000, "300k_350k": 325000, "350k_400k": 375000, "400k_600k": 500000, "more_than_600k": 600001}
+        self.assertEqual(set(examples), set(INCOME_BAND_RULES))
+        for band, amount in examples.items():
+            with self.subTest(band=band):
+                self.assertEqual(validate_income_band_amount(band, amount), Decimal(amount))
+
+    def test_upper_band_rejects_values_at_or_below_boundary(self):
+        for amount in (40000, 300000, 400000, 600000):
+            form = CustomerDetailsForm(data=valid_customer_data(income_band="more_than_600k", exact_monthly_income=str(amount)))
+            self.assertFalse(form.is_valid())
+            self.assertIn("exact_monthly_income", form.errors)
+
+    def test_correcting_amount_or_band_allows_submission(self):
+        self.assertTrue(CustomerDetailsForm(data=valid_customer_data(income_band="more_than_600k", exact_monthly_income="600001")).is_valid())
+        self.assertTrue(CustomerDetailsForm(data=valid_customer_data(income_band="350k_400k", exact_monthly_income="400000")).is_valid())
 
 
 class ApplicationTestCase(TestCase):

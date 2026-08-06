@@ -27,7 +27,7 @@ class FinancingTestCase(TestCase):
         self.user.profile.save(update_fields=["role"])
         self.customer = Customer.objects.create(
             full_name="Jane Customer",
-            phone_number="+265883596135",
+            phone_number="+265991234567",
             customer_id_number="NID12345",
             address="Lilongwe",
             next_of_kin_name="John Kin",

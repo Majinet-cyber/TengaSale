@@ -93,7 +93,7 @@ def send_payment_reminder(to: str, customer_name: str, amount: str, due_date: st
         f"Hi {customer_name}, this is a reminder from TengaSale. "
         f"Your payment of MWK {amount} for contract {contract_number} is due on {due_date}. "
         f"Please pay via Airtel Money or TNM Mpamba. "
-        f"Call +265883596135 for help."
+        f"Email support@tenga.africa for help."
     )
     return send_sms(to, body)
 
@@ -112,7 +112,7 @@ def send_failed_payment_notification(to: str, customer_name: str, amount: str, c
     body = (
         f"Hi {customer_name}, your TengaSale payment of MWK {amount} "
         f"for contract {contract_number} could not be processed. "
-        f"Please retry or call +265883596135 for assistance."
+        f"Please retry or email support@tenga.africa for assistance."
     )
     return send_sms(to, body)
 
@@ -126,7 +126,7 @@ def send_contract_due_reminder(to: str, customer_name: str, days_until_due: int,
     body = (
         f"Hi {customer_name}, your TengaSale payment of MWK {amount} "
         f"for contract {contract_number} is due in {days_until_due} day(s). "
-        f"Pay now to keep your device active. Call +265883596135 for help."
+        f"Pay now to keep your device active. Email support@tenga.africa for help."
     )
     return send_sms(to, body)
 
@@ -145,7 +145,7 @@ def send_overdue_notification(to: str, customer_name: str, contract_number: str,
     body = (
         f"Hi {customer_name}, your TengaSale contract {contract_number} is {overdue_days} day(s) overdue. "
         f"Please make a payment now to restore full device access. "
-        f"Pay via Airtel Money or TNM Mpamba or call +265883596135."
+        f"Pay via Airtel Money or TNM Mpamba, or email support@tenga.africa."
     )
     return send_sms(to, body)
 

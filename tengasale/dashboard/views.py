@@ -1408,12 +1408,17 @@ def hq_users(request):
 
 @hq_required
 def hq_user_edit(request, user_id):
+    from core.models import AuditLog
     User = get_user_model()
     user_obj = get_object_or_404(User.objects.select_related("profile").prefetch_related("groups"), id=user_id)
     if request.method == "POST":
+        old_role = getattr(getattr(user_obj.profile, "staff_role", None), "code", "") or primary_role(user_obj) or ""
         form = HQUserForm(request.POST, instance=user_obj)
         if form.is_valid():
             form.save()
+            new_role = form.cleaned_data.get("role", "")
+            if old_role != new_role:
+                AuditLog.objects.create(user=request.user, action="hq_user_role_change", object_type="User", object_id=str(user_obj.pk), old_value={"role": old_role}, new_value={"role": new_role})
             messages.success(request, "User updated successfully.")
             return redirect("hq_users")
     else:

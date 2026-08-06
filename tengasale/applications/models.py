@@ -18,6 +18,16 @@ class FinancingApplication(models.Model):
         "National ID must be exactly 8 letters or numbers.",
     )
 
+    def clean(self):
+        super().clean()
+        if self.income_band and self.exact_monthly_income is not None and self.exact_monthly_income > 0:
+            from .income_bands import validate_income_band_amount
+            from django.core.exceptions import ValidationError
+            try:
+                validate_income_band_amount(self.income_band, self.exact_monthly_income)
+            except ValidationError as exc:
+                raise ValidationError({"exact_monthly_income": exc.messages})
+
     STATUS_CHOICES = [
         ("draft", "Draft"),
         ("started", "Start"),

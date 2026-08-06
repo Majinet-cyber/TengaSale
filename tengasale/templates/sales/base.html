@@ -17,6 +17,7 @@
   </div>
 
   <div class="mobile-header__actions" style="flex-shrink:0;flex-wrap:nowrap;">
+    {% if tengasale_whatsapp_link %}
     <a
       class="mh-icon-btn mh-btn-whatsapp"
       href="{{ tengasale_whatsapp_link }}"
@@ -29,6 +30,7 @@
         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Z"/>
       </svg>
     </a>
+    {% endif %}
 
     <a href="{% url 'notifications_list' %}" class="mh-icon-btn mh-btn-bell" aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}" data-testid="topbar-notifications">
       <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -61,7 +61,7 @@
 
 <div class="form-actions" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
     <a href="{% url 'merchant_dashboard' %}" class="btn" style="min-height:46px;display:flex;align-items:center;justify-content:center;">Home</a>
-    <a href="{{ tengasale_whatsapp_link }}" class="btn btn-outline" style="min-height:46px;display:flex;align-items:center;justify-content:center;">WhatsApp Support</a>
+    <a href="{% url 'website_contact' %}#support" class="btn btn-outline" style="min-height:46px;display:flex;align-items:center;justify-content:center;">Contact Support</a>
 </div>
 
 {% endblock %}

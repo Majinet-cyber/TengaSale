@@ -365,6 +365,40 @@ body.ts-oha-open {
     phoneUser.addEventListener("change", syncPhoneUser);
     syncPhoneUser();
 })();
+
+(function () {
+    const band = document.querySelector("[data-income-band]");
+    const income = document.querySelector("[data-exact-income]");
+    if (!band || !income) return;
+    const rules = JSON.parse(income.dataset.incomeBandRules || "{}");
+    const group = income.closest(".form-group");
+    let error = group.querySelector("[data-income-consistency-error]");
+    if (!error) {
+        error = document.createElement("div");
+        error.className = "field-error";
+        error.dataset.incomeConsistencyError = "true";
+        error.setAttribute("role", "alert");
+        group.appendChild(error);
+    }
+    function validate() {
+        const rule = rules[band.value];
+        const value = Number(String(income.value).replace(/,/g, ""));
+        let message = "";
+        if (rule && Number.isFinite(value) && value > 0) {
+            const below = rule.min !== null && (value < Number(rule.min) || (value === Number(rule.min) && !rule.minInclusive));
+            const above = rule.max !== null && (value > Number(rule.max) || (value === Number(rule.max) && !rule.maxInclusive));
+            if (below) message = band.value === "more_than_600k" ? "You selected ‘More than MWK 600,000’. Enter an amount above MWK 600,000 or change the income band." : "Exact monthly income must match the selected income band.";
+            if (above) message = "The exact income is above the selected range. Change the amount or select the correct income band.";
+        }
+        income.setCustomValidity(message);
+        income.setAttribute("aria-invalid", message ? "true" : "false");
+        error.textContent = message;
+        error.hidden = !message;
+    }
+    band.addEventListener("change", validate);
+    income.addEventListener("input", validate);
+    validate();
+})();
 </script>
 
 {% endblock %}

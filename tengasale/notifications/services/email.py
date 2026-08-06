@@ -48,7 +48,8 @@ def _send(
     # Add global context
     ctx = {
         "site_name": "TengaSale",
-        "support_whatsapp": getattr(settings, "TENGASALE_WHATSAPP_NUMBER", "+265883596135"),
+        "support_email": getattr(settings, "TENGA_SUPPORT_EMAIL", "support@tenga.africa"),
+        "support_whatsapp": getattr(settings, "TENGA_WHATSAPP_NUMBER", ""),
         "base_url": getattr(settings, "TENGASALE_PUBLIC_BASE_URL", ""),
         **context,
     }

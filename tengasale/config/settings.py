@@ -265,8 +265,13 @@ TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED = os.environ.get(
 TENGA_SUPPORT_RATE_LIMIT = int(os.environ.get("TENGA_SUPPORT_RATE_LIMIT", "5"))
 TENGA_SUPPORT_RATE_WINDOW = int(os.environ.get("TENGA_SUPPORT_RATE_WINDOW", "900"))
 
-TENGASALE_WHATSAPP_NUMBER = os.environ.get("TENGASALE_WHATSAPP_NUMBER", "+265883596135")
-TENGASALE_WHATSAPP_LINK = f"https://wa.me/{''.join(char for char in TENGASALE_WHATSAPP_NUMBER if char.isdigit())}"
+TENGA_WHATSAPP_NUMBER = os.environ.get("TENGA_WHATSAPP_NUMBER", "").strip()
+# Backwards-compatible names have no personal fallback. Empty means no UI.
+TENGASALE_WHATSAPP_NUMBER = TENGA_WHATSAPP_NUMBER
+TENGASALE_WHATSAPP_LINK = (
+    f"https://wa.me/{''.join(char for char in TENGA_WHATSAPP_NUMBER if char.isdigit())}"
+    if TENGA_WHATSAPP_NUMBER else ""
+)
 
 TRUSTONIC_API_KEY = os.environ.get("TRUSTONIC_API_KEY", "")
 TRUSTONIC_API_URL = os.environ.get("TRUSTONIC_API_URL", "")
