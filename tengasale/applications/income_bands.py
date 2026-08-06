@@ -20,6 +20,13 @@ INCOME_BAND_RULES = {
 INCOME_BANDS = [("", "Select income band")] + [(key, rule["label"]) for key, rule in INCOME_BAND_RULES.items()]
 
 
+def _range_error(rule):
+    minimum, maximum = rule.get("min"), rule.get("max")
+    if minimum is None:
+        return f"Enter an exact monthly income below MWK {maximum:,.0f}."
+    return f"Enter an exact monthly income between MWK {minimum:,.0f} and MWK {maximum:,.0f}."
+
+
 def validate_income_band_amount(band, amount):
     rule = INCOME_BAND_RULES.get(band)
     if not rule:
@@ -30,15 +37,17 @@ def validate_income_band_amount(band, amount):
         raise ValidationError("Enter a valid exact monthly income.")
     if value <= 0:
         raise ValidationError("Exact monthly income must be greater than zero.")
+    if value != value.to_integral_value():
+        raise ValidationError("Enter the exact monthly income in whole Malawi kwacha.")
     minimum, maximum = rule.get("min"), rule.get("max")
     below = minimum is not None and (value < minimum or (value == minimum and not rule.get("min_inclusive", True)))
     above = maximum is not None and (value > maximum or (value == maximum and not rule.get("max_inclusive", True)))
     if below:
         if band == "more_than_600k":
-            raise ValidationError("You selected ‘More than MWK 600,000’. Enter an amount above MWK 600,000 or change the income band.")
-        raise ValidationError("Exact monthly income must match the selected income band.")
+            raise ValidationError("Enter an exact monthly income above MWK 600,000.")
+        raise ValidationError(_range_error(rule))
     if above:
-        raise ValidationError("The exact income is above the selected range. Change the amount or select the correct income band.")
+        raise ValidationError(_range_error(rule))
     return value
 
 

@@ -198,7 +198,7 @@ class CustomerDetailsForm(forms.ModelForm):
         widget=forms.TextInput(attrs={"data-occupation-other": "true", "placeholder": "Specify occupation"}),
     )
     income_band = forms.ChoiceField(choices=INCOME_BANDS, required=True)
-    exact_monthly_income = forms.DecimalField(required=True, min_value=Decimal("0.01"))
+    exact_monthly_income = forms.DecimalField(required=True, min_value=Decimal("1"), decimal_places=0, max_digits=12)
 
     class Meta:
         model = FinancingApplication

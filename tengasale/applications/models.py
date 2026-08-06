@@ -20,7 +20,7 @@ class FinancingApplication(models.Model):
 
     def clean(self):
         super().clean()
-        if self.income_band and self.exact_monthly_income is not None and self.exact_monthly_income > 0:
+        if self.income_band and self.exact_monthly_income is not None:
             from .income_bands import validate_income_band_amount
             from django.core.exceptions import ValidationError
             try:

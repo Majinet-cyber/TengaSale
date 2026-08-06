@@ -58,6 +58,29 @@ def valid_customer_data(**overrides):
 
 
 class IncomeBandConsistencyTests(TestCase):
+    def test_hotfix_boundaries(self):
+        cases = [
+            ("400k_600k", "400000", True), ("400k_600k", "450000", True),
+            ("400k_600k", "600000", True), ("400k_600k", "399999", False),
+            ("400k_600k", "600001", False), ("more_than_600k", "650000", True),
+            ("more_than_600k", "600001", True), ("more_than_600k", "600000", False),
+        ]
+        for band, amount, expected in cases:
+            with self.subTest(band=band, amount=amount):
+                form = CustomerDetailsForm(data=valid_customer_data(income_band=band, exact_monthly_income=amount))
+                self.assertEqual(form.is_valid(), expected)
+
+    def test_fractional_income_is_rejected(self):
+        form = CustomerDetailsForm(data=valid_customer_data(income_band="400k_600k", exact_monthly_income="450000.01"))
+        self.assertFalse(form.is_valid())
+
+    def test_widget_uses_whole_kwacha_constraints(self):
+        html = str(CustomerDetailsForm()["exact_monthly_income"])
+        self.assertIn('step="1"', html)
+        self.assertIn('min="1"', html)
+        self.assertIn('inputmode="numeric"', html)
+        self.assertNotIn('0.01', html)
+
     def test_every_configured_band_accepts_a_valid_amount(self):
         examples = {"less_than_100k": 50000, "100k_150k": 125000, "150k_200k": 175000, "200k_250k": 220000, "250k_300k": 275000, "300k_350k": 325000, "350k_400k": 375000, "400k_600k": 500000, "more_than_600k": 600001}
         self.assertEqual(set(examples), set(INCOME_BAND_RULES))

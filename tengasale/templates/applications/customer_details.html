@@ -281,11 +281,26 @@ body.ts-oha-open {
         {% for error in form.income_band.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group{% if 'exact_monthly_income' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group income-validation{% if 'exact_monthly_income' in app.correction_fields %} has-correction{% endif %}" data-income-validation-group>
         <label for="{{ form.exact_monthly_income.id_for_label }}">Exact monthly income (MWK) <span class="required-star">*</span></label>
-        {{ form.exact_monthly_income }}
+        <div class="income-validation__control">
+            {{ form.exact_monthly_income }}
+            <span class="income-validation__tick" data-income-valid-icon role="img" aria-label="Valid income" hidden>✓</span>
+        </div>
         {% for error in form.exact_monthly_income.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        <div class="income-validation__message" data-income-validation-message aria-live="polite" hidden></div>
     </div>
+
+    <style>
+      .income-validation__control { position:relative; }
+      .income-validation__control input { padding-right:42px; }
+      .income-validation__tick { position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#15803d;font-size:20px;font-weight:900; }
+      .income-validation.is-valid input { border-color:#16a34a;box-shadow:0 0 0 1px #16a34a; }
+      .income-validation.is-invalid input { border-color:#dc2626; }
+      .income-validation__message { margin-top:6px;font-size:13px; }
+      .income-validation__message.is-success { color:#15803d; }
+      .income-validation__message.is-error { color:#b91c1c; }
+    </style>
 
     <div class="form-actions">
         <a href="{% url 'merchant_dashboard' %}" class="btn btn-outline ts-button-outline">← Back</a>
@@ -372,31 +387,53 @@ body.ts-oha-open {
     if (!band || !income) return;
     const rules = JSON.parse(income.dataset.incomeBandRules || "{}");
     const group = income.closest(".form-group");
-    let error = group.querySelector("[data-income-consistency-error]");
-    if (!error) {
-        error = document.createElement("div");
-        error.className = "field-error";
-        error.dataset.incomeConsistencyError = "true";
-        error.setAttribute("role", "alert");
-        group.appendChild(error);
+    const messageNode = group.querySelector("[data-income-validation-message]");
+    const validIcon = group.querySelector("[data-income-valid-icon]");
+    const form = income.form;
+    function formatMwk(value) { return Number(value).toLocaleString("en-US", {maximumFractionDigits: 0}); }
+    function ruleMessage(rule) {
+        if (rule.min === null) return "Enter an exact monthly income below MWK " + formatMwk(rule.max) + ".";
+        if (rule.max === null) return "Enter an exact monthly income above MWK " + formatMwk(rule.min) + ".";
+        return "Enter an exact monthly income between MWK " + formatMwk(rule.min) + " and MWK " + formatMwk(rule.max) + ".";
+    }
+    function syncNativeConstraints(rule) {
+        income.step = "1";
+        if (!rule) { income.min = "1"; income.removeAttribute("max"); return; }
+        income.min = rule.min === null ? "1" : String(Number(rule.min) + (rule.minInclusive ? 0 : 1));
+        if (rule.max === null) income.removeAttribute("max");
+        else income.max = String(Number(rule.max) - (rule.maxInclusive ? 0 : 1));
     }
     function validate() {
         const rule = rules[band.value];
-        const value = Number(String(income.value).replace(/,/g, ""));
+        syncNativeConstraints(rule);
+        income.setCustomValidity("");
+        const raw = String(income.value).trim();
+        const value = Number(raw);
         let message = "";
-        if (rule && Number.isFinite(value) && value > 0) {
+        let valid = false;
+        if (rule && raw && /^\d+$/.test(raw) && Number.isSafeInteger(value) && value > 0) {
             const below = rule.min !== null && (value < Number(rule.min) || (value === Number(rule.min) && !rule.minInclusive));
             const above = rule.max !== null && (value > Number(rule.max) || (value === Number(rule.max) && !rule.maxInclusive));
-            if (below) message = band.value === "more_than_600k" ? "You selected ‘More than MWK 600,000’. Enter an amount above MWK 600,000 or change the income band." : "Exact monthly income must match the selected income band.";
-            if (above) message = "The exact income is above the selected range. Change the amount or select the correct income band.";
+            if (below || above) message = ruleMessage(rule);
+            else valid = true;
+        } else if (rule && raw) {
+            message = "Enter the exact monthly income in whole Malawi kwacha.";
         }
         income.setCustomValidity(message);
         income.setAttribute("aria-invalid", message ? "true" : "false");
-        error.textContent = message;
-        error.hidden = !message;
+        group.classList.toggle("is-valid", valid);
+        group.classList.toggle("is-invalid", Boolean(message));
+        validIcon.hidden = !valid;
+        messageNode.textContent = valid ? "Income matches the selected band." : message;
+        messageNode.className = "income-validation__message " + (valid ? "is-success" : "is-error");
+        messageNode.hidden = !valid && !message;
+        return !message;
     }
     band.addEventListener("change", validate);
     income.addEventListener("input", validate);
+    if (form) form.addEventListener("submit", function (event) {
+        if (!validate()) { event.preventDefault(); income.focus(); }
+    });
     validate();
 })();
 </script>
