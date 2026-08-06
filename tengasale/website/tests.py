@@ -73,11 +73,12 @@ class PublicSiteTests(TestCase):
         protection_position = content.index('id="protection"')
         self.assertLess(phones_position, loop_position)
         self.assertLess(loop_position, protection_position)
-        self.assertContains(response, "Finance → Own → Trade → Upgrade")
-        self.assertContains(response, "TENGA_UNIFIED_CREDIT_LOOP_V1")
-        self.assertContains(response, "Verified customer. Verified device. Smarter upgrade.")
-        self.assertContains(response, "Inspection required")
-        self.assertContains(response, "Indicative")
+        self.assertContains(response, "Your phone can")
+        self.assertContains(response, "take you further")
+        self.assertContains(response, "TENGA_PUBLIC_STRATEGY_SAFE_V1")
+        self.assertContains(response, "Eligible customers can trade in a qualifying phone")
+        self.assertContains(response, "Check eligibility")
+        self.assertContains(response, "Available")
         self.assertContains(response, reverse("new_application"))
 
     def test_tenga_loop_does_not_publish_a_binding_trade_in_value(self):
@@ -85,8 +86,8 @@ class PublicSiteTests(TestCase):
         content = response.content.decode()
         loop = content[content.index('id="trade-upgrade"'):content.index('id="protection"')]
 
-        self.assertIn("Estimate only", loop)
-        self.assertIn("physical inspection", loop)
+        self.assertIn("Eligibility and final value are confirmed after assessment", loop)
+        self.assertIn("Terms apply", loop)
         self.assertNotIn("Guaranteed", loop)
 
     def test_landing_page_become_merchant_links_to_signup(self):
@@ -473,8 +474,8 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="support"')
         self.assertContains(response, 'id="supportForm"')
-        self.assertContains(response, "support@emajinet.africa")
-        self.assertContains(response, "mailto:support@emajinet.africa")
+        self.assertContains(response, "support@tenga.africa")
+        self.assertContains(response, "mailto:support@tenga.africa")
         self.assertEqual(response.content.decode().count('class="faq-item"'), 9)
         self.assertNotContains(response, "Direct form delivery is not configured here")
 
@@ -485,11 +486,11 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "We could not send your enquiry right now")
         self.assertContains(response, "Payment is not reflecting")
-        self.assertContains(response, "support@emajinet.africa")
+        self.assertContains(response, "support@tenga.africa")
         email_message.assert_not_called()
 
     @override_settings(
-        TENGA_SUPPORT_EMAIL="support@emajinet.africa",
+        TENGA_SUPPORT_EMAIL="support@tenga.africa",
         TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True,
     )
     @patch("website.views.EmailMessage")
@@ -500,7 +501,7 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertEqual(response["Location"], "/?support=sent#support")
 
         kwargs = email_message.call_args.kwargs
-        self.assertEqual(kwargs["to"], ["support@emajinet.africa"])
+        self.assertEqual(kwargs["to"], ["support@tenga.africa"])
         self.assertEqual(kwargs["reply_to"], ["thoko@example.com"])
         self.assertEqual(
             kwargs["subject"],
@@ -514,7 +515,7 @@ class PublicSupportEnquiryTests(TestCase):
 
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
-        TENGA_SUPPORT_EMAIL="support@emajinet.africa",
+        TENGA_SUPPORT_EMAIL="support@tenga.africa",
         TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True,
     )
     def test_valid_enquiry_is_delivered_by_django_email_backend(self):
@@ -522,7 +523,7 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
-        self.assertEqual(message.to, ["support@emajinet.africa"])
+        self.assertEqual(message.to, ["support@tenga.africa"])
         self.assertEqual(message.reply_to, ["thoko@example.com"])
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=True)
@@ -530,7 +531,7 @@ class PublicSupportEnquiryTests(TestCase):
     def test_phone_is_required_for_payment_application_merchant_and_trade_in_categories(self, email_message):
         for category in (
             "payment_help", "new_application", "merchant_partnership",
-            "trade_in_upgrade", "trade_in_cash_quote",
+            "trade_in_upgrade", "tenga_certified",
         ):
             with self.subTest(category=category):
                 data = {**self.payload, "category": category, "phone": ""}
@@ -545,7 +546,7 @@ class PublicSupportEnquiryTests(TestCase):
         email_message.return_value.send.return_value = 1
         categories = {
             "trade_in_upgrade": "Trade-in / Upgrade",
-            "trade_in_cash_quote": "Trade-in / Cash quote",
+            "tenga_certified": "Tenga Certified enquiry",
         }
         for category, label in categories.items():
             with self.subTest(category=category):
@@ -600,7 +601,7 @@ class PublicSupportEnquiryTests(TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, "support@emajinet.africa")
+                self.assertContains(response, "support@tenga.africa")
                 self.assertNotContains(response, "support@tengasale.africa")
 
 

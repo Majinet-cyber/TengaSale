@@ -235,7 +235,6 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
   }, 2800);
 }
 
-/* Tenga Loop quote UI: isolated and deliberately free of client-side valuation formulas. */
 (() => {
   const root = document.querySelector(".tenga-loop-section");
   if (!root) return;
@@ -246,14 +245,15 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
   const cta = root.querySelector("#loopCta");
   const summary = root.querySelector("#loopUseSummary");
   const useButtons = [...root.querySelectorAll(".tenga-loop-use")];
+  if (!brand || !model || !condition || !device || !cta || !summary || !useButtons.length) return;
   const catalogue = PHONE_OFFERS.length ? PHONE_OFFERS : [{ brand: "Other", name: "Device not listed" }];
   const brands = [...new Set(catalogue.map(item => item.brand))];
   let selectedUse = "deposit";
 
   const outcomes = {
-    deposit: { title: "Use it toward your next deposit", text: "After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.", label: "Request an upgrade quote", category: "trade_in_upgrade" },
-    swap: { title: "Request a direct swap review", text: "Tenga Support will arrange ownership, IMEI and physical checks before any approved swap value.", label: "Request a swap review", category: "trade_in_upgrade" },
-    cash: { title: "Request a verified cash quote", text: "No online amount is binding. A cash quote follows ownership verification and physical inspection.", label: "Request a cash quote", category: "trade_in_cash_quote" }
+    deposit: { title: "Check trade-in eligibility", text: "Tenga Support can help with your next step.", label: "Check Eligibility", category: "trade_in_upgrade" },
+    swap: { title: "Talk to Tenga", text: "Ask Tenga Support about available options.", label: "Talk to Tenga", category: "trade_in_upgrade" },
+    cash: { title: "Explore Tenga Certified", text: "Ask about certified device availability.", label: "Ask about availability", category: "tenga_certified" }
   };
 
   function populateModels() {
@@ -289,7 +289,7 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
     const messageField = document.getElementById("id_message");
     if (categoryField) categoryField.value = outcome.category;
     if (subjectField && !subjectField.value) subjectField.value = outcome.title;
-    if (messageField && !messageField.value) messageField.value = `Device: ${model.value}. Condition: ${condition.value}. I would like Tenga to contact me about this non-binding quote request.`;
+    if (messageField && !messageField.value) messageField.value = "I would like Tenga to contact me about trade-in and upgrade eligibility.";
     document.getElementById("support")?.scrollIntoView({ behavior: "smooth" });
     window.setTimeout(() => document.getElementById("id_full_name")?.focus(), 550);
   });

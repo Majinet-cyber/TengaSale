@@ -1,0 +1,9 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/recommerce.css' %}">{% endblock %}
+{% block content %}
+<div class="rc-shell">
+  <aside class="rc-nav"><a class="rc-brand" href="{% url 'recommerce:home' %}">Tenga <span>Recommerce</span></a><nav><a href="{% url 'recommerce:home' %}">My workspace</a><a href="{% url 'recommerce:intake_create' %}">New intake</a><a href="{% url 'recommerce:earnings' %}">My earnings</a>{% if request.user.is_superuser or request.user.profile.role == 'hq' %}<a href="{% url 'recommerce:hq_overview' %}">HQ overview</a>{% endif %}<a href="{% url 'home' %}">Tenga home</a></nav></aside>
+  <main class="rc-main">{% if messages %}{% for message in messages %}<div class="rc-alert">{{ message }}</div>{% endfor %}{% endif %}{% block recommerce_content %}{% endblock %}</main>
+</div>
+{% endblock %}

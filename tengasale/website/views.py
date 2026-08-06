@@ -126,7 +126,6 @@ def _landing_context(request, *, section="", support_form=None):
         "section": section,
         "support_form": support_form,
         "support_email": settings.TENGA_SUPPORT_EMAIL,
-        "support_delivery_available": settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED,
         "support_success": request.GET.get("support") == "sent",
         "public_phone_offers": _get_public_phone_offers(),
     }
@@ -214,6 +213,24 @@ def _send_support_enquiry(request, form):
     return email.send(fail_silently=False)
 
 
+def _notify_support_record(*, category, subject, body, reply_to=""):
+    """Deliver non-contact public forms through the same private support mailbox."""
+    if not settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED:
+        return 0
+    email = EmailMessage(
+        subject=f"[Tenga Website][{category}] {subject}",
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[settings.TENGA_SUPPORT_EMAIL],
+        reply_to=[reply_to] if reply_to else None,
+    )
+    try:
+        return email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Public website record notification failed")
+        return 0
+
+
 def contact(request):
     if request.method != "POST":
         return _render_landing(request, section="support")
@@ -230,7 +247,7 @@ def contact(request):
         elif not settings.TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED:
             form.add_error(
                 None,
-                f"We could not send your enquiry right now. Please email {settings.TENGA_SUPPORT_EMAIL}.",
+                "We could not send your enquiry right now. Please email support@tenga.africa.",
             )
         else:
             try:
@@ -242,7 +259,7 @@ def contact(request):
                 return redirect(f"{reverse('public_home')}?support=sent#support")
             form.add_error(
                 None,
-                f"We could not send your enquiry right now. Please email {settings.TENGA_SUPPORT_EMAIL}.",
+                "We could not send your enquiry right now. Please email support@tenga.africa.",
             )
 
     return _render_landing(request, section="support", support_form=form)
@@ -307,7 +324,7 @@ def merchant_signup(request):
             except (ValueError, TypeError):
                 monthly_sales = 0
 
-            MerchantLead.objects.create(
+            lead = MerchantLead.objects.create(
                 business_name=business_name,
                 owner_full_name=owner_full_name,
                 phone=phone,
@@ -321,6 +338,12 @@ def merchant_signup(request):
                 preferred_payout_method=data.get("preferred_payout_method", "").strip(),
                 message=data.get("message", "").strip(),
                 source="public_site",
+            )
+            _notify_support_record(
+                category="Merchant partnership",
+                subject=f"Merchant enquiry — {lead.business_name}",
+                reply_to=lead.email,
+                body=f"Merchant: {lead.business_name}\nContact: {lead.owner_full_name}\nPhone: {lead.phone}\nDistrict: {lead.district}\n\n{lead.message}",
             )
             return redirect("website_merchant_signup_success")
 
@@ -379,6 +402,12 @@ def careers(request):
             if cv:
                 lead.cv_file = cv
             lead.save()
+            _notify_support_record(
+                category="Careers",
+                subject=f"Career enquiry — {lead.full_name}",
+                reply_to=lead.email,
+                body=f"Candidate: {lead.full_name}\nPhone: {lead.phone}\nDistrict: {lead.district}\nArea of interest: {lead.role_interested}\n\n{lead.note}",
+            )
             return redirect("website_careers_success")
 
         return render(request, "website/careers.html", {

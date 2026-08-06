@@ -18,6 +18,7 @@
     <a href="{% url 'hq_devices' %}" class="{% if current_url == 'hq_devices' %}is-active{% endif %}"><i class="bi bi-shield-lock"></i><span>Devices</span></a>
     <a href="{% url 'device_lock:hq_lock_centre' %}" class="{% if current_url == 'hq_lock_centre' %}is-active{% endif %}"><i class="bi bi-lock"></i><span>Device Locking</span></a>
     <a href="{% url 'hq_repossession_resale' %}" class="{% if current_url == 'hq_repossession_resale' %}is-active{% endif %}"><i class="bi bi-arrow-repeat"></i><span>Repossession</span></a>
+    <a href="{% url 'recommerce:hq_overview' %}" class="{% if current_url == 'hq_overview' %}is-active{% endif %}"><i class="bi bi-recycle"></i><span>Recommerce</span></a>
     <span class="hq-shell-nav__label">Finance</span>
     <a href="{% url 'hq_commissions' %}" class="{% if current_url == 'hq_commissions' or current_url == 'hq_commission_ledger' %}is-active{% endif %}"><i class="bi bi-wallet2"></i><span>Earnings</span></a>
     <a href="{% url 'hq_simulations' %}" class="{% if current_url == 'hq_simulations' %}is-active{% endif %}"><i class="bi bi-calculator"></i><span>Simulations</span></a>

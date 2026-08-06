@@ -50,6 +50,7 @@
 {% endblock %}
 
 {% block site_content %}
+<!-- TENGA_PUBLIC_STRATEGY_SAFE_V1 -->
     <div id="landingRouteState" data-section="{{ section|default:'' }}" hidden></div>
     <section class="hero section-dark">
       <div class="hero-grid" aria-hidden="true"></div>
@@ -287,39 +288,36 @@
       </div>
     </section>
 
-    <!-- TENGA_UNIFIED_CREDIT_LOOP_V1 -->
     <section class="tenga-loop-section section-dark" id="trade-upgrade" aria-labelledby="loopTitle">
       <div class="tenga-loop-grid" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--one" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--two" aria-hidden="true"></div>
       <div class="shell tenga-loop-shell">
         <div class="tenga-loop-heading">
-          <div><div class="tenga-loop-badge"><span></span>Tenga Loop</div><p class="kicker kicker-dark">Credit meets recommerce</p><h2 id="loopTitle" aria-label="Your phone can fund your next one.">Your phone can fund<br><em>your next one.</em></h2></div>
-          <div><p class="tenga-loop-lead">Finish your Tenga plan, trade in a verified device and use its approved value toward your next deposit.</p><p class="tenga-loop-promise">Verified customer. Verified device. Smarter upgrade.</p></div>
+          <div><div class="tenga-loop-badge"><span></span>Trade &amp; Upgrade</div><p class="kicker kicker-dark">The next step</p><h2 id="loopTitle">Your phone can<br><em>take you further.</em></h2></div>
+          <div><p class="tenga-loop-lead">Eligible customers can trade in a qualifying phone and use its approved value toward their next Tenga device.</p><p class="tenga-loop-promise">Simple possibilities. Clear next steps.</p></div>
         </div>
-        <p class="tenga-loop-lifecycle">Finance → Own → Trade → Upgrade → Refurbish → Finance again</p>
+        <p class="tenga-loop-lifecycle">More value from the phone you already have.</p>
         <div class="tenga-loop-layout">
           <div class="tenga-loop-story">
-            <div class="tenga-loop-cycle" aria-label="Finance → Own → Trade → Upgrade → Refurbish → Finance again through Tenga">
+            <div class="tenga-loop-cycle" aria-label="Trade and upgrade benefits">
               <div class="tenga-loop-cycle-line" aria-hidden="true"><i></i></div>
-              <article class="tenga-loop-cycle-step active"><span>01</span><div><strong>Finance</strong><small>Get a phone through Tenga.</small></div></article>
-              <article class="tenga-loop-cycle-step"><span>02</span><div><strong>Own</strong><small>Complete your approved payment plan.</small></div></article>
-              <article class="tenga-loop-cycle-step"><span>03</span><div><strong>Trade</strong><small>Verify, inspect and value it.</small></div></article>
-              <article class="tenga-loop-cycle-step"><span>04</span><div><strong>Upgrade</strong><small>Use approved value toward the next phone.</small></div></article>
+              <article class="tenga-loop-cycle-step active"><span>01</span><div><strong>Trade in</strong><small>Bring an eligible device.</small></div></article>
+              <article class="tenga-loop-cycle-step"><span>02</span><div><strong>Upgrade</strong><small>Move to your next phone.</small></div></article>
+              <article class="tenga-loop-cycle-step"><span>03</span><div><strong>Certified</strong><small>Explore certified devices where available.</small></div></article>
             </div>
-            <div class="tenga-loop-trust"><span><i>✓</i> Valid identification</span><span><i>✓</i> Lawful ownership proof</span><span><i>✓</i> IMEI and device verification</span><span><i>✓</i> Physical inspection</span></div>
-            <p class="tenga-loop-safety"><strong>No stolen or blacklisted devices accepted.</strong> Final value is confirmed only after verification and inspection.</p>
-            <div class="tenga-loop-benefits"><article><small>Next deposit</small><strong>Use approved trade-in value toward your next phone.</strong></article><article><small>Direct swap</small><strong>Request a verified phone-swap review.</strong></article><article><small>Cash quote</small><strong>Ask Tenga Support for a non-binding quote.</strong></article></div>
-            <div class="tenga-loop-certified"><small>Tenga Certified</small><p>Devices are inspected, graded, securely data-wiped, repaired where necessary and prepared for another customer.</p></div>
+            <div class="tenga-loop-trust"><span><i>✓</i> Trade in an eligible device</span><span><i>✓</i> Upgrade to your next phone</span><span><i>✓</i> Explore Tenga Certified devices</span></div>
+            <p class="tenga-loop-safety"><strong>Clear terms before you commit.</strong> Eligibility and final value are confirmed after assessment.</p>
+            <div class="tenga-loop-benefits"><article><small>Trade in</small><strong>Make your current phone count.</strong></article><article><small>Upgrade</small><strong>Step into your next Tenga device.</strong></article><article><small>Certified</small><strong>Explore availability with Tenga Support.</strong></article></div>
+            <div class="tenga-loop-certified"><small>Tenga Certified</small><p>Quality devices prepared for their next owner, where available.</p></div>
           </div>
           <div class="tenga-loop-estimator" id="loopEstimator">
-            <div class="tenga-loop-estimator-head"><div><small>Quote request</small><h3>What could your phone unlock?</h3></div><span class="tenga-loop-status"><i></i> Indicative</span></div>
-            <div class="tenga-loop-form-grid"><label>Brand<select id="loopBrand"></select></label><label>Model<select id="loopModel"></select></label><label class="tenga-loop-condition">Condition<select id="loopCondition"><option>Excellent</option><option selected>Good</option><option>Fair</option><option>Needs repair</option></select></label></div>
-            <div class="tenga-loop-value"><div><small>Online valuation</small><strong id="loopValue">Inspection required</strong><span id="loopDevice">Choose your device and outcome</span></div><div class="tenga-loop-value-ring"><span>Quote</span></div></div>
-            <div class="tenga-loop-use-tabs" role="group" aria-label="How to use an approved device value"><button type="button" class="tenga-loop-use active" data-loop-use="deposit">Next deposit</button><button type="button" class="tenga-loop-use" data-loop-use="swap">Direct swap</button><button type="button" class="tenga-loop-use" data-loop-use="cash">Cash quote</button></div>
-            <div class="tenga-loop-use-summary" id="loopUseSummary"><strong>Use it toward your next deposit</strong><p>After verification and inspection, approved value may reduce the cash needed for your next Tenga phone.</p></div>
-            <a href="#support" class="button button-primary button-large tenga-loop-cta" id="loopCta">Request an upgrade quote</a>
-            <p class="tenga-loop-fine-print">Estimate only. Final value follows ownership proof, IMEI checks, secure data removal and physical inspection.</p>
+            <div class="tenga-loop-estimator-head"><div><small>Your next move</small><h3>See what is possible.</h3></div><span class="tenga-loop-status"><i></i> Available</span></div>
+            <div class="tenga-loop-value"><div><small>Trade &amp; Upgrade</small><strong>Check eligibility</strong><span>Tell Tenga about the phone you have and the phone you want.</span></div><div class="tenga-loop-value-ring"><span>Next</span></div></div>
+            <div class="tenga-loop-use-summary"><strong>Your phone can take you further</strong><p>Use an approved trade-in value toward your next Tenga device.</p></div>
+            <a href="#support" class="button button-primary button-large tenga-loop-cta" data-support-category="trade_in_upgrade">Check Eligibility</a>
+            <a href="#support" class="button button-ghost button-large tenga-loop-cta" data-support-category="general">Talk to Tenga</a>
+            <p class="tenga-loop-fine-print">Eligibility and final value are confirmed after assessment. Terms apply.</p>
           </div>
         </div>
       </div>
@@ -456,11 +454,11 @@
           </details>
           <details class="faq-item">
             <summary>Can I trade in my Tenga phone?</summary>
-            <p>Yes, after completing the applicable plan. Tenga verifies your identity, lawful ownership and device IMEI, then inspects the phone before confirming any upgrade, swap or cash quote.</p>
+            <p>Eligible customers can trade in a qualifying phone and use its approved value toward their next Tenga device. Terms apply.</p>
           </details>
           <details class="faq-item">
-            <summary>How is my phone valued?</summary>
-            <p>Online guidance is indicative only. Final value depends on lawful ownership, IMEI status, condition and a physical inspection. Stolen or blacklisted devices are never accepted.</p>
+            <summary>When is my trade-in value confirmed?</summary>
+            <p>Eligibility and final value are confirmed after assessment. Tenga Support will explain the next step clearly.</p>
           </details>
           <details class="faq-item">
             <summary>What if my payment is not showing?</summary>
@@ -494,7 +492,7 @@
             <a href="#support" data-support-category="merchant_partnership">Merchant partnership</a>
             <a href="#support" data-support-category="careers">Careers</a>
             <a href="#support" data-support-category="trade_in_upgrade">Trade-in / Upgrade</a>
-            <a href="#support" data-support-category="trade_in_cash_quote">Trade-in / Cash quote</a>
+            <a href="#support" data-support-category="tenga_certified">Tenga Certified</a>
           </div>
         </div>
 
