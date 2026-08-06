@@ -398,8 +398,8 @@
 {% block page_footer %}{% endblock %}
 
 {% block content %}
-<div class="merchant-dashboard-shell mobile-shell">
-  <div class="merchant-shell">
+<div class="merchant-dashboard-shell ops-shell">
+  <div class="merchant-shell ops-main">
     <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
       <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
         <span class="merchant-brand-icon" aria-hidden="true">
@@ -486,7 +486,7 @@
       </a>
     </div>
 
-    <section class="dashboard-section" aria-label="Portfolio Overview">
+    <section class="dashboard-section ops-section" aria-label="Portfolio Overview">
       <div class="portfolio-overview" data-testid="merchant-portfolio-overview">
         <div class="portfolio-overview__header">
           <h2 class="portfolio-overview__title">Portfolio Overview</h2>
@@ -518,7 +518,7 @@
     </section>
 
     <h2 class="dashboard-section-title">Applications</h2>
-    <nav class="ts-dashboard-menu-list action-card" aria-label="Applications">
+    <nav class="ts-dashboard-menu-list action-card ops-list" aria-label="Applications">
       {% url 'active_applications' as active_url %}
       {% include "partials/dashboard_menu_row.html" with href=active_url icon="bi-broadcast" label="Active" value=active_count only %}
       {% url 'pending_applications' as pending_url %}
@@ -530,9 +530,9 @@
     </nav>
 
     <h2 class="dashboard-section-title">Seller Quality</h2>
-    <nav class="ts-dashboard-menu-list action-card" aria-label="Seller Quality">
+    <nav class="ts-dashboard-menu-list action-card ops-list" aria-label="Seller Quality">
       {% url 'active_applications' as quality_url %}
-      <a href="{{ quality_url }}" class="ts-dashboard-menu-row dashboard-row seller-quality-row" data-testid="merchant-seller-quality-row">
+      <a href="{{ quality_url }}" class="ts-dashboard-menu-row dashboard-row seller-quality-row ops-row" data-testid="merchant-seller-quality-row">
         <span class="ts-dashboard-menu-icon ts-dashboard-menu-icon--green" aria-hidden="true">
           <i class="bi bi-award"></i>
         </span>
@@ -546,7 +546,7 @@
     </nav>
 
     <h2 class="dashboard-section-title">Earnings</h2>
-    <nav class="ts-dashboard-menu-list action-card" aria-label="Earnings">
+    <nav class="ts-dashboard-menu-list action-card ops-list" aria-label="Earnings">
       {% url 'earnings_home' as earnings_url %}
       {% include "partials/dashboard_menu_row.html" with href=earnings_url icon="bi-wallet2" icon_class="ts-dashboard-menu-icon--green" label="Earnings Summary" value=earnings_total|mwk value_class="ts-dashboard-menu-value--money" testid="merchant-row-earnings" only %}
     </nav>
