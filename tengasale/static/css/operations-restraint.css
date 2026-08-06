@@ -1,33 +1,45 @@
-/* Shared authenticated operations shell: flat groups, quiet canvas, focused work column. */
+/* Shared authenticated operations shell: one calm surface and integrated rows. */
+:root { --ops-surface-neutral:#f5f5f4; --ops-divider:#dededb; --ops-hover:#ececea; }
 body:has(.ops-shell) .app-shell { max-width:none; width:100%; min-height:100vh; background:#fff; box-shadow:none; }
 .ops-shell { width:100%; min-height:100vh; background:#fff; }
-.ops-main { width:min(calc(100% - 32px),580px); margin-inline:auto; }
-.ops-section { margin-top:28px; }
+.ops-main { width:100%; max-width:560px; min-height:100vh; margin-inline:auto; padding-inline:24px; box-sizing:border-box; background:var(--ops-surface-neutral); }
+.ops-section { margin-top:24px; }
 .ops-list { border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
-.ops-row { border:0; border-bottom:1px solid #e5e7eb; border-radius:0; background:transparent; box-shadow:none; }
-.ops-row:last-child { border-bottom:1px solid #e5e7eb; }
+.ops-row { min-height:62px; padding:14px 16px; border:0; border-bottom:1px solid var(--ops-divider); border-radius:0; background:transparent; box-shadow:none; }
+.ops-row:last-child { border-bottom:1px solid var(--ops-divider); }
+.ops-row:hover { background:var(--ops-hover); box-shadow:none; }
+.ops-row:focus-visible { outline:2px solid #2458df; outline-offset:-2px; background:var(--ops-hover); }
 
-.merchant-dashboard-shell.ops-shell .merchant-shell { width:min(calc(100% - 32px),580px); padding-inline:0; }
-.merchant-dashboard-shell.ops-shell .merchant-header { margin-inline:0; padding-inline:0; }
-.merchant-dashboard-shell.ops-shell .portfolio-overview { padding:18px 0 20px; border:0; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; border-radius:0; box-shadow:none; }
+/* Merchant: preserve the orange workflow control; flatten everything secondary. */
+.merchant-dashboard-shell.ops-shell .merchant-shell { width:100%; max-width:560px; padding-inline:24px; background:var(--ops-surface-neutral); }
+.merchant-dashboard-shell.ops-shell .merchant-header { margin-inline:-24px; padding-inline:24px; background:var(--ops-surface-neutral); }
+.merchant-dashboard-shell.ops-shell .merchant-cta-wrap { padding-block:4px 10px; }
+.merchant-dashboard-shell.ops-shell .portfolio-overview { padding:18px 0 20px; border:0; border-bottom:1px solid var(--ops-divider); border-radius:0; background:transparent; box-shadow:none; }
 .merchant-dashboard-shell.ops-shell .portfolio-overview__icon { width:auto; height:auto; margin-bottom:7px; justify-content:flex-start; border-radius:0; background:transparent; }
-.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-list { border:0; border-radius:0; box-shadow:none; overflow:visible; }
-.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-row { padding-inline:0; border-bottom:1px solid #e5e7eb; background:transparent; box-shadow:none; }
+.merchant-dashboard-shell.ops-shell .dashboard-section-title { margin-top:16px; padding:12px 16px 7px; border:0; background:transparent; color:#667085; }
+.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-list { border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
+.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-row { padding:14px 16px; border-bottom:1px solid var(--ops-divider); background:transparent; box-shadow:none; }
+.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-row:hover { background:var(--ops-hover); }
 .merchant-dashboard-shell.ops-shell .ts-dashboard-menu-icon { width:34px; flex-basis:34px; height:34px; border-radius:0; background:transparent; }
 
-.uw-home.ops-main { width:min(calc(100% - 32px),580px); padding-inline:0; }
-.uw-home .ts-dashboard-menu-list { border:0; border-radius:0; box-shadow:none; overflow:visible; }
-.uw-home .ts-dashboard-menu-row { padding-inline:0; border-bottom:1px solid #e5e7eb; background:transparent; box-shadow:none; }
+/* Underwriter: retain queue-state and MY ACTIVE fills; quieten navigation below. */
+.uw-home.ops-main { width:100%; max-width:560px; padding-inline:24px; background:var(--ops-surface-neutral); }
+.uw-home .uw-section-label { margin-top:16px; padding:12px 16px 7px; border:0; background:transparent; color:#667085; }
+.uw-home .ts-dashboard-menu-list { border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
+.uw-home .ts-dashboard-menu-row { padding:14px 16px; border-bottom:1px solid var(--ops-divider); background:transparent; box-shadow:none; }
+.uw-home .ts-dashboard-menu-row:hover { background:var(--ops-hover); }
 .uw-home .ts-dashboard-menu-icon { width:34px; flex-basis:34px; height:34px; border-radius:0; background:transparent; }
 
+/* Earnings: retain the balance summary and action buttons, flatten transaction lists. */
 .earnings-ops { padding-block:20px 96px; }
-.earnings-ops .wallet-balance-card { border:1px solid #e5e7eb; border-radius:8px; box-shadow:none; background:#fff; }
+.earnings-ops .wallet-balance-card { border:1px solid var(--ops-divider); border-radius:8px; box-shadow:none; background:#fff; }
 .earnings-ops .card { padding-inline:0; border:0; border-radius:0; box-shadow:none; background:transparent; }
-.earnings-ops .transaction-row { margin:0; padding:16px 0; border:0; border-bottom:1px solid #e5e7eb; border-radius:0; background:transparent; box-shadow:none; }
+.earnings-ops .transaction-row { margin:0; padding:16px; border:0; border-bottom:1px solid var(--ops-divider); border-radius:0; background:transparent; box-shadow:none; }
 .earnings-ops .payout-breakdown,.earnings-ops .metric-grid { border-radius:0; box-shadow:none; }
 
+/* Recommerce keeps functional tables/forms while sharing the focused work surface. */
 .rc-shell.ops-shell { background:#fff; }
-.rc-shell .rc-main { max-width:680px; margin-inline:auto; padding:38px 30px 90px; }
+.rc-shell .rc-main { width:calc(100% - 48px); max-width:680px; min-height:100vh; margin-inline:auto; padding:38px 24px 90px; box-sizing:border-box; background:var(--ops-surface-neutral); }
 .rc-shell .rc-head { padding-bottom:20px; border-bottom:1px solid var(--rc-line); }
 .rc-shell .rc-head h1 { font-size:27px; }
 .rc-shell .rc-stats { gap:0; border-top:1px solid var(--rc-line); border-bottom:1px solid var(--rc-line); }
@@ -39,8 +51,10 @@ body:has(.ops-shell) .app-shell { max-width:none; width:100%; min-height:100vh; 
 .rc-shell th,.rc-shell td { padding-inline:8px; }
 
 @media(max-width:700px){
-  .ops-main,.merchant-dashboard-shell.ops-shell .merchant-shell,.uw-home.ops-main { width:min(calc(100% - 24px),580px); }
-  .rc-shell .rc-main { padding:22px 16px 86px; }
+  .ops-main,.merchant-dashboard-shell.ops-shell .merchant-shell,.uw-home.ops-main { width:100%; max-width:560px; padding-inline:16px; }
+  .merchant-dashboard-shell.ops-shell .merchant-header { margin-inline:-16px; padding-inline:16px; }
+  .ops-row,.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-row,.uw-home .ts-dashboard-menu-row { padding-inline:16px; }
+  .rc-shell .rc-main { width:100%; padding:22px 16px 86px; }
   .rc-shell .rc-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .rc-shell .rc-stats article:nth-child(2) { border-right:0; }
   .rc-shell .rc-stats article:nth-child(-n+2) { border-bottom:1px solid var(--rc-line); }
