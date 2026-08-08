@@ -1,0 +1,3 @@
+<nav class="tenga-tabs" aria-label="{{ aria_label|default:'Sections' }}" data-tenga-component="TengaTabs">
+  {% for item in tabs %}<a href="{{ item.href }}" class="tenga-tabs__item {% if item.key == active_tab %}is-active{% endif %}" {% if item.key == active_tab %}aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+</nav>

@@ -3,7 +3,7 @@
 {% block content %}
 
 <a href="{% url 'financing_dashboard' %}" class="back-link">Back</a>
-<h1 class="greeting">Contracts</h1>
+<h1 class="greeting">{% if portfolio_filter %}{{ portfolio_filter|title }} portfolio{% else %}Contracts{% endif %}</h1>
 
 <section class="card">
     <h2>Create financing contract</h2>

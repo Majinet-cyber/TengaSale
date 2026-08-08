@@ -241,7 +241,15 @@
 }
 .portfolio-overview__metric {
   min-width: 0;
+  padding: 6px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background-color 180ms ease, transform 180ms ease;
 }
+.portfolio-overview__metric:hover { background: rgba(255,90,0,.05); }
+.portfolio-overview__metric:focus-visible { outline: 2px solid #ff5a00; outline-offset: 3px; }
+.portfolio-overview__metric:active { transform: translateY(1px); }
 .portfolio-overview__icon {
   width: 34px;
   height: 34px;
@@ -398,7 +406,7 @@
 {% block page_footer %}{% endblock %}
 
 {% block content %}
-<div class="merchant-dashboard-shell ops-shell">
+<div class="merchant-dashboard-shell ops-shell" data-tenga-component="TengaAppShell">
   <div class="merchant-shell ops-main">
     <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
       <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
@@ -493,26 +501,26 @@
           <a href="{% url 'all_deals' %}" class="ts-dashboard-menu-value">Deals</a>
         </div>
         <div class="portfolio-overview__grid">
-          <div class="portfolio-overview__metric">
+          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=financed" aria-label="View all financed contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-phone"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.total_financed_devices|default:0 }}</span>
             <span class="portfolio-overview__label">Financed</span>
-          </div>
-          <div class="portfolio-overview__metric">
+          </a>
+          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=active" aria-label="View active contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.active_contracts|default:0 }}</span>
             <span class="portfolio-overview__label">Active</span>
-          </div>
-          <div class="portfolio-overview__metric">
+          </a>
+          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=locked" aria-label="View locked devices">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.locked_devices|default:0 }}</span>
             <span class="portfolio-overview__label">Locked</span>
-          </div>
-          <div class="portfolio-overview__metric">
+          </a>
+          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=overdue" aria-label="View overdue contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.overdue_contracts|default:0 }}</span>
             <span class="portfolio-overview__label">Overdue</span>
-          </div>
+          </a>
         </div>
       </div>
     </section>

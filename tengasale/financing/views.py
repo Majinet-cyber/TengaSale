@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from accounts.utils import get_tengasale_role
+
 from . import services
 from .forms import CustomerForm, DeviceForm, FinancingContractForm, PaymentRecordForm, PaymentRejectForm, UnlockPinForm
 from .models import Customer, Device, DeviceCommand, FinancingContract, PaymentRecord, UnlockToken
@@ -100,8 +102,20 @@ def contracts(request):
             return redirect("financing_contracts")
     else:
         form = FinancingContractForm()
-    rows = FinancingContract.objects.select_related("customer", "device", "created_by").order_by("-created_at")[:50]
-    return render(request, "financing/contracts.html", {"form": form, "contracts": rows})
+    rows = FinancingContract.objects.select_related("customer", "device", "created_by")
+    if not (request.user.is_staff or request.user.is_superuser or get_tengasale_role(request.user) == "hq"):
+        rows = rows.filter(created_by=request.user)
+    portfolio_filter = request.GET.get("portfolio", "").strip().lower()
+    if portfolio_filter == "active":
+        rows = rows.filter(status=FinancingContract.STATUS_ACTIVE)
+    elif portfolio_filter == "locked":
+        rows = rows.filter(device__status=Device.STATUS_LOCKED)
+    elif portfolio_filter == "overdue":
+        rows = rows.filter(status=FinancingContract.STATUS_OVERDUE)
+    elif portfolio_filter not in {"", "financed"}:
+        portfolio_filter = ""
+    rows = rows.order_by("-created_at")[:50]
+    return render(request, "financing/contracts.html", {"form": form, "contracts": rows, "portfolio_filter": portfolio_filter})
 
 
 @login_required

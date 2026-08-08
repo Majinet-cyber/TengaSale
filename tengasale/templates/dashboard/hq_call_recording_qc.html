@@ -47,16 +47,9 @@
 
 {% block content %}
 <div class="qc-wrap" data-testid="hq-call-recording-qc">
-  <div class="qc-header">
-    <div>
-      <a class="qc-link" href="{% url 'hq_dashboard' %}">Back to HQ</a>
-      <h1 class="qc-title">Underwriter Call Recording QC</h1>
-      <p class="qc-sub">Review consented customer calls, compare application facts, and apply QC penalties where needed.</p>
-    </div>
-    <a class="qc-btn qc-btn--soft" href="{% url 'hq_underwriter_performance' %}">Performance</a>
-  </div>
+  {% url 'hq_dashboard' as hq_home_url %}{% url 'hq_underwriter_performance' as performance_url %}{% include "partials/tenga/page_header.html" with eyebrow="Quality Control" title="Underwriter Call Recording QC" subtitle="Review consented customer calls, compare application facts, and apply QC penalties where needed." back_url=hq_home_url action_url=performance_url action_label="Performance" only %}
 
-  <div class="qc-grid">
+  <div class="qc-grid" data-tenga-component="TengaMetricStrip">
     <div class="qc-kpi"><span>Pending QC</span><strong>{{ kpis.pending }}</strong></div>
     <div class="qc-kpi"><span>Failed This Month</span><strong>{{ kpis.failed_month }}</strong></div>
     <div class="qc-kpi"><span>Penalties Issued</span><strong>{{ kpis.penalties_issued|mwk }}</strong></div>

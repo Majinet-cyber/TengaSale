@@ -343,7 +343,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="uw-home uw-home-simple ts-motion-page ops-shell ops-main"
+<div class="uw-home uw-home-simple ts-motion-page ops-shell ops-main" data-tenga-component="TengaAppShell"
      data-queue-status-url="{% url 'sales_queue_status' %}"
      data-poll-interval="3"{% if cooldown_expires_at %} data-cooldown-expires-at="{{ cooldown_expires_at }}"{% endif %}>
 

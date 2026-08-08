@@ -548,10 +548,11 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 }
 
 @media (max-width:800px){
+  body.mobile-menu-open{overflow:hidden}
   :root{--shell:calc(100vw - 30px);--header:74px}
   .nav-links{
     position:fixed;left:15px;right:15px;top:82px;display:grid;gap:0;margin:0;padding:12px;
-    border:1px solid rgba(11,16,32,.08);border-radius:20px;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);
+    border:1px solid rgba(11,16,32,.08);border-radius:20px;background:#fff;
     box-shadow:0 20px 50px rgba(16,21,42,.18);opacity:0;visibility:hidden;transform:translateY(-10px);transition:.2s ease
   }
   .nav-links.open{opacity:1;visibility:visible;transform:none}

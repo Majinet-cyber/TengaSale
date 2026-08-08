@@ -1,5 +1,12 @@
 /* Shared authenticated operations shell: one calm surface and integrated rows. */
 :root { --ops-surface-neutral:#f5f5f4; --ops-divider:#dededb; --ops-hover:#ececea; }
+.tenga-page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:0 0 20px;border-bottom:1px solid var(--ops-divider)}
+.tenga-page-header__main{min-width:0}.tenga-page-header__back{display:inline-block;margin-bottom:10px;color:#667085;text-decoration:none;font-size:13px;font-weight:700}
+.tenga-page-header__eyebrow{display:block;margin-bottom:6px;color:#ff5a00;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.tenga-page-header__title{margin:0;color:#101828;font-size:27px;line-height:1.15;font-weight:900}.tenga-page-header__subtitle{margin:7px 0 0;color:#667085;font-size:14px;line-height:1.5}
+.tenga-primary-action{flex:0 0 auto;padding:11px 16px;border-radius:10px;background:#ff5a00;color:#fff;text-decoration:none;font-size:13px;font-weight:850}
+.tenga-tabs{display:flex;gap:24px;overflow-x:auto;border-bottom:1px solid var(--ops-divider);scrollbar-width:none}.tenga-tabs__item{position:relative;padding:14px 0 12px;color:#667085;text-decoration:none;font-size:13px;font-weight:750;white-space:nowrap}.tenga-tabs__item.is-active{color:#c2410c}.tenga-tabs__item.is-active:after{position:absolute;right:0;bottom:-1px;left:0;height:2px;background:#ff5a00;content:""}
+.tenga-empty-state{display:grid;justify-items:center;gap:7px;padding:38px 16px;color:#667085;text-align:center}.tenga-empty-state__icon{display:grid;width:38px;height:38px;place-items:center;border-radius:50%;background:#ececea;color:#667085}.tenga-empty-state strong{color:#344054}.tenga-empty-state p{max-width:360px;margin:0;font-size:13px}
 body:has(.ops-shell) .app-shell { max-width:none; width:100%; min-height:100vh; background:#fff; box-shadow:none; }
 .ops-shell { width:100%; min-height:100vh; background:#fff; }
 .ops-main { width:100%; max-width:560px; min-height:100vh; margin-inline:auto; padding-inline:24px; box-sizing:border-box; background:var(--ops-surface-neutral); }
@@ -51,6 +58,7 @@ body:has(.ops-shell) .app-shell { max-width:none; width:100%; min-height:100vh; 
 .rc-shell th,.rc-shell td { padding-inline:8px; }
 
 @media(max-width:700px){
+  .tenga-page-header{padding-bottom:16px}.tenga-page-header__title{font-size:24px}.tenga-page-header__subtitle{font-size:13px}.tenga-tabs{gap:20px}
   .ops-main,.merchant-dashboard-shell.ops-shell .merchant-shell,.uw-home.ops-main { width:100%; max-width:560px; padding-inline:16px; }
   .merchant-dashboard-shell.ops-shell .merchant-header { margin-inline:-16px; padding-inline:16px; }
   .ops-row,.merchant-dashboard-shell.ops-shell .ts-dashboard-menu-row,.uw-home .ts-dashboard-menu-row { padding-inline:16px; }

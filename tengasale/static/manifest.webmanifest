@@ -1,6 +1,6 @@
 {
   "name": "TengaSale",
-  "short_name": "TengaSale",
+  "short_name": "Tenga",
   "description": "TengaSale — Endless Possibilities. Smartphone financing made simple.",
   "start_url": "/pay/",
   "scope": "/",
@@ -11,10 +11,16 @@
   "lang": "en",
   "icons": [
     {
-      "src": "/static/images/brand/tengasale-logo-full.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "/static/images/icon-192.png?v=20260809",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512.png?v=20260809",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "categories": ["finance", "business"],

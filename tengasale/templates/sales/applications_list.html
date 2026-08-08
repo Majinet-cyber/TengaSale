@@ -12,12 +12,7 @@
   </a>
 </div>
 
-<div class="ts-tabs-v2">
-  <a href="?tab=active"    class="ts-tab-v2 {% if tab == 'active' %}ts-tab-v2--active{% endif %}">Active</a>
-  <a href="?tab=completed" class="ts-tab-v2 {% if tab == 'completed' %}ts-tab-v2--active{% endif %}">Completed</a>
-  <a href="?tab=rejected"  class="ts-tab-v2 {% if tab == 'rejected' %}ts-tab-v2--active{% endif %}">Rejected</a>
-  <a href="?tab=queue"     class="ts-tab-v2 {% if tab == 'queue' %}ts-tab-v2--active{% endif %}">Queue</a>
-</div>
+{% include "partials/tenga/tabs.html" with tabs=application_tabs active_tab=tab aria_label="Application lists" only %}
 
 {% if tab == 'queue' %}
   <section class="queue-privacy-card">

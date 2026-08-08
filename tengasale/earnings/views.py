@@ -163,6 +163,10 @@ def earnings_home(request):
         active_tab = "overview"
     if active_tab not in {"overview", "transactions", "payouts", "rewards"}:
         active_tab = "overview"
+    earnings_tabs = [
+        {"key": key, "label": label, "href": f"{reverse('earnings_home')}?tab={key}"}
+        for key, label in (("overview", "Overview"), ("transactions", "Transactions"), ("payouts", "Payouts"), ("rewards", "Rewards"))
+    ]
 
     return render(request, "earnings/home.html", {
         "wallet": wallet,
@@ -171,6 +175,7 @@ def earnings_home(request):
         "transaction_rows": transaction_rows[:30],
         "payout_rows": payout_rows,
         "active_tab": active_tab,
+        "earnings_tabs": earnings_tabs,
         "commissions": commissions[:20],
         "pending_commission_total": pending_commissions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00"),
         "paid_commission_total": paid_commissions.aggregate(total=Sum("amount"))["total"] or Decimal("0.00"),

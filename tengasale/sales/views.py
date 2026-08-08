@@ -311,6 +311,10 @@ def sales_home(request):
     )
 
     cooldown_remaining, can_claim, cooldown_expires_at = _cooldown_state(request.user)
+    application_tabs = [
+        {"key": key, "label": label, "href": f"?tab={key}"}
+        for key, label in (("active", "Active"), ("completed", "Completed"), ("rejected", "Rejected"), ("queue", "Queue"))
+    ]
     at_max_capacity = active_count >= rule.max_active_applications
     in_cooldown = cooldown_remaining > 0 and not at_max_capacity
 
@@ -457,6 +461,7 @@ def sales_applications(request):
         "page_heading": "Applications",
         "apps": apps.select_related("deal", "deal__brand", "created_by", "contract")[:50],
         "tab": tab,
+        "application_tabs": application_tabs,
         "pending_count": pending_count,
         "active_count": active_count,
         "max_active": rule.max_active_applications,

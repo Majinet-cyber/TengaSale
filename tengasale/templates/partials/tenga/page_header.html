@@ -1,0 +1,9 @@
+<header class="tenga-page-header {{ header_class|default:'' }}" data-tenga-component="TengaPageHeader">
+  <div class="tenga-page-header__main">
+    {% if back_url %}<a href="{{ back_url }}" class="tenga-page-header__back">{{ back_label|default:"Back" }}</a>{% endif %}
+    {% if eyebrow %}<span class="tenga-page-header__eyebrow">{{ eyebrow }}</span>{% endif %}
+    <h1 class="tenga-page-header__title">{{ title }}</h1>
+    {% if subtitle %}<p class="tenga-page-header__subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if action_url %}<a href="{{ action_url }}" class="tenga-primary-action">{{ action_label }}</a>{% endif %}
+</header>

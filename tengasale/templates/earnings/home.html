@@ -6,12 +6,7 @@
 {% block content %}
 <div class="ops-shell"><main class="ops-main earnings-ops">
 
-<a href="{% url 'merchant_dashboard' %}" class="soft-back">
-    <span class="soft-back-icon">&larr;</span>
-    <span>Back</span>
-</a>
-
-<h1 class="greeting">Earnings</h1>
+{% url 'merchant_dashboard' as merchant_home_url %}{% include "partials/tenga/page_header.html" with title="Earnings" subtitle="Wallet, transactions, payouts and rewards." back_url=merchant_home_url only %}
 
 <section class="stat-card wallet-balance-card">
     <span>Wallet balance</span>
@@ -23,12 +18,7 @@
     <p>You are now earning more with TengaSale.</p>
 </section>
 
-<nav class="tab-bar" aria-label="Earnings tabs">
-    <a href="{% url 'earnings_home' %}?tab=overview" class="tab-button {% if active_tab == 'overview' %}active{% endif %}">Overview</a>
-    <a href="{% url 'earnings_home' %}?tab=transactions" class="tab-button {% if active_tab == 'transactions' %}active{% endif %}">Transactions</a>
-    <a href="{% url 'earnings_home' %}?tab=payouts" class="tab-button {% if active_tab == 'payouts' %}active{% endif %}">Payouts</a>
-    <a href="{% url 'earnings_home' %}?tab=rewards" class="tab-button {% if active_tab == 'rewards' %}active{% endif %}">Rewards</a>
-</nav>
+{% include "partials/tenga/tabs.html" with tabs=earnings_tabs active_tab=active_tab aria_label="Earnings sections" only %}
 
 {% if active_tab == "payouts" %}
     <section class="card">
@@ -87,7 +77,7 @@
                 </div>
             </article>
         {% empty %}
-            <p class="empty-state">No earnings transactions yet.</p>
+            {% include "partials/tenga/empty_state.html" with title="No earnings transactions yet" message="Transactions will appear here when earnings are recorded." only %}
         {% endfor %}
     </section>
 {% elif active_tab == "rewards" %}

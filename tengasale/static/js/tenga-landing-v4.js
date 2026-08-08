@@ -115,14 +115,24 @@ onScroll();
 
 const menuButton = document.getElementById("menuButton");
 const navLinks = document.getElementById("navLinks");
+const closeMenu = () => {
+  navLinks.classList.remove("open");
+  menuButton.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("mobile-menu-open");
+};
 menuButton.addEventListener("click", () => {
   const open = navLinks.classList.toggle("open");
   menuButton.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("mobile-menu-open", open);
+  if (open) navLinks.querySelector("a")?.focus();
 });
-navLinks.querySelectorAll("a").forEach(link => link.addEventListener("click", () => {
-  navLinks.classList.remove("open");
-  menuButton.setAttribute("aria-expanded", "false");
-}));
+navLinks.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && navLinks.classList.contains("open")) {
+    closeMenu();
+    menuButton.focus();
+  }
+});
 
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {

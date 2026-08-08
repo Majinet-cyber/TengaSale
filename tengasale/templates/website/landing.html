@@ -25,17 +25,16 @@
       </a>
 
       <div class="nav-links" id="navLinks">
-        <a href="#why">Why</a>
-        <a href="#process">Process</a>
+        <a class="desktop-only" href="#why">Why</a>
+        <a class="desktop-only" href="#process">Process</a>
         <a href="#phones">Phones</a>
         <a href="#trade-upgrade">Trade &amp; Upgrade</a>
-        <a href="#map">Map</a>
-        <a href="#company">Company</a>
-        <a href="{% url 'website_careers' %}">Careers</a>
+        <a class="desktop-only" href="#map">Map</a>
+        <a class="desktop-only" href="#company">Company</a>
+        <a class="desktop-only" href="{% url 'website_careers' %}">Careers</a>
+        <a href="{% url 'portal_search' %}">Make a Payment</a>
         <a href="#support">Support</a>
         <a href="{% url 'login' %}">Login</a>
-        <a class="mobile-only" href="{% url 'portal_search' %}">Payment Gateway</a>
-        <a class="mobile-only" href="{% url 'new_application' %}">Get Started</a>
       </div>
 
       <div class="nav-actions">
