@@ -11,10 +11,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TengaSale">
-    <link rel="manifest" href="{% static 'manifest.webmanifest' %}?v=20260809">
-    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}?v=20260809">
-    <link rel="icon" type="image/png" href="{% static 'images/icon-32.png' %}?v=20260809" sizes="32x32">
-    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}?v=20260809">
+    <link rel="manifest" href="{% static 'manifest.webmanifest' %}?v=20260809c">
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}?v=20260809c">
+    <link rel="icon" type="image/png" href="{% static 'images/icon-32.png' %}?v=20260809c" sizes="32x32">
+    <link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}?v=20260809c">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.0.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'css/tengasale.css' %}?v=1.0.4">
@@ -103,19 +103,9 @@
     <header class="topbar app-topbar">
         <div class="brand-left">
             <a href="{% url 'home' %}" class="brand-lockup" aria-label="TengaSale home">
-                <img
-                    src="{% static 'images/TENGASALEe.png' %}"
-                    alt="TengaSale"
-                    class="ts-logo-img tengasale-logo-full ts-logo-wordmark"
-                    style="max-height:38px;max-width:160px;object-fit:contain;display:block;"
-                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-                >
-                <span class="brand-lockup-fallback" style="display:none;">
-                    <img src="{% static 'images/Tenga.png' %}" alt="" class="ts-logo ts-logo-icon">
-                    <span class="brand-copy">
-                        <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="brand-wordmark-img ts-logo-wordmark">
-                        <span class="brand-tagline">Endless Possibilities</span>
-                    </span>
+                <span class="brand-lockup-fallback" style="display:flex;align-items:center;gap:8px;">
+                    <img src="{% static 'images/Tenga.png' %}?v=20260809c" alt="" class="ts-logo ts-logo-icon">
+                    <span class="brand-copy"><strong>TengaSale</strong></span>
                 </span>
             </a>
         </div>

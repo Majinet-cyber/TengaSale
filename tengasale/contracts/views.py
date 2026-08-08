@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from django.conf import settings as dj_settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -19,6 +20,7 @@ from commissions.services import process_contract_completion
 
 from .forms import ContractSignatureForm, ImeiForm, MerchantTermsForm
 from .models import Contract, ContractDocumentDelivery, LegalAcceptance, LegalDocumentTemplate
+from .portfolio import PORTFOLIO_FILTERS, merchant_portfolio_contracts
 
 logger = logging.getLogger("tengasale.contracts")
 pdf_logger = logging.getLogger("tengasale.contracts.pdf")
@@ -33,6 +35,32 @@ def _user_is_hq(user):
 
 def can_access_contract_flow(user, application):
     return application.created_by_id == user.id
+
+
+@merchant_required
+def merchant_portfolio(request):
+    portfolio_filter = request.GET.get("portfolio", "financed").strip().lower()
+    if portfolio_filter not in PORTFOLIO_FILTERS:
+        portfolio_filter = "financed"
+    query = request.GET.get("q", "").strip()
+    contracts = merchant_portfolio_contracts(request.user, portfolio_filter).select_related(
+        "application", "application__payment_contract", "device_lock_profile"
+    ).order_by("-active_at", "-created_at")
+    if query:
+        contracts = contracts.filter(
+            Q(customer_name__icontains=query)
+            | Q(customer_phone__icontains=query)
+            | Q(contract_number__icontains=query)
+            | Q(imei_number__icontains=query)
+            | Q(application__payment_contract__payg_number__icontains=query)
+        )
+    return render(request, "contracts/portfolio_list.html", {
+        "contracts": contracts,
+        "portfolio_filter": portfolio_filter,
+        "portfolio_title": portfolio_filter.title(),
+        "query": query,
+        "result_count": contracts.count(),
+    })
 
 
 def _try_create_lock_profile(contract, triggered_by=None):

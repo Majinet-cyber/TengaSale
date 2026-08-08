@@ -64,6 +64,12 @@ from applications.models import FinancingApplication
 from approvals.models import QCOffenseType, UnderwriterCallRecording, UnderwriterQCPenalty
 from commissions.models import Commission, MerchantContractPayout, CommissionLedger
 from contracts.models import Contract
+from contracts.portfolio import (
+    merchant_active_contracts,
+    merchant_financed_contracts,
+    merchant_locked_contracts,
+    merchant_overdue_contracts,
+)
 from core.view_safety import safe_page
 from financing.models import Device, DeviceCommand, FinancingContract, PaymentRecord
 from merchants.models import Merchant
@@ -322,13 +328,10 @@ def merchant_dashboard_context(user):
         "merchant_payout_summary": merchant_payout_summary,
         "merchant_agreement": merchant_agreement,
         "device_financing_stats": {
-            "total_financed_devices": Device.objects.filter(financing_contract__created_by=user).count(),
-            "active_contracts": merchant_contracts.filter(status=FinancingContract.STATUS_ACTIVE).count(),
-            "overdue_contracts": merchant_contracts.filter(status=FinancingContract.STATUS_OVERDUE).count(),
-            "locked_devices": Device.objects.filter(
-                financing_contract__created_by=user,
-                status=Device.STATUS_LOCKED,
-            ).count(),
+            "total_financed_devices": merchant_financed_contracts(user).count(),
+            "active_contracts": merchant_active_contracts(user).count(),
+            "overdue_contracts": merchant_overdue_contracts(user).count(),
+            "locked_devices": merchant_locked_contracts(user).count(),
             "payments_pending_verification": pending_payments.count(),
             "payments_verified_this_month": PaymentRecord.objects.filter(
                 contract__created_by=user,

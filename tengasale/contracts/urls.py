@@ -4,6 +4,7 @@ from . import views
 
 
 urlpatterns = [
+    path("portfolio/", views.merchant_portfolio, name="merchant_portfolio"),
     # Contract flow
     path("<int:app_id>/terms/", views.contract_terms, name="contract_terms"),
     path("<int:contract_id>/signature/", views.contract_signature, name="contract_signature"),

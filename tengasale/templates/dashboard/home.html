@@ -411,7 +411,7 @@
     <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
       <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
         <span class="merchant-brand-icon" aria-hidden="true">
-          <img src="{% static 'images/Tenga.png' %}" alt="TengaSale" width="28" height="28"
+          <img src="{% static 'images/Tenga.png' %}?v=20260809c" alt="TengaSale" width="28" height="28"
                onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
         </span>
         <span class="merchant-brand-name"><span>TengaSale</span></span>
@@ -501,22 +501,22 @@
           <a href="{% url 'all_deals' %}" class="ts-dashboard-menu-value">Deals</a>
         </div>
         <div class="portfolio-overview__grid">
-          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=financed" aria-label="View all financed contracts">
+          <a class="portfolio-overview__metric" href="{% url 'merchant_portfolio' %}?portfolio=financed" aria-label="View all financed contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-phone"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.total_financed_devices|default:0 }}</span>
             <span class="portfolio-overview__label">Financed</span>
           </a>
-          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=active" aria-label="View active contracts">
+          <a class="portfolio-overview__metric" href="{% url 'merchant_portfolio' %}?portfolio=active" aria-label="View active contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-broadcast"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.active_contracts|default:0 }}</span>
             <span class="portfolio-overview__label">Active</span>
           </a>
-          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=locked" aria-label="View locked devices">
+          <a class="portfolio-overview__metric" href="{% url 'merchant_portfolio' %}?portfolio=locked" aria-label="View locked devices">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.locked_devices|default:0 }}</span>
             <span class="portfolio-overview__label">Locked</span>
           </a>
-          <a class="portfolio-overview__metric" href="{% url 'financing_contracts' %}?portfolio=overdue" aria-label="View overdue contracts">
+          <a class="portfolio-overview__metric" href="{% url 'merchant_portfolio' %}?portfolio=overdue" aria-label="View overdue contracts">
             <span class="portfolio-overview__icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
             <span class="portfolio-overview__value">{{ device_financing_stats.overdue_contracts|default:0 }}</span>
             <span class="portfolio-overview__label">Overdue</span>

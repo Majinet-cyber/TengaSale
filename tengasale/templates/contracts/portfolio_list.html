@@ -1,0 +1,28 @@
+{% extends "base/base.html" %}{% load humanize %}
+{% block page_title %}{{ portfolio_title }} Portfolio — TengaSale{% endblock %}
+{% block content %}
+<div class="ops-shell"><main class="ops-main earnings-ops">
+  {% url 'merchant_dashboard' as dashboard_url %}{% include "partials/tenga/page_header.html" with title=portfolio_title|add:" Portfolio" subtitle="Issued financed devices and their current operational state." back_url=dashboard_url only %}
+  <nav class="tenga-tabs" aria-label="Portfolio filters" data-tenga-component="TengaTabs">
+    <a class="tenga-tabs__item {% if portfolio_filter == 'financed' %}is-active{% endif %}" href="?portfolio=financed">Financed</a>
+    <a class="tenga-tabs__item {% if portfolio_filter == 'active' %}is-active{% endif %}" href="?portfolio=active">Active</a>
+    <a class="tenga-tabs__item {% if portfolio_filter == 'locked' %}is-active{% endif %}" href="?portfolio=locked">Locked</a>
+    <a class="tenga-tabs__item {% if portfolio_filter == 'overdue' %}is-active{% endif %}" href="?portfolio=overdue">Overdue</a>
+  </nav>
+  <form class="portfolio-search" method="get">
+    <input type="hidden" name="portfolio" value="{{ portfolio_filter }}">
+    <input type="search" name="q" value="{{ query }}" placeholder="Customer, phone, contract, PayG or IMEI" aria-label="Search portfolio">
+    <button class="btn" type="submit">Search</button>
+  </form>
+  <p class="text-muted">{{ result_count }} record{{ result_count|pluralize }}</p>
+  <section class="ops-list" aria-label="{{ portfolio_title }} portfolio records">
+  {% for contract in contracts %}
+    <a class="portfolio-record ops-row" href="{% url 'contract_detail' contract.id %}" data-tenga-component="TengaRecordRow">
+      <span class="portfolio-record__main"><strong>{{ contract.customer_name }}</strong><small>{{ contract.contract_number }} · {{ contract.deal_name|default:"Device" }}</small><small>IMEI {{ contract.imei_number|default:"Not captured" }}</small></span>
+      <span class="portfolio-record__state"><strong>{% if contract.device_lock_profile %}{{ contract.device_lock_profile.get_lock_status_display }}{% elif contract.application.payment_contract %}{{ contract.application.payment_contract.device_lock_status|title }}{% else %}Unknown{% endif %}</strong><small>{% if contract.application.payment_contract %}{{ contract.application.payment_contract.get_status_display }} · Paid MWK {{ contract.application.payment_contract.amount_paid|floatformat:0|intcomma }}{% else %}Payment state unavailable{% endif %}</small></span>
+      <i class="bi bi-chevron-right" aria-hidden="true"></i>
+    </a>
+  {% empty %}{% include "partials/tenga/empty_state.html" with title="No portfolio records" message="No issued financed devices match this filter." only %}{% endfor %}
+  </section>
+</main></div>
+{% endblock %}
