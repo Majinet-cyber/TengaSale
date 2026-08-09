@@ -96,13 +96,13 @@
 }
 </style>
 
+<div class="loc-page application-flow-page application-flow-page--desktop-workspace">
 {% include "applications/partials/stepper.html" with current_step=4 %}
-
-<div class="loc-page">
+<p class="tenga-page-header__eyebrow t-type-section-label t-type-section-label--brand">Application {{ app.application_number|default:app.id }}</p>
 <h1 class="greeting">Location</h1>
 <p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 4 — Customer location &amp; next of kin</p>
 
-<form method="post" enctype="multipart/form-data" class="form-card card{% if app.district %} section-locked{% endif %}" data-lockable-section>
+<form method="post" enctype="multipart/form-data" class="form-card card application-form-surface questionnaire-grid{% if app.district %} section-locked{% endif %}" data-lockable-section>
     {% if app.district %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -136,14 +136,14 @@
         {{ form.traditional_authority.errors }}
     </div>
 
-    <div class="form-group{% if 'precise_location' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group questionnaire-field--full{% if 'precise_location' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.precise_location.id_for_label }}">Precise location <span class="required-star">*</span></label>
         {{ form.precise_location }}
         {{ form.precise_location.errors }}
     </div>
 
     {# ── GPS Capture Card ───────────────────────────────────────── #}
-    <div class="form-group">
+    <div class="form-group questionnaire-field--full">
       <label>Customer GPS location</label>
 
       {# Card controlled by Alpine.js #}

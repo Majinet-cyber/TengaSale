@@ -87,3 +87,182 @@ body[class^="role-"], body[class*=" role-"] { background: var(--tenga-canvas); c
 @media (prefers-reduced-motion: reduce) {
   .tenga-field, .application-flow-page input, .application-flow-page select, .application-flow-page textarea { transition:none; }
 }
+
+/* Desktop application workstation ------------------------------------------------ */
+.application-flow-page.tenga-product-page,
+.application-flow-page.application-flow-page--desktop-workspace,
+.loc-page.application-flow-page--desktop-workspace {
+  width: min(100%, 1180px);
+  max-width: 1180px !important;
+  margin-inline: auto;
+}
+
+@media (min-width: 901px) {
+  .application-workspace {
+    grid-template-columns: minmax(240px, 260px) minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .application-workspace__context {
+    top: 88px;
+    padding: 28px 24px;
+  }
+
+  .application-workspace__form {
+    max-width: 790px;
+  }
+
+  .application-flow-page--desktop-workspace {
+    display: grid;
+    grid-template-columns: minmax(240px, 260px) minmax(0, 1fr);
+    column-gap: 30px;
+    align-items: start;
+    padding-inline: 20px;
+  }
+
+  .application-flow-page--desktop-workspace > .application-progress {
+    grid-column: 1;
+    grid-row: 1 / span 80;
+    position: sticky;
+    top: 88px;
+    margin: 0;
+    padding: 28px 24px;
+    border-radius: var(--tenga-radius-lg);
+    background: var(--tenga-surface);
+    box-shadow: var(--tenga-shadow-surface);
+  }
+
+  .application-flow-page--desktop-workspace > :not(.application-progress) {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .application-flow-page--desktop-workspace > .greeting {
+    margin-top: 0;
+  }
+
+  .application-progress-meta {
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .application-progress-meta-step,
+  .application-progress-meta-name {
+    display: block;
+  }
+
+  .application-progress-meta-step {
+    margin-bottom: 4px;
+    color: var(--tenga-brand);
+    font-size: .6875rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .application-progress-meta-name {
+    color: var(--tenga-ink);
+    font-size: .9375rem;
+    font-weight: 700;
+  }
+
+  .application-progress-meta-sep { display: none; }
+  .application-progress-bar { height: 4px; margin-bottom: 18px; }
+  .application-progress-fill { background: var(--tenga-brand); }
+
+  .application-stepper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+  }
+
+  .application-step {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 34px;
+    padding: 4px 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: .78rem;
+  }
+
+  .application-step-number,
+  .application-step > svg {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--tenga-control-border);
+    border-radius: 50%;
+    color: var(--tenga-muted);
+    background: #fff;
+    font-size: .6875rem;
+    font-weight: 750;
+  }
+
+  .application-step-complete > svg {
+    border-color: rgba(36, 88, 223, .22);
+    color: var(--tenga-product-blue);
+    background: var(--tenga-product-blue-soft);
+    padding: 6px;
+  }
+
+  .application-step-complete .application-step-number { display: none; }
+  .application-step-label { grid-column: 2; overflow: hidden; text-overflow: ellipsis; }
+  .application-step-active .application-step-number { border-color: var(--tenga-brand); color: #fff; background: var(--tenga-brand); }
+  .application-step-active .application-step-label { color: var(--tenga-brand); font-weight: 750; }
+
+  .application-step-status {
+    grid-column: 3;
+    color: var(--tenga-brand);
+    font-size: .625rem;
+    font-weight: 750;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .application-stepper-sep {
+    width: 1px;
+    height: 10px;
+    margin: 0 0 0 12px;
+    background: var(--tenga-control-border);
+  }
+
+  .questionnaire-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 22px;
+  }
+
+  .questionnaire-grid > .tenga-section-header,
+  .questionnaire-grid > .section-lock-header,
+  .questionnaire-grid > .application-form-divider,
+  .questionnaire-grid > .alert-warning,
+  .questionnaire-grid > .form-actions,
+  .questionnaire-grid > .errorlist,
+  .questionnaire-grid > .questionnaire-field--full {
+    grid-column: 1 / -1;
+  }
+
+  .questionnaire-grid > .form-actions {
+    margin-inline: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .application-flow-page.application-flow-page--desktop-workspace,
+  .loc-page.application-flow-page--desktop-workspace {
+    display: block;
+    max-width: 620px !important;
+    padding-inline: 16px;
+  }
+
+  .application-step-label { display: inline; }
+  .application-step-number,
+  .application-step-status { display: none; }
+}

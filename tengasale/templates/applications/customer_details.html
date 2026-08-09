@@ -173,7 +173,7 @@ body.ts-oha-open {
 </script>
 {% endif %}
 
-<form method="post" class="form-card card application-form-surface{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
+<form method="post" class="form-card card application-form-surface questionnaire-grid{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
     {% if app.customer_name %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -193,7 +193,7 @@ body.ts-oha-open {
       <p>Use the customer’s verified legal and contact details.</p>
     </div>
 
-    <div class="form-group{% if 'customer_name' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group questionnaire-field--full{% if 'customer_name' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.customer_name.id_for_label }}">Customer full name <span class="required-star">*</span></label>
         {{ form.customer_name }}
         {% for error in form.customer_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -259,7 +259,7 @@ body.ts-oha-open {
         {% for error in form.first_smartphone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group" id="phone-user-other-group" hidden>
+    <div class="form-group questionnaire-field--full" id="phone-user-other-group" hidden>
         <label for="{{ form.phone_user_other.id_for_label }}">Specify who will use it</label>
         {{ form.phone_user_other }}
         {% for error in form.phone_user_other.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -281,7 +281,7 @@ body.ts-oha-open {
         {% for error in form.occupation.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group" data-occupation-other-group hidden>
+    <div class="form-group questionnaire-field--full" data-occupation-other-group hidden>
         <label for="{{ form.occupation_other.id_for_label }}">Specify occupation <span class="required-star">*</span></label>
         {{ form.occupation_other }}
         {% for error in form.occupation_other.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -293,7 +293,7 @@ body.ts-oha-open {
         {% for error in form.income_band.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group income-validation{% if 'exact_monthly_income' in app.correction_fields %} has-correction{% endif %}" data-income-validation-group>
+    <div class="form-group questionnaire-field--full income-validation{% if 'exact_monthly_income' in app.correction_fields %} has-correction{% endif %}" data-income-validation-group>
         <label for="{{ form.exact_monthly_income.id_for_label }}">Exact monthly income (MWK) <span class="required-star">*</span></label>
         <div class="income-validation__control">
             {{ form.exact_monthly_income }}

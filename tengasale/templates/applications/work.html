@@ -4,13 +4,14 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<div class="application-flow-page">
+<div class="application-flow-page application-flow-page--desktop-workspace">
 
 {% include "applications/partials/stepper.html" with current_step=5 %}
+<p class="tenga-page-header__eyebrow t-type-section-label t-type-section-label--brand">Application {{ app.application_number|default:app.id }}</p>
 <h1 class="greeting">Income &amp; Work Details</h1>
 <p class="text-muted small" style="margin-top:-8px;margin-bottom:18px;">Step 5 — Income proof &amp; guarantors</p>
 
-<form method="post" enctype="multipart/form-data" class="form-card card{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
+<form method="post" enctype="multipart/form-data" class="form-card card application-form-surface questionnaire-grid{% if app.work_description %} section-locked{% endif %}" data-lockable-section>
     {% if app.work_description %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -26,7 +27,7 @@
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    <div class="form-group{% if 'work_description' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group questionnaire-field--full{% if 'work_description' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.work_description.id_for_label }}">Work / income description <span class="required-star">*</span></label>
         {{ form.work_description }}
         <p class="field-help">Describe what the customer does to earn money. Be specific.</p>
@@ -34,7 +35,7 @@
     </div>
 
     {# ── Proof of income ──────────────────────────────────────────── #}
-    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
+    <div class="application-form-divider">
       <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Proof of Income</p>
     </div>
 
@@ -59,13 +60,13 @@
         {% for error in form.proof_contact_phone.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group{% if 'proof_notes' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group questionnaire-field--full{% if 'proof_notes' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.proof_notes.id_for_label }}">Additional proof notes (optional)</label>
         {{ form.proof_notes }}
         {% for error in form.proof_notes.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
     </div>
 
-    <div class="form-group{% if 'proof_income_file' in app.correction_fields %} has-correction{% endif %}">
+    <div class="form-group questionnaire-field--full{% if 'proof_income_file' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.proof_income_file.id_for_label }}">Income proof document (optional)</label>
         {{ form.proof_income_file }}
         <p class="field-help">Upload payslip, bank statement, or business letter if available.</p>
@@ -73,7 +74,7 @@
     </div>
 
     {# ── Guarantor 2 ─────────────────────────────────────────────── #}
-    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
+    <div class="application-form-divider">
       <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Second Guarantor</p>
     </div>
 

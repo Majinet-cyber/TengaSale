@@ -43,7 +43,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 1 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        ID
+        <span class="application-step-number">1</span>
+        <span class="application-step-label">Customer details</span>
+        {% if current_step == 1 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -55,7 +57,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 2 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        Deal
+        <span class="application-step-number">2</span>
+        <span class="application-step-label">Phone deal</span>
+        {% if current_step == 2 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -67,7 +71,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 3 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        KYC
+        <span class="application-step-number">3</span>
+        <span class="application-step-label">KYC &amp; documents</span>
+        {% if current_step == 3 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -79,7 +85,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 4 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        Location
+        <span class="application-step-number">4</span>
+        <span class="application-step-label">Location</span>
+        {% if current_step == 4 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -91,7 +99,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 5 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        Income
+        <span class="application-step-number">5</span>
+        <span class="application-step-label">Income &amp; work</span>
+        {% if current_step == 5 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -103,7 +113,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step > 6 %}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {% endif %}
-        Review
+        <span class="application-step-number">6</span>
+        <span class="application-step-label">Review &amp; submit</span>
+        {% if current_step == 6 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
       <span class="application-stepper-sep" aria-hidden="true"></span>
 
@@ -111,7 +123,9 @@ Steps: 1=Customer, 2=Deal, 3=KYC, 4=Location, 5=Work, 6=Review, 7=Sign
         {% if current_step == 7 %}application-step-active
         {% else %}application-step-upcoming{% endif %}"
         data-testid="stepper-chip-7">
-        Sign
+        <span class="application-step-number">7</span>
+        <span class="application-step-label">Signature</span>
+        {% if current_step == 7 %}<span class="application-step-status">Current</span>{% endif %}
       </span>
 
     </nav>

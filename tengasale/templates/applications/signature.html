@@ -4,12 +4,14 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
+<div class="application-flow-page application-flow-page--desktop-workspace">
 <a href="{% url 'work_details' app.id %}" class="soft-back">
     <span class="soft-back-icon">&larr;</span>
     <span>Back</span>
 </a>
 
 {% include "applications/partials/stepper.html" with current_step=7 %}
+<p class="tenga-page-header__eyebrow t-type-section-label t-type-section-label--brand">Application {{ app.application_number|default:app.id }}</p>
 <h1 class="greeting">Signature</h1>
 
 <div class="sig-fullscreen" id="sig-fullscreen" style="display:none;" aria-modal="true" role="dialog" aria-label="Customer Signature">
@@ -71,6 +73,7 @@
     <input type="hidden" name="agreed_to_terms" id="sig-save-agreed">
     <input type="hidden" name="signature_data" id="sig-save-data">
 </form>
+</div>
 
 <script>
 (function () {
