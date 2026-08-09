@@ -52,6 +52,8 @@ def _get_public_phone_offers():
                     },
                     "status": deal.get_stock_status_display(),
                     "logo": logo,
+                    "image": deal.product_image.url if deal.product_image else "",
+                    "image_alt": deal.product_image_alt or f"{brand} {deal.model_name}",
                 }
             )
             if len(offers) == 6:
@@ -149,6 +151,18 @@ def about(request):
 
 def how_it_works(request):
     return _render_landing(request, section="process")
+
+def phones(request):
+    return _render_landing(request, section="phones")
+
+def trade_upgrade(request):
+    return _render_landing(request, section="trade-upgrade")
+
+def markets(request):
+    return _render_landing(request, section="markets")
+
+def company(request):
+    return _render_landing(request, section="company")
 
 
 def merchants(request):

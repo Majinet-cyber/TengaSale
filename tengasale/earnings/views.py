@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
@@ -21,7 +20,11 @@ from rewards.models import SpinReward, SpinWallet
 from rewards.services import NoSpinsAvailable, SpinDisabled, perform_spin
 
 from .models import Wallet, WalletTransaction
-from .security import SESSION_KEY, audit, earnings_lock_required, profile_for, set_pin, verify_pin
+from .security import (
+    OWNER_VERIFIED_KEY, SESSION_KEY, audit, earnings_lock_required, grant_access,
+    owner_phone, owner_verification_valid, profile_for, set_pin,
+    start_owner_challenge, valid_pin, verify_owner_challenge, verify_pin,
+)
 
 
 COMPLETED_STATUSES = ["approved", "completed"]
@@ -385,7 +388,7 @@ def sales_spin(request):
 
 
 def _valid_pin(pin):
-    return pin.isdigit() and 4 <= len(pin) <= 6
+    return valid_pin(pin)
 
 
 @login_required
@@ -397,7 +400,7 @@ def earnings_unlock(request):
     if request.method == "POST":
         ok, reason = verify_pin(profile, request.POST.get("pin", "").strip())
         if ok:
-            request.session[SESSION_KEY] = request.user.pk
+            grant_access(request, profile)
             audit(request, "EARNINGS_UNLOCK_SUCCESS")
             destination = request.session.pop("earnings_next", "")
             return redirect(destination or ("sales_wallet" if is_underwriter(request.user) else "earnings_home"))
@@ -418,15 +421,22 @@ def earnings_lock_now(request):
 def earnings_lock_enable(request):
     profile = profile_for(request.user)
     pin, confirm = request.POST.get("pin", "").strip(), request.POST.get("confirm_pin", "").strip()
+    if not owner_verification_valid(request, "enable"):
+        messages.error(request, "Verify the merchant owner's recovery phone before enabling Earnings Lock.")
+        return redirect("profile_settings")
     if not _valid_pin(pin) or pin != confirm:
-        messages.error(request, "Enter and confirm a matching 4–6 digit PIN.")
+        messages.error(request, "Use a matching, non-obvious 6-digit Earnings PIN.")
         return redirect("profile_settings")
     was_enabled = profile.earnings_lock_enabled
     set_pin(profile, pin)
     profile.earnings_lock_enabled = True
     profile.earnings_lock_created_at = profile.earnings_lock_created_at or timezone.now()
+    profile.earnings_recovery_phone = owner_phone(request.user)
+    profile.earnings_recovery_verified_at = timezone.now()
+    profile.earnings_security_generation += 1
     profile.save()
     request.session.pop(SESSION_KEY, None)
+    request.session.pop(OWNER_VERIFIED_KEY, None)
     audit(request, "EARNINGS_PIN_CHANGED" if was_enabled else "EARNINGS_LOCK_ENABLED")
     messages.success(request, "Earnings Lock is on.")
     return redirect("profile_settings")
@@ -445,6 +455,7 @@ def earnings_lock_disable(request):
     profile.earnings_pin_hash = ""
     profile.earnings_locked_until = None
     profile.earnings_failed_attempt_count = 0
+    profile.earnings_security_generation += 1
     profile.save()
     request.session.pop(SESSION_KEY, None)
     audit(request, "EARNINGS_LOCK_DISABLED")
@@ -455,18 +466,46 @@ def earnings_lock_disable(request):
 @login_required
 @require_POST
 def earnings_pin_reset(request):
-    password = request.POST.get("password", "")
     pin, confirm = request.POST.get("pin", "").strip(), request.POST.get("confirm_pin", "").strip()
-    if authenticate(request, username=request.user.get_username(), password=password) is None:
-        messages.error(request, "Your account password could not be verified.")
+    if not owner_verification_valid(request, "reset"):
+        messages.error(request, "Verify the owner's recovery code before resetting the Earnings PIN.")
     elif not _valid_pin(pin) or pin != confirm:
-        messages.error(request, "Enter and confirm a matching 4–6 digit PIN.")
+        messages.error(request, "Use a matching, non-obvious 6-digit Earnings PIN.")
     else:
         profile = profile_for(request.user)
         set_pin(profile, pin)
         profile.earnings_lock_enabled = True
+        profile.earnings_security_generation += 1
         profile.save()
         request.session.pop(SESSION_KEY, None)
+        request.session.pop(OWNER_VERIFIED_KEY, None)
         audit(request, "EARNINGS_PIN_RESET")
         messages.success(request, "Your Earnings PIN has been reset.")
+    return redirect("profile_settings")
+
+
+@login_required
+@require_POST
+def earnings_recovery_start(request):
+    purpose = request.POST.get("purpose", "reset")
+    if purpose not in {"enable", "reset"}:
+        purpose = "reset"
+    challenge = start_owner_challenge(request, purpose)
+    if challenge:
+        request.session["earnings_recovery_mask"] = challenge.phone_mask
+        request.session["earnings_recovery_purpose"] = purpose
+        messages.success(request, f"Verification code sent to {challenge.phone_mask}.")
+    else:
+        messages.error(request, "No verified owner recovery phone is available. Contact Tenga Support.")
+    return redirect("profile_settings")
+
+
+@login_required
+@require_POST
+def earnings_recovery_verify(request):
+    challenge = verify_owner_challenge(request, request.POST.get("code", "").strip())
+    if challenge:
+        messages.success(request, "Owner verified. You may now protect or reset Earnings.")
+    else:
+        messages.error(request, "The verification code is incorrect or expired.")
     return redirect("profile_settings")

@@ -14,6 +14,7 @@ class DeviceDealAdmin(admin.ModelAdmin):
         "brand",
         "model_name",
         "specs",
+        "product_image",
         "condition",
         "min_cash_price",
         "max_cash_price",

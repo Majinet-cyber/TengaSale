@@ -1675,6 +1675,14 @@ def sales_emergency_payout_request(request):
     ).order_by("-paid_at")[:10]
 
     if request.method == "POST":
+        from earnings.security import profile_for, verify_pin
+        security_profile = profile_for(request.user)
+        pin_ok = True
+        if security_profile.earnings_lock_enabled:
+            pin_ok, _ = verify_pin(security_profile, request.POST.get("earnings_pin", "").strip())
+        if not pin_ok:
+            messages.error(request, "Fresh Earnings PIN verification is required to request a payout.")
+            return redirect("sales_emergency_payout_request")
         try:
             requested_amount = Decimal(request.POST.get("amount", "0"))
         except Exception:
@@ -1712,6 +1720,9 @@ def sales_emergency_payout_request(request):
                 already_requested_snapshot=emergency_info["already_requested"],
                 status=EmergencyPayoutRequest.STATUS_PENDING,
             )
+            if security_profile.earnings_lock_enabled:
+                from earnings.security import audit
+                audit(request, "PAYOUT_REAUTH_SUCCESS")
             _audit(
                 request.user, "emergency_payout_requested",
                 "EmergencyPayoutRequest", str(ep.pk),
@@ -1744,12 +1755,23 @@ def sales_emergency_payout_request(request):
 def sales_emergency_payout_cancel(request, payout_id):
     """Cancel a pending emergency payout request."""
     from earnings.models import EmergencyPayoutRequest, Wallet
+    from earnings.security import profile_for, verify_pin
+    security_profile = profile_for(request.user)
+    pin_ok = True
+    if security_profile.earnings_lock_enabled:
+        pin_ok, _ = verify_pin(security_profile, request.POST.get("earnings_pin", "").strip())
+    if not pin_ok:
+        messages.error(request, "Fresh Earnings PIN verification is required.")
+        return redirect("sales_emergency_payout_request")
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
     payout = get_object_or_404(EmergencyPayoutRequest, id=payout_id, wallet=wallet)
     if payout.status != EmergencyPayoutRequest.STATUS_PENDING:
         messages.error(request, "Only pending requests can be cancelled.")
         return redirect("sales_emergency_payout_request")
     payout.status = EmergencyPayoutRequest.STATUS_CANCELLED
+    if security_profile.earnings_lock_enabled:
+        from earnings.security import audit
+        audit(request, "PAYOUT_REAUTH_SUCCESS")
     payout.save(update_fields=["status", "updated_at"])
     _audit(request.user, "emergency_payout_cancelled", "EmergencyPayoutRequest", str(payout.pk), {})
     messages.success(request, "Emergency payout request cancelled.")

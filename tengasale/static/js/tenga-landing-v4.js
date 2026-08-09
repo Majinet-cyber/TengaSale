@@ -16,10 +16,13 @@ const pageProgress = document.getElementById("pageProgress");
 const header = document.querySelector(".site-header");
 const calculatorPhone = document.getElementById("calculatorPhone");
 const calculatorDeposit = document.getElementById("calculatorDeposit");
+const calculatorDeviceImage = document.getElementById("calculatorDeviceImage");
+const calculatorDeviceFallback = document.getElementById("calculatorDeviceFallback");
 
 let activeCadence = "daily";
 
 function renderPhones() {
+  if (!phoneGrid) return;
   if (!PHONE_OFFERS.length) {
     phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
     return;
@@ -34,7 +37,9 @@ function renderPhones() {
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
-        <div class="css-phone" aria-hidden="true"><div class="css-screen"></div></div>
+        ${phone.image
+          ? `<img class="phone-product-image" src="${phone.image}" alt="${phone.image_alt}" loading="lazy" width="320" height="420">`
+          : '<div class="css-phone phone-image-placeholder" aria-hidden="true"><div class="css-screen"></div></div>'}
       </div>
       <div class="phone-body">
         <div class="phone-top">
@@ -65,20 +70,21 @@ function renderPhones() {
 
   document.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {
-      deviceSelect.value = button.dataset.device;
-      calculatorPhone.value = button.dataset.device;
+      if (deviceSelect) deviceSelect.value = button.dataset.device;
+      if (calculatorPhone) calculatorPhone.value = button.dataset.device;
       updateCalculator();
-      document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
-      setTimeout(() => document.querySelector('[name="name"]').focus(), 650);
+      document.getElementById("apply")?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => document.querySelector('[name="name"]')?.focus(), 650);
     });
   });
 }
 
 function populateDeviceSelect() {
-  deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
-  calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+  if (deviceSelect) deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+  if (calculatorPhone) calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
 }
 function updateCalculator() {
+  if (!calculatorPhone || !calculatorDeposit) return;
   const phone = PHONE_OFFERS.find(item => item.name === calculatorPhone.value) || PHONE_OFFERS[0];
   if (!phone) return;
   calculatorDeposit.innerHTML = `<option value="${phone.deposit}">${money(phone.deposit)}</option>`;
@@ -88,12 +94,17 @@ function updateCalculator() {
   document.getElementById("calculatorDepositValue").textContent = money(phone.deposit);
   document.getElementById("calculatorPaymentLabel").textContent = `${activeCadence.charAt(0).toUpperCase() + activeCadence.slice(1)} payment`;
   document.getElementById("calculatorPaymentValue").textContent = money(phone.payments[activeCadence]);
-  deviceSelect.value = phone.name;
+  if (deviceSelect) deviceSelect.value = phone.name;
+  if (calculatorDeviceImage && calculatorDeviceFallback) {
+    calculatorDeviceImage.hidden = !phone.image;
+    calculatorDeviceFallback.hidden = Boolean(phone.image);
+    if (phone.image) calculatorDeviceImage.src = phone.image;
+  }
 }
 populateDeviceSelect();
 renderPhones();
 updateCalculator();
-calculatorPhone.addEventListener("change", updateCalculator);
+calculatorPhone?.addEventListener("change", updateCalculator);
 
 cadenceButtons.forEach(button => {
   button.addEventListener("click", () => {
@@ -107,8 +118,8 @@ cadenceButtons.forEach(button => {
 function onScroll() {
   const scrollY = window.scrollY;
   const h = document.documentElement.scrollHeight - window.innerHeight;
-  pageProgress.style.width = `${h > 0 ? (scrollY / h) * 100 : 0}%`;
-  header.classList.toggle("scrolled", scrollY > 20);
+  if (pageProgress) pageProgress.style.width = `${h > 0 ? (scrollY / h) * 100 : 0}%`;
+  header?.classList.toggle("scrolled", scrollY > 20);
 }
 window.addEventListener("scroll", onScroll, { passive: true });
 onScroll();
@@ -116,19 +127,20 @@ onScroll();
 const menuButton = document.getElementById("menuButton");
 const navLinks = document.getElementById("navLinks");
 const closeMenu = () => {
+  if (!navLinks || !menuButton) return;
   navLinks.classList.remove("open");
   menuButton.setAttribute("aria-expanded", "false");
   document.body.classList.remove("mobile-menu-open");
 };
-menuButton.addEventListener("click", () => {
+menuButton?.addEventListener("click", () => {
   const open = navLinks.classList.toggle("open");
   menuButton.setAttribute("aria-expanded", String(open));
   document.body.classList.toggle("mobile-menu-open", open);
   if (open) navLinks.querySelector("a")?.focus();
 });
-navLinks.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
+navLinks?.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape" && navLinks.classList.contains("open")) {
+  if (event.key === "Escape" && navLinks?.classList.contains("open")) {
     closeMenu();
     menuButton.focus();
   }
@@ -146,7 +158,7 @@ document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
 
 const deviceStage = document.getElementById("deviceStage");
 const heroVisual = document.querySelector(".hero-visual");
-if (window.matchMedia("(pointer:fine)").matches) {
+if (heroVisual && deviceStage && window.matchMedia("(pointer:fine)").matches) {
   heroVisual.addEventListener("pointermove", event => {
     const box = heroVisual.getBoundingClientRect();
     const x = (event.clientX - box.left) / box.width - .5;
@@ -161,7 +173,7 @@ const lockTitle = document.getElementById("lockTitle");
 const lockBody = document.getElementById("lockBody");
 const lockButton = document.getElementById("lockButton");
 
-lockButton.addEventListener("click", () => {
+lockButton?.addEventListener("click", () => {
   lockButton.disabled = true;
   lockButton.textContent = "Confirming payment…";
   setTimeout(() => {
@@ -183,6 +195,7 @@ lockButton.addEventListener("click", () => {
 const toast = document.getElementById("toast");
 let toastTimer;
 function showToast(title, text) {
+  if (!toast) return;
   toast.querySelector("strong").textContent = title;
   toast.querySelector("small").textContent = text;
   toast.classList.add("show");
@@ -190,7 +203,8 @@ function showToast(title, text) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 3400);
 }
 
-document.getElementById("year").textContent = new Date().getFullYear();
+const year = document.getElementById("year");
+if (year) year.textContent = new Date().getFullYear();
 
 const supportForm = document.getElementById("supportForm");
 const supportCategory = document.getElementById("id_category");
@@ -201,7 +215,7 @@ if (originatingPage) originatingPage.value = window.location.href;
 document.querySelectorAll("[data-support-category]").forEach(link => {
   link.addEventListener("click", event => {
     const category = link.dataset.supportCategory;
-    if (!supportCategory || !category) return;
+    if (!supportCategory || !category || !document.getElementById("support")) return;
     event.preventDefault();
     supportCategory.value = category;
     const requestedSubject = link.dataset.supportSubject;
@@ -283,7 +297,7 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
     summary.querySelector("strong").textContent = outcome.title;
     summary.querySelector("p").textContent = outcome.text;
     cta.textContent = outcome.label;
-    cta.href = "#support";
+    cta.href = `/site/contact/?category=${encodeURIComponent(outcome.category)}#support`;
   }
 
   brand.innerHTML = brands.map(name => `<option value="${name}">${name}</option>`).join("");
@@ -293,6 +307,7 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
   useButtons.forEach(button => button.addEventListener("click", () => selectOutcome(button)));
   cta.addEventListener("click", event => {
     const outcome = outcomes[selectedUse];
+    if (!document.getElementById("support")) return;
     event.preventDefault();
     const categoryField = document.getElementById("id_category");
     const subjectField = document.getElementById("id_subject");
