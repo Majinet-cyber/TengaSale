@@ -532,9 +532,9 @@
       {% url 'pending_applications' as pending_url %}
       {% include "partials/dashboard_menu_row.html" with href=pending_url icon="bi-inbox" icon_class="signal-pending" label="Pending queue" value=pending_queue_count only %}
       {% url 'completed_applications' as completed_url %}
-      {% include "partials/dashboard_menu_row.html" with href=completed_url icon="bi-check2" label="Completed" value=completed_count icon_class="ts-dashboard-menu-icon--green" only %}
+      {% include "partials/dashboard_menu_row.html" with href=completed_url icon="bi-check2" label="Completed" icon_class="ts-dashboard-menu-icon--green" only %}
       {% url 'rejected_applications' as rejected_url %}
-      {% include "partials/dashboard_menu_row.html" with href=rejected_url icon="bi-archive" icon_class="signal-neutral" label="Archived & rejected" value=archived_rejected_count only %}
+      {% include "partials/dashboard_menu_row.html" with href=rejected_url icon="bi-archive" icon_class="signal-neutral" label="Archived & rejected" only %}
     </nav>
 
     <h2 class="dashboard-section-title">Seller Quality</h2>
@@ -546,7 +546,7 @@
         </span>
         <span class="ts-dashboard-menu-label">
           Seller Quality
-          <span class="seller-quality-row__sub">{{ active_count }} Active &middot; {{ completed_count }} Completed &middot; {{ archived_rejected_count }} Rejected</span>
+          <span class="seller-quality-row__sub">{{ active_count }} Active &middot; {{ completed_count }} Completed</span>
         </span>
         <span class="ts-dashboard-menu-value">Good Standing</span>
         <span class="ts-dashboard-menu-chevron row-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
@@ -556,7 +556,7 @@
     <h2 class="dashboard-section-title">Earnings</h2>
     <nav class="ts-dashboard-menu-list action-card ops-list" aria-label="Earnings">
       {% url 'earnings_home' as earnings_url %}
-      {% include "partials/dashboard_menu_row.html" with href=earnings_url icon="bi-wallet2" icon_class="signal-money" label="Earnings & wallet" supporting="Commissions and payouts" value=earnings_total|mwk value_class="ts-dashboard-menu-value--money" testid="merchant-row-earnings" only %}
+      {% include "partials/dashboard_menu_row.html" with href=earnings_url icon="bi-wallet2" icon_class="signal-money" label="Earnings & wallet" supporting="Commissions and payouts" testid="merchant-row-earnings" only %}
     </nav>
   </div>
 </div>
