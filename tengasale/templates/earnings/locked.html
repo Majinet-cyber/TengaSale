@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% block page_title %}Earnings locked{% endblock %}
+{% block content %}
+<main class="earnings-lock-screen">
+  <section class="earnings-lock-panel" aria-labelledby="earnings-lock-heading">
+    <span class="earnings-lock-icon" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
+    <span class="t-type-section-label">Private earnings</span>
+    <h1 id="earnings-lock-heading" class="t-type-page-title">Earnings locked</h1>
+    <p class="t-type-page-intro">Enter your Earnings PIN to view your wallet, commissions and payouts.</p>
+    {% if error %}<p class="earnings-lock-error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" action="{% url 'earnings_unlock' %}" class="earnings-unlock-form">
+      {% csrf_token %}
+      <label for="earnings-pin">Earnings PIN</label>
+      <input id="earnings-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="off" autofocus required aria-describedby="earnings-lock-help">
+      <button class="btn" type="submit">Unlock earnings</button>
+    </form>
+    <p id="earnings-lock-help" class="t-type-caption">Your Earnings PIN is separate from your Tenga account password.</p>
+    <a href="{% url 'profile_settings' %}#earnings-lock-title" class="t-type-secondary-action">Forgot PIN?</a>
+  </section>
+</main>
+{% endblock %}

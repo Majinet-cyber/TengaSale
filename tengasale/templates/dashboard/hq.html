@@ -1890,21 +1890,21 @@ body {
   </div>
 
   <section class="hq-command-v2" aria-label="Tenga command overview">
-    <a class="hq-command-hero" href="{% url 'hq_portfolio' %}">
-      <span class="hq-command-hero__eyebrow">Portfolio at a glance</span>
-      <strong class="hq-command-hero__value">{{ total_portfolio_value|mwk }}</strong>
-      <span class="hq-command-hero__context">{{ active_contracts_count }} active contract{{ active_contracts_count|pluralize }} &middot; {{ approval_rate }}% approval rate</span>
-      <span class="hq-command-hero__footer">
-        <span>{{ total_payments_collected|mwk }} collected</span>
-        <span class="{% if overdue_contracts_count %}is-risk{% else %}is-healthy{% endif %}">{% if overdue_contracts_count %}{{ overdue_contracts_count }} overdue{% else %}Portfolio healthy{% endif %}</span>
-      </span>
-      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
-    </a>
+    <section class="hq-pulse" aria-labelledby="tenga-pulse-title">
+      <div class="hq-pulse__top"><span id="tenga-pulse-title">Tenga pulse</span><span class="hq-pulse__live"><i></i> Live <span id="hq-pulse-time"></span></span></div>
+      <a class="hq-pulse__portfolio" href="{% url 'hq_portfolio' %}">
+        <span>Portfolio</span><strong class="t-type-money-xl">{{ total_portfolio_value|mwk }}</strong>
+        <small>{{ active_contracts_count }} active &middot; {{ total_payments_collected|mwk }} collected</small>
+      </a>
+      <div class="hq-pulse__signals">
+        <a href="{% url 'hq_payment_collections' %}"><span>Today</span><strong>{{ collections_today|mwk }}</strong><small>{{ sales_today }} application{{ sales_today|pluralize }}</small></a>
+        <a href="{% url 'hq_payment_collections' %}"><span>Status</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }} overdue</strong><small>{{ lock_locked_count|default:'0' }} open locks</small></a>
+      </div>
+    </section>
 
     <section class="hq-command-section" aria-labelledby="action-center-title">
       <div class="hq-command-section__head">
         <div><span>Now</span><h2 id="action-center-title">Action center</h2></div>
-        <p>Prioritized work requiring attention.</p>
       </div>
       <div class="hq-command-actions">
         {% if overdue_contracts_count %}
@@ -1944,7 +1944,7 @@ body {
     </section>
 
     <section class="hq-command-section" aria-labelledby="health-title">
-      <div class="hq-command-section__head"><div><span>Today</span><h2 id="health-title">Health snapshot</h2></div><p>The operating signals that matter now.</p></div>
+      <div class="hq-command-section__head"><div><span>Business</span><h2 id="health-title">Business health</h2></div></div>
       <div class="hq-command-health">
         <a href="{% url 'hq_applications' %}"><i class="bi bi-files"></i><span>Applications</span><strong>{{ sales_today }}</strong><small>today</small></a>
         <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-arrow-down-circle"></i><span>Collections</span><strong>{{ collections_today|mwk }}</strong><small>today</small></a>
@@ -3096,6 +3096,8 @@ body {
     var d = new Date();
     clockEl.textContent = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' \u00B7 ' +
       String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    var pulseTime = document.getElementById('hq-pulse-time');
+    if (pulseTime) pulseTime.textContent = '\u00B7 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
   updateClock();
   setInterval(updateClock, 30000);

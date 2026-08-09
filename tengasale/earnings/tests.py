@@ -95,7 +95,7 @@ class EarningsPageTests(TestCase):
         self.assertContains(response, "amount-positive")
         self.assertContains(response, "amount-negative")
         self.assertContains(response, contract.contract_number)
-        self.assertContains(response, "VIEW CONTRACT")
+        self.assertContains(response, "View contract")
 
     def test_rewards_tab_contains_spin_and_win(self):
         SpinWallet.objects.create(user=self.user, available_spins=2, total_spins_earned=2)
@@ -190,8 +190,8 @@ class PaymentsPageTests(TestCase):
         self.assertContains(response, "Payments")
         for text in ["Pending", "TengaSale Processing", "External Processing", "Paid", "Failed"]:
             self.assertContains(response, text)
-        self.assertContains(response, "DEVICE SALES")
-        self.assertContains(response, "COMMISSIONS")
+        self.assertContains(response, "Device sales")
+        self.assertContains(response, "Commissions")
         self.assertContains(response, 'placeholder="Search payments"')
         self.assertContains(response, "pagination-controls")
         self.assertContains(response, "Rows per page")
@@ -211,7 +211,7 @@ class PaymentsPageTests(TestCase):
 
         self.assertContains(response, self.contract.contract_number)
         self.assertContains(response, "MWK 10,000")
-        self.assertContains(response, "VIEW CONTRACT")
+        self.assertContains(response, "View contract")
 
     def test_payments_page_only_shows_current_users_data(self):
         other_app = FinancingApplication.objects.create(

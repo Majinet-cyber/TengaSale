@@ -36,6 +36,25 @@ class Wallet(models.Model):
         ).aggregate(total=models.Sum("net_amount"))["total"] or Decimal("0")
 
 
+class EarningsSecurityEvent(models.Model):
+    EVENT_CHOICES = [
+        ("EARNINGS_LOCK_ENABLED", "Earnings lock enabled"),
+        ("EARNINGS_LOCK_DISABLED", "Earnings lock disabled"),
+        ("EARNINGS_UNLOCK_SUCCESS", "Earnings unlock succeeded"),
+        ("EARNINGS_UNLOCK_FAILED", "Earnings unlock failed"),
+        ("EARNINGS_PIN_CHANGED", "Earnings PIN changed"),
+        ("EARNINGS_PIN_RESET", "Earnings PIN reset"),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="earnings_security_events")
+    event_type = models.CharField(max_length=40, choices=EVENT_CHOICES)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "event_type", "created_at"], name="earn_sec_user_event_idx")]
+
+
 class WalletTransaction(models.Model):
     TYPE_CHOICES = [
         ("commission_credit", "Commission Credit"),

@@ -528,9 +528,9 @@
     <h2 class="dashboard-section-title">Applications</h2>
     <nav class="ts-dashboard-menu-list action-card ops-list" aria-label="Applications">
       {% url 'active_applications' as active_url %}
-      {% include "partials/dashboard_menu_row.html" with href=active_url icon="bi-broadcast" icon_class="signal-active" label="Active" value=active_count only %}
+      {% include "partials/dashboard_menu_row.html" with href=active_url icon="bi-broadcast" icon_class="signal-active" label="Active" only %}
       {% url 'pending_applications' as pending_url %}
-      {% include "partials/dashboard_menu_row.html" with href=pending_url icon="bi-inbox" icon_class="signal-pending" label="Pending queue" value=pending_queue_count only %}
+      {% include "partials/dashboard_menu_row.html" with href=pending_url icon="bi-inbox" icon_class="signal-pending" label="Pending queue" only %}
       {% url 'completed_applications' as completed_url %}
       {% include "partials/dashboard_menu_row.html" with href=completed_url icon="bi-check2" label="Completed" icon_class="ts-dashboard-menu-icon--green" only %}
       {% url 'rejected_applications' as rejected_url %}

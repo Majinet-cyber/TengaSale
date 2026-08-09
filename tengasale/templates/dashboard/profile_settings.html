@@ -18,6 +18,11 @@
 .profile-settings-link, .profile-settings-logout { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #0f172a; font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
 .profile-settings-logout { width: 100%; color: #b42318; }
 .profile-settings-link i, .profile-settings-logout i { color: #ff5a00; }
+.earnings-lock-copy { margin: 6px 0 14px; color: var(--t-text-secondary); font-size: .875rem; }
+.earnings-lock-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.earnings-lock-form input { min-width: 0; min-height: 46px; border: 1px solid #dfe3e8; border-radius: 10px; padding: 0 12px; }
+.earnings-lock-form .btn { grid-column: 1 / -1; }
+.earnings-lock-reset { margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef0f2; }
 @media (min-width: 720px) {
   .profile-settings-page { max-width: 720px; margin: 0 auto; }
 }
@@ -63,6 +68,38 @@
       {% endif %}
     </div>
   </section>
+
+  {% if profile_role == "merchant" or profile_role == "underwriter" %}
+  <section class="profile-settings-card" aria-labelledby="earnings-lock-title">
+    <p class="profile-settings-kicker">Privacy &amp; security</p>
+    <div class="profile-settings-head">
+      <div><h2 id="earnings-lock-title" class="t-type-section-title">Earnings Lock</h2></div>
+      <span class="profile-settings-chip">{% if earnings_lock_enabled %}On{% else %}Off{% endif %}</span>
+    </div>
+    <p class="earnings-lock-copy">Protect your wallet, commissions and payouts with a separate PIN. Useful when other people may use this device or account for sales work.</p>
+    {% if earnings_lock_enabled %}
+      <form method="post" action="{% url 'earnings_lock_disable' %}" class="earnings-lock-form">
+        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="off" placeholder="Current Earnings PIN" required>
+        <button class="btn btn-outline" type="submit">Turn off Earnings Lock</button>
+      </form>
+      <details class="earnings-lock-reset">
+        <summary class="t-type-secondary-action">Forgot or change PIN?</summary>
+        <form method="post" action="{% url 'earnings_pin_reset' %}" class="earnings-lock-form" style="margin-top:12px;">
+          {% csrf_token %}<input name="password" type="password" autocomplete="current-password" placeholder="Tenga account password" required>
+          <input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" placeholder="New 4–6 digit PIN" required>
+          <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" placeholder="Confirm new PIN" required>
+          <button class="btn" type="submit">Reset Earnings PIN</button>
+        </form>
+      </details>
+    {% else %}
+      <form method="post" action="{% url 'earnings_lock_enable' %}" class="earnings-lock-form">
+        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password" placeholder="Create 4–6 digit PIN" required>
+        <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password" placeholder="Confirm PIN" required>
+        <button class="btn" type="submit">Turn on Earnings Lock</button>
+      </form>
+    {% endif %}
+  </section>
+  {% endif %}
 
   <section class="profile-settings-actions" aria-label="Profile quick links">
     <a href="{% url 'ticket_create' %}" class="profile-settings-link"><span><i class="bi bi-life-preserver" aria-hidden="true"></i> Report issue</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>

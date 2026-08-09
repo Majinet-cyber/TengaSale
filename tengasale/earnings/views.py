@@ -1,10 +1,14 @@
 from decimal import Decimal
 
 from django.contrib import messages
+from django.contrib.auth import authenticate
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from accounts.decorators import merchant_required, underwriter_required
 from accounts.utils import is_merchant, is_underwriter
@@ -17,6 +21,7 @@ from rewards.models import SpinReward, SpinWallet
 from rewards.services import NoSpinsAvailable, SpinDisabled, perform_spin
 
 from .models import Wallet, WalletTransaction
+from .security import SESSION_KEY, audit, earnings_lock_required, profile_for, set_pin, verify_pin
 
 
 COMPLETED_STATUSES = ["approved", "completed"]
@@ -85,6 +90,7 @@ def _spin_access_allowed(user):
 
 
 @merchant_required
+@earnings_lock_required
 def earnings_home(request):
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_summary = _merchant_wallet_summary(request.user, wallet)
@@ -189,6 +195,7 @@ def earnings_home(request):
 
 
 @merchant_required
+@earnings_lock_required
 def payments_home(request):
     query = request.GET.get("q", "").strip()
     rows_per_page = int(request.GET.get("rows", "10") or 10)
@@ -363,6 +370,7 @@ def _render_spin_page(request):
 
 
 @merchant_required
+@earnings_lock_required
 def spin_rewards(request):
     if not _spin_access_allowed(request.user):
         messages.error(request, "Spin rewards are not available for your role.")
@@ -371,5 +379,94 @@ def spin_rewards(request):
 
 
 @underwriter_required
+@earnings_lock_required
 def sales_spin(request):
     return _render_spin_page(request)
+
+
+def _valid_pin(pin):
+    return pin.isdigit() and 4 <= len(pin) <= 6
+
+
+@login_required
+def earnings_unlock(request):
+    profile = profile_for(request.user)
+    if not profile.earnings_lock_enabled:
+        return redirect("sales_wallet" if is_underwriter(request.user) else "earnings_home")
+    error = ""
+    if request.method == "POST":
+        ok, reason = verify_pin(profile, request.POST.get("pin", "").strip())
+        if ok:
+            request.session[SESSION_KEY] = request.user.pk
+            audit(request, "EARNINGS_UNLOCK_SUCCESS")
+            destination = request.session.pop("earnings_next", "")
+            return redirect(destination or ("sales_wallet" if is_underwriter(request.user) else "earnings_home"))
+        audit(request, "EARNINGS_UNLOCK_FAILED")
+        error = "Too many attempts. Try again in 15 minutes." if reason == "cooldown" or profile.earnings_locked_until else "Incorrect PIN. Try again."
+    return render(request, "earnings/locked.html", {"error": error})
+
+
+@login_required
+@require_POST
+def earnings_lock_now(request):
+    request.session.pop(SESSION_KEY, None)
+    return redirect("earnings_unlock")
+
+
+@login_required
+@require_POST
+def earnings_lock_enable(request):
+    profile = profile_for(request.user)
+    pin, confirm = request.POST.get("pin", "").strip(), request.POST.get("confirm_pin", "").strip()
+    if not _valid_pin(pin) or pin != confirm:
+        messages.error(request, "Enter and confirm a matching 4–6 digit PIN.")
+        return redirect("profile_settings")
+    was_enabled = profile.earnings_lock_enabled
+    set_pin(profile, pin)
+    profile.earnings_lock_enabled = True
+    profile.earnings_lock_created_at = profile.earnings_lock_created_at or timezone.now()
+    profile.save()
+    request.session.pop(SESSION_KEY, None)
+    audit(request, "EARNINGS_PIN_CHANGED" if was_enabled else "EARNINGS_LOCK_ENABLED")
+    messages.success(request, "Earnings Lock is on.")
+    return redirect("profile_settings")
+
+
+@login_required
+@require_POST
+def earnings_lock_disable(request):
+    profile = profile_for(request.user)
+    ok, _ = verify_pin(profile, request.POST.get("pin", "").strip())
+    if not ok:
+        audit(request, "EARNINGS_UNLOCK_FAILED")
+        messages.error(request, "Incorrect PIN. Earnings Lock remains on.")
+        return redirect("profile_settings")
+    profile.earnings_lock_enabled = False
+    profile.earnings_pin_hash = ""
+    profile.earnings_locked_until = None
+    profile.earnings_failed_attempt_count = 0
+    profile.save()
+    request.session.pop(SESSION_KEY, None)
+    audit(request, "EARNINGS_LOCK_DISABLED")
+    messages.success(request, "Earnings Lock is off.")
+    return redirect("profile_settings")
+
+
+@login_required
+@require_POST
+def earnings_pin_reset(request):
+    password = request.POST.get("password", "")
+    pin, confirm = request.POST.get("pin", "").strip(), request.POST.get("confirm_pin", "").strip()
+    if authenticate(request, username=request.user.get_username(), password=password) is None:
+        messages.error(request, "Your account password could not be verified.")
+    elif not _valid_pin(pin) or pin != confirm:
+        messages.error(request, "Enter and confirm a matching 4–6 digit PIN.")
+    else:
+        profile = profile_for(request.user)
+        set_pin(profile, pin)
+        profile.earnings_lock_enabled = True
+        profile.save()
+        request.session.pop(SESSION_KEY, None)
+        audit(request, "EARNINGS_PIN_RESET")
+        messages.success(request, "Your Earnings PIN has been reset.")
+    return redirect("profile_settings")

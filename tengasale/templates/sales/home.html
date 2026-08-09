@@ -403,7 +403,7 @@
 
   <h2 class="uw-section-label">Applications</h2>
   <nav class="ts-dashboard-menu-list action-card ts-motion-slide ops-list" aria-label="Applications">
-    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=queue" icon="bi-inbox" icon_class="signal-pending" label="Pending queue" supporting="Applications waiting for review" value=pending_count testid="underwriter-pending-queue-row" only %}
+    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=queue" icon="bi-inbox" icon_class="signal-pending" label="Pending queue" supporting="Applications waiting for review" testid="underwriter-pending-queue-row" only %}
     {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=completed" icon="bi-check2" icon_class="signal-success" label="Completed" supporting="Successfully reviewed" only %}
     {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=rejected" icon="bi-archive" icon_class="signal-neutral" label="Archived & rejected" supporting="Closed applications" only %}
   </nav>

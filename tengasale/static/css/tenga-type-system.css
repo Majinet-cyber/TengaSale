@@ -90,3 +90,5 @@ button, input, select, textarea { font-size: 1rem; }
   .metric-grid > div { min-width: 0; }
   .t-type-money-lg { font-size: 1.125rem; }
 }
+
+.earnings-lock-screen{min-height:calc(100dvh - 150px);display:grid;place-items:center;padding:28px 16px}.earnings-lock-panel{width:min(100%,430px);text-align:center}.earnings-lock-icon{display:grid;width:58px;height:58px;margin:0 auto 20px;place-items:center;border-radius:18px;background:var(--tenga-product-blue-soft,#eef3ff);color:var(--tenga-product-blue,#2458df);font-size:27px}.earnings-lock-panel .t-type-page-intro{max-width:350px;margin:10px auto 24px}.earnings-unlock-form{display:grid;gap:10px;text-align:left}.earnings-unlock-form input{height:54px;border:1px solid #d7dce3;border-radius:12px;padding:0 16px;text-align:center;font-size:1.25rem;font-variant-numeric:tabular-nums;letter-spacing:.28em}.earnings-unlock-form .btn{min-height:50px;margin-top:4px}.earnings-lock-error{padding:10px 12px;border-radius:10px;background:#fcecef;color:#a9303a;font-size:.875rem}.earnings-lock-panel>.t-type-caption{margin:14px 0 10px}

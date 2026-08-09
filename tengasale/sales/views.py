@@ -48,6 +48,7 @@ from contracts.models import Contract
 from core.models import AuditLog, QueueRule
 from core.view_safety import safe_page
 from earnings.models import ManagerPayout, MerchantPayout, Wallet, WalletTransaction
+from earnings.security import earnings_lock_required
 from rewards.models import SpinReward, SpinWallet
 
 
@@ -1113,6 +1114,7 @@ def sales_call_questionnaire(request, app_id):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
+@earnings_lock_required
 def sales_wallet(request):
     from datetime import timedelta
 
@@ -1653,6 +1655,7 @@ def sales_imei_override(request, app_id):
 # ---------------------------------------------------------------------------
 
 @underwriter_required
+@earnings_lock_required
 def sales_emergency_payout_request(request):
     """
     Emergency payout request view.
@@ -1736,6 +1739,7 @@ def sales_emergency_payout_request(request):
 
 
 @underwriter_required
+@earnings_lock_required
 @require_POST
 def sales_emergency_payout_cancel(request, payout_id):
     """Cancel a pending emergency payout request."""

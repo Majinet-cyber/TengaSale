@@ -1,0 +1,16 @@
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+
+class Migration(migrations.Migration):
+    dependencies = [("earnings", "0004_add_emergency_payout_request"), migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
+    operations = [migrations.CreateModel(
+        name="EarningsSecurityEvent",
+        fields=[
+            ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+            ("event_type", models.CharField(choices=[("EARNINGS_LOCK_ENABLED", "Earnings lock enabled"), ("EARNINGS_LOCK_DISABLED", "Earnings lock disabled"), ("EARNINGS_UNLOCK_SUCCESS", "Earnings unlock succeeded"), ("EARNINGS_UNLOCK_FAILED", "Earnings unlock failed"), ("EARNINGS_PIN_CHANGED", "Earnings PIN changed"), ("EARNINGS_PIN_RESET", "Earnings PIN reset")], max_length=40)),
+            ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
+            ("created_at", models.DateTimeField(auto_now_add=True)),
+            ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="earnings_security_events", to=settings.AUTH_USER_MODEL)),
+        ], options={"ordering": ["-created_at"], "indexes": [models.Index(fields=["user", "event_type", "created_at"], name="earn_sec_user_event_idx")]},
+    )]

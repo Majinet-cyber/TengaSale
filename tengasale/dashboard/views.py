@@ -127,6 +127,7 @@ def profile_settings(request):
         ).count()
 
     role_label = ROLE_DISPLAY_LABELS.get(role, role.replace("_", " ").title() or "User")
+    security_profile = UserProfile.objects.get_or_create(user=request.user)[0]
     return render(request, "dashboard/profile_settings.html", {
         "profile_role": role,
         "profile_role_label": role_label,
@@ -134,6 +135,7 @@ def profile_settings(request):
         "merchant_status": merchant_status,
         "active_reviews": active_reviews,
         "reviewed_count": reviewed_count,
+        "earnings_lock_enabled": security_profile.earnings_lock_enabled,
     })
 
 
