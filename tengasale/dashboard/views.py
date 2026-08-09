@@ -101,7 +101,6 @@ ROLE_DISPLAY_LABELS = {
 @login_required
 @safe_page("Profile settings")
 def profile_settings(request):
-    from earnings.security import owner_verification_valid
     role = primary_role(request.user) or ""
     merchant = None
     merchant_status = ""
@@ -137,9 +136,6 @@ def profile_settings(request):
         "active_reviews": active_reviews,
         "reviewed_count": reviewed_count,
         "earnings_lock_enabled": security_profile.earnings_lock_enabled,
-        "earnings_owner_verified_enable": owner_verification_valid(request, "enable"),
-        "earnings_owner_verified_reset": owner_verification_valid(request, "reset"),
-        "earnings_recovery_mask": request.session.get("earnings_recovery_mask", ""),
     })
 
 

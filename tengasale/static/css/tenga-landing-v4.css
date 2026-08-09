@@ -313,15 +313,6 @@ section{position:relative}
 .calculator-controls fieldset{padding:0;border:0}.calculator-controls legend{margin-bottom:8px}.calculator-controls .cadence-switcher{margin:0;box-shadow:none}
 .calculator-summary{position:relative;padding:34px;color:#fff;background:radial-gradient(circle at 85% 20%,rgba(23,200,255,.22),transparent 32%),linear-gradient(145deg,#10162a,#19133c);overflow:hidden}
 .calculator-device{position:absolute;right:18px;top:24px;opacity:.52;transform:scale(.54) rotate(9deg);transform-origin:top right}
-.calculator-product-image{width:220px;height:300px;object-fit:contain;filter:drop-shadow(0 24px 28px rgba(13,24,48,.2))}
-.phone-product-image{position:relative;z-index:2;width:min(78%,260px);height:310px;object-fit:contain;filter:drop-shadow(0 24px 28px rgba(13,24,48,.22))}
-.phone-image-placeholder{opacity:.42}
-.nav-links a.active{color:var(--ink);position:relative}
-.nav-links a.active::after{content:"";position:absolute;left:18%;right:18%;bottom:-8px;height:2px;border-radius:2px;background:var(--blue)}
-.route-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-block:36px 88px;padding:0;background:var(--line);border:1px solid var(--line);border-radius:24px;overflow:hidden}
-.route-preview-grid a{display:block;padding:30px;background:#fff;color:var(--ink);text-decoration:none;transition:background .2s ease,transform .2s ease}
-.route-preview-grid a:hover{background:var(--blue-soft);transform:translateY(-2px)}
-.route-preview-grid strong{display:block;font-size:1.15rem;margin-bottom:8px}.route-preview-grid span{color:var(--muted);line-height:1.55}
 .calculator-status{display:inline-flex;padding:7px 10px;border-radius:999px;background:rgba(47,214,143,.16);color:#65efb5;font-size:11px;font-weight:850}
 .calculator-summary h3{position:relative;margin:22px 0 8px;max-width:70%;font-size:30px;letter-spacing:-.045em;color:#fff}.calculator-summary>p{position:relative;color:#aeb9d4;min-height:22px}
 .calculator-values{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:28px 0}
@@ -558,7 +549,6 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 }
 
 @media (max-width:800px){
-  .route-preview-grid{grid-template-columns:1fr;margin-bottom:64px}
   body.mobile-menu-open{overflow:hidden}
   :root{--shell:calc(100vw - 30px);--header:74px}
   .nav-links{
@@ -660,7 +650,6 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 .compact-protect div{padding:16px 18px}
 .compact-protect span{font-size:14px}
 .map-sidebar .map-item p{font-size:15px}
-.map-canvas{position:relative}.malawi-map-pulse{position:absolute;left:71.98%;top:67.61%;width:12px;height:12px;transform:translate(-50%,-50%);pointer-events:none}.malawi-map-pulse:before,.malawi-map-pulse:after,.malawi-map-pulse i{content:"";position:absolute;inset:0;border-radius:50%}.malawi-map-pulse i{inset:3px;background:#f4511e;box-shadow:0 0 0 2px rgba(244,81,30,.24)}.malawi-map-pulse:before{border:1px solid rgba(244,81,30,.38)}.malawi-map-pulse:after{background:rgba(244,81,30,.2);animation:malawi-live-pulse 2.1s ease-out infinite}@keyframes malawi-live-pulse{0%{transform:scale(.65);opacity:.55}70%,100%{transform:scale(1.65);opacity:0}}@media(prefers-reduced-motion:reduce){.malawi-map-pulse:after{animation:none;opacity:0}}
 .audience-card{min-height:250px}
 .audience-card h3{font-size:28px}
 .audience-card p{font-size:15px;line-height:1.6}

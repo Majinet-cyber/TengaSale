@@ -1,19 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import wraps
-import secrets
 from django.contrib.auth.hashers import check_password, make_password
-from django.core.cache import cache
 from django.shortcuts import redirect
 from django.utils import timezone
 from accounts.models import UserProfile
-from .models import EarningsRecoveryChallenge, EarningsSecurityEvent
+from .models import EarningsSecurityEvent
 
 SESSION_KEY = "earnings_unlocked"
 MAX_ATTEMPTS = 5
 COOLDOWN_MINUTES = 15
-UNLOCK_MINUTES = 5
-OWNER_VERIFIED_KEY = "earnings_owner_verified"
-WEAK_PINS = {"000000", "111111", "222222", "333333", "444444", "555555", "666666", "777777", "888888", "999999", "123456", "654321"}
 
 def profile_for(user):
     return UserProfile.objects.get_or_create(user=user)[0]
@@ -24,68 +19,7 @@ def audit(request, event_type):
 
 def earnings_access_allowed(request):
     profile = profile_for(request.user)
-    if not profile.earnings_lock_enabled:
-        return True
-    grant = request.session.get(SESSION_KEY) or {}
-    try:
-        unlocked_at = datetime.fromisoformat(grant.get("at"))
-        if timezone.is_naive(unlocked_at): unlocked_at = timezone.make_aware(unlocked_at)
-    except (TypeError, ValueError):
-        return False
-    return grant.get("user") == request.user.pk and grant.get("generation") == profile.earnings_security_generation and timezone.now() - unlocked_at <= timedelta(minutes=UNLOCK_MINUTES)
-
-def grant_access(request, profile):
-    request.session[SESSION_KEY] = {"user": request.user.pk, "generation": profile.earnings_security_generation, "at": timezone.now().isoformat()}
-
-def valid_pin(pin):
-    return len(pin) == 6 and pin.isdigit() and pin not in WEAK_PINS and len(set(pin)) > 2
-
-def owner_phone(user):
-    from merchants.models import Merchant
-    merchant = Merchant.objects.filter(owner=user).order_by("-id").first()
-    profile = profile_for(user)
-    return (merchant.phone_number if merchant else "") or profile.phone_number or profile.phone
-
-def mask_phone(phone):
-    digits = "".join(c for c in str(phone or "") if c.isdigit())
-    return f"+265 ••• ••• {digits[-3:]}" if len(digits) >= 3 else "Owner recovery contact"
-
-def start_owner_challenge(request, purpose):
-    from communications.services import normalize_malawi_phone, send_sms
-    phone = normalize_malawi_phone(owner_phone(request.user))
-    if not phone:
-        return None
-    throttle_key = f"earnings-recovery:{request.user.pk}"
-    if not cache.add(throttle_key, 1, timeout=60):
-        audit(request, "EARNINGS_RATE_LIMITED")
-        return None
-    code = f"{secrets.randbelow(900000) + 100000:06d}"
-    challenge = EarningsRecoveryChallenge.objects.create(user=request.user, purpose=purpose, code_hash=make_password(code), phone_mask=mask_phone(phone), expires_at=timezone.now() + timedelta(minutes=10))
-    send_sms(phone, f"Your Tenga Earnings security code is {code}. It expires in 10 minutes. Do not share it.", purpose="otp")
-    request.session["earnings_challenge_id"] = challenge.pk
-    audit(request, "EARNINGS_RECOVERY_STARTED")
-    return challenge
-
-def verify_owner_challenge(request, code):
-    challenge = EarningsRecoveryChallenge.objects.filter(pk=request.session.get("earnings_challenge_id"), user=request.user, verified_at=None).first()
-    if not challenge or challenge.expires_at <= timezone.now() or challenge.attempts >= 5:
-        return None
-    challenge.attempts += 1
-    if not check_password(code, challenge.code_hash):
-        challenge.save(update_fields=["attempts"])
-        return None
-    challenge.verified_at = timezone.now()
-    challenge.save(update_fields=["attempts", "verified_at"])
-    request.session[OWNER_VERIFIED_KEY] = {"purpose": challenge.purpose, "at": timezone.now().isoformat()}
-    audit(request, "EARNINGS_RECOVERY_COMPLETED")
-    return challenge
-
-def owner_verification_valid(request, purpose):
-    state = request.session.get(OWNER_VERIFIED_KEY) or {}
-    try: verified_at = datetime.fromisoformat(state.get("at"))
-    except (TypeError, ValueError): return False
-    if timezone.is_naive(verified_at): verified_at = timezone.make_aware(verified_at)
-    return state.get("purpose") == purpose and timezone.now() - verified_at <= timedelta(minutes=10)
+    return not profile.earnings_lock_enabled or request.session.get(SESSION_KEY) == request.user.pk
 
 def earnings_lock_required(view):
     @wraps(view)

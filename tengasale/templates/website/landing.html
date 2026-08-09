@@ -21,20 +21,20 @@
   <header class="site-header" id="top">
     <nav class="nav shell" aria-label="Main navigation">
       <a class="brand" href="#top" aria-label="Tenga home">
-        <img class="brand-logo brand-logo--canonical" src="{% static 'images/brand/tengasale-logo-full.svg' %}" alt="TengaSale" />
+        <img class="brand-logo brand-logo--canonical" src="{% static 'images/Tenga.png' %}?v=20260809b" alt="" width="40" height="40" />
         <span class="brand-word">Tenga<span>Sale</span></span>
       </a>
 
       <div class="nav-links" id="navLinks">
-        <a class="desktop-only {% if section == 'why' %}active{% endif %}" href="{% url 'website_about' %}">Why</a>
-        <a class="desktop-only {% if section == 'process' %}active{% endif %}" href="{% url 'website_how_it_works' %}">Process</a>
-        <a class="{% if section == 'phones' %}active{% endif %}" href="{% url 'website_phones' %}">Phones</a>
-        <a class="{% if section == 'trade-upgrade' %}active{% endif %}" href="{% url 'website_trade_upgrade' %}">Trade &amp; Upgrade</a>
-        <a class="desktop-only {% if section == 'markets' %}active{% endif %}" href="{% url 'website_markets' %}">Markets</a>
-        <a class="desktop-only {% if section == 'company' %}active{% endif %}" href="{% url 'website_company' %}">Company</a>
+        <a class="desktop-only" href="#why">Why</a>
+        <a class="desktop-only" href="#process">Process</a>
+        <a href="#phones">Phones</a>
+        <a href="#trade-upgrade">Trade &amp; Upgrade</a>
+        <a class="desktop-only" href="#map">Map</a>
+        <a class="desktop-only" href="#company">Company</a>
         <a class="desktop-only" href="{% url 'website_careers' %}">Careers</a>
         <a href="{% url 'portal_search' %}">Make a Payment</a>
-        <a href="{% url 'website_contact' %}">Support</a>
+        <a href="#support">Support</a>
         <a href="{% url 'login' %}">Login</a>
       </div>
 
@@ -52,7 +52,7 @@
 {% block site_content %}
 <!-- TENGA_PUBLIC_STRATEGY_SAFE_V1 -->
     <div id="landingRouteState" data-section="{{ section|default:'' }}" hidden></div>
-    {% if not section %}<section class="hero section-dark">
+    <section class="hero section-dark">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-glow glow-1" aria-hidden="true"></div>
       <div class="hero-glow glow-2" aria-hidden="true"></div>
@@ -75,7 +75,7 @@
           </div>
 
           <div class="hero-actions">
-            <a class="button button-primary button-large" href="{% url 'website_phones' %}">Explore Phones</a>
+            <a class="button button-primary button-large" href="#phones">Explore Phones</a>
             <a class="button button-payment button-large" href="{% url 'portal_search' %}">Make a Payment</a>
           </div>
 
@@ -147,9 +147,9 @@
       </div>
 
       <div class="scroll-hint"><span></span><p>Scroll to see why Tenga matters</p></div>
-    </section>{% endif %}
+    </section>
 
-    {% if not section or section == 'why' %}<section class="why-section section-light" id="why">
+    <section class="why-section section-light" id="why">
       <div class="shell">
         <div class="section-head reveal centered compact-head">
           <p class="kicker">The why</p>
@@ -190,9 +190,9 @@
           </div>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if not section or section == 'process' %}<section class="process-section section-soft" id="process">
+    <section class="process-section section-soft" id="process">
       <div class="shell">
         <div class="section-head split reveal compact-split">
           <div>
@@ -243,15 +243,9 @@
           <article class="step-card reveal reveal-delay-md"><span>03</span><h3>Pay your way</h3><p>Use mobile money on your rhythm.</p></article>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if not section %}<nav class="route-preview-grid shell" aria-label="Explore Tenga">
-      <a href="{% url 'website_phones' %}"><span>Phones</span><strong>Find a plan that fits.</strong><small>Explore real devices and payment options &rarr;</small></a>
-      <a href="{% url 'website_trade_upgrade' %}"><span>Trade &amp; Upgrade</span><strong>Your phone can take you further.</strong><small>See the upgrade path &rarr;</small></a>
-      <a href="{% url 'website_markets' %}"><span>Markets</span><strong>Malawi live. Southern Africa next.</strong><small>Explore the regional map &rarr;</small></a>
-    </nav>{% endif %}
-
-    {% if section == 'phones' %}<section class="phones-section section-light" id="phones">
+    <section class="phones-section section-light" id="phones">
       <div class="shell">
         <div class="section-head split reveal compact-split">
           <div>
@@ -274,7 +268,7 @@
             </div></fieldset>
           </div>
           <div class="calculator-summary" aria-live="polite">
-            <div class="calculator-device" aria-hidden="true"><img id="calculatorDeviceImage" class="calculator-product-image" alt="" hidden><div id="calculatorDeviceFallback" class="css-phone"><div class="css-screen"></div></div></div>
+            <div class="calculator-device" aria-hidden="true"><div class="css-phone"><div class="css-screen"></div></div></div>
             <span class="calculator-status" id="calculatorStatus">Available</span><h3 id="calculatorModel">Select a phone</h3><p id="calculatorSpec"></p>
             <div class="calculator-values"><div><small>Deposit</small><strong id="calculatorDepositValue">—</strong></div><div><small id="calculatorPaymentLabel">Daily payment</small><strong id="calculatorPaymentValue">—</strong></div></div>
             <a class="button button-primary button-large" href="{% url 'new_application' %}" id="calculatorApply">Continue to application</a>
@@ -292,9 +286,9 @@
           </div>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'trade-upgrade' %}<section class="tenga-loop-section section-dark" id="trade-upgrade" aria-labelledby="loopTitle">
+    <section class="tenga-loop-section section-dark" id="trade-upgrade" aria-labelledby="loopTitle">
       <div class="tenga-loop-grid" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--one" aria-hidden="true"></div>
       <div class="tenga-loop-glow tenga-loop-glow--two" aria-hidden="true"></div>
@@ -321,15 +315,15 @@
             <div class="tenga-loop-estimator-head"><div><small>Your next move</small><h3>See what is possible.</h3></div><span class="tenga-loop-status"><i></i> Available</span></div>
             <div class="tenga-loop-value"><div><small>Trade &amp; Upgrade</small><strong>Check eligibility</strong><span>Tell Tenga about the phone you have and the phone you want.</span></div><div class="tenga-loop-value-ring"><span>Next</span></div></div>
             <div class="tenga-loop-use-summary"><strong>Your phone can take you further</strong><p>Use an approved trade-in value toward your next Tenga device.</p></div>
-            <a href="{% url 'website_contact' %}?category=trade_in_upgrade#support" class="button button-primary button-large tenga-loop-cta" data-support-category="trade_in_upgrade">Check Eligibility</a>
-            <a href="{% url 'website_contact' %}?category=general#support" class="button button-ghost button-large tenga-loop-cta" data-support-category="general">Talk to Tenga</a>
+            <a href="#support" class="button button-primary button-large tenga-loop-cta" data-support-category="trade_in_upgrade">Check Eligibility</a>
+            <a href="#support" class="button button-ghost button-large tenga-loop-cta" data-support-category="general">Talk to Tenga</a>
             <p class="tenga-loop-fine-print">Eligibility and final value are confirmed after assessment. Terms apply.</p>
           </div>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'company' %}<section class="protection-section section-dark" id="protection">
+    <section class="protection-section section-dark" id="protection">
       <div class="protection-grid" aria-hidden="true"></div>
       <div class="shell protection-layout">
         <div class="protection-copy reveal">
@@ -355,9 +349,9 @@
           </div>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'markets' %}<section class="map-section section-soft" id="map">
+    <section class="map-section section-soft" id="map">
       <div class="shell">
         <div class="section-head split reveal compact-split">
           <div>
@@ -370,7 +364,6 @@
         <div class="map-panel reveal">
           <div class="map-canvas">
             <img src="{% static 'images/africa-expansion-map.svg' %}?v=1.0.0" class="regional-map" alt="Geographic map of Africa highlighting Malawi as live, Zambia as next and Zimbabwe as planned">
-            <span class="malawi-map-pulse" aria-hidden="true"><i></i></span>
             {% comment %}Retired abstract map retained temporarily for easy historical comparison.
             <svg viewBox="0 0 900 720" class="regional-map" role="img" aria-label="Map of Southern Africa highlighting Malawi, Zambia and Zimbabwe">
               <defs>
@@ -408,9 +401,9 @@
           </div>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'company' %}<section class="company-section section-light" id="company">
+    <section class="company-section section-light" id="company">
       <div class="shell">
         <div class="section-head reveal centered compact-head">
           <p class="kicker">Built for more than one audience</p>
@@ -419,7 +412,7 @@
         </div>
 
         <div class="audience-grid">
-          <article class="audience-card reveal"><span>Customers</span><h3>Clear and premium.</h3><p>Easy to understand. Easy to trust.</p><a class="audience-link" href="{% url 'website_contact' %}?category=customer_support#support" data-support-category="customer_support">Get customer support <span aria-hidden="true">→</span></a></article>
+          <article class="audience-card reveal"><span>Customers</span><h3>Clear and premium.</h3><p>Easy to understand. Easy to trust.</p><a class="audience-link" href="#support" data-support-category="customer_support">Get customer support <span aria-hidden="true">→</span></a></article>
           <article class="audience-card reveal reveal-delay-sm"><span>Investors & partners</span><h3>Disciplined and scalable.</h3><p>Strong process and regional ambition.</p><div class="audience-actions"><a class="audience-link" href="#support" data-support-category="merchant_partnership">Partner conversation <span aria-hidden="true">→</span></a><a class="audience-link" href="#support" data-support-category="investor_media">Investor enquiry <span aria-hidden="true">→</span></a></div></article>
           <article class="audience-card reveal reveal-delay-md"><span>Team</span><h3>Useful work. Serious ambition.</h3><p>A mission worth building around.</p><a class="audience-link" href="#support" data-support-category="careers">Join the team <span aria-hidden="true">→</span></a></article>
         </div>
@@ -436,9 +429,9 @@
           <a class="button button-payment button-large" href="{% url 'portal_search' %}">Open Payment Gateway</a>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'faq' or section == 'support' %}<section class="faq-section section-soft" id="faq">
+    <section class="faq-section section-soft" id="faq">
       <div class="shell faq-layout">
         <div class="section-head reveal compact-head">
           <p class="kicker">Frequently asked questions</p>
@@ -484,9 +477,9 @@
           </details>
         </div>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if section == 'support' %}<section class="support-section section-light" id="support">
+    <section class="support-section section-light" id="support">
       <div class="shell support-layout">
         <div class="support-copy reveal">
           <p class="kicker">Support & enquiries</p>
@@ -538,9 +531,9 @@
           <p class="support-fallback">Prefer email? <a href="mailto:{{ support_email }}">Write directly to {{ support_email }}</a>.</p>
         </form>
       </div>
-    </section>{% endif %}
+    </section>
 
-    {% if not section or section == 'phones' %}<section class="apply-section section-dark" id="apply">
+    <section class="apply-section section-dark" id="apply">
       <div class="apply-glow" aria-hidden="true"></div>
       <div class="shell apply-layout">
         <div class="apply-copy reveal">
@@ -567,20 +560,20 @@
           <small class="footnote">Continue securely into TengaSale's existing application flow. No payment is collected from this form.</small>
         </form>
       </div>
-    </section>{% endif %}
+    </section>
 {% endblock %}
 
 {% block site_footer %}
   <footer class="site-footer">
     <div class="shell footer-layout footer-layout--complete">
       <div class="footer-brand">
-        <a class="brand footer-brand-link" href="#top"><img class="brand-logo brand-logo--canonical" src="{% static 'images/brand/tengasale-logo-full.svg' %}" alt="TengaSale" /></a>
+        <a class="brand footer-brand-link" href="#top"><img class="brand-logo brand-logo--canonical" src="{% static 'images/Tenga.png' %}?v=20260809c" alt="" width="40" height="40" /><span class="brand-word">Tenga<span>Sale</span></span></a>
         <p>Smartphone access for the mobile-money economy of Southern Africa.</p>
         <a class="footer-email" href="mailto:{{ support_email }}">{{ support_email }}</a>
       </div>
-      <div class="footer-group"><strong>Product</strong><a href="{% url 'website_phones' %}">Phones</a><a href="{% url 'website_trade_upgrade' %}">Trade &amp; Upgrade</a><a href="{% url 'website_how_it_works' %}">How it works</a><a href="{% url 'public_home' %}#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
-      <div class="footer-group"><strong>Support</strong><a href="{% url 'website_contact' %}?category=customer_support#support" data-support-category="customer_support">Contact support</a><a href="{% url 'website_contact' %}?category=payment_help#support" data-support-category="payment_help">Payment help</a><a href="{% url 'website_contact' %}?category=merchant_partnership#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="{% url 'website_contact' %}?category=customer_support#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="{% url 'website_faq' %}">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
-      <div class="footer-group"><strong>Company</strong><a href="{% url 'website_about' %}">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="{% url 'website_contact' %}?category=investor_media#support" data-support-category="investor_media">Investors & media</a></div>
+      <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#trade-upgrade">Trade &amp; Upgrade</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
+      <div class="footer-group"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
+      <div class="footer-group"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors & media</a></div>
       <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Roadmap</a><a href="#map">Zimbabwe — Roadmap</a></div>
       <div class="footer-group"><strong>Legal</strong><a href="{% url 'website_terms' %}">Terms</a><a href="{% url 'website_privacy' %}">Privacy & KYC</a><a href="{% url 'website_payment_terms' %}">Payment terms</a><a href="{% url 'website_merchant_terms' %}">Merchant terms</a><a href="#protection">Device protection</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built in Malawi. Designed for Southern Africa.</span></div>

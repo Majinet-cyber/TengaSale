@@ -58,17 +58,6 @@ class DeviceDeal(models.Model):
     brand = models.ForeignKey(DeviceBrand, on_delete=models.CASCADE, related_name="deals")
     model_name = models.CharField(max_length=120)
     specs = models.CharField(max_length=80)
-    product_image = models.ImageField(
-        upload_to="device_images/",
-        blank=True,
-        null=True,
-        help_text="Approved, model-specific product image shown on the public phone catalogue.",
-    )
-    product_image_alt = models.CharField(
-        max_length=180,
-        blank=True,
-        help_text="Accessible description, for example: Tecno Spark 40 in black, front and rear view.",
-    )
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default=CONDITION_NEW)
     country = models.CharField(max_length=10, default="MW")
 

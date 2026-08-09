@@ -11,7 +11,7 @@
     <form method="post" action="{% url 'earnings_unlock' %}" class="earnings-unlock-form">
       {% csrf_token %}
       <label for="earnings-pin">Earnings PIN</label>
-      <input id="earnings-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" autofocus required aria-describedby="earnings-lock-help">
+      <input id="earnings-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="off" autofocus required aria-describedby="earnings-lock-help">
       <button class="btn" type="submit">Unlock earnings</button>
     </form>
     <p id="earnings-lock-help" class="t-type-caption">Your Earnings PIN is separate from your Tenga account password.</p>

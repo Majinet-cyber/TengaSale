@@ -46,7 +46,7 @@ class PublicSiteTests(TestCase):
             term_months=12, total_12_month_price=Decimal("1250000"),
             is_active=True, stock_status=DeviceDeal.STOCK_IN,
         )
-        response = self.client.get(reverse("website_phones"))
+        response = self.client.get(reverse("website_landing"))
         self.assertContains(response, 'id="planCalculator"')
         self.assertContains(response, "Tecno Spark Test")
         self.assertContains(response, str(int(deal.deposit_amount)))
@@ -55,7 +55,7 @@ class PublicSiteTests(TestCase):
         self.assertNotIn('"commission"', content)
 
     def test_landing_has_local_market_flags_and_accurate_statuses(self):
-        response = self.client.get(reverse("website_markets"))
+        response = self.client.get(reverse("website_landing"))
         for country in ("malawi", "zambia", "zimbabwe"):
             self.assertContains(response, f"img/flags/{country}.svg")
         self.assertContains(response, "Flag of Malawi")
@@ -65,7 +65,14 @@ class PublicSiteTests(TestCase):
         self.assertEqual(response.content.decode().count("<small>Next</small>"), 2)
 
     def test_tenga_loop_sits_between_phones_and_fair_protection(self):
-        response = self.client.get(reverse("website_trade_upgrade"))
+        response = self.client.get(reverse("website_landing"))
+        content = response.content.decode()
+
+        phones_position = content.index('id="phones"')
+        loop_position = content.index('id="trade-upgrade"')
+        protection_position = content.index('id="protection"')
+        self.assertLess(phones_position, loop_position)
+        self.assertLess(loop_position, protection_position)
         self.assertContains(response, "Your phone can")
         self.assertContains(response, "take you further")
         self.assertContains(response, "TENGA_PUBLIC_STRATEGY_SAFE_V1")
@@ -75,9 +82,9 @@ class PublicSiteTests(TestCase):
         self.assertContains(response, reverse("new_application"))
 
     def test_tenga_loop_does_not_publish_a_binding_trade_in_value(self):
-        response = self.client.get(reverse("website_trade_upgrade"))
+        response = self.client.get(reverse("website_landing"))
         content = response.content.decode()
-        loop = content[content.index('id="trade-upgrade"'):]
+        loop = content[content.index('id="trade-upgrade"'):content.index('id="protection"')]
 
         self.assertIn("Eligibility and final value are confirmed after assessment", loop)
         self.assertIn("Terms apply", loop)
@@ -275,7 +282,7 @@ class LandingPageUIRegressionTests(TestCase):
     def test_v4_landing_preserves_required_copy_and_internal_payment_route(self):
         response = self.client.get("/")
         self.assertContains(response, "2× monthly income")
-        self.assertGreaterEqual(response.content.decode().count(f'href="{reverse("portal_search")}"'), 4)
+        self.assertEqual(response.content.decode().count(f'href="{reverse("portal_search")}"'), 7)
         self.assertNotContains(response, "https://pay.tengasale.africa")
         self.assertContains(response, "css/tenga-landing-v4.css")
         self.assertContains(response, "js/tenga-landing-v4.js")

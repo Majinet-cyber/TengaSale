@@ -44,10 +44,6 @@ class EarningsSecurityEvent(models.Model):
         ("EARNINGS_UNLOCK_FAILED", "Earnings unlock failed"),
         ("EARNINGS_PIN_CHANGED", "Earnings PIN changed"),
         ("EARNINGS_PIN_RESET", "Earnings PIN reset"),
-        ("EARNINGS_RATE_LIMITED", "Earnings access rate limited"),
-        ("EARNINGS_RECOVERY_STARTED", "Owner recovery started"),
-        ("EARNINGS_RECOVERY_COMPLETED", "Owner recovery completed"),
-        ("PAYOUT_REAUTH_SUCCESS", "Payout PIN reauthentication succeeded"),
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="earnings_security_events")
     event_type = models.CharField(max_length=40, choices=EVENT_CHOICES)
@@ -57,24 +53,6 @@ class EarningsSecurityEvent(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "event_type", "created_at"], name="earn_sec_user_event_idx")]
-
-
-class EarningsRecoveryChallenge(models.Model):
-    PURPOSE_ENABLE = "enable"
-    PURPOSE_RESET = "reset"
-    PURPOSE_CHOICES = [(PURPOSE_ENABLE, "Enable lock"), (PURPOSE_RESET, "Reset PIN")]
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="earnings_recovery_challenges")
-    purpose = models.CharField(max_length=12, choices=PURPOSE_CHOICES)
-    code_hash = models.CharField(max_length=255, editable=False)
-    phone_mask = models.CharField(max_length=30)
-    expires_at = models.DateTimeField()
-    attempts = models.PositiveSmallIntegerField(default=0)
-    verified_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "purpose", "created_at"], name="earn_recovery_lookup_idx")]
 
 
 class WalletTransaction(models.Model):
