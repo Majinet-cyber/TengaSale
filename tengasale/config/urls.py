@@ -49,6 +49,7 @@ urlpatterns = [
 
     # Private recommerce operations (authenticated and role checked).
     path("tengasale/recommerce/", include("recommerce.urls")),
+    path("protect/", include("protect.urls")),
 
     # Tech Support portal
     path("tengasale/support/", include("support.urls")),

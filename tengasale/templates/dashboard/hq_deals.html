@@ -262,8 +262,8 @@
     <div class="dc-header-left">
       <a href="{% url 'hq_dashboard' %}" style="color:var(--primary);text-decoration:none;font-size:0.85rem;font-weight:600;flex-shrink:0;">← HQ</a>
       <div>
-        <h1 class="dc-title">Device Finance Catalog</h1>
-        <p class="dc-sub">Manage devices, pricing, deposit options, lock readiness, and availability.</p>
+        <h1 class="dc-title">Device catalog</h1>
+        <p class="dc-sub">Manage pricing, availability and financing terms.</p>
       </div>
     </div>
     <div class="dc-actions">
@@ -275,7 +275,7 @@
       <button class="dc-btn-primary add-device-btn btn-add-device"
               data-testid="dc-add-deal-btn"
               onclick="openAddDealModal()">
-        + Add Device Deal
+        + Add device
       </button>
     </div>
   </div>
@@ -287,7 +287,7 @@
   {# ── Quick stats ──────────────────────────────────────────────── #}
   <div class="dc-stats-row" data-testid="dc-stats-row">
     <div class="dc-stat-card">
-      <div class="dc-stat-label">Active Models</div>
+      <div class="dc-stat-label">Active</div>
       <div class="dc-stat-value" data-testid="dc-stat-active-models">{{ total_active_models|default:"—" }}</div>
       <div class="dc-stat-sub">Currently live</div>
     </div>

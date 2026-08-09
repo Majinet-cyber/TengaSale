@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     "communications.apps.CommunicationsConfig",
     "payments.apps.PaymentsConfig",
     "recommerce.apps.RecommerceConfig",
+    "protect.apps.ProtectConfig",
 ]
 
 MIDDLEWARE = [
@@ -391,6 +392,20 @@ ENABLE_NUOVOPAY = os.environ.get("ENABLE_NUOVOPAY", "false").lower() == "true"
 ENABLE_UPYA = os.environ.get("ENABLE_UPYA", "false").lower() == "true"
 ENABLE_PAYTRIGGER = os.environ.get("ENABLE_PAYTRIGGER", "false").lower() == "true"
 ENABLE_PAYCHANGU = os.environ.get("ENABLE_PAYCHANGU", "false").lower() == "true"
+
+# Tenga Protect launches in privacy-first Phase 1. Location remains off until
+# both a provider agreement and an internal compliance decision are in place.
+TENGA_PROTECT_ENABLED = _env_bool("TENGA_PROTECT_ENABLED", "true")
+PROTECT_LOCATION_ENABLED = _env_bool("PROTECT_LOCATION_ENABLED", "false")
+KNOX_LOCATION_ENABLED = _env_bool("KNOX_LOCATION_ENABLED", "false")
+PROTECT_PUBLIC_IMEI_CHECK = _env_bool("PROTECT_PUBLIC_IMEI_CHECK", "true")
+PROTECT_INSURANCE = _env_bool("PROTECT_INSURANCE", "false")
+PROTECT_REWARDS = _env_bool("PROTECT_REWARDS", "false")
+PROTECT_MERCHANT_RETURNS = _env_bool("PROTECT_MERCHANT_RETURNS", "false")
+PROTECT_PLUS = _env_bool("PROTECT_PLUS", "false")
+PROTECT_LOCATION_SESSION_HOURS = int(os.environ.get("PROTECT_LOCATION_SESSION_HOURS", "48"))
+PROTECT_LOCATION_RETENTION_DAYS = int(os.environ.get("PROTECT_LOCATION_RETENTION_DAYS", "30"))
+PROTECT_POLICY_VERSION = os.environ.get("PROTECT_POLICY_VERSION", "2026.1")
 
 # Knox MDM
 KNOX_API_KEY = os.environ.get("KNOX_API_KEY", "")

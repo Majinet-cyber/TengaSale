@@ -25,6 +25,7 @@
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/card_hierarchy.css' %}?v=1.0.0">
     <link rel="stylesheet" href="{% static 'css/operations-restraint.css' %}?v=1.1.0">
+    <link rel="stylesheet" href="{% static 'css/tenga-product-system.css' %}?v=1.0.0">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <style>
     /* ── Global top progress bar ─────────────────────────────────── */
@@ -257,11 +258,28 @@
                         <i class="bi bi-lock" aria-hidden="true"></i>
                         <span>Locks</span>
                     </a>
-                    <a href="{% url 'profile_settings' %}" class="ts-mobile-role-nav__item {% if current_url != 'hq_dashboard' and current_url != 'hq_applications' and current_url != 'hq_portfolio' and current_url != 'hq_payment_collections' and current_url != 'hq_lock_centre' and current_url != 'hq_devices' %}is-active{% endif %}" {% if current_url != 'hq_dashboard' and current_url != 'hq_applications' and current_url != 'hq_portfolio' and current_url != 'hq_payment_collections' and current_url != 'hq_lock_centre' and current_url != 'hq_devices' %}aria-current="page"{% endif %}>
+                    <button type="button" class="ts-mobile-role-nav__item" data-hq-more-open aria-controls="hq-more-sheet" aria-expanded="false">
                         <i class="bi bi-three-dots" aria-hidden="true"></i>
                         <span>More</span>
-                    </a>
+                    </button>
                 </nav>
+                <div class="hq-more-sheet" id="hq-more-sheet" aria-hidden="true">
+                    <button class="hq-more-sheet__scrim" type="button" data-hq-more-close aria-label="Close menu"></button>
+                    <section class="hq-more-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="hq-more-title">
+                        <div class="hq-more-sheet__handle" aria-hidden="true"></div>
+                        <div class="hq-more-sheet__head"><div><span>HQ</span><h2 id="hq-more-title">All tools</h2></div><button type="button" data-hq-more-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
+                        <div class="hq-more-sheet__grid">
+                            <a href="{% url 'hq_deals' %}"><i class="bi bi-phone"></i><span>Devices</span></a>
+                            <a href="{% url 'hq_underwriter_queue' %}"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
+                            <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-credit-card"></i><span>Finance</span></a>
+                            <a href="{% url 'hq_reports' %}"><i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span></a>
+                            <a href="{% url 'hq_fraud_checks' %}"><i class="bi bi-shield-check"></i><span>Risk</span></a>
+                            <a href="{% url 'notifications_list' %}"><i class="bi bi-bell"></i><span>Notifications</span></a>
+                            <a href="{% url 'hq_users' %}"><i class="bi bi-people"></i><span>Users</span></a>
+                            <a href="{% url 'profile_settings' %}"><i class="bi bi-gear"></i><span>Settings</span></a>
+                        </div>
+                    </section>
+                </div>
             {% endif %}
         {% endwith %}
     {% endif %}
@@ -280,6 +298,17 @@
 <script src="{% static 'js/premium-animations.js' %}?v=2.0.0" defer></script>
 <script>
   (function () {
+    var moreSheet = document.getElementById('hq-more-sheet');
+    var moreOpen = document.querySelector('[data-hq-more-open]');
+    function setMore(open) {
+      if (!moreSheet) return;
+      moreSheet.classList.toggle('is-open', open);
+      moreSheet.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if (moreOpen) moreOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('hq-more-open', open);
+    }
+    if (moreOpen) moreOpen.addEventListener('click', function () { setMore(true); });
+    document.querySelectorAll('[data-hq-more-close]').forEach(function (el) { el.addEventListener('click', function () { setMore(false); }); });
     /* HQ shell: add fallback class for browsers without :has() support */
     if (document.querySelector('.hq-page-shell')) {
       var shell = document.querySelector('.app-shell');

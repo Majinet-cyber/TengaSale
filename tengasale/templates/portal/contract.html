@@ -73,6 +73,13 @@
   </section>
 
   {# ── Device state band (links to dedicated page) ───────────── #}
+  <section class="cpd-section" aria-label="Tenga Protect">
+    <div class="cpd-section__head"><div><div class="cpd-label">Tenga Protect</div><h2 class="cpd-section__title">Protect my phone</h2></div></div>
+    <p class="cpd-payg-customer">Report a lost or stolen phone, check protection status and download your ownership certificate.</p>
+    <a class="cpd-pay-btn" href="{% url 'protect:customer_home' contract.contract_number %}" style="margin-top:14px;">Open Tenga Protect</a>
+    <p class="cpd-payg-customer" style="margin-top:10px;">Tenga protects your device without tracking your life.</p>
+  </section>
+
   <section class="cpd-section" aria-label="Device status">
     {% if deposit_pending %}
       {% include "portal/components/_device_state_band.html" with band_tone="warning" band_title="Deposit pending — device not activated" band_desc="Pay the deposit to activate this contract and unlock device access." band_meta="View status" band_url=device_status_url %}

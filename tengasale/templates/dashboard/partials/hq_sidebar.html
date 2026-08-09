@@ -1,22 +1,20 @@
 {% with current_url=request.resolver_match.url_name %}
-<button class="hq-shell-menu-btn" type="button" data-hq-shell-open aria-controls="hq-shell-sidebar" aria-expanded="false">
-  <i class="bi bi-list" aria-hidden="true"></i>
-  <span>HQ menu</span>
-</button>
 <div class="hq-shell-overlay" data-hq-shell-overlay></div>
 <aside class="hq-shell-sidebar" id="hq-shell-sidebar" aria-label="HQ navigation">
   <div class="hq-shell-sidebar__head">
-    <strong>HQ Command</strong>
+    <strong>Tenga <span style="color:#f4511e">HQ</span></strong>
     <button type="button" data-hq-shell-close aria-label="Close HQ menu"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
   </div>
   <nav class="hq-shell-nav">
-    <a href="{% url 'hq_dashboard' %}" class="{% if current_url == 'hq_dashboard' %}is-active{% endif %}"><i class="bi bi-command"></i><span>Overview</span></a>
+    <span class="hq-shell-nav__label">Operate</span>
+    <a href="{% url 'hq_dashboard' %}" class="{% if current_url == 'hq_dashboard' %}is-active{% endif %}"><i class="bi bi-command"></i><span>Command</span></a>
     <a href="{% url 'hq_applications' %}" class="{% if current_url == 'hq_applications' %}is-active{% endif %}"><i class="bi bi-files"></i><span>Applications</span></a>
-    <a href="{% url 'hq_underwriter_queue' %}" class="{% if current_url == 'hq_underwriter_queue' %}is-active{% endif %}"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
-    <a href="{% url 'hq_deals' %}" class="{% if current_url == 'hq_deals' %}is-active{% endif %}"><i class="bi bi-phone"></i><span>Deals Catalog</span></a>
+    <a href="{% url 'hq_deals' %}" class="{% if current_url == 'hq_deals' %}is-active{% endif %}"><i class="bi bi-phone"></i><span>Device catalog</span></a>
     <a href="{% url 'hq_portfolio' %}" class="{% if current_url == 'hq_portfolio' or current_url == 'hq_portfolio_investor_report' %}is-active{% endif %}"><i class="bi bi-graph-up"></i><span>Portfolio</span></a>
     <a href="{% url 'hq_devices' %}" class="{% if current_url == 'hq_devices' %}is-active{% endif %}"><i class="bi bi-shield-lock"></i><span>Devices</span></a>
     <a href="{% url 'device_lock:hq_lock_centre' %}" class="{% if current_url == 'hq_lock_centre' %}is-active{% endif %}"><i class="bi bi-lock"></i><span>Device Locking</span></a>
+    <span class="hq-shell-nav__label">Network</span>
+    <a href="{% url 'hq_underwriter_queue' %}" class="{% if current_url == 'hq_underwriter_queue' %}is-active{% endif %}"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
     <a href="{% url 'hq_repossession_resale' %}" class="{% if current_url == 'hq_repossession_resale' %}is-active{% endif %}"><i class="bi bi-arrow-repeat"></i><span>Repossession</span></a>
     <a href="{% url 'recommerce:hq_overview' %}" class="{% if current_url == 'hq_overview' %}is-active{% endif %}"><i class="bi bi-recycle"></i><span>Recommerce</span></a>
     <span class="hq-shell-nav__label">Finance</span>

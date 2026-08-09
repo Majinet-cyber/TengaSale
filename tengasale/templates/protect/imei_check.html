@@ -1,0 +1,11 @@
+{% extends "website/site_base.html" %}
+{% block site_title %}Check a Device | Tenga Protect{% endblock %}
+{% block site_content %}
+{% include "protect/_styles.html" %}
+<main class="protect-wrap">
+  <section class="protect-hero"><div class="protect-kicker">Tenga device registry</div><h1 class="protect-title">Check a phone before you buy</h1><p>Enter an IMEI to check Tenga's financing and protection records.</p></section>
+  <div class="protect-card"><form class="protect-form" method="post">{% csrf_token %}{{ form.as_p }}<button class="protect-action">Check IMEI</button></form>
+  {% if result %}<hr><h2>{% if result == 'reported_stolen' %}REPORTED STOLEN{% elif result == 'financing_active' %}FINANCING ACTIVE{% elif result == 'financing_completed' %}FINANCING COMPLETED{% elif result == 'recovered' %}RECOVERED{% elif result == 'unknown' %}UNKNOWN DEVICE{% else %}CLEAR{% endif %}</h2>{% if entry %}<p>IMEI ending: {{ entry.imei|slice:"-4:" }}</p>{% endif %}{% if result == 'reported_stolen' %}<p>Do not purchase or transfer this device. Contact Tenga Protect.</p>{% endif %}{% endif %}</div>
+  <p class="protect-note" style="margin-top:20px">This check reflects Tenga's own records. It is not a replacement for police, mobile-network or other theft registries. No customer personal or financial details are disclosed.</p>
+</main>
+{% endblock %}

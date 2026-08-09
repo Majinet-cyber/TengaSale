@@ -1,0 +1,6 @@
+{% extends "website/site_base.html" %}
+{% block site_title %}Certificate Verification | Tenga{% endblock %}
+{% block site_content %}
+{% include "protect/_styles.html" %}
+<main class="protect-wrap"><section class="protect-hero"><div class="protect-kicker">Tenga device verification</div><h1>Certificate {{ certificate.status|upper }}</h1></section><div class="protect-card"><h2>{{ registry.contract.deal_name }}</h2><p>IMEI ending: {{ registry.imei|slice:"-4:" }}</p><p>Certificate: <strong>{{ certificate.status|upper }}</strong></p><p>Tenga status: <strong>{{ registry.get_protection_status_display|upper }}</strong></p><p>Contract status: <strong>{{ registry.get_financing_status_display|upper }}</strong></p><p>Reported stolen: <strong>{% if registry.protection_status == 'reported_stolen' %}YES{% else %}NO{% endif %}</strong></p></div></main>
+{% endblock %}
