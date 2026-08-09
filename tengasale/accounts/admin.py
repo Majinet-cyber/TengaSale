@@ -71,9 +71,10 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "role", "staff_role", "department", "rank", "user_type", "status", "is_founder", "can_approve_discipline", "can_approve_payouts")
-    list_filter = ("role", "staff_role", "department", "rank", "user_type", "status", "is_founder", "can_approve_volts", "can_approve_discipline", "can_approve_payouts")
+    list_display = ("user", "role", "staff_role", "department", "rank", "status", "earnings_access", "earnings_lock_enabled", "earnings_pin_updated_at")
+    list_filter = ("role", "staff_role", "department", "rank", "status", "earnings_access", "earnings_lock_enabled", "is_founder")
     search_fields = ("user__username", "user__email", "phone_number", "user__first_name", "user__last_name")
+    readonly_fields = ("earnings_lock_created_at", "earnings_pin_updated_at", "earnings_recovery_verified_at", "earnings_security_generation")
 
 
 @admin.register(Department)

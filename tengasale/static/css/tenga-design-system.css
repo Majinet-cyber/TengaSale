@@ -1,0 +1,89 @@
+/* Tenga product constitution: final shared layer for authenticated product UI. */
+:root {
+  --tenga-brand: #f4511e;
+  --tenga-brand-hover: #d94213;
+  --tenga-product-blue: #2458df;
+  --tenga-product-blue-soft: #eef3ff;
+  --tenga-ink: #172033;
+  --tenga-muted: #596477;
+  --tenga-canvas: #f7f6f2;
+  --tenga-surface: #fff;
+  --tenga-surface-soft: #fbfaf7;
+  --tenga-success: #14845f;
+  --tenga-warning: #b66a08;
+  --tenga-danger: #c43d4b;
+  --tenga-control-border: #d8dde6;
+  --tenga-focus-ring: rgba(36, 88, 223, .16);
+  --tenga-radius-sm: 10px;
+  --tenga-radius-md: 14px;
+  --tenga-radius-lg: 20px;
+  --tenga-shadow-surface: 0 1px 2px rgba(23,32,51,.025), 0 18px 48px rgba(23,32,51,.06);
+  --tenga-space-1: 4px;
+  --tenga-space-2: 8px;
+  --tenga-space-3: 12px;
+  --tenga-space-4: 16px;
+  --tenga-space-5: 20px;
+  --tenga-space-6: 24px;
+  --tenga-space-8: 32px;
+  --tenga-space-10: 40px;
+}
+
+body[class^="role-"], body[class*=" role-"] { background: var(--tenga-canvas); color: var(--tenga-ink); }
+
+.tenga-product-page { width: min(100%, 1180px); margin-inline: auto; }
+.tenga-page-header { margin-bottom: var(--tenga-space-6); }
+.tenga-page-header__eyebrow { margin: 0 0 var(--tenga-space-2); color: var(--tenga-brand); }
+.tenga-page-header__title { margin: 0; }
+.tenga-page-header__subtitle { max-width: 660px; margin: var(--tenga-space-2) 0 0; }
+
+.tenga-surface {
+  border: 0;
+  border-radius: var(--tenga-radius-lg);
+  background: var(--tenga-surface);
+  box-shadow: var(--tenga-shadow-surface);
+}
+.tenga-section-header { margin-bottom: var(--tenga-space-6); }
+.tenga-section-header h2 { margin: 0; font-size: 1.125rem; letter-spacing: -.015em; }
+.tenga-section-header p { margin: 6px 0 0; color: var(--tenga-muted); font-size: .875rem; }
+
+.tenga-field, .application-flow-page input:not([type="checkbox"]):not([type="radio"]),
+.application-flow-page select, .application-flow-page textarea {
+  width: 100%; min-height: 52px; padding: 0 15px;
+  border: 1px solid var(--tenga-control-border); border-radius: var(--tenga-radius-sm);
+  background: #fff; color: var(--tenga-ink); font-size: 1rem;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.application-flow-page textarea { min-height: 112px; padding-block: 13px; resize: vertical; }
+.tenga-field:focus, .application-flow-page input:focus, .application-flow-page select:focus, .application-flow-page textarea:focus {
+  outline: 0; border-color: var(--tenga-product-blue); box-shadow: 0 0 0 4px var(--tenga-focus-ring);
+}
+.application-flow-page [aria-invalid="true"] { border-color: var(--tenga-danger); }
+.application-flow-page .form-group { margin-bottom: var(--tenga-space-5); }
+.application-flow-page .form-group > label { display:block; margin-bottom: 8px; color:var(--tenga-ink); font-size:.8125rem; font-weight:650; }
+.application-flow-page .field-help { margin: 7px 0 0; color: var(--tenga-muted); }
+
+.tenga-button, .application-flow-page .btn { min-height: 48px; border-radius: var(--tenga-radius-sm); font-weight: 650; }
+.application-flow-page .ts-button-primary { border-color: var(--tenga-brand); background: var(--tenga-brand); }
+.application-flow-page .ts-button-primary:hover { border-color: var(--tenga-brand-hover); background: var(--tenga-brand-hover); }
+
+.application-workspace { display:grid; grid-template-columns:minmax(220px, .72fr) minmax(0, 1.6fr); gap:32px; align-items:start; }
+.application-workspace__context { position:sticky; top:96px; padding:28px; }
+.application-workspace__context .application-progress { margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.application-workspace__form { min-width:0; }
+.application-form-surface { padding: clamp(22px, 4vw, 40px); }
+.application-form-surface.form-card { max-width:none; margin:0; border:0 !important; border-radius:var(--tenga-radius-lg); box-shadow:var(--tenga-shadow-surface); }
+.application-form-divider { margin:32px 0 24px; padding-top:24px; border-top:1px solid rgba(23,32,51,.08); }
+.application-form-divider p { margin:0; color:var(--tenga-muted); font-size:.6875rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+.application-flow-page .form-actions { position:sticky; bottom:calc(70px + env(safe-area-inset-bottom, 0px)); z-index:5; margin:32px -12px -12px; padding:12px; border-radius:14px; background:rgba(255,255,255,.94); box-shadow:0 -8px 30px rgba(23,32,51,.06); backdrop-filter:blur(12px); }
+
+@media (max-width: 800px) {
+  .tenga-product-page { width:100%; }
+  .application-workspace { grid-template-columns:1fr; gap:18px; }
+  .application-workspace__context { position:static; padding:20px; }
+  .application-form-surface { padding:22px 18px; }
+  .application-flow-page .form-actions { margin-inline:-6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tenga-field, .application-flow-page input, .application-flow-page select, .application-flow-page textarea { transition:none; }
+}

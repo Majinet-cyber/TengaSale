@@ -128,6 +128,7 @@ def profile_settings(request):
 
     role_label = ROLE_DISPLAY_LABELS.get(role, role.replace("_", " ").title() or "User")
     security_profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    from earnings.security import mask_phone, owner_phone, owner_verification_valid
     return render(request, "dashboard/profile_settings.html", {
         "profile_role": role,
         "profile_role_label": role_label,
@@ -136,6 +137,10 @@ def profile_settings(request):
         "active_reviews": active_reviews,
         "reviewed_count": reviewed_count,
         "earnings_lock_enabled": security_profile.earnings_lock_enabled,
+        "earnings_owner_verified_enable": owner_verification_valid(request, "enable"),
+        "earnings_owner_verified_reset": owner_verification_valid(request, "reset"),
+        "earnings_owner_verified_disable": owner_verification_valid(request, "disable"),
+        "earnings_recovery_mask": request.session.get("earnings_recovery_mask") or mask_phone(owner_phone(request.user)),
     })
 
 

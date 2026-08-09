@@ -533,6 +533,14 @@ def sales_review_summary(request, app_id):
                request)
 
     if request.method == "POST":
+        from earnings.security import audit, profile_for, verify_pin
+        security_profile = profile_for(request.user)
+        if security_profile.earnings_lock_enabled:
+            pin_ok, _ = verify_pin(security_profile, request.POST.get("earnings_pin", "").strip())
+            if not pin_ok:
+                messages.error(request, "Fresh Earnings PIN verification is required to request a payout.")
+                return redirect("sales_emergency_payout_request")
+            audit(request, "PAYOUT_REAUTHENTICATED")
         review.summary_clear = bool_from_post(request, "summary_clear")
         review.save(update_fields=["summary_clear", "updated_at"])
         return redirect("sales_identity_check", app_id=app.id)
@@ -1744,6 +1752,14 @@ def sales_emergency_payout_request(request):
 def sales_emergency_payout_cancel(request, payout_id):
     """Cancel a pending emergency payout request."""
     from earnings.models import EmergencyPayoutRequest, Wallet
+    from earnings.security import audit, profile_for, verify_pin
+    security_profile = profile_for(request.user)
+    if security_profile.earnings_lock_enabled:
+        pin_ok, _ = verify_pin(security_profile, request.POST.get("earnings_pin", "").strip())
+        if not pin_ok:
+            messages.error(request, "Fresh Earnings PIN verification is required.")
+            return redirect("sales_emergency_payout_request")
+        audit(request, "PAYOUT_REAUTHENTICATED")
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
     payout = get_object_or_404(EmergencyPayoutRequest, id=payout_id, wallet=wallet)
     if payout.status != EmergencyPayoutRequest.STATUS_PENDING:

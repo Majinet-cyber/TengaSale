@@ -77,26 +77,35 @@
       <span class="profile-settings-chip">{% if earnings_lock_enabled %}On{% else %}Off{% endif %}</span>
     </div>
     <p class="earnings-lock-copy">Protect your wallet, commissions and payouts with a separate PIN. Useful when other people may use this device or account for sales work.</p>
+    <p class="t-type-caption">Owner recovery: {{ earnings_recovery_mask }}</p>
     {% if earnings_lock_enabled %}
       <form method="post" action="{% url 'earnings_lock_disable' %}" class="earnings-lock-form">
-        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="off" placeholder="Current Earnings PIN" required>
+        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" placeholder="Current 6-digit Earnings PIN" required>
         <button class="btn btn-outline" type="submit">Turn off Earnings Lock</button>
       </form>
       <details class="earnings-lock-reset">
         <summary class="t-type-secondary-action">Forgot or change PIN?</summary>
+        <form method="post" action="{% url 'earnings_recovery_start' %}" class="earnings-lock-form" style="margin-top:12px;">{% csrf_token %}<input type="hidden" name="purpose" value="reset"><button class="btn btn-outline" type="submit">Send owner verification code</button></form>
+        <form method="post" action="{% url 'earnings_recovery_verify' %}" class="earnings-lock-form" style="margin-top:12px;">{% csrf_token %}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit owner code" required><button class="btn btn-outline" type="submit">Verify owner</button></form>
+        {% if earnings_owner_verified_reset %}
         <form method="post" action="{% url 'earnings_pin_reset' %}" class="earnings-lock-form" style="margin-top:12px;">
-          {% csrf_token %}<input name="password" type="password" autocomplete="current-password" placeholder="Tenga account password" required>
-          <input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" placeholder="New 4–6 digit PIN" required>
-          <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" placeholder="Confirm new PIN" required>
+          {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="New 6-digit PIN" required>
+          <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="Confirm new PIN" required>
           <button class="btn" type="submit">Reset Earnings PIN</button>
         </form>
+        {% endif %}
       </details>
     {% else %}
+      {% if not earnings_owner_verified_enable %}
+      <form method="post" action="{% url 'earnings_recovery_start' %}" class="earnings-lock-form">{% csrf_token %}<input type="hidden" name="purpose" value="enable"><button class="btn btn-outline" type="submit">Verify account owner</button></form>
+      <form method="post" action="{% url 'earnings_recovery_verify' %}" class="earnings-lock-form" style="margin-top:12px;">{% csrf_token %}<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit owner code" required><button class="btn btn-outline" type="submit">Verify code</button></form>
+      {% else %}
       <form method="post" action="{% url 'earnings_lock_enable' %}" class="earnings-lock-form">
-        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password" placeholder="Create 4–6 digit PIN" required>
-        <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password" placeholder="Confirm PIN" required>
+        {% csrf_token %}<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" placeholder="Create 6-digit PIN" required>
+        <input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" placeholder="Confirm PIN" required>
         <button class="btn" type="submit">Turn on Earnings Lock</button>
       </form>
+      {% endif %}
     {% endif %}
   </section>
   {% endif %}

@@ -4,11 +4,19 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tengasale.css' %}">
 
-<div class="application-flow-page">
+<div class="application-flow-page tenga-product-page">
+<header class="tenga-page-header">
+  <p class="tenga-page-header__eyebrow t-type-section-label t-type-section-label--brand">Application {{ app.application_number|default:app.id }}</p>
+  <h1 class="tenga-page-header__title greeting">Customer Details</h1>
+  <p class="tenga-page-header__subtitle">Capture identity, contact, demographics, and income information for this application.</p>
+</header>
 
-{% include "applications/partials/stepper.html" with current_step=1 %}
-<h1 class="greeting">Customer Details</h1>
-<p class="text-muted small mb-3" style="margin-top:-8px;margin-bottom:18px;">Step 1 — Customer identity &amp; demographics</p>
+<div class="application-workspace">
+  <aside class="application-workspace__context tenga-surface" aria-label="Application progress">
+    <div class="tenga-section-header"><h2>Customer application</h2><p>Step 1 of 7 · Customer details</p></div>
+    {% include "applications/partials/stepper.html" with current_step=1 %}
+  </aside>
+  <div class="application-workspace__form">
 
 {% if not is_business_hours %}
 {# Outside-hours modal appears only when Malawi/CAT time is outside working hours. #}
@@ -165,7 +173,7 @@ body.ts-oha-open {
 </script>
 {% endif %}
 
-<form method="post" class="form-card card{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
+<form method="post" class="form-card card application-form-surface{% if app.customer_name %} section-locked{% endif %}" data-lockable-section>
     {% if app.customer_name %}
     <div class="section-lock-header">
       <span class="section-lock-label">
@@ -180,6 +188,10 @@ body.ts-oha-open {
     {% endif %}
     {% csrf_token %}
     {{ form.non_field_errors }}
+    <div class="tenga-section-header">
+      <h2>Identity &amp; contact information</h2>
+      <p>Use the customer’s verified legal and contact details.</p>
+    </div>
 
     <div class="form-group{% if 'customer_name' in app.correction_fields %} has-correction{% endif %}">
         <label for="{{ form.customer_name.id_for_label }}">Customer full name <span class="required-star">*</span></label>
@@ -259,8 +271,8 @@ body.ts-oha-open {
     </div>
 
     {# ── Income section divider ──────────────────────────────────── #}
-    <div style="margin:20px -20px;border-top:1px solid #f0f0f0;padding:16px 20px 0;">
-      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin:0 0 12px;">Income &amp; Occupation</p>
+    <div class="application-form-divider">
+      <p>Income &amp; occupation</p>
     </div>
 
     <div class="form-group{% if 'occupation' in app.correction_fields %} has-correction{% endif %}">
@@ -332,6 +344,9 @@ body.ts-oha-open {
     </div>
 </div>
 {% endif %}
+
+  </div>
+</div>
 
 </div>{# /application-flow-page #}
 
