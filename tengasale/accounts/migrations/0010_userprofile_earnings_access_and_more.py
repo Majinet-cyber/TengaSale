@@ -3,6 +3,55 @@
 from django.db import migrations, models
 
 
+def add_missing_earnings_columns(apps, schema_editor):
+    """Add only columns that are absent, preserving any production data."""
+    user_profile = apps.get_model('accounts', 'UserProfile')
+    table_name = user_profile._meta.db_table
+
+    with schema_editor.connection.cursor() as cursor:
+        existing_columns = {
+            column.name
+            for column in schema_editor.connection.introspection.get_table_description(
+                cursor, table_name
+            )
+        }
+
+    fields = {
+        'earnings_access': models.BooleanField(
+            default=True,
+            help_text='Role permission to view protected earnings surfaces.',
+        ),
+        'earnings_recovery_phone': models.CharField(
+            blank=True, editable=False, max_length=30
+        ),
+        'earnings_recovery_verified_at': models.DateTimeField(
+            blank=True, editable=False, null=True
+        ),
+        'earnings_relock_minutes': models.PositiveSmallIntegerField(
+            choices=[
+                (0, 'When leaving Earnings'),
+                (1, 'After 1 minute'),
+                (5, 'After 5 minutes'),
+                (15, 'After 15 minutes'),
+            ],
+            default=0,
+        ),
+        'earnings_security_generation': models.PositiveIntegerField(
+            default=0, editable=False
+        ),
+    }
+
+    for field_name, field in fields.items():
+        field.set_attributes_from_name(field_name)
+        field.model = user_profile
+        if field_name not in existing_columns:
+            schema_editor.add_field(user_profile, field)
+            existing_columns.add(field_name)
+        # Keep the historical model aligned for schema editors (notably
+        # SQLite) that rebuild the table when adding the next field.
+        user_profile.add_to_class(field_name, field)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,29 +59,50 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='userprofile',
-            name='earnings_access',
-            field=models.BooleanField(default=True, help_text='Role permission to view protected earnings surfaces.'),
-        ),
-        migrations.AddField(
-            model_name='userprofile',
-            name='earnings_recovery_phone',
-            field=models.CharField(blank=True, editable=False, max_length=30),
-        ),
-        migrations.AddField(
-            model_name='userprofile',
-            name='earnings_recovery_verified_at',
-            field=models.DateTimeField(blank=True, editable=False, null=True),
-        ),
-        migrations.AddField(
-            model_name='userprofile',
-            name='earnings_relock_minutes',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'When leaving Earnings'), (1, 'After 1 minute'), (5, 'After 5 minutes'), (15, 'After 15 minutes')], default=0),
-        ),
-        migrations.AddField(
-            model_name='userprofile',
-            name='earnings_security_generation',
-            field=models.PositiveIntegerField(default=0, editable=False),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    add_missing_earnings_columns,
+                    reverse_code=migrations.RunPython.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='userprofile',
+                    name='earnings_access',
+                    field=models.BooleanField(
+                        default=True,
+                        help_text='Role permission to view protected earnings surfaces.',
+                    ),
+                ),
+                migrations.AddField(
+                    model_name='userprofile',
+                    name='earnings_recovery_phone',
+                    field=models.CharField(blank=True, editable=False, max_length=30),
+                ),
+                migrations.AddField(
+                    model_name='userprofile',
+                    name='earnings_recovery_verified_at',
+                    field=models.DateTimeField(blank=True, editable=False, null=True),
+                ),
+                migrations.AddField(
+                    model_name='userprofile',
+                    name='earnings_relock_minutes',
+                    field=models.PositiveSmallIntegerField(
+                        choices=[
+                            (0, 'When leaving Earnings'),
+                            (1, 'After 1 minute'),
+                            (5, 'After 5 minutes'),
+                            (15, 'After 15 minutes'),
+                        ],
+                        default=0,
+                    ),
+                ),
+                migrations.AddField(
+                    model_name='userprofile',
+                    name='earnings_security_generation',
+                    field=models.PositiveIntegerField(default=0, editable=False),
+                ),
+            ],
         ),
     ]
