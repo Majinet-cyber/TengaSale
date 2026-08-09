@@ -3,6 +3,134 @@
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
+from django.db.migrations.state import ModelState
+
+
+RECOVERY_TABLE = 'earnings_earningsrecoverychallenge'
+
+
+def recovery_challenge_model(apps):
+    return ModelState(
+        app_label='earnings',
+        name='EarningsRecoveryChallenge',
+        fields={
+            'id': models.BigAutoField(
+                auto_created=True,
+                primary_key=True,
+                serialize=False,
+                verbose_name='ID',
+            ),
+            'purpose': models.CharField(
+                choices=[
+                    ('enable', 'Enable lock'),
+                    ('reset', 'Reset PIN'),
+                    ('disable', 'Disable lock'),
+                ],
+                max_length=12,
+            ),
+            'code_hash': models.CharField(editable=False, max_length=255),
+            'phone_mask': models.CharField(max_length=30),
+            'expires_at': models.DateTimeField(),
+            'attempts': models.PositiveSmallIntegerField(default=0),
+            'verified_at': models.DateTimeField(blank=True, null=True),
+            'created_at': models.DateTimeField(auto_now_add=True),
+            'user': models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name='earnings_recovery_challenges',
+                to=settings.AUTH_USER_MODEL,
+            ),
+        },
+        options={
+            'ordering': ['-created_at'],
+            'indexes': [
+                models.Index(
+                    fields=['user', 'purpose', 'created_at'],
+                    name='earn_recovery_lookup_idx',
+                ),
+            ],
+        },
+    ).render(apps)
+
+
+def reconcile_recovery_challenge_table(apps, schema_editor):
+    """Create the recovery table if absent; validate and preserve it if present."""
+    connection = schema_editor.connection
+    model = recovery_challenge_model(apps)
+
+    with connection.cursor() as cursor:
+        tables = set(connection.introspection.table_names(cursor))
+        if RECOVERY_TABLE not in tables:
+            schema_editor.create_model(model)
+            return
+
+        description = {
+            column.name: column
+            for column in connection.introspection.get_table_description(
+                cursor, RECOVERY_TABLE
+            )
+        }
+        constraints = connection.introspection.get_constraints(cursor, RECOVERY_TABLE)
+
+    required_columns = {
+        'id',
+        'purpose',
+        'code_hash',
+        'phone_mask',
+        'expires_at',
+        'attempts',
+        'verified_at',
+        'created_at',
+        'user_id',
+    }
+    missing_columns = required_columns - description.keys()
+    if missing_columns:
+        raise RuntimeError(
+            'Existing earnings recovery table has an incompatible schema; '
+            f'missing columns: {sorted(missing_columns)}'
+        )
+
+    expected_nullability = {
+        'id': False,
+        'purpose': False,
+        'code_hash': False,
+        'phone_mask': False,
+        'expires_at': False,
+        'attempts': False,
+        'verified_at': True,
+        'created_at': False,
+        'user_id': False,
+    }
+    incorrect_nullability = [
+        name
+        for name, nullable in expected_nullability.items()
+        if bool(description[name].null_ok) is not nullable
+    ]
+    if incorrect_nullability:
+        raise RuntimeError(
+            'Existing earnings recovery table has incompatible nullability: '
+            f'{sorted(incorrect_nullability)}'
+        )
+
+    has_user_foreign_key = any(
+        constraint.get('foreign_key') and constraint.get('columns') == ['user_id']
+        for constraint in constraints.values()
+    )
+    if not has_user_foreign_key:
+        raise RuntimeError(
+            'Existing earnings recovery table is missing its user foreign key.'
+        )
+
+    if 'earn_recovery_lookup_idx' not in constraints:
+        schema_editor.add_index(model, model._meta.indexes[0])
+
+    has_user_index = any(
+        constraint.get('index') and constraint.get('columns') == ['user_id']
+        for constraint in constraints.values()
+    )
+    if not has_user_index:
+        user_index = models.Index(fields=['user'])
+        user_index.set_name_with_model(model)
+        schema_editor.add_index(model, user_index)
 
 
 class Migration(migrations.Migration):
@@ -13,27 +141,37 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='earningssecurityevent',
-            name='event_type',
-            field=models.CharField(choices=[('EARNINGS_LOCK_ENABLED', 'Earnings lock enabled'), ('EARNINGS_LOCK_DISABLED', 'Earnings lock disabled'), ('EARNINGS_UNLOCK_SUCCESS', 'Earnings unlock succeeded'), ('EARNINGS_UNLOCK_FAILED', 'Earnings unlock failed'), ('EARNINGS_PIN_CHANGED', 'Earnings PIN changed'), ('EARNINGS_PIN_RESET', 'Earnings PIN reset'), ('EARNINGS_LOCKOUT_TRIGGERED', 'Earnings lockout triggered'), ('EARNINGS_RECOVERY_STARTED', 'Owner recovery started'), ('EARNINGS_RECOVERY_COMPLETED', 'Owner recovery completed'), ('PAYOUT_REAUTHENTICATED', 'Payout reauthenticated')], max_length=40),
-        ),
-        migrations.CreateModel(
-            name='EarningsRecoveryChallenge',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('purpose', models.CharField(choices=[('enable', 'Enable lock'), ('reset', 'Reset PIN'), ('disable', 'Disable lock')], max_length=12)),
-                ('code_hash', models.CharField(editable=False, max_length=255)),
-                ('phone_mask', models.CharField(max_length=30)),
-                ('expires_at', models.DateTimeField()),
-                ('attempts', models.PositiveSmallIntegerField(default=0)),
-                ('verified_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='earnings_recovery_challenges', to=settings.AUTH_USER_MODEL)),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(
+                    reconcile_recovery_challenge_table,
+                    reverse_code=migrations.RunPython.noop,
+                ),
             ],
-            options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['user', 'purpose', 'created_at'], name='earn_recovery_lookup_idx')],
-            },
+            state_operations=[
+                migrations.AlterField(
+                    model_name='earningssecurityevent',
+                    name='event_type',
+                    field=models.CharField(choices=[('EARNINGS_LOCK_ENABLED', 'Earnings lock enabled'), ('EARNINGS_LOCK_DISABLED', 'Earnings lock disabled'), ('EARNINGS_UNLOCK_SUCCESS', 'Earnings unlock succeeded'), ('EARNINGS_UNLOCK_FAILED', 'Earnings unlock failed'), ('EARNINGS_PIN_CHANGED', 'Earnings PIN changed'), ('EARNINGS_PIN_RESET', 'Earnings PIN reset'), ('EARNINGS_LOCKOUT_TRIGGERED', 'Earnings lockout triggered'), ('EARNINGS_RECOVERY_STARTED', 'Owner recovery started'), ('EARNINGS_RECOVERY_COMPLETED', 'Owner recovery completed'), ('PAYOUT_REAUTHENTICATED', 'Payout reauthenticated')], max_length=40),
+                ),
+                migrations.CreateModel(
+                    name='EarningsRecoveryChallenge',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('purpose', models.CharField(choices=[('enable', 'Enable lock'), ('reset', 'Reset PIN'), ('disable', 'Disable lock')], max_length=12)),
+                        ('code_hash', models.CharField(editable=False, max_length=255)),
+                        ('phone_mask', models.CharField(max_length=30)),
+                        ('expires_at', models.DateTimeField()),
+                        ('attempts', models.PositiveSmallIntegerField(default=0)),
+                        ('verified_at', models.DateTimeField(blank=True, null=True)),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='earnings_recovery_challenges', to=settings.AUTH_USER_MODEL)),
+                    ],
+                    options={
+                        'ordering': ['-created_at'],
+                        'indexes': [models.Index(fields=['user', 'purpose', 'created_at'], name='earn_recovery_lookup_idx')],
+                    },
+                ),
+            ],
         ),
     ]
