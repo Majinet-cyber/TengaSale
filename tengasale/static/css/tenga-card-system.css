@@ -1,0 +1,27 @@
+/* Canonical Tenga content-card language. Functional controls and state borders are excluded. */
+:root{--tenga-card-radius:18px;--tenga-card-surface:#fff;--tenga-card-soft:#fafaf8;--tenga-card-shadow:0 1px 2px rgba(23,32,51,.025),0 12px 36px rgba(23,32,51,.045);--tenga-card-shadow-hover:0 2px 4px rgba(23,32,51,.035),0 18px 44px rgba(23,32,51,.065)}
+.card,.ts-card,.ts-kpi-card,.kpi-card,.stat-card,.tool-card,.hq-section-card,.dashboard-card,.metric-card,.summary-card,.audience-card,.problem-card,.ecosystem,.ecosystem-group,.careers-why-card,.careers-role-card,.careers-value,.brand-card,.brand-card-v2,.product-card,.phone-card,.rc-stats article,.rc-panel,.pay-status-card{border:0!important;border-top:0!important;background-clip:padding-box}
+.problem-card::before,.ts-glass-card::before,.ts-role-card::before,.volts-formula-card::before,.rc-stats article::before,.hq-empty-state::before{display:none!important}
+.ts-glass-card,.ts-role-card,.frd-signal-card,.sim-scenario-card,.wallet-balance-card,.dc-card{border-color:transparent!important}
+.card:hover,.ts-card-hover:hover,.tool-card:hover,.stat-card:hover,.audience-card:hover,.problem-card:hover,.brand-card:hover,.brand-card-v2:hover,.product-card:hover,.dc-card:hover{border-color:transparent!important;box-shadow:var(--tenga-card-shadow-hover)}
+
+/* Public landing reference surfaces */
+.tenga-landing-v4 .problem-card{box-shadow:0 14px 40px rgba(23,32,51,.055)!important}
+.tenga-landing-v4 .problem-card--income{background:linear-gradient(145deg,#fffaf4,#fff)}
+.tenga-landing-v4 .problem-card--access{background:linear-gradient(145deg,#f4fbfd,#fff)}
+.tenga-landing-v4 .problem-card--cost{background:linear-gradient(145deg,#f8f6fc,#fff)}
+.tenga-landing-v4 .ecosystem{background:#fafaf8;box-shadow:0 18px 52px rgba(23,32,51,.05)}
+.tenga-landing-v4 .ecosystem-group{box-shadow:0 8px 26px rgba(23,32,51,.045)}
+.tenga-landing-v4 .ecosystem-group--payments{background:#f8fcfd}
+.tenga-landing-v4 .ecosystem-group--devices{background:#fff}
+.tenga-landing-v4 .ecosystem-group--identity{background:#f7fcf9}
+.tenga-landing-v4 .map-panel{overflow:hidden;border:0!important;border-radius:32px;background:#f8f8f5;box-shadow:0 24px 70px rgba(23,32,51,.07)}
+.tenga-landing-v4 .map-canvas{display:grid;place-items:center;min-height:680px;background:radial-gradient(circle at 62% 55%,#fff 0,#f7f8f6 48%,#f1f3f1 100%)}
+.tenga-landing-v4 .regional-map{display:block;width:100%;height:auto;max-height:680px;padding:24px;object-fit:contain}
+.tenga-landing-v4 .map-sidebar{border:0;background:rgba(255,255,255,.72)}
+.tenga-landing-v4 .map-item{border:0;padding:20px 0}
+.tenga-landing-v4 .map-item+.map-item{border-top:1px solid rgba(23,32,51,.07)}
+.tenga-landing-v4 .map-item.active{border-color:transparent!important;box-shadow:none!important}
+.tenga-landing-v4 .market-flag{width:36px;height:24px;border-radius:4px;box-shadow:0 2px 8px rgba(23,32,51,.1)}
+@media(max-width:1050px){.tenga-landing-v4 .map-canvas{min-height:560px}.tenga-landing-v4 .map-sidebar{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:24px}.tenga-landing-v4 .map-item,.tenga-landing-v4 .map-item+.map-item{border:0;padding:10px}}
+@media(max-width:600px){.tenga-landing-v4 .map-panel{border-radius:26px}.tenga-landing-v4 .map-canvas{min-height:0;padding:4px}.tenga-landing-v4 .regional-map{padding:0;width:115%;max-width:none;margin-inline:-7.5%}.tenga-landing-v4 .map-sidebar{grid-template-columns:1fr;padding:16px 20px}.tenga-landing-v4 .map-item{grid-template-columns:42px 1fr}.tenga-landing-v4 .map-item+.map-item{border-top:1px solid rgba(23,32,51,.07)}}

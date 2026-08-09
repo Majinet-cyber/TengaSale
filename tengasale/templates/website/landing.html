@@ -363,6 +363,8 @@
 
         <div class="map-panel reveal">
           <div class="map-canvas">
+            <img src="{% static 'images/africa-expansion-map.svg' %}?v=1.0.0" class="regional-map" alt="Geographic map of Africa highlighting Malawi as live, Zambia as next and Zimbabwe as planned">
+            {% comment %}Retired abstract map retained temporarily for easy historical comparison.
             <svg viewBox="0 0 900 720" class="regional-map" role="img" aria-label="Map of Southern Africa highlighting Malawi, Zambia and Zimbabwe">
               <defs>
                 <linearGradient id="countryGlow" x1="0" x2="1"><stop offset="0%" stop-color="#7d5cff"/><stop offset="100%" stop-color="#18c8ff"/></linearGradient>
@@ -389,6 +391,7 @@
               <g class="label secondary" transform="translate(390 186)"><rect rx="14" ry="14" width="126" height="40"></rect><text x="15" y="25">Zambia · Next</text></g>
               <g class="label secondary" transform="translate(554 492)"><rect rx="14" ry="14" width="143" height="40"></rect><text x="15" y="25">Zimbabwe · Next</text></g>
             </svg>
+            {% endcomment %}
           </div>
 
           <div class="map-sidebar">
