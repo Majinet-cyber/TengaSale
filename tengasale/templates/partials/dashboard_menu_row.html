@@ -1,8 +1,8 @@
 <a href="{{ href }}" class="ts-dashboard-menu-row action-row simple-row ops-row {{ row_class }}" data-tenga-component="TengaRecordRow"{% if testid %} data-testid="{{ testid }}"{% endif %}>
-  <span class="ts-dashboard-menu-icon {{ icon_class }}" aria-hidden="true">
+  <span class="ts-dashboard-menu-icon signal-icon-tile {{ icon_class }}" aria-hidden="true">
     <i class="bi {{ icon }}"></i>
   </span>
-  <span class="ts-dashboard-menu-label action-row-label">{{ label }}</span>
+  <span class="ts-dashboard-menu-label action-row-label">{{ label }}{% if supporting %}<small class="ts-dashboard-menu-supporting">{{ supporting }}</small>{% endif %}</span>
   {% if value != "" and value != None %}
     <span class="ts-dashboard-menu-value action-row-value {{ value_class }}">{{ value }}</span>
   {% endif %}

@@ -403,18 +403,18 @@
 
   <h2 class="uw-section-label">Applications</h2>
   <nav class="ts-dashboard-menu-list action-card ts-motion-slide ops-list" aria-label="Applications">
-    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=queue" icon="bi-hourglass-split" label="Pending Queue" value=pending_count testid="underwriter-pending-queue-row" only %}
-    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=completed" icon="bi-check2" icon_class="ts-dashboard-menu-icon--green" label="Completed" value=completed_count only %}
-    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=rejected" icon="bi-archive" label="Archived / Rejected" only %}
+    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=queue" icon="bi-inbox" icon_class="signal-pending" label="Pending queue" supporting="Applications waiting for review" value=pending_count testid="underwriter-pending-queue-row" only %}
+    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=completed" icon="bi-check2" icon_class="signal-success" label="Completed" supporting="Successfully reviewed" value=completed_count only %}
+    {% include "partials/dashboard_menu_row.html" with href="/sales/applications/?tab=rejected" icon="bi-archive" icon_class="signal-neutral" label="Archived & rejected" supporting="Closed applications" only %}
   </nav>
 
   <h2 class="uw-section-label">Earnings</h2>
   <nav class="ts-dashboard-menu-list action-card ts-motion-slide ops-list" aria-label="Earnings">
     {% url 'sales_wallet' as wallet_url %}
     {% if wallet.balance %}
-      {% include "partials/dashboard_menu_row.html" with href=wallet_url icon="bi-wallet2" label="Earnings & Wallet" value=wallet.balance|mwk value_class="ts-dashboard-menu-value--money" only %}
+      {% include "partials/dashboard_menu_row.html" with href=wallet_url icon="bi-wallet2" icon_class="signal-money" label="Earnings & wallet" supporting="Commissions and payouts" value=wallet.balance|mwk value_class="ts-dashboard-menu-value--money" only %}
     {% else %}
-      {% include "partials/dashboard_menu_row.html" with href=wallet_url icon="bi-wallet2" label="Earnings & Wallet" only %}
+      {% include "partials/dashboard_menu_row.html" with href=wallet_url icon="bi-wallet2" icon_class="signal-money" label="Earnings & wallet" supporting="View commissions and payouts" only %}
     {% endif %}
   </nav>
 </div>
