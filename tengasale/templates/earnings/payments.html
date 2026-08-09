@@ -39,8 +39,8 @@
 </section>
 
 <nav class="tab-bar" aria-label="Payment tabs">
-    <button class="tab-button active" type="button" data-payment-tab="device-sales">DEVICE SALES</button>
-    <button class="tab-button" type="button" data-payment-tab="commissions">COMMISSIONS</button>
+    <button class="tab-button active" type="button" data-payment-tab="device-sales">Device sales</button>
+    <button class="tab-button" type="button" data-payment-tab="commissions">Commissions</button>
 </nav>
 
 <form method="get" class="card compact-form">
@@ -52,7 +52,7 @@
         <option value="10" {% if rows_per_page == 10 %}selected{% endif %}>10</option>
         <option value="25" {% if rows_per_page == 25 %}selected{% endif %}>25</option>
     </select>
-    <button class="btn" type="submit">SEARCH</button>
+    <button class="btn" type="submit">Search</button>
 </form>
 
 <section data-payment-panel="device-sales">
@@ -81,7 +81,7 @@
                         <td>
                             {% if row.contract %}
                                 <strong>{{ row.contract.contract_number }}</strong><br>
-                                <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button">VIEW CONTRACT</a>
+                                <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button t-type-secondary-action">View contract <span aria-hidden="true">&rarr;</span></a>
                             {% else %}
                                 {{ row.contract_number|default:"-" }}
                             {% endif %}
@@ -134,7 +134,7 @@
                         <td>
                             {% if row.contract %}
                                 <strong>{{ row.contract.contract_number }}</strong><br>
-                                <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button">VIEW CONTRACT</a>
+                                <a href="{% url 'contract_detail' row.contract.id %}" class="view-contract-button t-type-secondary-action">View contract <span aria-hidden="true">&rarr;</span></a>
                             {% else %}
                                 {{ row.contract_number|default:row.application_number }}
                             {% endif %}

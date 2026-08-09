@@ -1563,6 +1563,7 @@ body {
   .hq-layout { display: block; }
 }
 </style>
+<link rel="stylesheet" href="{% static 'css/hq-command-v2.css' %}?v=1.0.0">
 {% endblock %}
 
 
@@ -1887,6 +1888,92 @@ body {
     </div>
     <span class="hq-ph-time" id="hq-clock" aria-live="polite"></span>
   </div>
+
+  <section class="hq-command-v2" aria-label="Tenga command overview">
+    <a class="hq-command-hero" href="{% url 'hq_portfolio' %}">
+      <span class="hq-command-hero__eyebrow">Portfolio at a glance</span>
+      <strong class="hq-command-hero__value">{{ total_portfolio_value|mwk }}</strong>
+      <span class="hq-command-hero__context">{{ active_contracts_count }} active contract{{ active_contracts_count|pluralize }} &middot; {{ approval_rate }}% approval rate</span>
+      <span class="hq-command-hero__footer">
+        <span>{{ total_payments_collected|mwk }} collected</span>
+        <span class="{% if overdue_contracts_count %}is-risk{% else %}is-healthy{% endif %}">{% if overdue_contracts_count %}{{ overdue_contracts_count }} overdue{% else %}Portfolio healthy{% endif %}</span>
+      </span>
+      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+    </a>
+
+    <section class="hq-command-section" aria-labelledby="action-center-title">
+      <div class="hq-command-section__head">
+        <div><span>Now</span><h2 id="action-center-title">Action center</h2></div>
+        <p>Prioritized work requiring attention.</p>
+      </div>
+      <div class="hq-command-actions">
+        {% if overdue_contracts_count %}
+        <a href="{% url 'hq_payment_collections' %}" class="hq-command-action is-critical">
+          <span class="hq-command-action__icon"><i class="bi bi-exclamation-triangle"></i></span><span><strong>{{ overdue_contracts_count }} overdue contract{{ overdue_contracts_count|pluralize }}</strong><small>Contracts past due date &mdash; review collections</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if waiting_count %}
+        <a href="{% url 'hq_applications' %}?status=pending_review" class="hq-command-action is-warning">
+          <span class="hq-command-action__icon"><i class="bi bi-inbox"></i></span><span><strong>{{ waiting_count }} application{{ waiting_count|pluralize }} waiting</strong><small>Ready for underwriter review</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if merchant_payout_pending %}
+        <a href="{% url 'hq_merchant_payouts' %}" class="hq-command-action is-warning">
+          <span class="hq-command-action__icon"><i class="bi bi-wallet2"></i></span><span><strong>Merchant payouts pending</strong><small>{{ merchant_payout_pending|mwk }} awaiting disbursement</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if open_tickets_count %}
+        <a href="{% url 'ticket_list' %}" class="hq-command-action">
+          <span class="hq-command-action__icon"><i class="bi bi-headset"></i></span><span><strong>{{ open_tickets_count }} open support ticket{{ open_tickets_count|pluralize }}</strong><small>Customer or merchant requests need response</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if awaiting_hq_count %}
+        <a href="{% url 'ma_leads' %}?status=awaiting_hq" class="hq-command-action">
+          <span class="hq-command-action__icon"><i class="bi bi-person-check"></i></span><span><strong>Awaiting HQ approval</strong><small>Merchant leads ready for a decision</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if critical_bugs_count %}
+        <a href="{% url 'bug_monitor' %}" class="hq-command-action is-critical">
+          <span class="hq-command-action__icon"><i class="bi bi-bug"></i></span><span><strong>Critical system events</strong><small>Review production health now</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if not overdue_contracts_count and not waiting_count and not merchant_payout_pending and not open_tickets_count and not awaiting_hq_count and not critical_bugs_count %}
+        <div class="hq-command-clear"><span><i class="bi bi-check2"></i></span><div><strong>All clear</strong><small>No urgent actions right now.</small></div></div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="hq-command-section" aria-labelledby="health-title">
+      <div class="hq-command-section__head"><div><span>Today</span><h2 id="health-title">Health snapshot</h2></div><p>The operating signals that matter now.</p></div>
+      <div class="hq-command-health">
+        <a href="{% url 'hq_applications' %}"><i class="bi bi-files"></i><span>Applications</span><strong>{{ sales_today }}</strong><small>today</small></a>
+        <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-arrow-down-circle"></i><span>Collections</span><strong>{{ collections_today|mwk }}</strong><small>today</small></a>
+        <a href="{% url 'hq_portfolio' %}"><i class="bi bi-phone"></i><span>Active contracts</span><strong>{{ active_contracts_count }}</strong><small>live</small></a>
+        <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-exclamation-circle"></i><span>Overdue</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }}</strong><small>contracts</small></a>
+        <a href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-lock"></i><span>Open locks</span><strong>{{ lock_locked_count|default:'0' }}</strong><small>devices</small></a>
+        <a href="{% url 'hq_applications' %}"><i class="bi bi-check2-circle"></i><span>Approval</span><strong>{{ approval_rate }}%</strong><small>conversion</small></a>
+      </div>
+    </section>
+
+    <section class="hq-command-details" aria-label="Command center intelligence">
+      <details>
+        <summary><span><i class="bi bi-graph-up"></i><strong>Portfolio intelligence</strong><small>Balance, profit, risk and collections</small></span><i class="bi bi-chevron-down"></i></summary>
+        <div class="hq-command-detail-grid"><a href="{% url 'hq_portfolio' %}"><span>Outstanding balance</span><strong>{{ outstanding_balance|mwk }}</strong></a><a href="{% url 'hq_simulations' %}"><span>Expected gross profit</span><strong>{{ gross_profit_total|mwk }}</strong></a><a href="{% url 'hq_portfolio' %}"><span>Portfolio at risk</span><strong>{{ portfolio_at_risk }}%</strong></a><a href="{% url 'hq_payment_collections' %}"><span>Total collected</span><strong>{{ total_payments_collected|mwk }}</strong></a></div>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-gear"></i><strong>Operations</strong><small>Merchant growth, staffing and approvals</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'ma_leads' %}">Merchant leads <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_underwriter_queue' %}">Underwriter operations <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_devices' %}">Device operations <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-wallet2"></i><strong>Finance</strong><small>Payouts, reconciliation and exposure</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'hq_merchant_payouts' %}">Merchant payouts <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_reconciliation' %}">Reconciliation <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_commissions' %}">Earnings and commissions <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-shield-check"></i><strong>Support &amp; system health</strong><small>Tickets, messaging, risk and production events</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'support_dashboard' %}">Support center <i class="bi bi-chevron-right"></i></a><a href="{% url 'bug_monitor' %}">Bug monitor <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_fraud_checks' %}">Risk and fraud <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_audit_trail' %}">Audit trail <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+    </section>
+  </section>
 
   {# ── Portfolio Hero Row ────────────────────────────────────────── #}
   <div class="hq-hero-row" data-testid="hq-hero-row">

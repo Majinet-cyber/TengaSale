@@ -1,0 +1,92 @@
+/* Tenga global typography language: semantic roles shared by product and public UI. */
+:root {
+  --t-font-app: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --t-type-display-xl: clamp(3.25rem, 8vw, 5.75rem);
+  --t-type-display-lg: clamp(2.75rem, 6vw, 4.5rem);
+  --t-type-page-title: clamp(1.625rem, 3vw, 2rem);
+  --t-type-page-intro: 1rem;
+  --t-type-hero-value-xl: clamp(2.5rem, 7vw, 4.5rem);
+  --t-type-hero-value-lg: clamp(2rem, 5vw, 3.25rem);
+  --t-type-section-title: 1.125rem;
+  --t-type-card-title: 1rem;
+  --t-type-row-title: .9375rem;
+  --t-type-body: .9375rem;
+  --t-type-body-small: .875rem;
+  --t-type-meta: .8125rem;
+  --t-type-caption: .75rem;
+  --t-leading-display: .98;
+  --t-leading-title: 1.18;
+  --t-leading-body: 1.55;
+  --t-leading-row: 1.35;
+  --t-text-primary: #172033;
+  --t-text-secondary: #596477;
+  --t-text-muted: #778195;
+  --t-text-subtle: #8b94a3;
+  --t-text-brand: #e95018;
+}
+
+html, body, button, input, select, textarea { font-family: var(--t-font-app); }
+body { color: var(--t-text-primary); font-size: var(--t-type-body); line-height: var(--t-leading-body); }
+button, input, select, textarea { font-size: 1rem; }
+
+/* Semantic primitives. New components should consume these roles directly. */
+.t-type-display-xl { font-size: var(--t-type-display-xl); font-weight: 700; line-height: var(--t-leading-display); letter-spacing: -.06em; }
+.t-type-display-lg { font-size: var(--t-type-display-lg); font-weight: 700; line-height: 1; letter-spacing: -.055em; }
+.t-type-page-title { color: var(--t-text-primary); font-size: var(--t-type-page-title); font-weight: 700; line-height: var(--t-leading-title); letter-spacing: -.035em; }
+.t-type-page-intro { color: var(--t-text-secondary); font-size: var(--t-type-page-intro); font-weight: 400; line-height: var(--t-leading-body); }
+.t-type-hero-value-xl, .t-type-hero-value-lg, .t-type-money-xl, .t-type-money-lg, .t-type-money-md, .t-type-money-sm, .t-type-metric {
+  font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum", "lnum"; white-space: nowrap;
+}
+.t-type-hero-value-xl, .t-type-money-xl { font-size: var(--t-type-hero-value-xl); font-weight: 700; line-height: 1; letter-spacing: -.045em; }
+.t-type-hero-value-lg { font-size: var(--t-type-hero-value-lg); font-weight: 700; line-height: 1.05; letter-spacing: -.04em; }
+.t-type-money-lg { font-size: clamp(1.25rem, 4vw, 1.625rem); font-weight: 700; line-height: 1.15; letter-spacing: -.025em; }
+.t-type-money-md, .t-type-metric { font-size: 1rem; font-weight: 650; line-height: 1.25; }
+.t-type-money-sm { font-size: .875rem; font-weight: 650; line-height: 1.3; }
+.t-type-section-title { color: var(--t-text-primary); font-size: var(--t-type-section-title); font-weight: 650; line-height: 1.3; letter-spacing: -.015em; }
+.t-type-section-label { display:block; margin: 0 0 .625rem; color: var(--t-text-muted); font-size: .6875rem; font-weight: 700; line-height: 1.3; letter-spacing: .09em; text-transform: uppercase; }
+.t-type-section-label--brand { color: var(--t-text-brand); }
+.t-type-card-title, .t-type-row-title { color: var(--t-text-primary); font-weight: 650; line-height: var(--t-leading-row); }
+.t-type-card-title { font-size: var(--t-type-card-title); }
+.t-type-row-title { font-size: var(--t-type-row-title); }
+.t-type-body { color: var(--t-text-primary); font-size: var(--t-type-body); line-height: var(--t-leading-body); }
+.t-type-body-small, .t-type-row-supporting { color: var(--t-text-secondary); font-size: var(--t-type-body-small); line-height: 1.5; }
+.t-type-row-meta { color: var(--t-text-secondary); font-size: var(--t-type-meta); line-height: 1.45; }
+.t-type-caption { display:block; color: var(--t-text-subtle); font-size: var(--t-type-caption); line-height: 1.45; }
+.t-type-status { font-size: .75rem; font-weight: 650; line-height: 1.25; }
+.t-type-secondary-action { color: var(--tenga-product-blue, #2458df); font-size: .8125rem; font-weight: 650; line-height: 1.3; letter-spacing: 0; text-transform: none; }
+
+/* Map established product components to the semantic roles. */
+.greeting, h1.greeting, .tenga-page-header__title, .hq-page-title, .portal-heading { font-size: var(--t-type-page-title); font-weight: 700; line-height: var(--t-leading-title); letter-spacing: -.035em; }
+.greeting-sub, .tenga-page-header__subtitle, .page-intro { color: var(--t-text-secondary); font-size: var(--t-type-page-intro); line-height: var(--t-leading-body); }
+.dashboard-section-title, .uw-section-label, .tenga-page-header__eyebrow { color: var(--t-text-muted); font-size: .6875rem; font-weight: 700; line-height: 1.3; letter-spacing: .09em; text-transform: uppercase; }
+.section-title, .card > h2, .card-title { color: var(--t-text-primary); font-size: var(--t-type-section-title); font-weight: 650; line-height: 1.3; letter-spacing: -.015em; }
+.ts-dashboard-menu-label, .transaction-row p:not(.text-muted), .application-card__title { font-size: var(--t-type-row-title); font-weight: 650; line-height: var(--t-leading-row); }
+.ts-dashboard-menu-supporting, .transaction-row .text-muted, .application-card__meta { color: var(--t-text-secondary); font-size: var(--t-type-meta); line-height: 1.45; }
+.text-muted { color: var(--t-text-secondary); }
+.status-pill, [class^="badge-"], [class*=" badge-"] { font-size: .75rem; font-weight: 650; line-height: 1.25; letter-spacing: 0; }
+.btn, button, .button, .tenga-primary-action { font-weight: 650; line-height: 1.2; letter-spacing: 0; }
+.tab-button, .tenga-tabs__item { font-size: .875rem; font-weight: 550; line-height: 1.25; letter-spacing: 0; text-transform: none; }
+.tab-button.active, .tenga-tabs__item.is-active { font-weight: 650; }
+.ts-mobile-role-nav__item span { font-size: .6875rem; font-weight: 550; line-height: 1.2; letter-spacing: 0; }
+.ts-mobile-role-nav__item.is-active span { font-weight: 650; }
+.field-label, form label { font-size: .8125rem; font-weight: 600; line-height: 1.35; }
+.field-help, .helptext { color: var(--t-text-secondary); font-size: .8125rem; line-height: 1.45; }
+.payment-table th { color: var(--t-text-muted); font-size: .75rem; font-weight: 650; letter-spacing: .035em; }
+.payment-table td { color: var(--t-text-primary); font-size: .875rem; line-height: 1.45; }
+.amount-positive, .amount-negative, .transaction-side { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum", "lnum"; }
+.wallet-balance-card > strong { font-size: var(--t-type-hero-value-lg); font-weight: 700; line-height: 1.05; letter-spacing: -.04em; white-space: nowrap; }
+.metric-grid > div > span:first-child { color: var(--t-text-muted); font-size: .75rem; font-weight: 650; line-height: 1.3; letter-spacing: .035em; text-transform: uppercase; }
+.metric-grid > div > strong { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum", "lnum"; }
+.earnings-ops .transaction-row > div:first-child > strong { color: var(--t-text-secondary); font-size: var(--t-type-meta); font-weight: 500; line-height: 1.45; }
+.earnings-ops .transaction-side span { font-size: 1rem; font-weight: 650; white-space: nowrap; }
+.view-contract-button.t-type-secondary-action { display:inline-flex; align-items:center; gap:.25rem; margin-top:.375rem; padding:0; border:0; background:transparent; }
+
+/* Public/editorial display remains deliberately larger than product UI. */
+.site-page h1, .hero h1, .careers-hero__title { text-wrap: balance; }
+
+@media (max-width: 390px) {
+  :root { --t-type-page-title: 1.5rem; --t-type-page-intro: .9375rem; }
+  .metric-grid { grid-template-columns: 1fr 1fr; }
+  .metric-grid > div { min-width: 0; }
+  .t-type-money-lg { font-size: 1.125rem; }
+}
