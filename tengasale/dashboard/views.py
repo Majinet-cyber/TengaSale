@@ -454,6 +454,11 @@ def hq_dashboard(request):
         .aggregate(t=Sum("amount"))["t"] or Decimal("0")
     )
     outstanding_balance = max(Decimal("0"), total_portfolio_value - total_payments_collected)
+    portfolio_collection_rate = round(
+        min(100, (total_payments_collected / total_portfolio_value * 100))
+        if total_portfolio_value else 0,
+        1,
+    )
     # Default rate: defaulted / total contracts that have been active
     defaulted_count = PaymentContract.objects.filter(status="defaulted").count()
     total_ever_active = PaymentContract.objects.filter(
@@ -658,6 +663,7 @@ def hq_dashboard(request):
         "total_portfolio_value": total_portfolio_value,
         "total_payments_collected": total_payments_collected,
         "outstanding_balance": outstanding_balance,
+        "portfolio_collection_rate": portfolio_collection_rate,
         "default_rate": default_rate,
         "portfolio_at_risk": portfolio_at_risk,
         "total_ever_active": total_ever_active,

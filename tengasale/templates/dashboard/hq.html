@@ -1893,12 +1893,12 @@ body {
     <section class="hq-pulse" aria-labelledby="tenga-pulse-title">
       <div class="hq-pulse__top"><span id="tenga-pulse-title">Tenga pulse</span><span class="hq-pulse__live"><i></i> Live <span id="hq-pulse-time"></span></span></div>
       <a class="hq-pulse__portfolio" href="{% url 'hq_portfolio' %}">
-        <span>Portfolio</span><strong class="t-type-money-xl">{{ total_portfolio_value|mwk }}</strong>
+        <span>Total portfolio</span><strong class="t-type-money-xl" title="{{ total_portfolio_value|mwk }}">{{ total_portfolio_value|mwk_short }}</strong>
         <small>{{ active_contracts_count }} active &middot; {{ total_payments_collected|mwk }} collected</small>
       </a>
       <div class="hq-pulse__signals">
         <a href="{% url 'hq_payment_collections' %}"><span>Today</span><strong>{{ collections_today|mwk }}</strong><small>{{ sales_today }} application{{ sales_today|pluralize }}</small></a>
-        <a href="{% url 'hq_payment_collections' %}"><span>Status</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }} overdue</strong><small>{{ lock_locked_count|default:'0' }} open locks</small></a>
+        <a href="{% url 'hq_payment_collections' %}"><span>Collection rate</span><strong class="{% if portfolio_collection_rate >= 80 %}is-healthy{% elif overdue_contracts_count %}is-risk{% endif %}">{{ portfolio_collection_rate }}%</strong><small>{% if overdue_contracts_count %}{{ overdue_contracts_count }} overdue &middot; needs attention{% else %}Portfolio current{% endif %}</small></a>
       </div>
     </section>
 
@@ -1946,12 +1946,12 @@ body {
     <section class="hq-command-section" aria-labelledby="health-title">
       <div class="hq-command-section__head"><div><span>Business</span><h2 id="health-title">Business health</h2></div></div>
       <div class="hq-command-health">
-        <a href="{% url 'hq_applications' %}"><i class="bi bi-files"></i><span>Applications</span><strong>{{ sales_today }}</strong><small>today</small></a>
-        <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-arrow-down-circle"></i><span>Collections</span><strong>{{ collections_today|mwk }}</strong><small>today</small></a>
-        <a href="{% url 'hq_portfolio' %}"><i class="bi bi-phone"></i><span>Active contracts</span><strong>{{ active_contracts_count }}</strong><small>live</small></a>
-        <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-exclamation-circle"></i><span>Overdue</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }}</strong><small>contracts</small></a>
-        <a href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-lock"></i><span>Open locks</span><strong>{{ lock_locked_count|default:'0' }}</strong><small>devices</small></a>
-        <a href="{% url 'hq_applications' %}"><i class="bi bi-check2-circle"></i><span>Approval</span><strong>{{ approval_rate }}%</strong><small>conversion</small></a>
+        <a class="hq-health-card--applications" href="{% url 'hq_applications' %}"><i class="bi bi-files"></i><span>Applications</span><strong>{{ sales_today }}</strong><small>submitted today</small></a>
+        <a class="hq-health-card--collections" href="{% url 'hq_payment_collections' %}"><i class="bi bi-arrow-down-circle"></i><span>Collections today</span><strong title="{{ collections_today|mwk }}">{{ collections_today|mwk_short }}</strong><small>{% if collections_today %}Confirmed payments{% else %}No payments recorded yet{% endif %}</small></a>
+        <a class="hq-health-card--contracts" href="{% url 'hq_portfolio' %}"><i class="bi bi-phone"></i><span>Active financing</span><strong>{{ active_contracts_count }} device{{ active_contracts_count|pluralize }}</strong><small>live contracts</small></a>
+        <a class="hq-health-card--risk {% if overdue_contracts_count %}has-alert{% endif %}" href="{% url 'hq_payment_collections' %}"><i class="bi bi-exclamation-circle"></i><span>Payment exceptions</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }}</strong><small>{% if overdue_contracts_count %}Needs review{% else %}Payments reconciled{% endif %}</small></a>
+        <a class="hq-health-card--locks {% if lock_locked_count %}has-alert{% endif %}" href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-lock"></i><span>Lock status</span><strong>{{ lock_locked_count|default:'0' }} locked</strong><small>{% if lock_locked_count %}Device risk exposure{% else %}No open locks{% endif %}</small></a>
+        <a class="hq-health-card--approvals" href="{% url 'hq_applications' %}"><i class="bi bi-check2-circle"></i><span>Approval conversion</span><strong>{{ approval_rate }}%</strong><small>{{ waiting_count }} waiting</small></a>
       </div>
     </section>
 

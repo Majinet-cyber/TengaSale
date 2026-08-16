@@ -23,6 +23,13 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertNotIn('class="map-canvas"', self.template)
         self.assertNotIn('class="map-sidebar"', self.template)
 
+    def test_approved_map_is_constrained_by_viewport_height_without_scaling_mobile(self):
+        self.assertIn("calc((100svh - 190px) * 703 / 559)", self.styles)
+        self.assertIn("(min-width:701px) and (max-height:900px)", self.styles)
+        self.assertIn("(min-width:701px) and (max-height:760px)", self.styles)
+        self.assertIn(".approved-market-map{aspect-ratio:4/5}", self.styles)
+        self.assertNotIn(".approved-market-map{transform:scale", self.styles)
+
     def test_redmi_and_samsung_have_dedicated_non_overlapping_visuals(self):
         self.assertIn('brand.includes("redmi") || brand.includes("xiaomi")', self.script)
         self.assertIn('/static/images/phone-redmi-premium-v1.png', self.script)

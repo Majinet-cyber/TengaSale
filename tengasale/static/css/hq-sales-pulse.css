@@ -50,6 +50,31 @@ body.role-hq :is(.btn-primary,.button-primary,.ts-button-primary,button[type=sub
 body.role-hq :is(.btn-secondary,.button-secondary,.ts-button-secondary){border:1px solid var(--pulse-border)!important;border-radius:13px!important;background:#fff!important;color:var(--pulse-ink)!important}
 body.role-hq :is(.badge,.status,.status-pill,.ts-chip){border-radius:999px!important;font-weight:850!important}
 body.role-hq :is(canvas,.chart-container,.chart-wrap){border-radius:18px}
+body.role-hq .hq-command-v2{display:flex;width:min(100%,1320px);flex-direction:column}
+body.role-hq .hq-command-v2>.hq-pulse{order:1}
+body.role-hq .hq-command-v2>.hq-command-section[aria-labelledby="health-title"]{order:2}
+body.role-hq .hq-command-v2>.hq-live-intelligence{order:3}
+body.role-hq .hq-command-v2>.hq-command-section[aria-labelledby="action-center-title"]{order:4}
+body.role-hq .hq-command-v2>.hq-command-details{order:5}
+body.role-hq .hq-command-health{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;padding:0;background:transparent;box-shadow:none}
+body.role-hq .hq-command-health a{position:relative;min-height:146px;padding:18px;overflow:hidden;border:1px solid var(--pulse-border)!important;border-radius:20px!important;background:#fff!important;box-shadow:0 12px 30px rgba(20,25,60,.07)!important}
+body.role-hq .hq-command-health a+a{border-left:1px solid var(--pulse-border)!important}
+body.role-hq .hq-command-health a:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(20,25,60,.12)!important}
+body.role-hq .hq-command-health a:after{content:"";position:absolute;right:-28px;top:-28px;width:82px;height:82px;border-radius:50%;background:currentColor;opacity:.055}
+body.role-hq .hq-command-health i{font-size:20px}
+body.role-hq .hq-command-health span{margin-top:20px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+body.role-hq .hq-command-health strong{font-size:clamp(20px,2vw,28px);font-weight:900}
+body.role-hq .hq-command-health small{margin-top:8px}
+body.role-hq .hq-health-card--applications{grid-column:span 3;color:#5965c8!important}.hq-health-card--applications i{color:#5965c8!important}
+body.role-hq .hq-health-card--collections{grid-column:span 5;color:#13865a!important;background:linear-gradient(145deg,#f2fff9,#fff)!important}.hq-health-card--collections i{color:#16a36a!important}.hq-health-card--collections strong{color:#126c4b!important}
+body.role-hq .hq-health-card--contracts{grid-column:span 4;color:#7657ff!important;background:linear-gradient(145deg,#f5f2ff,#fff)!important}.hq-health-card--contracts i{color:#7657ff!important}
+body.role-hq .hq-health-card--risk,body.role-hq .hq-health-card--locks,body.role-hq .hq-health-card--approvals{grid-column:span 4}
+body.role-hq .hq-health-card--risk{color:#20a66a!important;background:linear-gradient(145deg,#f2fff9,#fff)!important}.hq-health-card--risk i{color:#20a66a!important}
+body.role-hq .hq-health-card--risk.has-alert{color:#d9486f!important;background:linear-gradient(145deg,#fff0f3,#fff)!important}.hq-health-card--risk.has-alert i{color:#d9486f!important}
+body.role-hq .hq-health-card--locks{color:#20a66a!important}.hq-health-card--locks i{color:#20a66a!important}
+body.role-hq .hq-health-card--locks.has-alert{color:#d97706!important;background:linear-gradient(145deg,#fff8e8,#fff)!important}.hq-health-card--locks.has-alert i{color:#d97706!important}
+body.role-hq .hq-health-card--approvals{color:#d97706!important;background:linear-gradient(145deg,#fffaf0,#fff)!important}.hq-health-card--approvals i{color:#d97706!important}
+body.role-hq .hq-pulse__signals strong.is-healthy{color:#68e0ac}
 body.role-hq .hq-live-intelligence__note{color:var(--pulse-text-muted);font-size:11px;font-weight:750}
 body.role-hq .hq-live-intelligence__grid{display:grid;grid-template-columns:1.05fr 1.35fr 1fr;gap:14px}
 body.role-hq .hq-live-chart{min-width:0;padding:17px;border:1px solid var(--pulse-border);border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(20,25,60,.07)}
@@ -76,6 +101,8 @@ body.role-hq .hq-status-bars b{height:7px;overflow:hidden;border-radius:99px;bac
 body.role-hq .hq-status-bars em{color:#7c849d;font-size:9px;font-style:normal;text-align:right}
 body.role-hq .hq-chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:142px;color:#9299ad;font-size:11px;text-align:center}.hq-chart-empty i{font-size:22px;color:#c5cad8}
 @media(max-width:1180px){body.role-hq .hq-live-intelligence__grid{grid-template-columns:1fr 1fr}body.role-hq .hq-live-chart--status{grid-column:1/-1}}
+@media(max-width:1050px){body.role-hq .hq-command-health a{grid-column:span 6}}
 @media(max-width:900px){body.role-hq{padding:0;background:var(--pulse-muted)}body.role-hq .app-shell,body.role-hq .app-shell:has(.hq-topbar){height:auto!important;min-height:100vh;border:0;border-radius:0!important}.hq-page-shell .hq-page-content>.hq-content{padding:22px 16px}.hq-shell-sidebar,.hq-sidebar{box-shadow:18px 0 48px rgba(10,15,43,.22)!important}}
 @media(max-width:700px){body.role-hq .hq-live-intelligence__grid{grid-template-columns:1fr}body.role-hq .hq-live-chart--status{grid-column:auto}}
+@media(max-width:560px){body.role-hq .hq-command-health a{grid-column:1/-1;min-height:126px}body.role-hq .hq-health-card--collections{order:1}body.role-hq .hq-health-card--contracts{order:2}body.role-hq .hq-health-card--applications{order:3}body.role-hq .hq-health-card--risk{order:4}body.role-hq .hq-health-card--approvals{order:5}body.role-hq .hq-health-card--locks{order:6}}
 @media(prefers-reduced-motion:reduce){body.role-hq *,body.role-hq *:before,body.role-hq *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

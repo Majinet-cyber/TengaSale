@@ -653,8 +653,27 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 .device-stage{display:grid;place-items:center;width:520px;height:650px;margin:auto}
 .hero-phone-photo{display:block;width:365px;height:610px;max-height:none;margin:auto;object-position:center;transform:none}
 .map-section .shell{max-width:1080px}
-.map-panel--approved{width:min(860px,100%);margin:0 auto}
-.map-section{padding-top:94px!important;padding-bottom:94px!important}
+.map-panel--approved{width:min(860px,100%,calc((100svh - 190px) * 703 / 559));margin:0 auto}
+.map-section{padding-top:clamp(48px,7svh,94px)!important;padding-bottom:clamp(48px,7svh,94px)!important}
+@media (min-width:701px) and (max-height:900px){
+  .map-section{padding-top:clamp(34px,5svh,58px)!important;padding-bottom:clamp(34px,5svh,58px)!important}
+  .map-section .section-head{margin-bottom:clamp(20px,3svh,34px)}
+  .approved-market-map{border-radius:clamp(22px,2.2vw,30px)}
+  .approved-tam{width:clamp(238px,23vw,278px);padding:clamp(12px,1.25vw,16px);border-radius:20px}
+  .approved-tam>strong{font-size:clamp(32px,3vw,40px)}
+  .approved-dock{width:clamp(220px,22vw,260px);padding:clamp(12px,1.25vw,16px);border-radius:22px}
+  .approved-dock h3{font-size:clamp(20px,2vw,24px)}
+  .approved-score{margin:9px 0;padding:9px 11px}.approved-score strong{font-size:clamp(24px,2.3vw,29px)}
+  .approved-chart{margin-top:9px;padding:8px}.approved-chart svg{height:clamp(34px,4.5svh,48px)}
+  .approved-label{min-width:clamp(100px,9.5vw,122px);padding:9px 11px 8px;border-radius:15px}.approved-label strong{font-size:14px}.approved-label span{margin-top:4px;font-size:9px}
+  .approved-market-bar{gap:4px;padding:5px}.approved-market-bar button{padding:7px 11px;font-size:11px}
+  .approved-auto{padding:7px 10px}
+}
+@media (min-width:701px) and (max-height:760px){
+  .map-panel--approved{width:min(820px,100%,calc((100svh - 170px) * 703 / 559))}
+  .map-section{padding-top:30px!important;padding-bottom:30px!important}
+  .map-section .section-head{margin-bottom:16px}
+}
 @media(max-width:800px){
   .nav-links a:not(.mobile-menu-keep){display:none!important}
   .nav-links .mobile-menu-keep{display:block!important}

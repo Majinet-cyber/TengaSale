@@ -60,3 +60,18 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
             "No paid collections in the last 7 days",
         ):
             self.assertIn(marker, self.collections)
+
+    def test_executive_kpis_use_weighted_grid_and_semantic_states(self):
+        for marker in (
+            "grid-template-columns:repeat(12,minmax(0,1fr))",
+            ".hq-health-card--collections",
+            ".hq-health-card--contracts",
+            ".hq-health-card--risk.has-alert",
+            ".hq-health-card--locks.has-alert",
+            "order:3",
+        ):
+            self.assertIn(marker, self.theme)
+        self.assertIn("Total portfolio", self.dashboard)
+        self.assertIn("portfolio_collection_rate", self.dashboard)
+        self.assertIn("Payments reconciled", self.dashboard)
+        self.assertIn("mwk_short", self.dashboard)
