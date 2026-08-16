@@ -54,6 +54,37 @@ class PublicSiteTests(TestCase):
         self.assertNotIn('"loan_multiplier"', content)
         self.assertNotIn('"commission"', content)
 
+    def test_landing_offer_exposes_authoritative_repayment_cadences(self):
+        brand = DeviceBrand.objects.create(name="Tecno")
+        deal = DeviceDeal.objects.create(
+            brand=brand, model_name="Spark Pricing", specs="4GB / 128GB",
+            default_cash_price=Decimal("480000"), deposit_percent=Decimal("13"),
+            loan_multiplier=Decimal("2.5"), term_months=12,
+            is_active=True, stock_status=DeviceDeal.STOCK_IN,
+        )
+
+        response = self.client.get(reverse("website_landing"))
+        offer = response.context["public_phone_offers"][0]
+
+        self.assertEqual(offer["deposit"], int(round(deal.deposit_amount)))
+        self.assertEqual(offer["payments"]["daily"], int(round(deal.daily_payment)))
+        self.assertEqual(offer["payments"]["weekly"], int(round(deal.weekly_payment)))
+        self.assertEqual(offer["payments"]["monthly"], int(round(deal.monthly_payment)))
+
+    def test_incomplete_deal_is_exposed_as_zero_for_truthful_client_empty_state(self):
+        brand = DeviceBrand.objects.create(name="Tecno")
+        DeviceDeal.objects.create(
+            brand=brand, model_name="Awaiting Price", specs="Pricing pending",
+            default_cash_price=Decimal("0"), is_active=True,
+            stock_status=DeviceDeal.STOCK_IN,
+        )
+
+        response = self.client.get(reverse("website_landing"))
+        offer = response.context["public_phone_offers"][0]
+
+        self.assertEqual(offer["deposit"], 0)
+        self.assertEqual(offer["payments"], {"daily": 0, "weekly": 0, "monthly": 0})
+
     def test_landing_has_local_market_flags_and_accurate_statuses(self):
         response = self.client.get(reverse("website_landing"))
         for country in ("malawi", "zambia", "zimbabwe"):

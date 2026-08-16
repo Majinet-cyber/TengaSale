@@ -51,6 +51,18 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         for source in (self.template, self.script, self.styles):
             self.assertNotIn("phone-art-time", source)
 
+    def test_current_phone_cards_render_all_authoritative_pricing_cadences(self):
+        for marker in (
+            'data-testid="phone-pricing"',
+            "phone.payments.daily",
+            "phone.payments.weekly",
+            "phone.payments.monthly",
+            "phone.deposit",
+            "Pricing available during application",
+        ):
+            self.assertIn(marker, self.script)
+        self.assertIn("repeat(3,minmax(0,1fr))", self.styles)
+
     def test_public_brand_navigation_and_hero_why_are_locked_in(self):
         self.assertGreaterEqual(self.template.count('<span class="brand-word">Tenga</span>'), 2)
         self.assertIn('class="nav-links"', self.template)

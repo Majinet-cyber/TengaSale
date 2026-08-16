@@ -33,7 +33,21 @@ function renderPhones() {
     if (brand.includes("tecno")) return { src: "/static/images/phone-tecno-camon.png", mood: "aurora" };
     return { src: "/static/images/phone-school.png", mood: "studio" };
   };
-  phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => `
+  phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => {
+    const hasPricing = Number(phone.deposit) > 0 && ["daily", "weekly", "monthly"].every(cadence => Number(phone.payments?.[cadence]) > 0);
+    const pricing = hasPricing ? `
+        <div class="phone-pricing" data-testid="phone-pricing">
+          <div class="phone-pricing__deposit"><span>Deposit</span><strong>${money(phone.deposit)}</strong></div>
+          <div class="phone-pricing__rhythms">
+            <div><span>Daily</span><strong>${money(phone.payments.daily)}</strong></div>
+            <div><span>Weekly</span><strong>${money(phone.payments.weekly)}</strong></div>
+            <div><span>Monthly</span><strong>${money(phone.payments.monthly)}</strong></div>
+          </div>
+        </div>` : `
+        <div class="phone-pricing phone-pricing--unavailable" data-testid="phone-pricing-unavailable">
+          <span>Payment plan</span><strong>Pricing available during application</strong>
+        </div>`;
+    return `
     <article class="phone-card reveal visible" data-phone-brand="${phone.brand}" style="
       --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
       --grad:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).grad};
@@ -56,10 +70,12 @@ function renderPhones() {
           </div>
           <span>${phone.status}</span>
         </div>
+        ${pricing}
         <button class="card-button" type="button" data-device="${phone.name}">Choose ${phone.name}</button>
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
 
   document.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {

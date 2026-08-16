@@ -266,3 +266,64 @@ body[class^="role-"], body[class*=" role-"] { background: var(--tenga-canvas); c
   .application-step-number,
   .application-step-status { display: none; }
 }
+
+/* Merchant and underwriter application viewport integrity. */
+.application-flow-page,
+.application-flow-page *,
+.application-flow-page *::before,
+.application-flow-page *::after,
+body.role-underwriter .uw-canvas,
+body.role-underwriter .uw-canvas *,
+body.role-underwriter .uw-canvas *::before,
+body.role-underwriter .uw-canvas *::after,
+body.role-underwriter .ts-review-page,
+body.role-underwriter .ts-review-page *,
+body.role-underwriter .ts-review-page *::before,
+body.role-underwriter .ts-review-page *::after { box-sizing:border-box; }
+.application-flow-page,
+.application-workspace,
+.application-workspace__context,
+.application-workspace__form,
+.application-form-surface,
+body.role-underwriter .uw-canvas,
+body.role-underwriter .uw-card,
+body.role-underwriter .ts-review-page,
+body.role-underwriter .ts-review-card { min-width:0; max-width:100%; }
+.application-flow-page :is(input,select,textarea,button,img,svg,video),
+body.role-underwriter :is(.uw-canvas,.ts-review-page) :is(input,select,textarea,button,img,svg,video) { max-width:100%; }
+.application-flow-page .application-stepper-wrap { width:100%; max-width:100%; overscroll-behavior-inline:contain; }
+.application-flow-page .application-stepper { max-width:none; }
+.application-flow-page :is(.tenga-page-header__eyebrow,.tenga-page-header__title,.tenga-page-header__subtitle),
+body.role-underwriter :is(.uw-canvas,.ts-review-page) :is(.uw-header,h1,h2,p,strong,a) { overflow-wrap:anywhere; }
+
+@media (max-width:767.98px) {
+  body.role-merchant .application-flow-page,
+  body.role-underwriter :is(.uw-canvas,.ts-review-page) {
+    width:100% !important;
+    max-width:100% !important;
+    margin-inline:0 !important;
+    padding-inline:16px !important;
+  }
+  .application-flow-page .tenga-page-header { display:block; width:100%; }
+  .application-flow-page .application-workspace { grid-template-columns:minmax(0,1fr); width:100%; }
+  .application-flow-page .application-workspace__context,
+  .application-flow-page .application-workspace__form,
+  .application-flow-page .application-form-surface { width:100%; }
+  .application-flow-page .questionnaire-grid,
+  .application-flow-page :is(.form-row,.field-row,.kyc-grid,.deal-grid,.review-grid) { grid-template-columns:minmax(0,1fr) !important; }
+  .application-flow-page :is(input,select,textarea,input[type="file"]),
+  body.role-underwriter .uw-canvas :is(input,select,textarea,input[type="file"]) { width:100%; min-width:0; }
+  .application-flow-page :is(.form-actions,.app-action-bar),
+  body.role-underwriter .uw-canvas :is(.form-actions,.uw-actions,.call-actions) { max-width:100%; flex-wrap:wrap; }
+  .application-flow-page :is(.form-actions,.app-action-bar)>*,
+  body.role-underwriter .uw-canvas :is(.form-actions,.uw-actions,.call-actions)>* { min-width:0; }
+  body.role-underwriter .uw-header { display:flex; width:100%; min-width:0; flex-wrap:wrap; }
+  body.role-underwriter .uw-header>div { min-width:0; flex:1 1 220px; }
+  body.role-underwriter .uw-card { width:100%; padding-inline:16px; }
+  body.role-underwriter .ts-review-row { min-width:0; gap:12px; }
+  body.role-underwriter .ts-review-row > * { min-width:0; }
+  body.role-underwriter .ts-review-call-actions { max-width:100%; flex-wrap:wrap; }
+  body.role-underwriter .ts-review-call-actions > * { min-width:0; }
+  body.role-underwriter :is(.review-field,.review-field__copy,.ts-question-card,.uw-comparison,.ts-call-section-grid) { min-width:0; max-width:100%; }
+  body.role-underwriter :is(.review-field__value,.ts-question-card__value) { overflow-wrap:anywhere; word-break:break-word; }
+}
