@@ -419,21 +419,25 @@ section{position:relative}
 .lock-ui h3{margin:0;font-size:26px;letter-spacing:-.04em}
 .lock-ui p{margin:12px 0 26px;color:#9ca6c0;line-height:1.7}
 .lock-ui button{width:100%;height:48px;border:0;border-radius:16px;color:#fff;background:linear-gradient(135deg,#ff7c14,#ff6600);font-weight:850}
-.lock-ui.paid .lock-mark{background:rgba(47,214,143,.12);box-shadow:inset 0 0 0 1px rgba(47,214,143,.18)}
-.lock-ui.paid .lock-mark span{background:var(--green)}
-.lock-ui.paid .lock-mark span::before{border-color:var(--green);transform:rotate(-36deg) translate(-2px,-2px)}
-
-/* A real device photograph anchors the interactive payment state. */
+/* The reminder is a screen state on the device; payment reveals the real home screen beneath. */
 .lock-device{position:relative;width:340px;height:590px;padding:0;border-radius:54px;background:transparent;box-shadow:none;overflow:visible}
 .lock-device-photo{position:absolute;z-index:0;left:50%;top:-40px;width:500px;height:750px;max-width:none;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 34px 46px rgba(0,0,0,.44));pointer-events:none}
-.lock-ui{position:absolute;z-index:1;top:144px;left:50%;width:258px;height:auto;min-height:304px;padding:20px 18px;border:1px solid rgba(255,255,255,.18);border-radius:26px;transform:translateX(-50%);background:linear-gradient(160deg,rgba(12,17,32,.94),rgba(18,25,46,.9));box-shadow:0 22px 55px rgba(0,0,0,.38);backdrop-filter:blur(14px)}
-.lock-ui small{font-size:10px;text-transform:uppercase;letter-spacing:.12em}
-.lock-mark{width:68px;height:68px;margin:28px 0 18px;border-radius:22px}
+.lock-screen{position:absolute;z-index:1;top:19px;left:50%;width:272px;height:522px;padding:24px 18px 22px;border-radius:38px;transform:translateX(-50%);overflow:hidden;background:linear-gradient(180deg,rgba(7,12,25,.62),rgba(5,8,17,.88));backdrop-filter:blur(9px) saturate(.75);transition:opacity .5s ease,transform .5s ease,visibility .5s}
+.lock-screen.paid{opacity:0;visibility:hidden;transform:translateX(-50%) scale(.985);pointer-events:none}
+.lock-screen__status{display:flex;justify-content:space-between;color:rgba(255,255,255,.82);font-size:10px;font-weight:800;letter-spacing:.08em}
+.lock-screen__reminder{position:absolute;left:14px;right:14px;bottom:18px;padding:20px 18px 18px;border:1px solid rgba(255,255,255,.16);border-radius:25px;text-align:center;background:linear-gradient(160deg,rgba(18,24,42,.92),rgba(9,13,24,.94));box-shadow:0 18px 45px rgba(0,0,0,.3)}
+.lock-screen small{color:#aab4ca;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.lock-mark{width:58px;height:58px;margin:18px auto 14px;border-radius:19px}
 .lock-mark span{width:28px;height:24px}
 .lock-mark span::before{left:5px;top:-14px;width:19px;height:20px;border-width:4px}
-.lock-ui h3{font-size:22px}
-.lock-ui p{margin:9px 0 18px;font-size:13px;line-height:1.5}
-.lock-ui button{height:44px;border-radius:14px;cursor:pointer}
+.lock-screen h3{font-size:21px}
+.lock-screen p{margin:8px 0 17px;font-size:12px;line-height:1.5}
+.lock-screen button{height:43px;border-radius:14px;cursor:pointer}
+.unlock-confirmation{position:absolute;z-index:2;top:34px;left:50%;width:244px;min-height:54px;padding:10px 10px 10px 12px;border:1px solid rgba(255,255,255,.25);border-radius:18px;display:flex;align-items:center;gap:9px;color:#fff;background:rgba(9,18,31,.86);box-shadow:0 12px 28px rgba(0,0,0,.28);backdrop-filter:blur(14px);transform:translateX(-50%);transition:opacity .35s ease,transform .35s ease}
+.unlock-confirmation[aria-hidden="true"]{opacity:0;transform:translateX(-50%) translateY(-10px);pointer-events:none}
+.unlock-confirmation>span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:var(--green);font-weight:900}
+.unlock-confirmation div{display:grid;gap:2px;min-width:0}.unlock-confirmation strong{font-size:11px}.unlock-confirmation small{color:#aab4ca;font-size:9px}
+.unlock-confirmation button{margin-left:auto;padding:7px 8px;border:0;border-radius:9px;color:#fff;background:rgba(255,255,255,.1);font-size:9px;font-weight:800;cursor:pointer}
 
 .map-panel{
   display:grid;grid-template-columns:1.15fr .85fr;border:1px solid var(--line);border-radius:34px;overflow:hidden;background:#fff;box-shadow:var(--shadow)
@@ -960,6 +964,8 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
 .tenga-landing-v4 .support-honeypot{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}
 
 .tenga-landing-v4 .site-footer{padding:68px 0 30px}
+.tenga-landing-v4 .footer-layout--minimal{display:flex;align-items:center;justify-content:space-between;gap:28px}
+.tenga-landing-v4 .footer-layout--minimal .footer-meta{display:flex;gap:24px;color:#8f99ad;font-size:12px;text-align:right}
 .tenga-landing-v4 .footer-layout--complete{display:grid;grid-template-columns:1.5fr repeat(5,minmax(105px,1fr));gap:38px 28px;align-items:start}
 .tenga-landing-v4 .footer-email{display:inline-block;margin-top:15px;color:#f5a268;font-size:13px;font-weight:760;overflow-wrap:anywhere}
 .tenga-landing-v4 .footer-group{display:grid;gap:12px}
@@ -1003,7 +1009,10 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
   .tenga-landing-v4 .apply-compact-actions{display:grid;width:100%}
   .tenga-landing-v4 .lock-device{width:300px;height:540px}
   .tenga-landing-v4 .lock-device-photo{width:455px;height:690px}
-  .tenga-landing-v4 .lock-ui{top:130px;width:232px;min-height:292px}
+  .tenga-landing-v4 .lock-screen{top:17px;width:248px;height:475px;border-radius:34px}
+  .tenga-landing-v4 .unlock-confirmation{top:31px;width:222px}
+  .tenga-landing-v4 .footer-layout--minimal{display:grid;gap:18px}
+  .tenga-landing-v4 .footer-layout--minimal .footer-meta{display:grid;gap:6px;text-align:left}
 }
 
 @media (prefers-reduced-motion:reduce){.tenga-landing-v4 .problem-card::after{animation:none}}

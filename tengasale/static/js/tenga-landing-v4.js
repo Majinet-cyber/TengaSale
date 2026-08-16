@@ -157,24 +157,30 @@ const lockUi = document.getElementById("lockUi");
 const lockTitle = document.getElementById("lockTitle");
 const lockBody = document.getElementById("lockBody");
 const lockButton = document.getElementById("lockButton");
+const unlockConfirmation = document.getElementById("unlockConfirmation");
+const resetLockButton = document.getElementById("resetLockButton");
 
 lockButton.addEventListener("click", () => {
   lockButton.disabled = true;
   lockButton.textContent = "Confirming payment…";
   setTimeout(() => {
     lockUi.classList.add("paid");
-    lockTitle.textContent = "Payment received";
-    lockBody.textContent = "Access restored automatically. The device is active again.";
-    lockButton.textContent = "Device active";
+    lockUi.dataset.state = "unlocked";
+    lockUi.setAttribute("aria-hidden", "true");
+    unlockConfirmation.setAttribute("aria-hidden", "false");
+    lockButton.setAttribute("aria-pressed", "true");
     showToast("Payment confirmed", "Device access restored.");
-    setTimeout(() => {
-      lockUi.classList.remove("paid");
-      lockTitle.textContent = "Payment reminder";
-      lockBody.textContent = "Your payment is due. Pay now through the Tenga payment gateway.";
-      lockButton.textContent = "Simulate payment";
-      lockButton.disabled = false;
-    }, 4200);
   }, 1200);
+});
+
+resetLockButton.addEventListener("click", () => {
+  lockUi.classList.remove("paid");
+  lockUi.dataset.state = "locked";
+  lockUi.removeAttribute("aria-hidden");
+  unlockConfirmation.setAttribute("aria-hidden", "true");
+  lockButton.textContent = "Simulate payment";
+  lockButton.setAttribute("aria-pressed", "false");
+  lockButton.disabled = false;
 });
 
 const toast = document.getElementById("toast");

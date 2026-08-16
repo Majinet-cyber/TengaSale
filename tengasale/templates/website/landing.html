@@ -272,14 +272,21 @@
         </div>
 
         <div class="protect-demo reveal reveal-delay">
-          <div class="lock-device">
+          <div class="lock-device" data-testid="payment-simulation-phone">
             <img class="lock-device-photo" src="{% static 'images/phone-realistic.png' %}" alt="" aria-hidden="true" />
-            <div class="lock-ui" id="lockUi">
-              <small>Interactive preview</small>
-              <div class="lock-mark"><span></span></div>
-              <h3 id="lockTitle">Payment reminder</h3>
-              <p id="lockBody">Your payment is due. Pay now through the Tenga payment gateway.</p>
-              <button id="lockButton" type="button">Simulate payment</button>
+            <div class="lock-screen" id="lockUi" data-state="locked" aria-live="polite">
+              <div class="lock-screen__status"><span>10:32</span><span>●●●</span></div>
+              <div class="lock-screen__reminder" data-testid="on-device-lock-reminder">
+                <small>Tenga · Payment due</small>
+                <div class="lock-mark" aria-hidden="true"><span></span></div>
+                <h3 id="lockTitle">Payment reminder</h3>
+                <p id="lockBody">Make your payment to restore full access to this device.</p>
+                <button id="lockButton" type="button" aria-pressed="false">Simulate payment</button>
+              </div>
+            </div>
+            <div class="unlock-confirmation" id="unlockConfirmation" data-testid="unlocked-phone-content" aria-hidden="true">
+              <span>✓</span><div><strong>Payment received</strong><small>Device access restored</small></div>
+              <button id="resetLockButton" type="button">Replay</button>
             </div>
           </div>
         </div>
@@ -467,17 +474,10 @@
 
 {% block site_footer %}
   <footer class="site-footer">
-    <div class="shell footer-layout footer-layout--complete">
+    <div class="shell footer-layout footer-layout--minimal">
       <div class="footer-brand">
         <a class="brand footer-brand-link" href="#top"><img class="brand-logo brand-logo--canonical" src="{% static 'images/Tenga.png' %}?v=20260809c" alt="" width="40" height="40" /><span class="brand-word">Tenga</span></a>
-        <p>Smartphone access for the mobile-money economy of Southern Africa.</p>
-        <a class="footer-email" href="mailto:{{ support_email }}">{{ support_email }}</a>
       </div>
-      <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
-      <div class="footer-group"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
-      <div class="footer-group"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors & media</a></div>
-      <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Next</a><a href="#map">Zimbabwe — Planned</a><a href="#map">Kenya — Explore</a></div>
-      <div class="footer-group"><strong>Legal</strong><a href="{% url 'website_terms' %}">Terms</a><a href="{% url 'website_privacy' %}">Privacy & KYC</a><a href="{% url 'website_payment_terms' %}">Payment terms</a><a href="{% url 'website_merchant_terms' %}">Merchant terms</a><a href="#protection">Device protection</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built in Malawi. Designed for Southern Africa.</span></div>
     </div>
   </footer>

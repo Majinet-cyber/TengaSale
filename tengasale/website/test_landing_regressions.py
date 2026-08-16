@@ -55,6 +55,23 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertIn('id="lockUi"', self.template)
         self.assertIn('id="lockButton"', self.template)
 
+    def test_payment_preview_has_on_device_locked_and_unlocked_states(self):
+        self.assertIn('data-testid="payment-simulation-phone"', self.template)
+        self.assertIn('data-testid="on-device-lock-reminder"', self.template)
+        self.assertIn('data-testid="unlocked-phone-content"', self.template)
+        self.assertIn('data-state="locked"', self.template)
+        self.assertIn('lockUi.dataset.state = "unlocked"', self.script)
+        self.assertIn('unlockConfirmation.setAttribute("aria-hidden", "false")', self.script)
+        self.assertIn(".lock-screen.paid", self.styles)
+
+    def test_landing_footer_is_minimal_and_link_columns_are_removed(self):
+        footer = self.template.split("{% block site_footer %}", 1)[1]
+        self.assertIn("footer-layout--minimal", self.template)
+        self.assertNotIn("footer-layout--complete", self.template)
+        self.assertNotIn('class="footer-group"', footer)
+        for heading in (">Product<", ">Support<", ">Company<", ">Region<", ">Legal<"):
+            self.assertNotIn(heading, footer)
+
     def test_access_section_keeps_the_approved_headline_and_refined_copy(self):
         self.assertEqual(self.template.count('id="why"'), 1)
         self.assertIn("data-insight-section", self.template)
