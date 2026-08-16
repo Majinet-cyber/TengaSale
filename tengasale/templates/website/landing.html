@@ -9,7 +9,7 @@
   <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.3" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.4" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -116,38 +116,38 @@
       <div class="scroll-hint"><span></span><p>Scroll to see why Tenga matters</p></div>
     </section>
 
-    <section class="why-section section-light" id="why">
+    <section class="why-section section-light" id="why" data-insight-section>
       <div class="shell">
         <div class="section-head reveal centered compact-head">
           <p class="kicker">The why</p>
           <h2>The world went digital.<br />Access did not.</h2>
-          <p class="lead">The problem is simple: people need smartphones, but buying one upfront is still too hard.</p>
+          <p class="lead">Smartphones power modern life. Upfront cost still keeps millions outside it.</p>
         </div>
 
         <div class="problem-grid">
           <article class="problem-card problem-card--income reveal">
             <div class="problem-card__metric"><strong>≈78%</strong><span class="metric-ring" aria-hidden="true"></span></div>
             <h3>Informal or self-employed.</h3>
-            <p>Income is real — just not shaped like a payslip.</p>
+            <p>Income is real. Payslips are not.</p>
           </article>
 
           <article class="problem-card problem-card--access reveal reveal-delay-sm">
             <div class="problem-card__metric"><strong>Many</strong><span class="metric-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
             <h3>Unbanked or underbanked.</h3>
-            <p>No bank history. No collateral. No fair path in.</p>
+            <p>No bank history should not mean no path in.</p>
           </article>
 
           <article class="problem-card problem-card--cost reveal reveal-delay-md">
             <div class="problem-card__metric"><strong>2×</strong><span class="metric-phone" aria-hidden="true"></span></div>
             <h3>Monthly income for a smartphone.</h3>
-            <p>Yet work, school, banking and payments are digital.</p>
+            <p>Essential access still costs too much upfront.</p>
           </article>
         </div>
 
         <div class="why-banner reveal">
           <div>
             <p class="kicker">Why Tenga</p>
-            <h3>We make smartphone access feel modern, trusted and possible.</h3>
+            <h3>Tenga turns an upfront barrier into a clear path forward.</h3>
           </div>
           <div class="why-mini-points">
             <span>Clear deposits</span>
@@ -273,6 +273,7 @@
 
         <div class="protect-demo reveal reveal-delay">
           <div class="lock-device">
+            <img class="lock-device-photo" src="{% static 'images/phone-realistic.png' %}" alt="" aria-hidden="true" />
             <div class="lock-ui" id="lockUi">
               <small>Interactive preview</small>
               <div class="lock-mark"><span></span></div>
@@ -448,32 +449,18 @@
       </div>
     </section>
 
-    <section class="apply-section section-dark" id="apply">
+    <section class="apply-section apply-section--compact section-dark" id="apply">
       <div class="apply-glow" aria-hidden="true"></div>
-      <div class="shell apply-layout">
-        <div class="apply-copy reveal">
+      <div class="shell apply-compact reveal">
+        <div class="apply-copy">
           <p class="kicker kicker-dark">Get started</p>
-          <h2>Ready to start?</h2>
-          <p class="lead dark">Leave your details and let Tenga follow up.</p>
-          <div class="apply-points"><div>Clear deposit</div><div>Flexible payment rhythm</div><div>Secure follow-up</div></div>
+          <h2>Ready for your next phone?</h2>
+          <p class="lead dark">Start securely. See the deposit and payment rhythm before you commit.</p>
         </div>
-
-        <form class="apply-form reveal reveal-delay" id="applyForm" action="{% url 'new_application' %}" method="get">
-          <div class="form-head"><h3>Phone application</h3><span>About 2 minutes</span></div>
-          <label>Full name<input type="text" name="name" placeholder="Your full name" required /></label>
-          <div class="form-row">
-            <label>Phone number<input type="tel" name="phone" placeholder="+265..." required /></label>
-            <label>City / district<input type="text" name="location" placeholder="e.g. Lilongwe" required /></label>
-          </div>
-          <div class="form-row">
-            <label>Phone you want<select name="device" id="deviceSelect" required></select></label>
-            <label>Payment preference<select name="cadence" required><option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option></select></label>
-          </div>
-          <label class="checkbox-line"><input type="checkbox" required /><span>I agree to be contacted by Tenga.</span></label>
-          <button class="button button-primary button-large submit-button" type="submit">Continue to application</button>
-          <a class="button button-payment button-large secondary-submit" href="{% url 'portal_search' %}">Go to payment gateway</a>
-          <small class="footnote">Continue securely into TengaSale's existing application flow. No payment is collected from this form.</small>
-        </form>
+        <div class="apply-compact-actions">
+          <a class="button button-primary button-large" href="{% url 'new_application' %}">Start application</a>
+          <a class="button button-payment button-large" href="{% url 'portal_search' %}">Make a payment</a>
+        </div>
       </div>
     </section>
 {% endblock %}
@@ -498,5 +485,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.3" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.4" defer></script>
 {% endblock %}

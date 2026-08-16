@@ -423,6 +423,18 @@ section{position:relative}
 .lock-ui.paid .lock-mark span{background:var(--green)}
 .lock-ui.paid .lock-mark span::before{border-color:var(--green);transform:rotate(-36deg) translate(-2px,-2px)}
 
+/* A real device photograph anchors the interactive payment state. */
+.lock-device{position:relative;width:340px;height:590px;padding:0;border-radius:54px;background:transparent;box-shadow:none;overflow:visible}
+.lock-device-photo{position:absolute;z-index:0;left:50%;top:-40px;width:500px;height:750px;max-width:none;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 34px 46px rgba(0,0,0,.44));pointer-events:none}
+.lock-ui{position:absolute;z-index:1;top:144px;left:50%;width:258px;height:auto;min-height:304px;padding:20px 18px;border:1px solid rgba(255,255,255,.18);border-radius:26px;transform:translateX(-50%);background:linear-gradient(160deg,rgba(12,17,32,.94),rgba(18,25,46,.9));box-shadow:0 22px 55px rgba(0,0,0,.38);backdrop-filter:blur(14px)}
+.lock-ui small{font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.lock-mark{width:68px;height:68px;margin:28px 0 18px;border-radius:22px}
+.lock-mark span{width:28px;height:24px}
+.lock-mark span::before{left:5px;top:-14px;width:19px;height:20px;border-width:4px}
+.lock-ui h3{font-size:22px}
+.lock-ui p{margin:9px 0 18px;font-size:13px;line-height:1.5}
+.lock-ui button{height:44px;border-radius:14px;cursor:pointer}
+
 .map-panel{
   display:grid;grid-template-columns:1.15fr .85fr;border:1px solid var(--line);border-radius:34px;overflow:hidden;background:#fff;box-shadow:var(--shadow)
 }
@@ -854,6 +866,24 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
 .tenga-landing-v4 .protection-section,
 .tenga-landing-v4 .apply-section{padding:104px 0}
 
+.tenga-landing-v4 .why-section{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(180deg,#fff 0%,#f8f9ff 100%)}
+.tenga-landing-v4 .why-section::before{content:"";position:absolute;z-index:-1;left:50%;top:40px;width:760px;height:420px;transform:translateX(-50%);background:radial-gradient(circle,rgba(111,74,255,.1),transparent 67%);filter:blur(12px);pointer-events:none}
+.tenga-landing-v4 .why-section .compact-head{max-width:900px;margin-bottom:50px}
+.tenga-landing-v4 .why-section .compact-head .lead{max-width:620px;margin-inline:auto}
+.tenga-landing-v4 .problem-card{position:relative;overflow:hidden;min-height:252px;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(247,248,255,.94))}
+.tenga-landing-v4 .problem-card::after{content:"";position:absolute;right:-54px;bottom:-70px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,0,.12),transparent 68%);animation:insightPulse 6s ease-in-out infinite}
+.tenga-landing-v4 .problem-card:nth-child(2)::after{background:radial-gradient(circle,rgba(111,74,255,.13),transparent 68%);animation-delay:-2s}
+.tenga-landing-v4 .problem-card:nth-child(3)::after{background:radial-gradient(circle,rgba(23,200,255,.13),transparent 68%);animation-delay:-4s}
+.tenga-landing-v4 .why-banner{margin-top:22px;padding:25px 30px}
+.tenga-landing-v4 .why-banner h3{font-size:clamp(27px,3vw,34px)}
+@keyframes insightPulse{0%,100%{transform:scale(.92);opacity:.6}50%{transform:scale(1.12);opacity:1}}
+
+.tenga-landing-v4 .apply-section--compact{padding:72px 0}
+.tenga-landing-v4 .apply-compact{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:56px}
+.tenga-landing-v4 .apply-compact .apply-copy{max-width:700px}
+.tenga-landing-v4 .apply-compact .apply-copy h2{font-size:clamp(38px,4.5vw,62px)}
+.tenga-landing-v4 .apply-compact-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;flex-shrink:0}
+
 .tenga-landing-v4 .audience-card{display:flex;flex-direction:column}
 .tenga-landing-v4 .audience-card p{margin-bottom:24px}
 .tenga-landing-v4 .audience-link{
@@ -956,6 +986,8 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
   .tenga-landing-v4 .support-form{padding:26px}
   .tenga-landing-v4 .footer-layout--complete{grid-template-columns:repeat(2,1fr)}
   .tenga-landing-v4 .footer-layout--complete .footer-brand,.tenga-landing-v4 .footer-layout--complete .footer-meta{grid-column:1/-1}
+  .tenga-landing-v4 .apply-compact{display:grid;gap:32px}
+  .tenga-landing-v4 .apply-compact-actions{justify-content:flex-start}
 }
 @media (max-width:560px){
   .tenga-landing-v4 .hero-badge{font-size:11px;text-align:left}
@@ -967,4 +999,11 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
   .tenga-landing-v4 .footer-layout--complete{grid-template-columns:1fr;gap:28px}
   .tenga-landing-v4 .footer-layout--complete .footer-brand,.tenga-landing-v4 .footer-layout--complete .footer-meta{grid-column:auto}
   .tenga-landing-v4 .footer-layout--complete .footer-meta{display:grid;gap:8px}
+  .tenga-landing-v4 .apply-section--compact{padding:58px 0}
+  .tenga-landing-v4 .apply-compact-actions{display:grid;width:100%}
+  .tenga-landing-v4 .lock-device{width:300px;height:540px}
+  .tenga-landing-v4 .lock-device-photo{width:455px;height:690px}
+  .tenga-landing-v4 .lock-ui{top:130px;width:232px;min-height:292px}
 }
+
+@media (prefers-reduced-motion:reduce){.tenga-landing-v4 .problem-card::after{animation:none}}

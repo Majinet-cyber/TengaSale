@@ -48,3 +48,23 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertIn("A smartphone is <span>not a luxury.</span>", self.template)
         self.assertIn("Work, payments, school and daily life now depend on a smartphone.", self.template)
         self.assertIn("upfront cost stands in the way", self.template)
+
+    def test_payment_preview_uses_a_real_phone_asset(self):
+        self.assertIn('class="lock-device-photo"', self.template)
+        self.assertIn("images/phone-realistic.png", self.template)
+        self.assertIn('id="lockUi"', self.template)
+        self.assertIn('id="lockButton"', self.template)
+
+    def test_access_section_keeps_the_approved_headline_and_refined_copy(self):
+        self.assertEqual(self.template.count('id="why"'), 1)
+        self.assertIn("data-insight-section", self.template)
+        self.assertIn("The world went digital.<br />Access did not.", self.template)
+        self.assertIn("Smartphones power modern life.", self.template)
+        self.assertNotIn("The problem is simple:", self.template)
+
+    def test_bottom_application_area_is_compact_and_not_a_duplicate_form(self):
+        self.assertEqual(self.template.count('id="apply"'), 1)
+        self.assertIn("apply-section--compact", self.template)
+        self.assertNotIn('id="applyForm"', self.template)
+        self.assertNotIn('id="deviceSelect"', self.template)
+        self.assertEqual(self.template.count('id="protection"'), 1)

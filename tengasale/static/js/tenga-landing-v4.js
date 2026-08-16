@@ -63,10 +63,9 @@ function renderPhones() {
 
   document.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {
-      deviceSelect.value = button.dataset.device;
+      if (deviceSelect) deviceSelect.value = button.dataset.device;
       if (calculatorPhone) calculatorPhone.value = button.dataset.device;
       document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
-      setTimeout(() => document.querySelector('[name="name"]').focus(), 650);
     });
   });
 }
@@ -86,7 +85,7 @@ function updateCalculator() {
   document.getElementById("calculatorDepositValue").textContent = money(phone.deposit);
   document.getElementById("calculatorPaymentLabel").textContent = `${activeCadence.charAt(0).toUpperCase() + activeCadence.slice(1)} payment`;
   document.getElementById("calculatorPaymentValue").textContent = money(phone.payments[activeCadence]);
-  deviceSelect.value = phone.name;
+  if (deviceSelect) deviceSelect.value = phone.name;
 }
 populateDeviceSelect();
 renderPhones();
