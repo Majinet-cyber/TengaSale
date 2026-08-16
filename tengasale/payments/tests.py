@@ -13,16 +13,20 @@ Covers:
 from datetime import date
 from decimal import Decimal
 from urllib.parse import urlencode
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.cache import cache
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     PaymentAuditLog, SalarySchedule, SpinRewardPayout,
-    USSDPaymentIntent, USSDSessionLog,
+    USSDPaymentIntent, USSDSession, USSDSessionLog,
 )
+from integrations.upya.dto import UpyaCustomerDetails, UpyaPaymentOption, UpyaPaymentRecord
+from integrations.upya.exceptions import UpyaTimeout
 from .services import (
     approve_payout_batch,
     create_payout_batch,
@@ -35,7 +39,29 @@ from .services import (
 User = get_user_model()
 
 
+@override_settings(USSD_ENABLED=True, USSD_LOOKUP_RATE_LIMIT=100)
 class USSDCallbackTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.accounts = Mock()
+        self.contract = UpyaPaymentOption(
+            contract_number="UPYA-1234", expected_payment=Decimal("24500"),
+            minimum_payment=Decimal("5000"), balance=Decimal("785000"),
+            total_paid=Decimal("350000"), unit_status="ENABLED",
+        )
+        self.accounts.get_contracts_for_customer.return_value = [self.contract]
+        self.accounts.get_last_payment.return_value = UpyaPaymentRecord(
+            transaction_id="txn-000005520", amount=Decimal("25000"), currency="MWK", date="2026-08-16T10:30:00Z",
+        )
+        self.accounts.get_contract_details.return_value = UpyaCustomerDetails(
+            contract_number="UPYA-1234", product="Samsung A06", total_paid=Decimal("350000"), total_cost=Decimal("1200000"),
+        )
+        patcher = patch("payments.api_views.TengaUssdService")
+        service_class = patcher.start()
+        from payments.ussd import TengaUssdService
+        service_class.return_value = TengaUssdService(account_service=self.accounts)
+        self.addCleanup(patcher.stop)
+
     def post_ussd(self, text, session_id="test123"):
         return self.client.post(
             reverse("ussd_callback"),
@@ -55,42 +81,49 @@ class USSDCallbackTests(TestCase):
 
     def test_main_menu(self):
         response = self.post_ussd("")
-        self.assert_plain(response, "CON Welcome to TengaSale\n1. Pay\n2. Check balance")
+        self.assert_plain(response, "CON Welcome to Tenga\n1. Pay\n2. Check balance\n3. Last payment\n4. Contract details")
 
-    def test_pay_amount_prompt(self):
+    def test_pay_amounts_are_upya_values(self):
         response = self.post_ussd("1")
-        self.assert_plain(response, "CON Enter amount you want to pay")
+        self.assert_plain(response, "CON Choose amount\n1. K24,500 due\n2. K5,000 minimum")
 
-    def test_pay_contract_prompt(self):
-        response = self.post_ussd("1*1500")
-        self.assert_plain(response, "CON Enter your TengaSale contract number")
+    def test_payment_initiation_fails_closed_until_reference_is_proven(self):
+        response = self.post_ussd("1*1")
+        self.assert_plain(response, "END USSD payment is not enabled yet. Please use the secure Tenga payment portal.")
+        self.assertFalse(USSDPaymentIntent.objects.exists())
 
-    def test_payment_intent_creation(self):
-        response = self.post_ussd("1*1500*TS123")
-        self.assert_plain(response, "END Payment request received. TengaSale will verify and confirm shortly.")
-        intent = USSDPaymentIntent.objects.get()
-        self.assertEqual(intent.phone_number, "+265990870616")
-        self.assertEqual(intent.contract_number, "TS123")
-        self.assertEqual(intent.amount, Decimal("1500"))
-        self.assertEqual(intent.status, "PENDING")
-
-    def test_check_balance_prompt(self):
+    def test_balance_uses_upya_truth(self):
         response = self.post_ussd("2")
-        self.assert_plain(response, "CON Enter your TengaSale contract number")
+        self.assert_plain(response, "END Tenga\nBalance: K785,000\nDue: K24,500\nMinimum: K5,000\nStatus: Active")
 
-    def test_balance_not_found(self):
-        response = self.post_ussd("2*TS123")
-        self.assert_plain(response, "END Contract not found. Please check your number or contact TengaSale support on +265990870616.")
+    def test_no_contract(self):
+        self.accounts.get_contracts_for_customer.return_value = []
+        self.assert_plain(self.post_ussd("2"), "END No Tenga contract found for this number.")
+
+    def test_upya_timeout_has_no_local_fallback(self):
+        self.accounts.get_contracts_for_customer.side_effect = UpyaTimeout()
+        self.assert_plain(self.post_ussd("2"), "END Tenga is temporarily unable to confirm your account. Please try again shortly.")
+
+    def test_last_payment_and_contract_details(self):
+        self.assert_plain(self.post_ussd("3"), "END Last payment\nK25,000\n2026-08-16\nRef: ...05520")
+        self.assertIn("Samsung A06", self.post_ussd("4").content.decode())
+
+    def test_multiple_contracts_require_selection(self):
+        second = UpyaPaymentOption(contract_number="UPYA-9876", balance=Decimal("10"), unit_status="LOCKED")
+        self.accounts.get_contracts_for_customer.return_value = [self.contract, second]
+        self.assert_plain(self.post_ussd("2"), "CON Choose contract\n1. Contract ...1234\n2. Contract ...9876")
+        self.assertIn("Balance: K10", self.post_ussd("2*2").content.decode())
 
     def test_invalid_input(self):
         response = self.post_ussd("9")
         self.assert_plain(response, "END Invalid option. Please try again.")
 
     def test_session_logging(self):
-        response = self.post_ussd("1")
+        response = self.post_ussd("")
         log = USSDSessionLog.objects.get()
-        self.assertEqual(log.text, "1")
+        self.assertEqual(log.text, "")
         self.assertEqual(log.response, response.content.decode())
+        self.assertTrue(USSDSession.objects.filter(session_id="test123", normalized_mobile="265990870616").exists())
 
 
 # ──────────────────────────────────────────────────────────────────────────────

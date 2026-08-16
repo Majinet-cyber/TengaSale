@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     CommissionRule, PayoutBatch, PayoutItem,
     SalarySchedule, SpinRewardPayout, PaymentApproval, PaymentAuditLog,
-    AirtelTransaction, AirtelCallbackLog, AirtelCallbackProcessingAttempt, AirtelEnquiryLog, USSDPaymentIntent, USSDSessionLog,
+    AirtelTransaction, AirtelCallbackLog, AirtelCallbackProcessingAttempt, AirtelEnquiryLog, USSDPaymentIntent, USSDSession, USSDSessionLog,
 )
 
 
@@ -186,6 +186,14 @@ class USSDPaymentIntentAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "created_at")
     search_fields = ("phone_number", "contract_number", "session_id")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(USSDSession)
+class USSDSessionAdmin(admin.ModelAdmin):
+    list_display = ("session_id", "normalized_mobile", "provider", "state", "selected_contract_number", "expires_at")
+    list_filter = ("provider", "state")
+    search_fields = ("session_id", "normalized_mobile", "selected_contract_number")
     readonly_fields = ("created_at", "updated_at")
 
 

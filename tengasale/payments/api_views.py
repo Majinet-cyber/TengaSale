@@ -23,7 +23,6 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from contracts.models import Contract
 from portal.models import PaymentContract, PaymentTransaction
 from portal.services import resolve_payable_contract
 
@@ -34,7 +33,8 @@ from .airtel_services import (
     AirtelTransactionEnquiryService,
     mask_msisdn,
 )
-from .models import AirtelCallbackLog, AirtelTransaction, USSDPaymentIntent, USSDSessionLog
+from .models import AirtelCallbackLog, AirtelTransaction, USSDSessionLog
+from .ussd import TengaUssdService, UssdProviderAdapter
 from .callback_diagnostics import extract_callback_source_ip
 
 logger = logging.getLogger(__name__)
@@ -52,126 +52,32 @@ def plain_ussd_response(message: str) -> HttpResponse:
     return HttpResponse(message, content_type="text/plain; charset=utf-8")
 
 
-def format_mwk(value):
-    try:
-        value = Decimal(value)
-        return f"{value:,.0f}"
-    except Exception:
-        return str(value)
-
-
-def get_contract_balance(contract_number: str):
-    query = (contract_number or "").strip()
-    if not query:
-        return None
-
-    result = resolve_payable_contract(query, country="MW")
-    portal_contract = result.contract
-    if portal_contract:
-        balance = max((portal_contract.total_amount or Decimal("0")) - (portal_contract.amount_paid or Decimal("0")), Decimal("0"))
-        next_payment = portal_contract.thirty_day_price or portal_contract.daily_price or Decimal("0")
-        return {
-            "balance": balance,
-            "next_payment": next_payment,
-            "due_date": portal_contract.due_date.isoformat() if portal_contract.due_date else "Not available",
-        }
-
-    legal_contract = Contract.objects.filter(contract_number__iexact=query).first()
-    if legal_contract:
-        balance = max((legal_contract.total_loan or Decimal("0")) - (legal_contract.deposit_amount if legal_contract.deposit_paid else Decimal("0")), Decimal("0"))
-        return {
-            "balance": balance,
-            "next_payment": legal_contract.monthly_payment or legal_contract.daily_payment or Decimal("0"),
-            "due_date": "Not available",
-        }
-
-    return None
-
-
 @csrf_exempt
 @require_POST
 def ussd_callback(request):
-    session_id = request.POST.get("sessionId", "").strip()
-    service_code = request.POST.get("serviceCode", "").strip()
-    phone_number = request.POST.get("phoneNumber", "").strip()
-    text = request.POST.get("text", "").strip()
-
-    response = "END Invalid option. Please try again."
-
+    adapter = UssdProviderAdapter()
     try:
-        parts = text.split("*") if text else []
-
-        if text == "":
-            response = "CON Welcome to TengaSale\n1. Pay\n2. Check balance"
-
-        elif text == "1":
-            response = "CON Enter amount you want to pay"
-
-        elif len(parts) == 2 and parts[0] == "1":
-            try:
-                amount = Decimal(parts[1].strip())
-                response = "CON Enter your TengaSale contract number" if amount > 0 else "END Invalid amount. Please try again."
-            except (InvalidOperation, ValueError):
-                response = "END Invalid amount. Please try again."
-
-        elif len(parts) == 3 and parts[0] == "1":
-            amount_raw = parts[1].strip()
-            contract_number = parts[2].strip().upper()
-            try:
-                amount = Decimal(amount_raw)
-                if amount <= 0:
-                    response = "END Invalid amount. Please try again."
-                elif not contract_number:
-                    response = "END Invalid contract number. Please try again."
-                else:
-                    USSDPaymentIntent.objects.create(
-                        phone_number=phone_number,
-                        session_id=session_id,
-                        service_code=service_code,
-                        amount=amount,
-                        contract_number=contract_number,
-                        source="USSD",
-                        status="PENDING",
-                        raw_text=text,
-                    )
-                    response = "END Payment request received. TengaSale will verify and confirm shortly."
-            except (InvalidOperation, ValueError):
-                response = "END Invalid amount. Please try again."
-
-        elif text == "2":
-            response = "CON Enter your TengaSale contract number"
-
-        elif len(parts) == 2 and parts[0] == "2":
-            contract_number = parts[1].strip().upper()
-            if not contract_number:
-                response = "END Invalid contract number. Please try again."
-            else:
-                balance_info = get_contract_balance(contract_number)
-                if balance_info:
-                    balance = format_mwk(balance_info.get("balance"))
-                    next_payment = format_mwk(balance_info.get("next_payment"))
-                    due_date = balance_info.get("due_date") or "Not available"
-                    response = f"END Balance: MWK {balance}. Next payment: MWK {next_payment}. Due date: {due_date}."
-                else:
-                    response = "END Contract not found. Please check your number or contact TengaSale support on +265990870616."
-
-        else:
-            response = "END Invalid option. Please try again."
-
+        event = adapter.parse_request(request)
+        response = TengaUssdService().handle(event)
+    except ValueError:
+        return plain_ussd_response("END Invalid USSD request.")
     except Exception:
-        response = "END Service temporarily unavailable. Please try again shortly."
+        logger.exception("ussd_request_failed")
+        response = "END Tenga is temporarily unavailable. Please try again shortly."
+        event = None
 
     finally:
-        try:
-            USSDSessionLog.objects.create(
-                session_id=session_id,
-                service_code=service_code,
-                phone_number=phone_number,
-                text=text,
-                response=response,
-            )
-        except Exception:
-            pass
+        if 'event' in locals() and event:
+            try:
+                USSDSessionLog.objects.create(
+                    session_id=event.session_id,
+                    service_code=event.service_code,
+                    phone_number=event.phone_number,
+                    text=event.text,
+                    response=response,
+                )
+            except Exception:
+                logger.exception("ussd_session_log_failed session_id=%s", event.session_id)
 
     return plain_ussd_response(response)
 

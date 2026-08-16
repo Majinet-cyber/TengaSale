@@ -1000,6 +1000,22 @@ class USSDPaymentIntent(models.Model):
         return f"{self.phone_number} - {self.contract_number} - MWK {self.amount}"
 
 
+class USSDSession(models.Model):
+    session_id = models.CharField(max_length=128, unique=True)
+    normalized_mobile = models.CharField(max_length=15, db_index=True)
+    service_code = models.CharField(max_length=64, blank=True)
+    provider = models.CharField(max_length=40, default="generic")
+    state = models.CharField(max_length=40, default="ROOT")
+    selected_contract_number = models.CharField(max_length=120, blank=True, db_index=True)
+    selected_payment_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+
 class USSDSessionLog(models.Model):
     session_id = models.CharField(max_length=128, db_index=True)
     service_code = models.CharField(max_length=64, blank=True)
