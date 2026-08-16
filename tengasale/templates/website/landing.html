@@ -9,7 +9,7 @@
   <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.0" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.1" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -26,11 +26,16 @@
       </a>
 
       <div class="nav-links" id="navLinks">
-        <a href="#process">How it works</a>
+        <a class="desktop-only" href="#why">Why</a>
+        <a class="desktop-only" href="#process">Process</a>
         <a href="#phones">Phones</a>
-        <a href="#map">Markets</a>
-        <a href="#company">Company</a>
+        <a href="#trade-upgrade">Trade &amp; Upgrade</a>
+        <a class="desktop-only" href="#map">Map</a>
+        <a class="desktop-only" href="#company">Company</a>
+        <a class="desktop-only" href="{% url 'website_careers' %}">Careers</a>
+        <a href="{% url 'portal_search' %}">Make a Payment</a>
         <a href="#support">Support</a>
+        <a href="{% url 'login' %}">Login</a>
       </div>
 
       <div class="nav-actions">
@@ -57,15 +62,16 @@
       <div class="shell hero-layout">
         <div class="hero-copy reveal">
           <div class="hero-badge"><span class="live-dot"></span> Live in Malawi. Built for Southern Africa.</div>
-          <p class="kicker">Smartphone access, reimagined</p>
-          <h1>Own the phone.<br /><span>Open your world.</span></h1>
+          <p class="kicker">Why Tenga exists</p>
+          <h1>A smartphone is <span>not a luxury.</span></h1>
           <p class="hero-text">
-            Premium smartphones with clear deposits and flexible mobile-money payments — built for how life works here.
+            Everything is going digital — work, payments, school, banking and daily life.
+            But for millions, the device itself is still too expensive to buy upfront.
           </p>
 
           <div class="hero-quote-card">
-            <strong>Simple access. Responsible ownership.</strong>
-            <p>Choose well. Pay your way. Build forward.</p>
+            <strong>Digital life needs a smartphone.</strong>
+            <p>Tenga makes access clear, flexible and premium. Own today. Upgrade tomorrow.</p>
           </div>
 
           <div class="hero-actions">
@@ -94,7 +100,7 @@
           </div>
 
           <div class="device-stage" id="deviceStage">
-            <img class="premium-hero-device" src="{% static 'images/hero-device-premium-v1.png' %}" alt="Premium smartphone available through Tenga" width="780" height="1024" />
+            <img class="hero-phone-photo" src="{% static 'images/phone-banking.png' %}" alt="Smartphone showing digital banking access" width="1024" height="1536" />
           </div>
 
           <div class="floating-chip chip-1">Smartphone access</div>
@@ -236,7 +242,7 @@
             </div></fieldset>
           </div>
           <div class="calculator-summary" aria-live="polite">
-            <div class="calculator-device" aria-hidden="true"><img class="premium-plan-device" src="{% static 'images/hero-device-premium-v1.png' %}" alt="" /></div>
+            <div class="calculator-device" aria-hidden="true"><img class="calculator-phone-photo" src="{% static 'images/phone-school.png' %}" alt="" /></div>
             <span class="calculator-status" id="calculatorStatus">Available</span><h3 id="calculatorModel">Select a phone</h3><p id="calculatorSpec"></p>
             <div class="calculator-values"><div><small>Deposit</small><strong id="calculatorDepositValue">—</strong></div><div><small id="calculatorPaymentLabel">Daily payment</small><strong id="calculatorPaymentValue">—</strong></div></div>
             <a class="button button-primary button-large" href="{% url 'new_application' %}" id="calculatorApply">Continue to application</a>
@@ -316,12 +322,36 @@
         <div class="section-head split reveal compact-split">
           <div>
             <p class="kicker">Regional map</p>
-            <h2>One platform.<br />A region in motion.</h2>
+            <h2>Built for Southern Africa.</h2>
           </div>
-          <p class="lead">Live market intelligence across Tenga's focused expansion path.</p>
+          <p class="lead">Malawi live. Zambia next. Zimbabwe planned. Kenya in exploration.</p>
         </div>
 
-        <div class="map-panel reveal">
+        <div class="map-panel map-panel--approved reveal">
+          <div class="approved-market-map" id="approvedMarketMap">
+            <img class="approved-market-map__base" src="{% static 'images/africa-map-approved-v4.png' %}" alt="Africa market map showing Malawi, Zambia, Zimbabwe and Kenya" />
+            <div class="approved-mask approved-mask--zm"></div><div class="approved-mask approved-mask--mw"></div><div class="approved-mask approved-mask--zw"></div>
+            <div class="approved-map-topline"><span></span>Market access live</div>
+            <div class="approved-tam"><div><small>Total addressable market</small><b>4 markets</b></div><strong><span id="approvedTam">27.8</span>M</strong><p>Phone owners not yet active online</p><footer><span id="approvedContributionLabel">Malawi contribution</span><b id="approvedContribution">8.2M</b></footer></div>
+            <button class="approved-node approved-node--mw active" data-market="malawi" aria-label="Show Malawi market"></button>
+            <button class="approved-node approved-node--zm" data-market="zambia" aria-label="Show Zambia market"></button>
+            <button class="approved-node approved-node--zw" data-market="zimbabwe" aria-label="Show Zimbabwe market"></button>
+            <button class="approved-node approved-node--ke" data-market="kenya" aria-label="Show Kenya market"></button>
+            <button class="approved-label approved-label--mw active" data-market="malawi"><strong>Malawi</strong><span>Live now</span></button>
+            <button class="approved-label approved-label--zm" data-market="zambia"><strong>Zambia</strong><span>Next</span></button>
+            <button class="approved-label approved-label--zw" data-market="zimbabwe"><strong>Zimbabwe</strong><span>Planned</span></button>
+            <button class="approved-label approved-label--ke" data-market="kenya"><strong>Kenya</strong><span>Explore</span></button>
+            <aside class="approved-dock">
+              <header><div><small>Focus market</small><h3 id="approvedCountry">Malawi</h3></div><span id="approvedStatus">Live</span></header>
+              <div class="approved-score"><small>Access gap</small><strong id="approvedGap">39 pts</strong><p id="approvedTone">Largest gap of the four</p></div>
+              <div class="approved-metric"><span>Own</span><i><b id="approvedOwnBar" style="width:57%"></b></i><em id="approvedOwn">57</em></div>
+              <div class="approved-metric"><span>Online</span><i><b class="muted" id="approvedNetBar" style="width:18%"></b></i><em id="approvedNet">18</em></div>
+              <div class="approved-chart"><small>Live chart</small><svg viewBox="0 0 240 54" aria-hidden="true"><path id="approvedSparkOwn" fill="none" stroke="#ff6f12" stroke-width="4" stroke-linecap="round"></path><path id="approvedSparkNet" fill="none" stroke="#98a2b3" stroke-width="4" stroke-linecap="round"></path></svg></div>
+              <p class="approved-year" id="approvedYear">ITU · 2023</p>
+            </aside>
+            <div class="approved-market-bar" role="tablist" aria-label="Tenga markets"><button class="active" data-market="malawi">Malawi</button><button data-market="zambia">Zambia</button><button data-market="zimbabwe">Zimbabwe</button><button data-market="kenya">Kenya</button></div>
+            <button class="approved-auto" id="approvedAuto" type="button" aria-label="Pause automatic market cycling">Ⅱ <span>Auto</span></button>
+          </div>
           <div class="map-canvas">
             <img src="{% static 'images/africa-expansion-map.svg' %}?v=1.0.0" class="regional-map" alt="Geographic map of Africa highlighting Malawi as live, Zambia as next and Zimbabwe as planned">
             {% comment %}Retired abstract map retained temporarily for easy historical comparison.
@@ -354,20 +384,11 @@
             {% endcomment %}
           </div>
 
-          <aside class="market-intelligence" aria-live="polite">
-            <div class="market-intelligence__top"><span>Market signal</span><button id="marketPlayback" type="button" aria-label="Pause automatic market cycling">Ⅱ</button></div>
-            <div class="market-intelligence__status"><i id="marketSignal"></i><span id="marketStatus">Live</span></div>
-            <h3 id="marketName">Malawi</h3>
-            <p id="marketStory">Tenga's operating market and launchpad for regional scale.</p>
-            <div class="market-chart" aria-label="Illustrative market momentum chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="tam-card"><span>Total addressable market</span><strong><span id="tamValue">0</span>M</strong><small>people across focused markets</small></div>
-          </aside>
-        </div>
-        <div class="market-pills" role="tablist" aria-label="Tenga markets">
-          <button class="market-pill active" type="button" data-market="malawi"><span>MW</span>Malawi <i>Live</i></button>
-          <button class="market-pill" type="button" data-market="zambia"><span>ZM</span>Zambia <i>Next</i></button>
-          <button class="market-pill" type="button" data-market="zimbabwe"><span>ZW</span>Zimbabwe <i>Planned</i></button>
-          <button class="market-pill" type="button" data-market="kenya"><span>KE</span>Kenya <i>Explore</i></button>
+          <div class="map-sidebar">
+            <article class="map-item active"><img class="market-flag" src="{% static 'img/flags/malawi.svg' %}" alt="Flag of Malawi" width="48" height="32"><div><h3>Malawi</h3><p>Home market.</p><small>Live</small></div></article>
+            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zambia.svg' %}" alt="Flag of Zambia" width="48" height="32"><div><h3>Zambia</h3><p>Priority expansion.</p><small>Next</small></div></article>
+            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zimbabwe.svg' %}" alt="Flag of Zimbabwe" width="48" height="24"><div><h3>Zimbabwe</h3><p>Regional roadmap.</p><small>Next</small></div></article>
+          </div>
         </div>
       </div>
     </section>
@@ -552,5 +573,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.0" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.1" defer></script>
 {% endblock %}

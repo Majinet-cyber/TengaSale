@@ -24,7 +24,8 @@ function renderPhones() {
     phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
     return;
   }
-  phoneGrid.innerHTML = PHONE_OFFERS.map(phone => `
+  const phoneVisuals = ["/static/images/phone-tecno-camon.png", "/static/images/phone-school.png", "/static/images/phone-banking.png"];
+  phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => `
     <article class="phone-card reveal visible" style="
       --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
       --grad:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).grad};
@@ -34,7 +35,7 @@ function renderPhones() {
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
-        <img class="premium-plan-device" src="/static/images/hero-device-premium-v1.png" alt="" aria-hidden="true">
+        <img class="catalogue-phone-photo" src="${phone.brand === "Tecno" ? phoneVisuals[0] : phoneVisuals[index % phoneVisuals.length]}" alt="${phone.name}">
       </div>
       <div class="phone-body">
         <div class="phone-top">
@@ -307,53 +308,45 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
 })();
 
 (() => {
-  const pills = [...document.querySelectorAll(".market-pill")];
-  const name = document.getElementById("marketName");
-  const status = document.getElementById("marketStatus");
-  const story = document.getElementById("marketStory");
-  const playback = document.getElementById("marketPlayback");
-  const tamValue = document.getElementById("tamValue");
-  if (!pills.length || !name || !status || !story || !playback || !tamValue) return;
-  const markets = {
-    malawi: { name: "Malawi", status: "Live", story: "Tenga's operating market and launchpad for regional scale.", tam: 21 },
-    zambia: { name: "Zambia", status: "Next", story: "A priority market with strong mobile-money adoption and access demand.", tam: 22 },
-    zimbabwe: { name: "Zimbabwe", status: "Planned", story: "A connected market in Tenga's focused Southern African roadmap.", tam: 17 },
-    kenya: { name: "Kenya", status: "Explore", story: "An innovation-led mobile economy being evaluated for future reach.", tam: 56 }
+  const root = document.getElementById("approvedMarketMap");
+  if (!root) return;
+  const DATA = {
+    malawi:{country:"Malawi",status:"Live",own:56.6,net:18,gap:38.6,year:2023,tone:"Largest gap of the four",contrib:8.2},
+    zambia:{country:"Zambia",status:"Next",own:44.6,net:14.3,gap:30.3,year:2018,tone:"Strong expansion case",contrib:6.3},
+    zimbabwe:{country:"Zimbabwe",status:"Planned",own:47,net:29.3,gap:17.7,year:2020,tone:"Smaller but attractive gap",contrib:3},
+    kenya:{country:"Kenya",status:"Explore",own:53.7,net:35,gap:18.7,year:2024,tone:"East Africa upside",contrib:10.3}
   };
+  const order = ["malawi","zambia","zimbabwe","kenya"];
+  const targets = [...root.querySelectorAll("[data-market]")];
+  const autoButton = document.getElementById("approvedAuto");
   let index = 0;
-  let playing = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let auto = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let timer;
-  const animateTam = target => {
-    const start = Number(tamValue.textContent) || 0;
-    const began = performance.now();
-    const tick = now => {
-      const progress = Math.min((now - began) / 650, 1);
-      tamValue.textContent = Math.round(start + (target - start) * (1 - Math.pow(1 - progress, 3)));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+  const spark = values => values.map((value, point) => `${point ? "L" : "M"}${18 + point * 100} ${45 - value / 70 * 34}`).join(" ");
+  const show = (key, manual = false) => {
+    index = order.indexOf(key);
+    const data = DATA[key];
+    document.getElementById("approvedCountry").textContent = data.country;
+    document.getElementById("approvedStatus").textContent = data.status;
+    document.getElementById("approvedGap").textContent = `${Math.round(data.gap)} pts`;
+    document.getElementById("approvedTone").textContent = data.tone;
+    document.getElementById("approvedOwn").textContent = Math.round(data.own);
+    document.getElementById("approvedNet").textContent = Math.round(data.net);
+    document.getElementById("approvedOwnBar").style.width = `${data.own}%`;
+    document.getElementById("approvedNetBar").style.width = `${data.net}%`;
+    document.getElementById("approvedYear").textContent = `ITU · ${data.year}`;
+    document.getElementById("approvedContributionLabel").textContent = `${data.country} contribution`;
+    document.getElementById("approvedContribution").textContent = `${data.contrib.toFixed(1)}M`;
+    document.getElementById("approvedSparkOwn").setAttribute("d", spark([Math.max(8,data.own-12),Math.max(10,data.own-6),data.own]));
+    document.getElementById("approvedSparkNet").setAttribute("d", spark([Math.max(4,data.net-6),Math.max(5,data.net-2),data.net]));
+    targets.forEach(target => target.classList.toggle("active", target.dataset.market === key));
+    if (manual) schedule();
   };
-  const select = next => {
-    index = next;
-    const pill = pills[index];
-    const market = markets[pill.dataset.market];
-    pills.forEach(item => item.classList.toggle("active", item === pill));
-    name.textContent = market.name;
-    status.textContent = market.status;
-    story.textContent = market.story;
-    animateTam(market.tam);
-  };
-  const schedule = () => {
-    clearInterval(timer);
-    if (playing) timer = setInterval(() => select((index + 1) % pills.length), 4200);
-  };
-  pills.forEach((pill, pillIndex) => pill.addEventListener("click", () => { select(pillIndex); schedule(); }));
-  playback.addEventListener("click", () => {
-    playing = !playing;
-    playback.textContent = playing ? "Ⅱ" : "▶";
-    playback.setAttribute("aria-label", playing ? "Pause automatic market cycling" : "Play automatic market cycling");
-    schedule();
-  });
-  select(0);
+  const schedule = () => { clearInterval(timer); if (auto) timer = setInterval(() => show(order[(index + 1) % order.length]), 3200); };
+  targets.forEach(target => target.addEventListener("click", () => show(target.dataset.market, true)));
+  autoButton.addEventListener("click", () => { auto = !auto; autoButton.firstChild.textContent = auto ? "Ⅱ " : "▶ "; autoButton.querySelector("span").textContent = auto ? "Auto" : "Paused"; autoButton.setAttribute("aria-label", auto ? "Pause automatic market cycling" : "Play automatic market cycling"); schedule(); });
+  root.addEventListener("mouseenter", () => clearInterval(timer));
+  root.addEventListener("mouseleave", schedule);
+  show("malawi");
   schedule();
 })();
