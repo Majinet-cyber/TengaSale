@@ -27,8 +27,13 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertIn("calc((100svh - 190px) * 703 / 559)", self.styles)
         self.assertIn("(min-width:701px) and (max-height:900px)", self.styles)
         self.assertIn("(min-width:701px) and (max-height:760px)", self.styles)
-        self.assertIn(".approved-market-map{aspect-ratio:4/5}", self.styles)
+        self.assertIn(".approved-market-map{aspect-ratio:3/5}", self.styles)
         self.assertNotIn(".approved-market-map{transform:scale", self.styles)
+
+    def test_approved_map_always_contains_the_full_africa_artwork(self):
+        self.assertIn("object-fit:contain;object-position:center", self.styles)
+        self.assertIn("object-position:center top", self.styles)
+        self.assertNotIn(".approved-market-map__base{object-fit:cover", self.styles)
 
     def test_redmi_and_samsung_have_dedicated_non_overlapping_visuals(self):
         self.assertIn('brand.includes("redmi") || brand.includes("xiaomi")', self.script)
