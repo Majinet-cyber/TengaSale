@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="{% static 'css/tenga-signal.css' %}?v=1.0.0">
     <link rel="stylesheet" href="{% static 'css/tenga-type-system.css' %}?v=1.0.0">
     <link rel="stylesheet" href="{% static 'css/tenga-design-system.css' %}?v=1.0.0">
+    {% if current_tengasale_role == "hq" %}<link rel="stylesheet" href="{% static 'css/hq-sales-pulse.css' %}?v=1.0.0" data-testid="hq-sales-pulse-theme">{% endif %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <style>
     /* ── Global top progress bar ─────────────────────────────────── */

@@ -64,13 +64,22 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertIn('unlockConfirmation.setAttribute("aria-hidden", "false")', self.script)
         self.assertIn(".lock-screen.paid", self.styles)
 
-    def test_landing_footer_is_minimal_and_link_columns_are_removed(self):
+    def test_landing_footer_restores_complete_professional_sitemap(self):
         footer = self.template.split("{% block site_footer %}", 1)[1]
-        self.assertIn("footer-layout--minimal", self.template)
-        self.assertNotIn("footer-layout--complete", self.template)
-        self.assertNotIn('class="footer-group"', footer)
-        for heading in (">Product<", ">Support<", ">Company<", ">Region<", ">Legal<"):
-            self.assertNotIn(heading, footer)
+        self.assertIn("footer-layout--complete", footer)
+        for test_id in ("footer-product", "footer-support", "footer-company", "footer-region", "footer-legal"):
+            self.assertIn(f'data-testid="{test_id}"', footer)
+        for route in ("website_terms", "website_privacy", "website_payment_terms", "website_merchant_terms"):
+            self.assertIn(route, footer)
+        for status in ("Malawi — Live", "Zambia — Next", "Zimbabwe — Planned", "Kenya — Explore"):
+            self.assertIn(status, footer)
+
+    def test_landing_has_no_public_apply_link_or_removed_clutter(self):
+        self.assertNotIn(">Apply<", self.template)
+        self.assertIn("Trade and upgrade intentionally removed", self.template)
+        self.assertNotIn('href="#trade-upgrade"', self.template)
+        self.assertNotIn('class="calculator-section', self.template)
+        self.assertEqual(self.template.count('class="map-section'), 1)
 
     def test_access_section_keeps_the_approved_headline_and_refined_copy(self):
         self.assertEqual(self.template.count('id="why"'), 1)

@@ -9,7 +9,7 @@
     <span class="hq-shell-nav__label">Operate</span>
     <a href="{% url 'hq_dashboard' %}" class="{% if current_url == 'hq_dashboard' %}is-active{% endif %}"><i class="bi bi-command"></i><span>Command</span></a>
     <a href="{% url 'hq_applications' %}" class="{% if current_url == 'hq_applications' %}is-active{% endif %}"><i class="bi bi-files"></i><span>Applications</span></a>
-    <a href="{% url 'hq_deals' %}" class="{% if current_url == 'hq_deals' %}is-active{% endif %}"><i class="bi bi-phone"></i><span>Device catalog</span></a>
+    <a href="{% url 'hq_deals' %}" class="{% if current_url == 'hq_deals' %}is-active{% endif %}"><i class="bi bi-phone"></i><span>Deals Catalog</span></a>
     <a href="{% url 'hq_portfolio' %}" class="{% if current_url == 'hq_portfolio' or current_url == 'hq_portfolio_investor_report' %}is-active{% endif %}"><i class="bi bi-graph-up"></i><span>Portfolio</span></a>
     <a href="{% url 'hq_devices' %}" class="{% if current_url == 'hq_devices' %}is-active{% endif %}"><i class="bi bi-shield-lock"></i><span>Devices</span></a>
     <a href="{% url 'device_lock:hq_lock_centre' %}" class="{% if current_url == 'hq_lock_centre' %}is-active{% endif %}"><i class="bi bi-lock"></i><span>Device Locking</span></a>
