@@ -625,11 +625,13 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 .device-gallery .phone-visual{height:310px;overflow:hidden}
 .device-gallery .phone-body{padding-top:20px}
 .device-gallery .phone-top{align-items:start}
-.phone-art-time{position:absolute;right:18px;top:17px;z-index:4;padding:7px 10px;border:1px solid rgba(255,255,255,.55);border-radius:999px;background:rgba(15,23,42,.7);color:#fff;font-size:10px;font-weight:850;letter-spacing:.08em;backdrop-filter:blur(10px)}
 .device-gallery .catalogue-phone-photo{width:185px;height:260px;object-fit:contain;border-radius:25px;transition:transform .35s ease}
 .device-gallery .phone-card:hover .catalogue-phone-photo{transform:translateY(-5px) scale(1.025)}
 .device-gallery .catalogue-phone-photo--midnight,.device-gallery .catalogue-phone-photo--studio{object-fit:cover;object-position:top}
 .device-gallery .catalogue-phone-photo--ice{width:205px;object-fit:contain}
+.device-gallery .catalogue-phone-photo--redmi{width:190px;object-fit:contain}
+.device-gallery .phone-card[data-phone-brand*="Redmi"] .phone-visual,
+.device-gallery .phone-card[data-phone-brand*="Xiaomi"] .phone-visual{background:radial-gradient(circle at 50% 42%,#30343e 0%,#11141a 58%,#090b0f 100%)}
 .hero-visual{isolation:isolate}
 .hero-visual::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;width:520px;height:520px;border:1px solid rgba(255,255,255,.11);border-radius:50%;background:radial-gradient(circle at 42% 35%,rgba(255,107,0,.16),rgba(118,87,255,.09) 48%,rgba(7,10,18,0) 70%);box-shadow:inset 0 0 80px rgba(255,255,255,.025);transform:translate(-50%,-50%)}
 .device-stage{display:grid;place-items:center;width:520px;height:650px;margin:auto}

@@ -9,7 +9,7 @@
   <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.2" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.3" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -63,14 +63,9 @@
           <p class="kicker">Why Tenga exists</p>
           <h1>A smartphone is <span>not a luxury.</span></h1>
           <p class="hero-text">
-            Everything is going digital — work, payments, school, banking and daily life.
-            But for millions, the device itself is still too expensive to buy upfront.
+            Work, payments, school and daily life now depend on a smartphone.
+            Tenga makes that essential access attainable when upfront cost stands in the way.
           </p>
-
-          <div class="hero-quote-card">
-            <strong>Digital life needs a smartphone.</strong>
-            <p>Tenga makes access clear, flexible and premium. Own today. Upgrade tomorrow.</p>
-          </div>
 
           <div class="hero-actions">
             <a class="button button-primary button-large" href="#phones">Explore Phones</a>
@@ -325,43 +320,7 @@
             <div class="approved-market-bar" role="tablist" aria-label="Tenga markets"><button class="active" data-market="malawi">Malawi</button><button data-market="zambia">Zambia</button><button data-market="zimbabwe">Zimbabwe</button><button data-market="kenya">Kenya</button></div>
             <button class="approved-auto" id="approvedAuto" type="button" aria-label="Pause automatic market cycling">Ⅱ <span>Auto</span></button>
           </div>
-          <div class="map-canvas">
-            <img src="{% static 'images/africa-expansion-map.svg' %}?v=1.0.0" class="regional-map" alt="Geographic map of Africa highlighting Malawi as live, Zambia as next and Zimbabwe as planned">
-            {% comment %}Retired abstract map retained temporarily for easy historical comparison.
-            <svg viewBox="0 0 900 720" class="regional-map" role="img" aria-label="Map of Southern Africa highlighting Malawi, Zambia and Zimbabwe">
-              <defs>
-                <linearGradient id="countryGlow" x1="0" x2="1"><stop offset="0%" stop-color="#7d5cff"/><stop offset="100%" stop-color="#18c8ff"/></linearGradient>
-                <filter id="softGlow"><feGaussianBlur stdDeviation="7" result="blur"></feGaussianBlur><feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
-              </defs>
-              <path class="country muted" d="M135 228 L247 168 L351 179 L344 273 L264 336 L171 321 L115 277 Z" />
-              <path class="country muted" d="M114 335 L248 340 L329 397 L323 512 L224 590 L114 531 L79 425 Z" />
-              <path class="country muted" d="M341 176 L474 160 L579 200 L565 294 L474 323 L355 277 Z" />
-              <path class="country muted" d="M354 333 L476 325 L566 371 L573 474 L478 536 L366 488 L325 400 Z" />
-              <path class="country muted" d="M588 211 L689 185 L762 233 L777 311 L739 392 L648 364 L586 302 Z" />
-              <path class="country muted" d="M583 385 L690 378 L780 420 L782 517 L711 587 L613 560 L559 466 Z" />
-              <path class="country muted" d="M488 543 L628 551 L724 607 L690 680 L548 684 L454 618 Z" />
-              <path class="country muted" d="M332 534 L459 544 L542 603 L518 683 L376 693 L293 620 Z" />
-              <path class="country muted" d="M722 601 L804 566 L845 619 L808 689 L739 689 L702 651 Z" />
-              <path class="country focus zambia" d="M356 183 L477 164 L570 201 L557 286 L476 313 L364 276 L346 228 Z" />
-              <path class="country focus zimbabwe" d="M477 328 L571 372 L575 455 L496 504 L411 474 L374 406 L399 345 Z" />
-              <path class="country focus malawi" d="M598 220 L616 209 L630 250 L620 309 L626 358 L613 389 L596 350 L602 303 L592 250 Z" />
-              <path class="route" d="M611 301 C566 276 542 263 504 245" />
-              <path class="route" d="M611 301 C587 331 560 371 530 404" />
-              <g class="node active" transform="translate(610 301)"><circle class="pulse" r="20"></circle><circle class="core" r="7"></circle></g>
-              <g class="node" transform="translate(503 244)"><circle class="pulse" r="15"></circle><circle class="core" r="6"></circle></g>
-              <g class="node" transform="translate(529 406)"><circle class="pulse" r="15"></circle><circle class="core" r="6"></circle></g>
-              <g class="label" transform="translate(634 286)"><rect rx="14" ry="14" width="138" height="42"></rect><text x="16" y="26">Malawi · Live</text></g>
-              <g class="label secondary" transform="translate(390 186)"><rect rx="14" ry="14" width="126" height="40"></rect><text x="15" y="25">Zambia · Next</text></g>
-              <g class="label secondary" transform="translate(554 492)"><rect rx="14" ry="14" width="143" height="40"></rect><text x="15" y="25">Zimbabwe · Next</text></g>
-            </svg>
-            {% endcomment %}
-          </div>
 
-          <div class="map-sidebar">
-            <article class="map-item active"><img class="market-flag" src="{% static 'img/flags/malawi.svg' %}" alt="Flag of Malawi" width="48" height="32"><div><h3>Malawi</h3><p>Home market.</p><small>Live</small></div></article>
-            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zambia.svg' %}" alt="Flag of Zambia" width="48" height="32"><div><h3>Zambia</h3><p>Priority expansion.</p><small>Next</small></div></article>
-            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zimbabwe.svg' %}" alt="Flag of Zimbabwe" width="48" height="24"><div><h3>Zimbabwe</h3><p>Regional roadmap.</p><small>Next</small></div></article>
-          </div>
         </div>
       </div>
     </section>
@@ -539,5 +498,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.2" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.3" defer></script>
 {% endblock %}

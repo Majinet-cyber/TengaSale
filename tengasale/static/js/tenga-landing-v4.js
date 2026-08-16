@@ -25,14 +25,16 @@ function renderPhones() {
     phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
     return;
   }
-  const phoneVisuals = [
-    { src: "/static/images/phone-tecno-camon.png", time: "08:45", mood: "aurora" },
-    { src: "/static/images/phone-realistic.png", time: "10:32", mood: "midnight" },
-    { src: "/static/images/phone-samsung.png", time: "09:18", mood: "ice" },
-    { src: "/static/images/phone-school.png", time: "10:30", mood: "studio" }
-  ];
+  const visualForPhone = phone => {
+    const brand = phone.brand.toLowerCase();
+    if (brand.includes("redmi") || brand.includes("xiaomi")) return { src: "/static/images/phone-redmi-premium-v1.png", mood: "redmi" };
+    if (brand.includes("samsung")) return { src: "/static/images/phone-samsung.png", mood: "ice" };
+    if (brand.includes("itel")) return { src: "/static/images/phone-realistic.png", mood: "midnight" };
+    if (brand.includes("tecno")) return { src: "/static/images/phone-tecno-camon.png", mood: "aurora" };
+    return { src: "/static/images/phone-school.png", mood: "studio" };
+  };
   phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => `
-    <article class="phone-card reveal visible" style="
+    <article class="phone-card reveal visible" data-phone-brand="${phone.brand}" style="
       --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
       --grad:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).grad};
       --accent:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).accent};
@@ -41,8 +43,7 @@ function renderPhones() {
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
-        <span class="phone-art-time">${phoneVisuals[index % phoneVisuals.length].time}</span>
-        <img class="catalogue-phone-photo catalogue-phone-photo--${phoneVisuals[index % phoneVisuals.length].mood}" src="${phoneVisuals[index % phoneVisuals.length].src}" alt="${phone.name}">
+        <img class="catalogue-phone-photo catalogue-phone-photo--${visualForPhone(phone).mood}" data-phone-visual="${visualForPhone(phone).src}" src="${visualForPhone(phone).src}" alt="${phone.name}">
       </div>
       <div class="phone-body">
         <div class="phone-top">
