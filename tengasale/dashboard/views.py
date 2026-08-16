@@ -407,6 +407,7 @@ def hq_dashboard(request):
     )
 
     today = timezone.now().date()
+    from .analytics import application_trend, collections_trend, grouped_breakdown
     paid_today = (
         PaymentTransaction.objects.filter(status="paid", paid_at__date=today)
         .aggregate(t=Sum("amount"))["t"] or 0
@@ -608,6 +609,8 @@ def hq_dashboard(request):
     except Exception:
         lock_locked_count = 0
 
+    hq_collections_trend = collections_trend(PaymentTransaction.objects.all(), today=today)
+    hq_application_trend = application_trend(FinancingApplication.objects.all(), today=today)
     context = {
         "total_merchants": total_merchants,
         "total_underwriters": total_underwriters,
@@ -635,6 +638,15 @@ def hq_dashboard(request):
         # Command Pulse
         "collections_today": collections_today,
         "sales_today": sales_today,
+        "hq_collections_trend": hq_collections_trend,
+        "hq_collections_has_data": any(row["amount"] for row in hq_collections_trend),
+        "hq_application_trend": hq_application_trend,
+        "hq_applications_has_data": any(row["applications"] for row in hq_application_trend),
+        "hq_portfolio_status": grouped_breakdown(
+            PaymentContract.objects.all(),
+            "status",
+            labels=dict(PaymentContract.STATUS_CHOICES),
+        ),
         "approval_rate": approval_rate,
         "uw_payout_liability": uw_payout_liability,
         "lock_exposure_count": lock_exposure_count,
@@ -648,6 +660,7 @@ def hq_dashboard(request):
         "outstanding_balance": outstanding_balance,
         "default_rate": default_rate,
         "portfolio_at_risk": portfolio_at_risk,
+        "total_ever_active": total_ever_active,
         "merchant_earnings_total": merchant_earnings_total,
         "gross_profit_total": gross_profit_total,
         "uw_earnings_total": uw_earnings_total,
@@ -3538,6 +3551,7 @@ def hq_auto_approval(request):
 def hq_payment_collections(request):
     """Payment collections control page."""
     from portal.models import PaymentContract, PaymentTransaction
+    from .analytics import collections_trend, grouped_breakdown
 
     today = timezone.now().date()
     month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -3624,6 +3638,14 @@ def hq_payment_collections(request):
 
     transactions = txns_qs[:100]
     providers = PaymentTransaction.objects.values_list("provider", flat=True).distinct().order_by("provider")
+    all_transactions = PaymentTransaction.objects.all()
+    payment_collections_trend = collections_trend(all_transactions, today=today)
+    payment_provider_split = grouped_breakdown(
+        all_transactions, "provider", labels=dict(PaymentTransaction.PROVIDER_CHOICES)
+    )
+    payment_status_breakdown = grouped_breakdown(
+        all_transactions, "status", labels=dict(PaymentTransaction.STATUS_CHOICES)
+    )
 
     return render(request, "dashboard/hq_payment_collections.html", {
         "collections_today": collections_today,
@@ -3632,6 +3654,9 @@ def hq_payment_collections(request):
         "pending_payments": pending_payments,
         "transactions": transactions,
         "providers": providers,
+        "payment_collections_trend": payment_collections_trend,
+        "payment_provider_split": payment_provider_split,
+        "payment_status_breakdown": payment_status_breakdown,
         "status_filter": status_filter,
         "provider_filter": provider_filter,
         "date_from": date_from,

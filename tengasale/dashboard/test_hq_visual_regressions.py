@@ -12,6 +12,7 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         base = Path(settings.BASE_DIR)
         cls.base_template = (base / "templates/base/base.html").read_text(encoding="utf-8")
         cls.dashboard = (base / "templates/dashboard/hq.html").read_text(encoding="utf-8")
+        cls.collections = (base / "templates/dashboard/hq_payment_collections.html").read_text(encoding="utf-8")
         cls.sidebar = (base / "templates/dashboard/partials/hq_sidebar.html").read_text(encoding="utf-8")
         cls.theme = (base / "static/css/hq-sales-pulse.css").read_text(encoding="utf-8")
 
@@ -35,3 +36,27 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
     def test_dense_tables_forms_and_command_hero_receive_shared_presentation(self):
         for selector in ("body.role-hq table", "input,select,textarea", ".hq-command-action", ".hq-command-hero,.hq-pulse"):
             self.assertIn(selector, self.theme)
+
+    def test_hq_shell_is_full_viewport_and_live_graphs_have_honest_empty_states(self):
+        self.assertIn("width:100%;max-width:none!important;min-height:100vh", self.theme)
+        self.assertIn("border-radius:0!important", self.theme)
+        self.assertNotIn("padding:22px;background:radial-gradient", self.theme)
+        for marker in (
+            'data-testid="hq-live-intelligence"',
+            'data-testid="hq-collections-trend"',
+            'data-testid="hq-applications-trend"',
+            'data-testid="hq-portfolio-status"',
+            "No paid collections in the last 7 days",
+            "No submitted applications in the last 14 days",
+            "No payment contracts yet",
+        ):
+            self.assertIn(marker, self.dashboard)
+
+        for marker in (
+            "payment_collections_trend",
+            "payment_provider_split",
+            "payment_status_breakdown",
+            "payCollectionsChart",
+            "No paid collections in the last 7 days",
+        ):
+            self.assertIn(marker, self.collections)

@@ -1955,6 +1955,38 @@ body {
       </div>
     </section>
 
+    <section class="hq-command-section hq-live-intelligence" aria-labelledby="live-intelligence-title" data-testid="hq-live-intelligence">
+      <div class="hq-command-section__head">
+        <div><span>Real-time signals</span><h2 id="live-intelligence-title">Live operational intelligence</h2></div>
+        <small class="hq-live-intelligence__note">Database totals &middot; refreshed on load</small>
+      </div>
+      <div class="hq-live-intelligence__grid">
+        <article class="hq-live-chart" data-testid="hq-collections-trend">
+          <header><div><span>Cash movement</span><h3>Collections &middot; 7 days</h3></div><strong>{{ collections_today|mwk }}</strong></header>
+          {% if hq_collections_has_data %}
+          <div class="hq-mini-bars" aria-label="Seven day collections trend">
+            {% for point in hq_collections_trend %}<div class="hq-mini-bars__point" title="{{ point.date }}: {{ point.amount|mwk }} ({{ point.count }} payments)"><i style="height:{{ point.height }}%"></i><span>{{ point.label }}</span></div>{% endfor %}
+          </div>
+          {% else %}<div class="hq-chart-empty"><i class="bi bi-bar-chart"></i><span>No paid collections in the last 7 days</span></div>{% endif %}
+        </article>
+        <article class="hq-live-chart" data-testid="hq-applications-trend">
+          <header><div><span>Underwriting flow</span><h3>Applications &amp; approvals &middot; 14 days</h3></div><div class="hq-chart-legend"><i></i>Applied <i></i>Approved</div></header>
+          {% if hq_applications_has_data %}
+          <div class="hq-mini-bars hq-mini-bars--paired" aria-label="Fourteen day applications and approvals trend">
+            {% for point in hq_application_trend %}<div class="hq-mini-bars__point" title="{{ point.date }}: {{ point.applications }} applications, {{ point.approvals }} approved"><b style="height:{{ point.application_height }}%"></b><i style="height:{{ point.approval_height }}%"></i><span>{% if forloop.counter0|divisibleby:2 %}{{ point.label }}{% endif %}</span></div>{% endfor %}
+          </div>
+          {% else %}<div class="hq-chart-empty"><i class="bi bi-activity"></i><span>No submitted applications in the last 14 days</span></div>{% endif %}
+          <small class="hq-live-chart__footnote">Approvals grouped by application submission date</small>
+        </article>
+        <article class="hq-live-chart hq-live-chart--status" data-testid="hq-portfolio-status">
+          <header><div><span>Portfolio state</span><h3>Contracts by status</h3></div><strong>{{ total_ever_active|default:active_contracts_count }} total</strong></header>
+          {% if hq_portfolio_status %}
+          <div class="hq-status-bars">{% for row in hq_portfolio_status %}<div><span>{{ row.label }} <small>{{ row.count }}</small></span><b><i style="width:{{ row.percent }}%"></i></b><em>{{ row.percent }}%</em></div>{% endfor %}</div>
+          {% else %}<div class="hq-chart-empty"><i class="bi bi-pie-chart"></i><span>No payment contracts yet</span></div>{% endif %}
+        </article>
+      </div>
+    </section>
+
     <section class="hq-command-details" aria-label="Command center intelligence">
       <details>
         <summary><span><i class="bi bi-graph-up"></i><strong>Portfolio intelligence</strong><small>Balance, profit, risk and collections</small></span><i class="bi bi-chevron-down"></i></summary>

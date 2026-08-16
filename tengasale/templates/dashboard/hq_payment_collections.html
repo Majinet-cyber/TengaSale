@@ -119,7 +119,14 @@
   </div>
 
   {# ── Charts row ──────────────────────────────────────────────── #}
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;margin-bottom:20px;" data-testid="pay-charts-row">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px;margin-bottom:20px;" data-testid="pay-charts-row">
+
+    <div class="glass-card ts-stagger-item" style="padding:16px;">
+      <p style="font-size:0.78rem;font-weight:800;margin:0 0 12px;color:#0f172a;">Collections &middot; Last 7 Days</p>
+      <div style="position:relative;height:200px;max-height:220px;">
+        <canvas id="payCollectionsChart" aria-label="Seven day paid collections trend"></canvas>
+      </div>
+    </div>
 
     <div class="glass-card ts-stagger-item" style="padding:16px;">
       <p style="font-size:0.78rem;font-weight:800;margin:0 0 12px;color:#0f172a;">Provider Split</p>
@@ -229,12 +236,10 @@
   'use strict';
 
   /* ── Provider split donut ──────────────────────────── */
-  var providerLabels = [];
-  var providerCounts = [];
-  {% regroup transactions by provider as txn_by_provider %}
-  {% for grp in txn_by_provider %}
-  providerLabels.push("{{ grp.grouper|default:'Other'|escapejs }}");
-  providerCounts.push({{ grp.list|length }});
+  var providerLabels = [], providerCounts = [];
+  {% for row in payment_provider_split %}
+  providerLabels.push("{{ row.label|escapejs }}");
+  providerCounts.push({{ row.count }});
   {% endfor %}
 
   var palette = ['#ff5a00','#16a34a','#3b82f6','#d97706','#8b5cf6','#ec4899','#06b6d4'];
@@ -271,20 +276,18 @@
   }
 
   /* ── Payment status donut ──────────────────────────── */
-  var paid = 0, failed = 0, pending = 0;
-  {% for txn in transactions %}
-  {% if txn.status == 'paid' %}paid++;
-  {% elif txn.status == 'failed' or txn.status == 'cancelled' %}failed++;
-  {% else %}pending++;
-  {% endif %}
+  var statusLabels = [], statusCounts = [];
+  {% for row in payment_status_breakdown %}
+  statusLabels.push("{{ row.label|escapejs }}");
+  statusCounts.push({{ row.count }});
   {% endfor %}
   var statCtx = document.getElementById('payStatusChart');
-  if (statCtx && (paid + failed + pending) > 0) {
+  if (statCtx && statusCounts.length) {
     new Chart(statCtx, {
       type: 'doughnut',
       data: {
-        labels: ['Paid', 'Failed', 'Pending'],
-        datasets: [{ data: [paid, failed, pending], backgroundColor: ['#16a34a','#dc2626','#d97706'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+        labels: statusLabels,
+        datasets: [{ data: statusCounts, backgroundColor: palette, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
       },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '68%',
@@ -297,16 +300,38 @@
     });
     var sleg = document.getElementById('payStatusLegend');
     if (sleg) {
-      [['Paid','#16a34a'],['Failed','#dc2626'],['Pending','#d97706']].forEach(function(p) {
+      statusLabels.forEach(function(label, index) {
         var s = document.createElement('span');
         s.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
-        s.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + p[1] + ';flex-shrink:0;"></span>' + p[0];
+        s.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + palette[index % palette.length] + ';flex-shrink:0;"></span>' + label;
         sleg.appendChild(s);
       });
     }
   } else if (statCtx) {
     statCtx.style.display = 'none';
     statCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No data yet</p>');
+  }
+
+  /* Database-backed seven-day collections trend. */
+  var collectionLabels = [], collectionAmounts = [];
+  {% for row in payment_collections_trend %}
+  collectionLabels.push("{{ row.label|escapejs }}");
+  collectionAmounts.push({{ row.amount|floatformat:2 }});
+  {% endfor %}
+  var collectionCtx = document.getElementById('payCollectionsChart');
+  if (collectionCtx && collectionAmounts.some(function(value){ return value > 0; })) {
+    new Chart(collectionCtx, {
+      type: 'bar',
+      data: { labels: collectionLabels, datasets: [{ label: 'Paid collections (MWK)', data: collectionAmounts, backgroundColor: '#7657ff', borderRadius: 7, maxBarThickness: 28 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { callback: function(value){ return 'K ' + Number(value).toLocaleString(); } } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return 'MWK ' + Number(c.parsed.y).toLocaleString(); } } } }
+      }
+    });
+  } else if (collectionCtx) {
+    collectionCtx.style.display = 'none';
+    collectionCtx.insertAdjacentHTML('afterend', '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:40px 0;">No paid collections in the last 7 days</p>');
   }
 })();
 </script>
