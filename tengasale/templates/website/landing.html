@@ -9,7 +9,7 @@
   <meta property="og:description" content="A premium, clear and mobile-money-first way to access smartphones in Malawi." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=5.0" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=6.0" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -26,16 +26,11 @@
       </a>
 
       <div class="nav-links" id="navLinks">
-        <a class="desktop-only" href="#why">Why</a>
-        <a class="desktop-only" href="#process">Process</a>
+        <a href="#process">How it works</a>
         <a href="#phones">Phones</a>
-        <a href="#trade-upgrade">Trade &amp; Upgrade</a>
-        <a class="desktop-only" href="#map">Map</a>
-        <a class="desktop-only" href="#company">Company</a>
-        <a class="desktop-only" href="{% url 'website_careers' %}">Careers</a>
-        <a href="{% url 'portal_search' %}">Make a Payment</a>
+        <a href="#map">Markets</a>
+        <a href="#company">Company</a>
         <a href="#support">Support</a>
-        <a href="{% url 'login' %}">Login</a>
       </div>
 
       <div class="nav-actions">
@@ -62,16 +57,15 @@
       <div class="shell hero-layout">
         <div class="hero-copy reveal">
           <div class="hero-badge"><span class="live-dot"></span> Live in Malawi. Built for Southern Africa.</div>
-          <p class="kicker">Why Tenga exists</p>
-          <h1>A smartphone is <span>not a luxury.</span></h1>
+          <p class="kicker">Smartphone access, reimagined</p>
+          <h1>Own the phone.<br /><span>Open your world.</span></h1>
           <p class="hero-text">
-            Everything is going digital — work, payments, school, banking and daily life.
-            But for millions, the device itself is still too expensive to buy upfront.
+            Premium smartphones with clear deposits and flexible mobile-money payments — built for how life works here.
           </p>
 
           <div class="hero-quote-card">
-            <strong>Digital life needs a smartphone.</strong>
-            <p>Tenga makes access clear, flexible and premium. Own today. Upgrade tomorrow.</p>
+            <strong>Simple access. Responsible ownership.</strong>
+            <p>Choose well. Pay your way. Build forward.</p>
           </div>
 
           <div class="hero-actions">
@@ -100,33 +94,7 @@
           </div>
 
           <div class="device-stage" id="deviceStage">
-            <div class="device">
-              <div class="device-notch"></div>
-              <div class="device-screen">
-                <div class="device-status">
-                  <span>09:41</span>
-                  <span>MW</span>
-                </div>
-                <div class="device-brand">
-                  <span class="device-logo"></span>
-                  <strong>Tenga</strong>
-                  <small>Premium access</small>
-                </div>
-                <div class="device-panel">
-                  <p>Next payment</p>
-                  <h3>MWK 3,100</h3>
-                  <span>Due tomorrow • Device active</span>
-                  <div class="line"><i></i></div>
-                </div>
-                <div class="mini-grid">
-                  <div><small>Progress</small><strong>34%</strong></div>
-                  <div><small>Plan</small><strong>Daily</strong></div>
-                  <div><small>Status</small><strong>Active</strong></div>
-                </div>
-                <a class="screen-button" href="{% url 'portal_search' %}">Pay now</a>
-                <div class="screen-pill-row"><span>Support</span><span>Plan</span><span>History</span></div>
-              </div>
-            </div>
+            <img class="premium-hero-device" src="{% static 'images/hero-device-premium-v1.png' %}" alt="Premium smartphone available through Tenga" width="780" height="1024" />
           </div>
 
           <div class="floating-chip chip-1">Smartphone access</div>
@@ -268,7 +236,7 @@
             </div></fieldset>
           </div>
           <div class="calculator-summary" aria-live="polite">
-            <div class="calculator-device" aria-hidden="true"><div class="css-phone"><div class="css-screen"></div></div></div>
+            <div class="calculator-device" aria-hidden="true"><img class="premium-plan-device" src="{% static 'images/hero-device-premium-v1.png' %}" alt="" /></div>
             <span class="calculator-status" id="calculatorStatus">Available</span><h3 id="calculatorModel">Select a phone</h3><p id="calculatorSpec"></p>
             <div class="calculator-values"><div><small>Deposit</small><strong id="calculatorDepositValue">—</strong></div><div><small id="calculatorPaymentLabel">Daily payment</small><strong id="calculatorPaymentValue">—</strong></div></div>
             <a class="button button-primary button-large" href="{% url 'new_application' %}" id="calculatorApply">Continue to application</a>
@@ -277,14 +245,6 @@
 
         <div class="phone-grid" id="phoneGrid"></div>
 
-        <div class="ecosystem reveal" aria-labelledby="ecosystem-title">
-          <div class="ecosystem-head"><p class="kicker">Technology ecosystem</p><h3 id="ecosystem-title">Trusted networks, device brands and secure verification.</h3><p>Supported options and available brands — not partnership claims.</p></div>
-          <div class="ecosystem-groups">
-            <div class="ecosystem-group ecosystem-group--payments"><strong>Payment networks</strong><div class="ecosystem-marks"><span><img src="{% static 'tengasale/assets/logos/airtel-logo.svg' %}" alt="Airtel Money" width="28" height="30"><small>Airtel Money</small></span><span><img src="{% static 'tengasale/assets/logos/tnm-logo.svg' %}" alt="TNM Mpamba" width="34" height="30"><small>TNM Mpamba</small></span></div></div>
-            <div class="ecosystem-group ecosystem-group--devices"><strong>Device brands</strong><div class="ecosystem-marks"><span><img src="{% static 'img/brands/tecno.svg' %}" alt="Tecno" width="100" height="24"></span><span><img src="{% static 'img/brands/redmi.svg' %}" alt="Redmi by Xiaomi" width="72" height="28"></span><span><img src="{% static 'img/brands/itel.svg' %}" alt="itel" width="38" height="28"></span><span><img src="{% static 'img/brands/samsung.svg' %}" alt="Samsung" width="100" height="24"></span></div></div>
-            <div class="ecosystem-group ecosystem-group--identity"><strong>Identity & KYC</strong><div class="identity-neutral"><span aria-hidden="true">✓</span><div>Secure identity verification<small>Provider shown only when configured</small></div></div></div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -356,9 +316,9 @@
         <div class="section-head split reveal compact-split">
           <div>
             <p class="kicker">Regional map</p>
-            <h2>Built for Southern Africa.</h2>
+            <h2>One platform.<br />A region in motion.</h2>
           </div>
-          <p class="lead">Malawi live. Zambia and Zimbabwe in the path ahead.</p>
+          <p class="lead">Live market intelligence across Tenga's focused expansion path.</p>
         </div>
 
         <div class="map-panel reveal">
@@ -394,11 +354,20 @@
             {% endcomment %}
           </div>
 
-          <div class="map-sidebar">
-            <article class="map-item active"><img class="market-flag" src="{% static 'img/flags/malawi.svg' %}" alt="Flag of Malawi" width="48" height="32"><div><h3>Malawi</h3><p>Home market.</p><small>Live</small></div></article>
-            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zambia.svg' %}" alt="Flag of Zambia" width="48" height="32"><div><h3>Zambia</h3><p>Priority expansion.</p><small>Next</small></div></article>
-            <article class="map-item"><img class="market-flag" src="{% static 'img/flags/zimbabwe.svg' %}" alt="Flag of Zimbabwe" width="48" height="24"><div><h3>Zimbabwe</h3><p>Regional roadmap.</p><small>Next</small></div></article>
-          </div>
+          <aside class="market-intelligence" aria-live="polite">
+            <div class="market-intelligence__top"><span>Market signal</span><button id="marketPlayback" type="button" aria-label="Pause automatic market cycling">Ⅱ</button></div>
+            <div class="market-intelligence__status"><i id="marketSignal"></i><span id="marketStatus">Live</span></div>
+            <h3 id="marketName">Malawi</h3>
+            <p id="marketStory">Tenga's operating market and launchpad for regional scale.</p>
+            <div class="market-chart" aria-label="Illustrative market momentum chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="tam-card"><span>Total addressable market</span><strong><span id="tamValue">0</span>M</strong><small>people across focused markets</small></div>
+          </aside>
+        </div>
+        <div class="market-pills" role="tablist" aria-label="Tenga markets">
+          <button class="market-pill active" type="button" data-market="malawi"><span>MW</span>Malawi <i>Live</i></button>
+          <button class="market-pill" type="button" data-market="zambia"><span>ZM</span>Zambia <i>Next</i></button>
+          <button class="market-pill" type="button" data-market="zimbabwe"><span>ZW</span>Zimbabwe <i>Planned</i></button>
+          <button class="market-pill" type="button" data-market="kenya"><span>KE</span>Kenya <i>Explore</i></button>
         </div>
       </div>
     </section>
@@ -574,7 +543,7 @@
       <div class="footer-group"><strong>Product</strong><a href="#phones">Phones</a><a href="#trade-upgrade">Trade &amp; Upgrade</a><a href="#process">How it works</a><a href="#apply">Apply</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
       <div class="footer-group"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
       <div class="footer-group"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors & media</a></div>
-      <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Roadmap</a><a href="#map">Zimbabwe — Roadmap</a></div>
+      <div class="footer-group"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Next</a><a href="#map">Zimbabwe — Planned</a><a href="#map">Kenya — Explore</a></div>
       <div class="footer-group"><strong>Legal</strong><a href="{% url 'website_terms' %}">Terms</a><a href="{% url 'website_privacy' %}">Privacy & KYC</a><a href="{% url 'website_payment_terms' %}">Payment terms</a><a href="{% url 'website_merchant_terms' %}">Merchant terms</a><a href="#protection">Device protection</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built in Malawi. Designed for Southern Africa.</span></div>
     </div>
@@ -583,5 +552,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=5.0" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=6.0" defer></script>
 {% endblock %}

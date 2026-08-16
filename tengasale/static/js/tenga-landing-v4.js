@@ -34,7 +34,7 @@ function renderPhones() {
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
-        <div class="css-phone" aria-hidden="true"><div class="css-screen"></div></div>
+        <img class="premium-plan-device" src="/static/images/hero-device-premium-v1.png" alt="" aria-hidden="true">
       </div>
       <div class="phone-body">
         <div class="phone-top">
@@ -304,4 +304,56 @@ if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').match
     window.setTimeout(() => document.getElementById("id_full_name")?.focus(), 550);
   });
   populateModels();
+})();
+
+(() => {
+  const pills = [...document.querySelectorAll(".market-pill")];
+  const name = document.getElementById("marketName");
+  const status = document.getElementById("marketStatus");
+  const story = document.getElementById("marketStory");
+  const playback = document.getElementById("marketPlayback");
+  const tamValue = document.getElementById("tamValue");
+  if (!pills.length || !name || !status || !story || !playback || !tamValue) return;
+  const markets = {
+    malawi: { name: "Malawi", status: "Live", story: "Tenga's operating market and launchpad for regional scale.", tam: 21 },
+    zambia: { name: "Zambia", status: "Next", story: "A priority market with strong mobile-money adoption and access demand.", tam: 22 },
+    zimbabwe: { name: "Zimbabwe", status: "Planned", story: "A connected market in Tenga's focused Southern African roadmap.", tam: 17 },
+    kenya: { name: "Kenya", status: "Explore", story: "An innovation-led mobile economy being evaluated for future reach.", tam: 56 }
+  };
+  let index = 0;
+  let playing = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let timer;
+  const animateTam = target => {
+    const start = Number(tamValue.textContent) || 0;
+    const began = performance.now();
+    const tick = now => {
+      const progress = Math.min((now - began) / 650, 1);
+      tamValue.textContent = Math.round(start + (target - start) * (1 - Math.pow(1 - progress, 3)));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  const select = next => {
+    index = next;
+    const pill = pills[index];
+    const market = markets[pill.dataset.market];
+    pills.forEach(item => item.classList.toggle("active", item === pill));
+    name.textContent = market.name;
+    status.textContent = market.status;
+    story.textContent = market.story;
+    animateTam(market.tam);
+  };
+  const schedule = () => {
+    clearInterval(timer);
+    if (playing) timer = setInterval(() => select((index + 1) % pills.length), 4200);
+  };
+  pills.forEach((pill, pillIndex) => pill.addEventListener("click", () => { select(pillIndex); schedule(); }));
+  playback.addEventListener("click", () => {
+    playing = !playing;
+    playback.textContent = playing ? "Ⅱ" : "▶";
+    playback.setAttribute("aria-label", playing ? "Pause automatic market cycling" : "Play automatic market cycling");
+    schedule();
+  });
+  select(0);
+  schedule();
 })();
