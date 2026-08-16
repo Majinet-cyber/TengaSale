@@ -618,6 +618,36 @@ input:focus,select:focus{border-color:rgba(118,87,255,.6);box-shadow:0 0 0 4px r
 @media(max-width:700px){.hero-phone-photo{width:310px;max-height:510px}.approved-market-map{aspect-ratio:4/5}.approved-market-map__base{object-fit:cover;object-position:center}.approved-tam,.approved-label,.approved-mask{display:none}.approved-dock{right:3%;top:3%;width:220px}.approved-map-topline{font-size:9px}.approved-market-bar{left:4%;right:4%;bottom:3%;transform:none;gap:2px;justify-content:center}.approved-market-bar button{padding:8px;font-size:10px}.approved-auto{display:none}}
 @media(prefers-reduced-motion:reduce){.approved-node::before,.approved-node::after{animation:none}}
 
+/* Targeted landing cleanup. */
+.device-gallery{padding:76px 0 92px;background:linear-gradient(180deg,#fff,#f7f9fc)}
+.device-gallery .phone-grid{margin-top:0}
+.device-gallery .phone-card{min-width:0}
+.device-gallery .phone-visual{height:310px;overflow:hidden}
+.device-gallery .phone-body{padding-top:20px}
+.device-gallery .phone-top{align-items:start}
+.phone-art-time{position:absolute;right:18px;top:17px;z-index:4;padding:7px 10px;border:1px solid rgba(255,255,255,.55);border-radius:999px;background:rgba(15,23,42,.7);color:#fff;font-size:10px;font-weight:850;letter-spacing:.08em;backdrop-filter:blur(10px)}
+.device-gallery .catalogue-phone-photo{width:185px;height:260px;object-fit:contain;border-radius:25px;transition:transform .35s ease}
+.device-gallery .phone-card:hover .catalogue-phone-photo{transform:translateY(-5px) scale(1.025)}
+.device-gallery .catalogue-phone-photo--midnight,.device-gallery .catalogue-phone-photo--studio{object-fit:cover;object-position:top}
+.device-gallery .catalogue-phone-photo--ice{width:205px;object-fit:contain}
+.hero-visual{isolation:isolate}
+.hero-visual::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;width:520px;height:520px;border:1px solid rgba(255,255,255,.11);border-radius:50%;background:radial-gradient(circle at 42% 35%,rgba(255,107,0,.16),rgba(118,87,255,.09) 48%,rgba(7,10,18,0) 70%);box-shadow:inset 0 0 80px rgba(255,255,255,.025);transform:translate(-50%,-50%)}
+.device-stage{display:grid;place-items:center;width:520px;height:650px;margin:auto}
+.hero-phone-photo{display:block;width:365px;height:610px;max-height:none;margin:auto;object-position:center;transform:none}
+.map-section .shell{max-width:1080px}
+.map-panel--approved{width:min(860px,100%);margin:0 auto}
+.map-section{padding-top:94px!important;padding-bottom:94px!important}
+@media(max-width:800px){
+  .nav-links a:not(.mobile-menu-keep){display:none!important}
+  .nav-links .mobile-menu-keep{display:block!important}
+  .device-gallery{padding:58px 0 70px}
+  .device-gallery .phone-grid{grid-template-columns:1fr 1fr}
+  .hero-visual::before{width:390px;height:390px}
+  .device-stage{width:390px;height:510px}
+  .hero-phone-photo{width:300px;height:500px}
+}
+@media(max-width:560px){.device-gallery .phone-grid{grid-template-columns:1fr}.hero-visual::before{width:330px;height:330px}.device-stage{width:330px;height:450px}.hero-phone-photo{width:265px;height:440px}}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
   .reveal{opacity:1;transform:none}

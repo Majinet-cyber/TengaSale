@@ -20,11 +20,17 @@ const calculatorDeposit = document.getElementById("calculatorDeposit");
 let activeCadence = "daily";
 
 function renderPhones() {
+  if (!phoneGrid) return;
   if (!PHONE_OFFERS.length) {
     phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
     return;
   }
-  const phoneVisuals = ["/static/images/phone-tecno-camon.png", "/static/images/phone-school.png", "/static/images/phone-banking.png"];
+  const phoneVisuals = [
+    { src: "/static/images/phone-tecno-camon.png", time: "08:45", mood: "aurora" },
+    { src: "/static/images/phone-realistic.png", time: "10:32", mood: "midnight" },
+    { src: "/static/images/phone-samsung.png", time: "09:18", mood: "ice" },
+    { src: "/static/images/phone-school.png", time: "10:30", mood: "studio" }
+  ];
   phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => `
     <article class="phone-card reveal visible" style="
       --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
@@ -35,7 +41,8 @@ function renderPhones() {
     ">
       <div class="phone-visual">
         <div class="phone-orb"></div>
-        <img class="catalogue-phone-photo" src="${phone.brand === "Tecno" ? phoneVisuals[0] : phoneVisuals[index % phoneVisuals.length]}" alt="${phone.name}">
+        <span class="phone-art-time">${phoneVisuals[index % phoneVisuals.length].time}</span>
+        <img class="catalogue-phone-photo catalogue-phone-photo--${phoneVisuals[index % phoneVisuals.length].mood}" src="${phoneVisuals[index % phoneVisuals.length].src}" alt="${phone.name}">
       </div>
       <div class="phone-body">
         <div class="phone-top">
@@ -48,17 +55,6 @@ function renderPhones() {
           </div>
           <span>${phone.status}</span>
         </div>
-        <div class="pricing">
-          <div class="price-box">
-            <small>Deposit</small>
-            <strong>${money(phone.deposit)}</strong>
-          </div>
-          <i></i>
-          <div class="price-box payment">
-            <small>${activeCadence.charAt(0).toUpperCase() + activeCadence.slice(1)} payment</small>
-            <strong>${money(phone.payments[activeCadence])}</strong>
-          </div>
-        </div>
         <button class="card-button" type="button" data-device="${phone.name}">Choose ${phone.name}</button>
       </div>
     </article>
@@ -67,8 +63,7 @@ function renderPhones() {
   document.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {
       deviceSelect.value = button.dataset.device;
-      calculatorPhone.value = button.dataset.device;
-      updateCalculator();
+      if (calculatorPhone) calculatorPhone.value = button.dataset.device;
       document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
       setTimeout(() => document.querySelector('[name="name"]').focus(), 650);
     });
@@ -76,10 +71,11 @@ function renderPhones() {
 }
 
 function populateDeviceSelect() {
-  deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
-  calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+  if (deviceSelect) deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
+  if (calculatorPhone) calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
 }
 function updateCalculator() {
+  if (!calculatorPhone || !calculatorDeposit) return;
   const phone = PHONE_OFFERS.find(item => item.name === calculatorPhone.value) || PHONE_OFFERS[0];
   if (!phone) return;
   calculatorDeposit.innerHTML = `<option value="${phone.deposit}">${money(phone.deposit)}</option>`;
@@ -94,7 +90,7 @@ function updateCalculator() {
 populateDeviceSelect();
 renderPhones();
 updateCalculator();
-calculatorPhone.addEventListener("change", updateCalculator);
+calculatorPhone?.addEventListener("change", updateCalculator);
 
 cadenceButtons.forEach(button => {
   button.addEventListener("click", () => {
