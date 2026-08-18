@@ -42,6 +42,42 @@ def collections_trend(payment_queryset, *, days=7, today=None):
     return series
 
 
+def payment_comparison_series(payment_queryset, *, days=7, today=None):
+    """Return aligned current/previous successful-payment periods in two queries."""
+    today = today or timezone.localdate()
+    current_start = today - timedelta(days=days - 1)
+    previous_end = current_start - timedelta(days=1)
+    previous_start = previous_end - timedelta(days=days - 1)
+
+    def totals(start, end):
+        rows = (
+            payment_queryset.filter(status="paid", paid_at__date__range=(start, end))
+            .annotate(day=TruncDate("paid_at"))
+            .values("day")
+            .annotate(amount=Coalesce(Sum("amount"), Decimal("0")))
+            .order_by("day")
+        )
+        return {row["day"]: row["amount"] for row in rows}
+
+    current = totals(current_start, today)
+    previous = totals(previous_start, previous_end)
+    labels, current_values, previous_values = [], [], []
+    for offset in range(days):
+        current_day = current_start + timedelta(days=offset)
+        previous_day = previous_start + timedelta(days=offset)
+        labels.append(current_day.strftime("%d %b"))
+        current_values.append(float(current.get(current_day, Decimal("0"))))
+        previous_values.append(float(previous.get(previous_day, Decimal("0"))))
+    return {
+        "labels": labels,
+        "current": current_values,
+        "previous": previous_values,
+        "trend": current_values,
+        "current_label": f"{current_start:%d %b}–{today:%d %b}",
+        "previous_label": f"{previous_start:%d %b}–{previous_end:%d %b}",
+    }
+
+
 def application_trend(application_queryset, *, days=14, today=None):
     """Return submitted and approved application counts, grouped by submission day."""
     today = today or timezone.localdate()

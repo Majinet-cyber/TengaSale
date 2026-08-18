@@ -8,7 +8,7 @@ from django.utils import timezone
 from applications.models import FinancingApplication
 from portal.models import PaymentContract, PaymentTransaction
 
-from .analytics import application_trend, collections_trend, grouped_breakdown
+from .analytics import application_trend, collections_trend, grouped_breakdown, payment_comparison_series
 
 
 class HQAnalyticsTests(TestCase):
@@ -73,3 +73,13 @@ class HQAnalyticsTests(TestCase):
 
         self.assertEqual([(row["key"], row["count"]) for row in split], [("airtel_money", 2), ("tnm_mpamba", 1)])
         self.assertEqual(grouped_breakdown(PaymentTransaction.objects.none(), "provider"), [])
+
+    def test_payment_comparison_series_aligns_current_and_previous_periods(self):
+        self.payment(amount="2500", days_ago=0)
+        self.payment(amount="1500", days_ago=7)
+
+        series = payment_comparison_series(PaymentTransaction.objects.all(), today=self.today)
+
+        self.assertEqual(len(series["labels"]), 7)
+        self.assertEqual(series["current"][-1], 2500.0)
+        self.assertEqual(series["previous"][-1], 1500.0)

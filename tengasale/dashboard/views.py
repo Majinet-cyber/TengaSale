@@ -406,15 +406,22 @@ def hq_dashboard(request):
         or 0
     )
 
-    today = timezone.now().date()
-    from .analytics import application_trend, collections_trend, grouped_breakdown
-    paid_today = (
-        PaymentTransaction.objects.filter(status="paid", paid_at__date=today)
-        .aggregate(t=Sum("amount"))["t"] or 0
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+    from .analytics import application_trend, collections_trend, grouped_breakdown, payment_comparison_series
+    today_payments = PaymentTransaction.objects.filter(status="paid", paid_at__date=today).aggregate(
+        total=Sum("amount"), count=Count("id")
     )
-    collections_today = (
-        PaymentTransaction.objects.filter(status="paid", paid_at__date=today)
-        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    yesterday_payments = PaymentTransaction.objects.filter(status="paid", paid_at__date=yesterday).aggregate(
+        total=Sum("amount"), count=Count("id")
+    )
+    paid_today = collections_today = today_payments["total"] or Decimal("0")
+    payments_today_count = today_payments["count"] or 0
+    collections_yesterday = yesterday_payments["total"] or Decimal("0")
+    payments_yesterday_count = yesterday_payments["count"] or 0
+    payments_change_pct = (
+        round(float((collections_today - collections_yesterday) / collections_yesterday * 100), 1)
+        if collections_yesterday else None
     )
     sales_today = FinancingApplication.objects.filter(
         submitted_at__date=today,
@@ -422,6 +429,13 @@ def hq_dashboard(request):
     active_contracts_count = PaymentContract.objects.filter(status="active").count()
     locked_contracts_count = PaymentContract.objects.filter(status="locked").count()
     overdue_contracts_count = PaymentContract.objects.filter(status="overdue").count()
+    financed_contracts_count = PaymentContract.objects.exclude(
+        status__in=[PaymentContract.STATUS_PENDING_ACTIVATION, PaymentContract.STATUS_CANCELLED]
+    ).count()
+    repossessions_in_progress = PaymentContract.objects.filter(
+        status=PaymentContract.STATUS_REPOSSESSION_PENDING
+    ).count()
+    pending_payouts_count = MerchantContractPayout.objects.filter(status="pending").count()
     merchant_payout_pending = (
         MerchantContractPayout.objects.filter(status="pending")
         .aggregate(t=Sum("total_payable"))["t"] or 0
@@ -615,7 +629,12 @@ def hq_dashboard(request):
         lock_locked_count = 0
 
     hq_collections_trend = collections_trend(PaymentTransaction.objects.all(), today=today)
+    hq_payment_comparison = payment_comparison_series(PaymentTransaction.objects.all(), days=30, today=today)
     hq_application_trend = application_trend(FinancingApplication.objects.all(), today=today)
+    action_items_count = (
+        waiting_count + overdue_contracts_count + pending_payouts_count + open_tickets_count
+        + awaiting_hq_count + critical_bugs_count
+    )
     context = {
         "total_merchants": total_merchants,
         "total_underwriters": total_underwriters,
@@ -642,6 +661,15 @@ def hq_dashboard(request):
         "merchant_payout_pending": merchant_payout_pending,
         # Command Pulse
         "collections_today": collections_today,
+        "collections_yesterday": collections_yesterday,
+        "payments_today_count": payments_today_count,
+        "payments_yesterday_count": payments_yesterday_count,
+        "payments_change_pct": payments_change_pct,
+        "hq_payment_comparison": hq_payment_comparison,
+        "action_items_count": action_items_count,
+        "financed_contracts_count": financed_contracts_count,
+        "repossessions_in_progress": repossessions_in_progress,
+        "pending_payouts_count": pending_payouts_count,
         "sales_today": sales_today,
         "hq_collections_trend": hq_collections_trend,
         "hq_collections_has_data": any(row["amount"] for row in hq_collections_trend),

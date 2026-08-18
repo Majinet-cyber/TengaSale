@@ -485,7 +485,8 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No financial activity yet")
+        self.assertContains(response, "No payment activity for this period")
+        self.assertContains(response, "All clear")
 
     def test_hq_dashboard_does_not_show_preview_links_for_normal_hq_user(self):
         self.create_user("hq", "HQ")
@@ -540,8 +541,8 @@ class HomePageTests(TestCase):
         self.assertNotContains(response, "Merchant Portal Preview")
         self.assertNotContains(response, "Underwriter Portal Preview")
 
-    def test_hq_dashboard_has_fixed_sidebar_navigation(self):
-        """HQ dashboard must include the fixed sidebar nav, not just inline card buttons."""
+    def test_hq_dashboard_preserves_drawer_navigation(self):
+        """HQ dashboard keeps the complete navigation tree in the compact drawer."""
         self.create_user("hq-nav", "HQ")
         self.client.login(username="hq-nav", password="test-pass-123")
 
@@ -580,9 +581,13 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Command Center")
-        self.assertContains(response, 'data-testid="hq-hero-row"')
-        self.assertContains(response, "Portfolio Value")
+        self.assertContains(response, 'data-testid="hq-primary-action-center"')
+        self.assertContains(response, 'data-testid="hq-live-today-payments"')
+        self.assertContains(response, "Portfolio Overview")
+        self.assertContains(response, "Payments Performance")
+        self.assertContains(response, "Operations")
+        self.assertNotContains(response, "Tenga pulse")
+        self.assertNotContains(response, "Business health")
 
     def test_merchant_header_renders_logo_and_home_title(self):
         self.create_user("merchant-hdr", "Merchant")

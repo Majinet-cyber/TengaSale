@@ -1564,6 +1564,7 @@ body {
 }
 </style>
 <link rel="stylesheet" href="{% static 'css/hq-command-v2.css' %}?v=1.0.0">
+<link rel="stylesheet" href="{% static 'css/hq-command-home.css' %}?v=1.0.0">
 {% endblock %}
 
 
@@ -1889,7 +1890,58 @@ body {
     <span class="hq-ph-time" id="hq-clock" aria-live="polite"></span>
   </div>
 
-  <section class="hq-command-v2" aria-label="Tenga command overview">
+  <section class="hq-command-home" aria-label="Tenga HQ command overview" data-testid="hq-command-home">
+    <header class="hq-home-greeting">
+      <div><h1>Hi, {{ request.user.first_name|default:request.user.username }}</h1><p>HQ Administrator</p></div>
+      <span><i aria-hidden="true"></i> HQ ready</span>
+    </header>
+
+    <div class="hq-primary-instruments">
+      <a class="hq-instrument hq-instrument--action" href="{% url 'hq_operations' %}" data-testid="hq-primary-action-center">
+        <span class="hq-instrument__icon"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></span>
+        <span class="hq-instrument__copy"><small>ACTION CENTER</small><strong>{% if action_items_count %}{{ action_items_count }} item{{ action_items_count|pluralize }} need attention{% else %}All clear{% endif %}</strong><em>{% if action_items_count %}Review and resolve critical items{% else %}Nothing requires your attention{% endif %}</em></span>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a class="hq-instrument hq-instrument--payments" href="{% url 'hq_payment_collections' %}" data-testid="hq-live-today-payments">
+        <span class="hq-instrument__icon"><i class="bi bi-arrow-down-left" aria-hidden="true"></i></span>
+        <span class="hq-instrument__copy"><small>LIVE TODAY PAYMENTS</small><strong>{{ collections_today|mwk }}</strong><em>From {{ payments_today_count }} confirmed payment{{ payments_today_count|pluralize }}</em></span>
+        <span class="hq-instrument__change {% if payments_change_pct != None and payments_change_pct < 0 %}is-down{% endif %}">{% if payments_change_pct != None %}<b>{% if payments_change_pct >= 0 %}▲{% else %}▼{% endif %} {{ payments_change_pct }}%</b><small>vs yesterday</small>{% elif collections_today %}<b>New today</b>{% else %}<b>No activity</b>{% endif %}<i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+      </a>
+    </div>
+
+    <section class="hq-home-card hq-home-portfolio" aria-labelledby="hq-portfolio-title">
+      <header><h2 id="hq-portfolio-title">Portfolio Overview</h2><a href="{% url 'hq_portfolio' %}">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
+      <div class="hq-home-metrics">
+        <a href="{% url 'hq_portfolio' %}"><i class="bi bi-phone" aria-hidden="true"></i><strong>{{ financed_contracts_count }}</strong><span>Financed</span></a>
+        <a href="{% url 'hq_portfolio' %}"><i class="bi bi-activity" aria-hidden="true"></i><strong>{{ active_contracts_count }}</strong><span>Active</span></a>
+        <a href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-lock" aria-hidden="true"></i><strong>{{ lock_locked_count|default:'0' }}</strong><span>Locked</span></a>
+        <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><strong>{{ overdue_contracts_count }}</strong><span>Overdue</span></a>
+        <a href="{% url 'hq_portfolio' %}" title="{{ total_portfolio_value|mwk }}"><i class="bi bi-database" aria-hidden="true"></i><strong>{{ total_portfolio_value|mwk_short }}</strong><span>Value</span></a>
+      </div>
+    </section>
+
+    <section class="hq-home-card hq-home-performance" aria-labelledby="hq-payments-title">
+      <header><div><h2 id="hq-payments-title">Payments Performance</h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>This Week</option><option value="30">This Month</option></select></label><span>Daily</span></div></header>
+      <div class="hq-performance-summary"><span>Total payments<strong>{{ collections_today|mwk }}</strong></span><em>{% if payments_change_pct != None %}{{ payments_change_pct }}% vs yesterday{% else %}No prior-day comparison{% endif %}</em></div>
+      {{ hq_payment_comparison|json_script:"hqPaymentComparison" }}
+      <div class="hq-home-chart"><canvas id="hqPaymentPerformanceChart" aria-label="Current and previous confirmed payment collections with trend line" role="img"></canvas><div class="hq-home-chart__empty" hidden>No payment activity for this period</div></div>
+      <div class="hq-chart-key"><span><i class="is-current"></i><b id="hqCurrentPeriodKey">Current 7 days</b></span><span><i class="is-previous"></i><b id="hqPreviousPeriodKey">Previous 7 days</b></span><span><i class="is-trend"></i>Trend</span></div>
+    </section>
+
+    <section class="hq-home-card hq-home-operations" aria-labelledby="hq-operations-title">
+      <header><h2 id="hq-operations-title">Operations</h2></header>
+      <nav>
+        <a href="{% url 'hq_applications' %}"><i class="bi bi-files" aria-hidden="true"></i><strong>Applications</strong><span>{{ waiting_count }} pending review</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="{% url 'hq_portfolio' %}"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><strong>Contracts</strong><span>{{ active_contracts_count }} active &middot; {{ overdue_contracts_count }} overdue</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-phone" aria-hidden="true"></i><strong>Devices</strong><span>{{ lock_locked_count|default:'0' }} locked</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="{% url 'hq_repossession_resale' %}"><i class="bi bi-arrow-repeat" aria-hidden="true"></i><strong>Repossessions</strong><span>{{ repossessions_in_progress }} in progress</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="{% url 'hq_merchant_payouts' %}"><i class="bi bi-wallet2" aria-hidden="true"></i><strong>Finance</strong><span>{{ pending_payouts_count }} payout{{ pending_payouts_count|pluralize }} pending</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+      </nav>
+    </section>
+  </section>
+
+  {% if legacy_hq_home %}
+  <section class="hq-command-v2" aria-label="Legacy Tenga command overview">
     <section class="hq-pulse" aria-labelledby="tenga-pulse-title">
       <div class="hq-pulse__top"><span id="tenga-pulse-title">Tenga pulse</span><span class="hq-pulse__live"><i></i> Live <span id="hq-pulse-time"></span></span></div>
       <a class="hq-pulse__portfolio" href="{% url 'hq_portfolio' %}">
@@ -2977,6 +3029,7 @@ body {
 
 
   {% endcomment %}
+  {% endif %}
 
   <div class="hq-footer">
     <span class="hq-footer-brand">TengaSale</span>
@@ -3677,4 +3730,5 @@ body {
 
 })();
 </script>
+<script src="{% static 'js/hq-command-home.js' %}?v=1.0.0"></script>
 {% endblock extra_scripts %}

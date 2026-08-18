@@ -75,3 +75,24 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         self.assertIn("portfolio_collection_rate", self.dashboard)
         self.assertIn("Payments reconciled", self.dashboard)
         self.assertIn("mwk_short", self.dashboard)
+
+    def test_command_home_has_required_mobile_first_hierarchy(self):
+        for marker in (
+            'data-testid="hq-command-home"',
+            'data-testid="hq-primary-action-center"',
+            'data-testid="hq-live-today-payments"',
+            "Portfolio Overview",
+            "Payments Performance",
+            'id="hqPaymentPerformanceChart"',
+            'id="hq-operations-title"',
+        ):
+            self.assertIn(marker, self.dashboard)
+        self.assertLess(
+            self.dashboard.index('data-testid="hq-primary-action-center"'),
+            self.dashboard.index('data-testid="hq-live-today-payments"'),
+        )
+
+    def test_legacy_home_modules_are_not_rendered_below_command_home(self):
+        styles = (Path(settings.BASE_DIR) / "static/css/hq-command-home.css").read_text(encoding="utf-8")
+        self.assertIn(".hq-command-v2,.hq-command-v2~*{display:none!important}", styles)
+        self.assertIn("grid-template-columns:1fr 1fr", styles)
