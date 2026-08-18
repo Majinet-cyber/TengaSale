@@ -37,12 +37,11 @@ function renderPhones() {
     const hasPricing = Number(phone.deposit) > 0 && ["daily", "weekly", "monthly"].every(cadence => Number(phone.payments?.[cadence]) > 0);
     const pricing = hasPricing ? `
         <div class="phone-pricing" data-testid="phone-pricing">
-          <div class="phone-pricing__deposit"><span>Deposit</span><strong>${money(phone.deposit)}</strong></div>
-          <div class="phone-pricing__rhythms">
-            <div><span>Daily</span><strong>${money(phone.payments.daily)}</strong></div>
-            <div><span>Weekly</span><strong>${money(phone.payments.weekly)}</strong></div>
-            <div><span>Monthly</span><strong>${money(phone.payments.monthly)}</strong></div>
+          <div class="phone-pricing__selector" role="radiogroup" aria-label="Payment rhythm">
+            ${["daily", "weekly", "monthly"].map(cadence => `<button type="button" role="radio" class="phone-pricing__rhythm${cadence === "daily" ? " active" : ""}" data-cadence="${cadence}" data-amount="${phone.payments[cadence]}" aria-checked="${cadence === "daily"}">${cadence}</button>`).join("")}
           </div>
+          <div class="phone-pricing__selected" aria-live="polite"><strong>${money(phone.payments.daily)}</strong><span>per day</span></div>
+          <div class="phone-pricing__deposit"><span>Deposit</span><strong>${money(phone.deposit)}</strong></div>
         </div>` : `
         <div class="phone-pricing phone-pricing--unavailable" data-testid="phone-pricing-unavailable">
           <span>Payment plan</span><strong>Pricing available during application</strong>
@@ -82,6 +81,21 @@ function renderPhones() {
       if (deviceSelect) deviceSelect.value = button.dataset.device;
       if (calculatorPhone) calculatorPhone.value = button.dataset.device;
       document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
+    });
+  });
+
+  document.querySelectorAll(".phone-pricing__selector").forEach(selector => {
+    selector.addEventListener("click", event => {
+      const button = event.target.closest(".phone-pricing__rhythm");
+      if (!button) return;
+      const pricing = selector.closest(".phone-pricing");
+      selector.querySelectorAll(".phone-pricing__rhythm").forEach(item => {
+        const selected = item === button;
+        item.classList.toggle("active", selected);
+        item.setAttribute("aria-checked", String(selected));
+      });
+      pricing.querySelector(".phone-pricing__selected strong").textContent = money(Number(button.dataset.amount));
+      pricing.querySelector(".phone-pricing__selected span").textContent = `per ${button.dataset.cadence.replace("daily", "day").replace("weekly", "week").replace("monthly", "month")}`;
     });
   });
 }

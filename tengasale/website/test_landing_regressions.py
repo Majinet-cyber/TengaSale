@@ -51,17 +51,34 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         for source in (self.template, self.script, self.styles):
             self.assertNotIn("phone-art-time", source)
 
-    def test_current_phone_cards_render_all_authoritative_pricing_cadences(self):
+    def test_current_phone_cards_offer_one_authoritative_pricing_cadence_at_a_time(self):
         for marker in (
             'data-testid="phone-pricing"',
-            "phone.payments.daily",
-            "phone.payments.weekly",
-            "phone.payments.monthly",
+            'role="radiogroup"',
+            'role="radio"',
+            'data-amount="${phone.payments[cadence]}"',
+            'aria-checked="${cadence === "daily"}"',
+            'class="phone-pricing__selected"',
             "phone.deposit",
             "Pricing available during application",
         ):
             self.assertIn(marker, self.script)
         self.assertIn("repeat(3,minmax(0,1fr))", self.styles)
+        self.assertNotIn('class="phone-pricing__rhythms"', self.script)
+
+    def test_mobile_market_access_card_reuses_dynamic_market_state(self):
+        self.assertIn("approved-tam__mobile-label", self.template)
+        self.assertIn("Market access", self.template)
+        self.assertIn("Population <b>114M</b>", self.template)
+        self.assertIn("Avg gap <b>26 pts</b>", self.template)
+        self.assertIn('getElementById("approvedContributionLabel")', self.script)
+        self.assertIn('getElementById("approvedContribution")', self.script)
+        self.assertIn(".approved-tam{display:block", self.styles)
+
+    def test_hero_uses_corrected_groceries_asset(self):
+        self.assertIn("phone-banking-groceries.png", self.template)
+        self.assertIn("Groceries transaction", self.template)
+        self.assertNotIn("Croseries", self.template)
 
     def test_public_brand_navigation_and_hero_why_are_locked_in(self):
         self.assertGreaterEqual(self.template.count('<span class="brand-word">Tenga</span>'), 2)
