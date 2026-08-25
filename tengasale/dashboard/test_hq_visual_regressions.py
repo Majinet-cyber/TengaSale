@@ -61,6 +61,14 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         ):
             self.assertIn(marker, self.collections)
 
+    def test_command_center_uses_one_normal_document_scroll_container(self):
+        home_theme = (Path(settings.BASE_DIR) / "static/css/hq-command-home.css").read_text(encoding="utf-8")
+        self.assertIn("overflow-y: auto", self.dashboard)
+        self.assertIn("overflow: visible !important", self.dashboard)
+        self.assertIn("height:auto!important;max-height:none!important", home_theme)
+        self.assertIn("height:auto;margin:0;overflow:visible", self.theme)
+        self.assertNotIn("body.role-hq .app-shell:has(.hq-topbar){height:100vh!important}", self.theme)
+
     def test_executive_kpis_use_weighted_grid_and_semantic_states(self):
         for marker in (
             "grid-template-columns:repeat(12,minmax(0,1fr))",

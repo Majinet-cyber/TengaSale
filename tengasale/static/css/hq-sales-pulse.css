@@ -7,8 +7,8 @@ body.role-hq{
   --pulse-shadow:0 18px 55px rgba(14,19,49,.11);--pulse-shadow-lg:0 32px 90px rgba(6,10,32,.28);
   margin:0;padding:0;background:var(--pulse-muted);color:var(--pulse-ink)
 }
-body.role-hq .app-shell{width:100%;max-width:none!important;min-height:100vh;margin:0;overflow:hidden;border:0;border-radius:0!important;background:var(--pulse-surface)!important;box-shadow:none!important}
-body.role-hq .app-shell:has(.hq-topbar){height:100vh!important}
+body.role-hq .app-shell{width:100%;max-width:none!important;min-height:100vh;height:auto;margin:0;overflow:visible;border:0;border-radius:0!important;background:var(--pulse-surface)!important;box-shadow:none!important}
+body.role-hq .app-shell:has(.hq-topbar){min-height:100vh;height:auto!important;max-height:none}
 body.role-hq .app-topbar,body.role-hq .hq-topbar{height:68px!important;padding-inline:24px!important;border-bottom:1px solid var(--pulse-border)!important;background:rgba(255,253,248,.9)!important;backdrop-filter:blur(18px)}
 body.role-hq .brand-lockup,body.role-hq .hq-brand{font-weight:900;letter-spacing:-.02em;color:var(--pulse-ink)}
 body.role-hq :is(.icon-button,.hq-icon-btn,.hq-country-select,.hq-country-btn){border:1px solid var(--pulse-border)!important;border-radius:999px!important;background:#fff!important;box-shadow:0 7px 20px rgba(27,34,74,.07)!important;color:var(--pulse-ink)!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
