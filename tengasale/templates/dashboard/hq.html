@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% load static ts_filters %}
 
-{% block page_title %}HQ Command Center — TengaSale{% endblock %}
+{% block page_title %}HQ Command Center — Tenga{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/premium.css' %}">
@@ -1564,7 +1564,7 @@ body {
 }
 </style>
 <link rel="stylesheet" href="{% static 'css/hq-command-v2.css' %}?v=1.0.0">
-<link rel="stylesheet" href="{% static 'css/hq-command-home.css' %}?v=1.0.0">
+<link rel="stylesheet" href="{% static 'css/hq-command-home.css' %}?v=2.0.0">
 {% endblock %}
 
 
@@ -1575,10 +1575,11 @@ body {
     <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
 
-  <a href="{% url 'home' %}" class="hq-brand-link" aria-label="TengaSale HQ Home">
-    <img src="{% static 'images/Tenga.png' %}" alt="" class="hq-logo-mark ts-logo-icon" aria-hidden="true">
+  <a href="{% url 'home' %}" class="hq-brand-link" aria-label="Tenga HQ home">
+    <img src="{% static 'images/Tenga.png' %}" alt="Tenga" class="hq-logo-mark ts-logo-icon">
     <div class="hq-brand-text">
-      <img src="{% static 'images/TENGASALEe.png' %}" alt="TengaSale" class="hq-brand-wordmark ts-logo-wordmark">
+      <strong class="hq-brand-name">Tenga</strong>
+      <span class="hq-brand-motto">Why wait.</span>
       <span class="hq-brand-sub">HQ Command Center</span>
     </div>
   </a>
@@ -1885,16 +1886,22 @@ body {
   <div class="hq-ph">
     <div>
       <h1 class="hq-ph-title">Command Center</h1>
-      <p class="hq-ph-sub">TengaSale Operations Dashboard &mdash; Live Overview</p>
+      <p class="hq-ph-sub">Tenga HQ &mdash; Live operations overview</p>
     </div>
     <span class="hq-ph-time" id="hq-clock" aria-live="polite"></span>
   </div>
 
   <section class="hq-command-home" aria-label="Tenga HQ command overview" data-testid="hq-command-home">
     <header class="hq-home-greeting">
-      <div><h1>Hi, {{ request.user.first_name|default:request.user.username }}</h1><p>HQ Administrator</p></div>
+      <div><span class="hq-home-eyebrow">Command Center</span><h1>Hi, {{ request.user.first_name|default:request.user.username }}</h1><p>Here&rsquo;s what is happening across Tenga today.</p></div>
       <span><i aria-hidden="true"></i> HQ ready</span>
     </header>
+
+    <a class="hq-portfolio-hero" href="{% url 'hq_portfolio' %}" aria-label="View financed portfolio">
+      <span class="hq-portfolio-hero__copy"><small>Portfolio today</small><strong title="{{ total_portfolio_value|mwk }}">{{ total_portfolio_value|mwk_short }}</strong><em>Total financed portfolio</em></span>
+      <span class="hq-portfolio-hero__signals"><b>{{ financed_contracts_count }} <small>financed</small></b><b>{{ active_contracts_count }} <small>active</small></b><b class="{% if overdue_contracts_count %}is-alert{% endif %}">{{ overdue_contracts_count }} <small>overdue</small></b><b class="{% if lock_locked_count %}is-alert{% endif %}">{{ lock_locked_count|default:'0' }} <small>locked</small></b></span>
+      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+    </a>
 
     <div class="hq-primary-instruments">
       <a class="hq-instrument hq-instrument--action" href="{% url 'hq_operations' %}" data-testid="hq-primary-action-center">
@@ -1904,7 +1911,7 @@ body {
       </a>
       <a class="hq-instrument hq-instrument--payments" href="{% url 'hq_payment_collections' %}" data-testid="hq-live-today-payments">
         <span class="hq-instrument__icon"><i class="bi bi-arrow-down-left" aria-hidden="true"></i></span>
-        <span class="hq-instrument__copy"><small>LIVE TODAY PAYMENTS</small><strong>{{ collections_today|mwk }}</strong><em>From {{ payments_today_count }} confirmed payment{{ payments_today_count|pluralize }}</em></span>
+        <span class="hq-instrument__copy"><small>Today&rsquo;s collections</small><strong>{{ collections_today|mwk }}</strong><em>{% if payments_today_count %}{{ payments_today_count }} confirmed payment{{ payments_today_count|pluralize }}{% else %}No confirmed payments yet today{% endif %}</em></span>
         <span class="hq-instrument__change {% if payments_change_pct != None and payments_change_pct < 0 %}is-down{% endif %}">{% if payments_change_pct != None %}<b>{% if payments_change_pct >= 0 %}▲{% else %}▼{% endif %} {{ payments_change_pct }}%</b><small>vs yesterday</small>{% elif collections_today %}<b>New today</b>{% else %}<b>No activity</b>{% endif %}<i class="bi bi-chevron-right" aria-hidden="true"></i></span>
       </a>
     </div>
@@ -1921,11 +1928,18 @@ body {
     </section>
 
     <section class="hq-home-card hq-home-performance" aria-labelledby="hq-payments-title">
-      <header><div><h2 id="hq-payments-title">Payments Performance</h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>This Week</option><option value="30">This Month</option></select></label><span>Daily</span></div></header>
+      <header><div><span class="hq-card-eyebrow">Cash movement</span><h2 id="hq-payments-title">Collections<span class="visually-hidden"> &mdash; Payments Performance</span></h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select></label></div></header>
       <div class="hq-performance-summary"><span>Total payments<strong>{{ collections_today|mwk }}</strong></span><em>{% if payments_change_pct != None %}{{ payments_change_pct }}% vs yesterday{% else %}No prior-day comparison{% endif %}</em></div>
       {{ hq_payment_comparison|json_script:"hqPaymentComparison" }}
       <div class="hq-home-chart"><canvas id="hqPaymentPerformanceChart" aria-label="Current and previous confirmed payment collections with trend line" role="img"></canvas><div class="hq-home-chart__empty" hidden>No payment activity for this period</div></div>
       <div class="hq-chart-key"><span><i class="is-current"></i><b id="hqCurrentPeriodKey">Current 7 days</b></span><span><i class="is-previous"></i><b id="hqPreviousPeriodKey">Previous 7 days</b></span><span><i class="is-trend"></i>Trend</span></div>
+    </section>
+
+    <section class="hq-home-card hq-home-status" aria-labelledby="hq-status-title">
+      <header><div><span class="hq-card-eyebrow">Portfolio state</span><h2 id="hq-status-title">Portfolio Status</h2><p>Current financed contracts</p></div><a href="{% url 'hq_portfolio' %}">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
+      {% if hq_portfolio_status %}
+      <div class="hq-home-status__bars">{% for row in hq_portfolio_status %}<div><span><b>{{ row.label }}</b><small>{{ row.count }}</small></span><i><b style="width:{{ row.percent }}%"></b></i><em>{{ row.percent }}%</em></div>{% endfor %}</div>
+      {% else %}<div class="hq-home-status__empty"><i class="bi bi-pie-chart" aria-hidden="true"></i><strong>No financed contracts yet</strong><span>Portfolio status will appear here automatically.</span></div>{% endif %}
     </section>
 
     <section class="hq-home-card hq-home-operations" aria-labelledby="hq-operations-title">
@@ -3730,5 +3744,5 @@ body {
 
 })();
 </script>
-<script src="{% static 'js/hq-command-home.js' %}?v=1.0.0"></script>
+<script src="{% static 'js/hq-command-home.js' %}?v=2.0.0"></script>
 {% endblock extra_scripts %}

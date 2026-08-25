@@ -81,8 +81,11 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
             'data-testid="hq-command-home"',
             'data-testid="hq-primary-action-center"',
             'data-testid="hq-live-today-payments"',
+            "Why wait.",
+            "Portfolio today",
             "Portfolio Overview",
             "Payments Performance",
+            "Portfolio Status",
             'id="hqPaymentPerformanceChart"',
             'id="hq-operations-title"',
         ):

@@ -16,17 +16,17 @@
     data: {
       labels: data.labels,
       datasets: [
-        { label: data.previous_label, data: data.previous, backgroundColor: "#d9e2f1", borderRadius: 6, maxBarThickness: 24 },
-        { label: data.current_label, data: data.current, backgroundColor: "#175cd3", borderRadius: 6, maxBarThickness: 24 },
-        { type: "line", label: "Trend", data: data.trend, borderColor: "#f56600", backgroundColor: "#f56600", borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, tension: .35 }
+        { label: data.previous_label, data: data.previous, backgroundColor: "#dce3ff", borderRadius: { topLeft: 7, topRight: 7 }, maxBarThickness: 22 },
+        { label: data.current_label, data: data.current, backgroundColor: "#6373f0", borderRadius: { topLeft: 7, topRight: 7 }, maxBarThickness: 22 },
+        { type: "line", label: "Trend", data: data.trend, borderColor: "#ff7114", backgroundColor: "#ff7114", borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, tension: .35 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.dataset.label}: MWK ${Number(item.raw).toLocaleString("en-US")}` } } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: "#7b8494", font: { size: 10 } } },
-        y: { beginAtZero: true, grid: { color: "rgba(23,32,51,.06)" }, border: { display: false }, ticks: { color: "#98a2b3", font: { size: 10 }, callback: value => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${Math.round(value / 1000)}K` : value } }
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#74819a", font: { size: 9, weight: 700 } } },
+        y: { beginAtZero: true, grid: { color: "rgba(23,33,58,.055)" }, border: { display: false }, ticks: { color: "#98a2b3", font: { size: 9 }, callback: value => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${Math.round(value / 1000)}K` : value } }
       }
     }
   });
