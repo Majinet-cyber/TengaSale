@@ -103,7 +103,7 @@ def send_approval_notification(to: str, customer_name: str, contract_number: str
         f"Congratulations {customer_name}! "
         f"Your TengaSale phone-financing application {contract_number} has been approved. "
         f"Please visit your TengaSale agent to complete your contract. "
-        f"Welcome aboard — Endless Possibilities."
+        f"Welcome aboard — {settings.TENGA_MOTTO}"
     )
     return send_sms(to, body)
 

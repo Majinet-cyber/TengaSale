@@ -11,22 +11,26 @@
     return;
   }
   if (typeof Chart === "undefined") return;
+  const chartContext = canvas.getContext("2d");
+  const currentGradient = chartContext.createLinearGradient(0, 0, 0, 235);
+  currentGradient.addColorStop(0, "#8d97ff");
+  currentGradient.addColorStop(1, "#6373f0");
   const chart = new Chart(canvas, {
     type: "bar",
     data: {
       labels: data.labels,
       datasets: [
-        { label: data.previous_label, data: data.previous, backgroundColor: "#dce3ff", borderRadius: { topLeft: 7, topRight: 7 }, maxBarThickness: 22 },
-        { label: data.current_label, data: data.current, backgroundColor: "#6373f0", borderRadius: { topLeft: 7, topRight: 7 }, maxBarThickness: 22 },
+        { label: data.previous_label, data: data.previous, backgroundColor: "#dce3ff", borderRadius: { topLeft: 8, topRight: 8 }, barPercentage: .55, categoryPercentage: .72, maxBarThickness: 30 },
+        { label: data.current_label, data: data.current, backgroundColor: currentGradient, borderRadius: { topLeft: 8, topRight: 8 }, barPercentage: .55, categoryPercentage: .72, maxBarThickness: 30 },
         { type: "line", label: "Trend", data: data.trend, borderColor: "#ff7114", backgroundColor: "#ff7114", borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, tension: .35 }
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, interaction: { mode: "index", intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.dataset.label}: MWK ${Number(item.raw).toLocaleString("en-US")}` } } },
       scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#74819a", font: { size: 9, weight: 700 } } },
-        y: { beginAtZero: true, grid: { color: "rgba(23,33,58,.055)" }, border: { display: false }, ticks: { color: "#98a2b3", font: { size: 9 }, callback: value => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${Math.round(value / 1000)}K` : value } }
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#74819a", maxRotation: 0, autoSkip: true, font: { size: 11, weight: 700 } } },
+        y: { beginAtZero: true, grid: { color: "rgba(116,129,154,.12)" }, border: { display: false }, ticks: { color: "#74819a", font: { size: 11 }, callback: value => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${Math.round(value / 1000)}K` : value } }
       }
     }
   });

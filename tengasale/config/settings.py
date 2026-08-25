@@ -259,6 +259,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")  # SendGrid API 
 # Public website enquiries.  Delivery is enabled automatically only for a
 # credentialed SMTP backend; this prevents console/file test backends from
 # presenting a successful submission as a delivered message.
+TENGA_MOTTO = "Why wait."
 TENGA_SUPPORT_EMAIL = os.environ.get("TENGA_SUPPORT_EMAIL", "support@tenga.africa")
 TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED = os.environ.get(
     "TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED",

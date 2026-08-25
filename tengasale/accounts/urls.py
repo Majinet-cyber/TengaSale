@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
@@ -13,6 +14,7 @@ urlpatterns = [
             template_name="accounts/password_reset.html",
             email_template_name="accounts/password_reset_email.html",
             subject_template_name="accounts/password_reset_subject.txt",
+            extra_email_context={"tenga_motto": settings.TENGA_MOTTO},
             success_url="/accounts/password-reset/done/",
         ),
         name="password_reset",

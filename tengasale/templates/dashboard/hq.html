@@ -1569,7 +1569,7 @@ body {
 }
 </style>
 <link rel="stylesheet" href="{% static 'css/hq-command-v2.css' %}?v=1.0.0">
-<link rel="stylesheet" href="{% static 'css/hq-command-home.css' %}?v=2.0.1">
+<link rel="stylesheet" href="{% static 'css/hq-command-home.css' %}?v=2.1.0">
 {% endblock %}
 
 
@@ -1584,7 +1584,7 @@ body {
     <img src="{% static 'images/Tenga.png' %}" alt="Tenga" class="hq-logo-mark ts-logo-icon">
     <div class="hq-brand-text">
       <strong class="hq-brand-name">Tenga</strong>
-      <span class="hq-brand-motto">Why wait.</span>
+      <span class="hq-brand-motto">{{ tenga_motto }}</span>
       <span class="hq-brand-sub">HQ Command Center</span>
     </div>
   </a>
@@ -1932,20 +1932,22 @@ body {
       </div>
     </section>
 
-    <section class="hq-home-card hq-home-performance" aria-labelledby="hq-payments-title">
-      <header><div><span class="hq-card-eyebrow">Cash movement</span><h2 id="hq-payments-title">Collections<span class="visually-hidden"> &mdash; Payments Performance</span></h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select></label></div></header>
-      <div class="hq-performance-summary"><span>Total payments<strong>{{ collections_today|mwk }}</strong></span><em>{% if payments_change_pct != None %}{{ payments_change_pct }}% vs yesterday{% else %}No prior-day comparison{% endif %}</em></div>
-      {{ hq_payment_comparison|json_script:"hqPaymentComparison" }}
-      <div class="hq-home-chart"><canvas id="hqPaymentPerformanceChart" aria-label="Current and previous confirmed payment collections with trend line" role="img"></canvas><div class="hq-home-chart__empty" hidden>No payment activity for this period</div></div>
-      <div class="hq-chart-key"><span><i class="is-current"></i><b id="hqCurrentPeriodKey">Current 7 days</b></span><span><i class="is-previous"></i><b id="hqPreviousPeriodKey">Previous 7 days</b></span><span><i class="is-trend"></i>Trend</span></div>
-    </section>
+    <div class="hq-graph-grid" role="group" aria-label="HQ financial and portfolio graphs">
+      <section class="hq-home-card hq-home-performance hq-graph-card" aria-labelledby="hq-payments-title">
+        <header><div><span class="hq-card-eyebrow">Cash movement</span><h2 id="hq-payments-title">Collections<span class="visually-hidden"> &mdash; Payments Performance</span></h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select></label></div></header>
+        <div class="hq-performance-summary"><span>Total payments<strong>{{ collections_today|mwk }}</strong></span><em>{% if payments_change_pct != None %}{{ payments_change_pct }}% vs yesterday{% else %}No prior-day comparison{% endif %}</em></div>
+        {{ hq_payment_comparison|json_script:"hqPaymentComparison" }}
+        <div class="hq-home-chart"><canvas id="hqPaymentPerformanceChart" aria-label="Current and previous confirmed payment collections with trend line" role="img"></canvas><div class="hq-home-chart__empty" hidden>No payment activity for this period</div></div>
+        <div class="hq-chart-key"><span><i class="is-current"></i><b id="hqCurrentPeriodKey">Current 7 days</b></span><span><i class="is-previous"></i><b id="hqPreviousPeriodKey">Previous 7 days</b></span><span><i class="is-trend"></i>Trend</span></div>
+      </section>
 
-    <section class="hq-home-card hq-home-status" aria-labelledby="hq-status-title">
-      <header><div><span class="hq-card-eyebrow">Portfolio state</span><h2 id="hq-status-title">Portfolio Status</h2><p>Current financed contracts</p></div><a href="{% url 'hq_portfolio' %}">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
-      {% if hq_portfolio_status %}
-      <div class="hq-home-status__bars">{% for row in hq_portfolio_status %}<div><span><b>{{ row.label }}</b><small>{{ row.count }}</small></span><i><b style="width:{{ row.percent }}%"></b></i><em>{{ row.percent }}%</em></div>{% endfor %}</div>
-      {% else %}<div class="hq-home-status__empty"><i class="bi bi-pie-chart" aria-hidden="true"></i><strong>No financed contracts yet</strong><span>Portfolio status will appear here automatically.</span></div>{% endif %}
-    </section>
+      <section class="hq-home-card hq-home-status hq-graph-card" aria-labelledby="hq-status-title">
+        <header><div><span class="hq-card-eyebrow">Portfolio state</span><h2 id="hq-status-title">Portfolio Status</h2><p>Current financed contracts</p></div><a href="{% url 'hq_portfolio' %}">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
+        {% if hq_portfolio_status %}
+        <div class="hq-home-status__bars">{% for row in hq_portfolio_status %}<div><span><b>{{ row.label }}</b><small>{{ row.count }}</small></span><i><b style="width:{{ row.percent }}%"></b></i><em>{{ row.percent }}%</em></div>{% endfor %}</div>
+        {% else %}<div class="hq-home-status__empty"><i class="bi bi-pie-chart" aria-hidden="true"></i><strong>No financed contracts yet</strong><span>Portfolio status will appear here automatically.</span></div>{% endif %}
+      </section>
+    </div>
 
     <section class="hq-home-card hq-home-operations" aria-labelledby="hq-operations-title">
       <header><h2 id="hq-operations-title">Operations</h2></header>
@@ -3749,5 +3751,5 @@ body {
 
 })();
 </script>
-<script src="{% static 'js/hq-command-home.js' %}?v=2.0.0"></script>
+<script src="{% static 'js/hq-command-home.js' %}?v=2.1.0"></script>
 {% endblock extra_scripts %}

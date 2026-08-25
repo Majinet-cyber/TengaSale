@@ -653,6 +653,10 @@ class ContractModelTests(TestCase):
         self.assertIn("30 days or more after required payment becomes overdue", initial_html)
         self.assertIn("Any lawful repossession, tracing, legal or recovery costs", initial_html)
         self.assertIn("Device Lock Status", completed_html)
+        self.assertIn("Why wait.", initial_html)
+        self.assertIn("Why wait.", completed_html)
+        self.assertNotIn("Endless Possibilities", initial_html)
+        self.assertNotIn("Endless Possibilities", completed_html)
         self.assertNotIn("Device Lock Release Status", completed_html)
         self.assertNotIn("Yellow", initial_html)
 

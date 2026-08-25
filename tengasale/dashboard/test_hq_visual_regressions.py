@@ -15,6 +15,8 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         cls.collections = (base / "templates/dashboard/hq_payment_collections.html").read_text(encoding="utf-8")
         cls.sidebar = (base / "templates/dashboard/partials/hq_sidebar.html").read_text(encoding="utf-8")
         cls.theme = (base / "static/css/hq-sales-pulse.css").read_text(encoding="utf-8")
+        cls.home_theme = (base / "static/css/hq-command-home.css").read_text(encoding="utf-8")
+        cls.home_script = (base / "static/js/hq-command-home.js").read_text(encoding="utf-8")
 
     def test_hq_loads_one_role_scoped_sales_pulse_theme(self):
         self.assertIn('current_tengasale_role == "hq"', self.base_template)
@@ -66,6 +68,7 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         self.assertIn("overflow-y: auto", self.dashboard)
         self.assertIn("overflow: visible !important", self.dashboard)
         self.assertIn("height:auto!important;max-height:none!important", home_theme)
+        self.assertIn("height:auto!important;max-height:none!important;overflow:visible!important", home_theme)
         self.assertIn("height:auto;margin:0;overflow:visible", self.theme)
         self.assertNotIn("body.role-hq .app-shell:has(.hq-topbar){height:100vh!important}", self.theme)
 
@@ -89,7 +92,7 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
             'data-testid="hq-command-home"',
             'data-testid="hq-primary-action-center"',
             'data-testid="hq-live-today-payments"',
-            "Why wait.",
+            "{{ tenga_motto }}",
             "Portfolio today",
             "Portfolio Overview",
             "Payments Performance",
@@ -104,6 +107,34 @@ class HQSalesPulseVisualRegressionTests(SimpleTestCase):
         )
 
     def test_legacy_home_modules_are_not_rendered_below_command_home(self):
-        styles = (Path(settings.BASE_DIR) / "static/css/hq-command-home.css").read_text(encoding="utf-8")
-        self.assertIn(".hq-command-v2,.hq-command-v2~*{display:none!important}", styles)
-        self.assertIn("grid-template-columns:1fr 1fr", styles)
+        self.assertIn(".hq-command-v2,.hq-command-v2~*{display:none!important}", self.home_theme)
+        self.assertIn("grid-template-columns:1fr 1fr", self.home_theme)
+
+    def test_primary_graphs_have_sales_pulse_scale_and_responsive_layout(self):
+        for marker in (
+            'class="hq-graph-grid"',
+            "hq-home-performance hq-graph-card",
+            "hq-home-status hq-graph-card",
+        ):
+            self.assertIn(marker, self.dashboard)
+        for marker in (
+            "grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)",
+            "min-height:340px",
+            "height:235px;min-height:235px",
+            "@media(max-width:780px){.hq-graph-grid{grid-template-columns:1fr}}",
+            "height:210px;min-height:210px",
+        ):
+            self.assertIn(marker, self.home_theme)
+
+    def test_payment_chart_preserves_live_data_with_readable_chartjs_configuration(self):
+        for marker in (
+            "data.current",
+            "data.previous",
+            "data.trend",
+            "maintainAspectRatio: false",
+            "animation: { duration: 350 }",
+            "barPercentage: .55",
+            "categoryPercentage: .72",
+            'color: "rgba(116,129,154,.12)"',
+        ):
+            self.assertIn(marker, self.home_script)

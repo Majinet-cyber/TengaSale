@@ -22,6 +22,7 @@ def tengasale_support(request):
             pass
 
     return {
+        "tenga_motto": settings.TENGA_MOTTO,
         "tengasale_whatsapp_link": settings.TENGASALE_WHATSAPP_LINK,
         "tengasale_whatsapp_number": settings.TENGASALE_WHATSAPP_NUMBER,
         "tenga_support_email": settings.TENGA_SUPPORT_EMAIL,

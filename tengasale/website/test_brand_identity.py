@@ -10,6 +10,8 @@ class CanonicalBrandIdentityTests(TestCase):
     def test_public_landing_uses_authenticated_canonical_t(self):
         response = self.client.get(reverse("public_home"))
         self.assertContains(response, "images/Tenga.png")
+        self.assertContains(response, "Why wait.", count=2)
+        self.assertNotContains(response, "Endless Possibilities")
         self.assertNotContains(response, 'brand-logo--wordmark" src="/static/images/brand/tengasale-logo-full.svg')
 
     def test_manifest_and_icon_derivatives_exist(self):

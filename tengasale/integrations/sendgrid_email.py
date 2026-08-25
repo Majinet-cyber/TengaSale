@@ -133,7 +133,7 @@ def send_payment_receipt(
       {"<tr><td><strong>Reference:</strong></td><td>" + reference + "</td></tr>" if reference else ""}
     </table>
     <p>Keep your device safe and continue making payments on time.</p>
-    <p>— The TengaSale Team<br><em>Endless Possibilities</em></p>
+    <p>— The TengaSale Team<br><em>{settings.TENGA_MOTTO}</em></p>
     """
     return send_email(to=to, subject=subject, body_html=html)
 
@@ -153,7 +153,7 @@ def send_approval_email(
       {"<tr><td><strong>Device:</strong></td><td>" + device + "</td></tr>" if device else ""}
     </table>
     <p>Please visit your TengaSale agent to sign your contract and collect your device.</p>
-    <p>Welcome to TengaSale — <em>Endless Possibilities</em>.</p>
+    <p>Welcome to TengaSale — <em>{settings.TENGA_MOTTO}</em></p>
     """
     return send_email(to=to, subject=subject, body_html=html)
 
@@ -190,7 +190,7 @@ def send_marked_field_correction_email(
       Update My Application
     </a></p>
     <p>If the button does not work, copy and paste this link:<br><code>{edit_url}</code></p>
-    <p>Thank you for your cooperation — TengaSale: <em>Endless Possibilities</em>.</p>
+    <p>Thank you for your cooperation — TengaSale: <em>{settings.TENGA_MOTTO}</em></p>
     """
     return send_email(to=to, subject=subject, body_html=html)
 
@@ -218,7 +218,7 @@ def send_merchant_payout_notification_email(
       {method_row}
     </table>
     <p>No withholding tax (WHT) is applied to merchant payouts.</p>
-    <p>— The TengaSale Team<br><em>Endless Possibilities</em></p>
+    <p>— The TengaSale Team<br><em>{settings.TENGA_MOTTO}</em></p>
     """
     return send_email(to=to, subject=subject, body_html=html)
 
@@ -242,6 +242,6 @@ def send_payout_notification_email(
       <tr style="border-top:1px solid #ccc;"><td><strong>Net Payable:</strong></td><td><strong>MWK {net_amount}</strong></td></tr>
       {"<tr><td><strong>Destination:</strong></td><td>" + destination_phone + "</td></tr>" if destination_phone else ""}
     </table>
-    <p>Thank you for your hard work — TengaSale: <em>Endless Possibilities</em>.</p>
+    <p>Thank you for your hard work — TengaSale: <em>{settings.TENGA_MOTTO}</em></p>
     """
     return send_email(to=to, subject=subject, body_html=html)

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib import admin
 from django.core.management import call_command
+from django.core import mail
 from django.db.models import Sum
 from django.contrib.staticfiles import finders
 from django.conf import settings
@@ -63,6 +64,8 @@ class LoginTemplateTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertContains(response, "Why wait.")
+        self.assertNotContains(response, "Endless Possibilities")
 
     def test_login_page_contains_forgot_password_link(self):
         response = self.client.get(reverse("login"))
@@ -98,6 +101,20 @@ class AccountUrlTests(TestCase):
 
         self.assertEqual(resolve(reverse("password_reset")).url_name, "password_reset")
         self.assertEqual(response.status_code, 200)
+
+    def test_password_reset_email_uses_canonical_motto(self):
+        get_user_model().objects.create_user(
+            username="motto-reset",
+            email="motto-reset@example.com",
+            password="test-pass-123",
+        )
+
+        response = self.client.post(reverse("password_reset"), {"email": "motto-reset@example.com"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Why wait.", mail.outbox[0].body)
+        self.assertNotIn("Endless Possibilities", mail.outbox[0].body)
 
     def test_password_reset_done_resolves(self):
         self.assertEqual(

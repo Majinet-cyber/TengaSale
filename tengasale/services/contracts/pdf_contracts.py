@@ -283,6 +283,7 @@ def get_contract_context(contract) -> dict[str, Any]:
         pass
 
     return {
+        "tenga_motto": settings.TENGA_MOTTO,
         # Contract header
         "contract_number": contract.contract_number,
         "payg_number": payg_number,
