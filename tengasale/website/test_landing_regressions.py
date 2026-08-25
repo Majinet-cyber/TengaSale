@@ -82,6 +82,7 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
 
     def test_public_brand_navigation_and_hero_why_are_locked_in(self):
         self.assertGreaterEqual(self.template.count('<span class="brand-word">Tenga</span>'), 2)
+        self.assertEqual(self.template.count("Why Wait"), 2)
         self.assertIn('class="nav-links"', self.template)
         self.assertIn("website_careers", self.template)
         self.assertIn("{% url 'login' %}", self.template)
