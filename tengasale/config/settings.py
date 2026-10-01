@@ -57,14 +57,15 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     ".onrender.com",
-    "tengasale.emajinet.africa",
+    "tengasale-production.up.railway.app",
+    "tenga.emajinet.africa",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com",
-    "https://tengasale.emajinet.africa",
+    "https://tengasale-production.up.railway.app",
+    "https://tenga.emajinet.africa",
 ]
-
 
 # Application definition
 
