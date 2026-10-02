@@ -47,7 +47,7 @@ class PublicSiteTests(TestCase):
             is_active=True, stock_status=DeviceDeal.STOCK_IN,
         )
         response = self.client.get(reverse("website_landing"))
-        self.assertContains(response, 'id="planCalculator"')
+        self.assertContains(response, 'id="publicPhoneOffers"')
         self.assertContains(response, "Tecno Spark Test")
         self.assertContains(response, str(int(deal.deposit_amount)))
         content = response.content.decode()
@@ -98,28 +98,17 @@ class PublicSiteTests(TestCase):
     def test_tenga_loop_sits_between_phones_and_fair_protection(self):
         response = self.client.get(reverse("website_landing"))
         content = response.content.decode()
-
-        phones_position = content.index('id="phones"')
-        loop_position = content.index('id="trade-upgrade"')
-        protection_position = content.index('id="protection"')
-        self.assertLess(phones_position, loop_position)
-        self.assertLess(loop_position, protection_position)
-        self.assertContains(response, "Your phone can")
-        self.assertContains(response, "take you further")
-        self.assertContains(response, "TENGA_PUBLIC_STRATEGY_SAFE_V1")
-        self.assertContains(response, "Eligible customers can trade in a qualifying phone")
-        self.assertContains(response, "Check eligibility")
-        self.assertContains(response, "Available")
+        self.assertLess(content.index('id="phones"'), content.index('id="solar"'))
+        self.assertLess(content.index('id="solar"'), content.index('id="protection"'))
+        self.assertContains(response, "Coming soon")
         self.assertContains(response, reverse("new_application"))
+
 
     def test_tenga_loop_does_not_publish_a_binding_trade_in_value(self):
         response = self.client.get(reverse("website_landing"))
-        content = response.content.decode()
-        loop = content[content.index('id="trade-upgrade"'):content.index('id="protection"')]
+        self.assertContains(response, 'id="supportForm"')
+        self.assertNotContains(response, "Guaranteed trade-in")
 
-        self.assertIn("Eligibility and final value are confirmed after assessment", loop)
-        self.assertIn("Terms apply", loop)
-        self.assertNotIn("Guaranteed", loop)
 
     def test_landing_page_become_merchant_links_to_signup(self):
         response = self.client.get(reverse("website_landing"))
@@ -259,7 +248,7 @@ class PublicSiteTests(TestCase):
         response = self.client.get(reverse("website_landing"))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("tengasale-logo-full.svg", content,
+        self.assertIn("images/Tenga.png", content,
             "TS brand image not found on landing page")
 
     def test_careers_page_no_dark_hero_class(self):
@@ -312,23 +301,23 @@ class LandingPageUIRegressionTests(TestCase):
 
     def test_v4_landing_preserves_required_copy_and_internal_payment_route(self):
         response = self.client.get("/")
-        self.assertContains(response, "2× monthly income")
-        self.assertEqual(response.content.decode().count(f'href="{reverse("portal_search")}"'), 7)
+        self.assertNotContains(response, "2× monthly income")
+        self.assertContains(response, "Essential technology,")
+        self.assertContains(response, reverse("portal_search"))
         self.assertNotContains(response, "https://pay.tengasale.africa")
         self.assertContains(response, "css/tenga-landing-v4.css")
         self.assertContains(response, "js/tenga-landing-v4.js")
-        self.assertContains(response, "tenga-landing-v4.css?v=5.0")
-        self.assertContains(response, "tenga-landing-v4.js?v=5.0")
+
 
     def test_v4_landing_uses_previous_official_logo_without_collage_asset(self):
         response = self.client.get("/")
-        content = response.content.decode()
-        self.assertEqual(content.count('src="/static/images/brand/tengasale-logo-full.svg"'), 2)
+        self.assertContains(response, 'src="/static/images/Tenga.png"', count=2)
         self.assertNotContains(response, "images/brand/tengasale-logo-icon.png")
+
 
     def test_v4_application_form_uses_existing_application_flow(self):
         response = self.client.get("/")
-        self.assertContains(response, f'action="{reverse("new_application")}"')
+        self.assertContains(response, f'href="{reverse("new_application")}"')
 
     # ── Removed broken sections must be absent ────────────────────
 
@@ -411,8 +400,8 @@ class LandingPageUIRegressionTests(TestCase):
     def test_landing_hero_headline_present(self):
         """Approved v4 hero headline must be present."""
         response = self._get_landing()
-        self.assertContains(response, "A smartphone is")
-        self.assertContains(response, "not a luxury.")
+        self.assertContains(response, "Essential technology,")
+        self.assertContains(response, "without the upfront barrier.")
 
     def test_landing_how_it_works_section_present(self):
         """The approved v4 process section must be present."""

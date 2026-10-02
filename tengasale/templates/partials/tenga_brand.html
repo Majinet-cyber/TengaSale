@@ -1,0 +1,3 @@
+{% load static %}
+{% comment %}Approved assets only. The compact mark is the current app identity.{% endcomment %}
+{% if variant == "full" %}<img src="{% static 'images/brand/tengasale-logo-full.png' %}" alt="TengaSale" class="tenga-brand tenga-brand--full {{ image_class }}" width="200" height="150">{% else %}<img src="{% static 'images/Tenga.png' %}" alt="Tenga" class="tenga-brand tenga-brand--mark {{ image_class }}" width="40" height="32">{% endif %}

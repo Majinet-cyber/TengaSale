@@ -1,5 +1,5 @@
 /* Canonical Tenga content-card language. Functional controls and state borders are excluded. */
-:root{--tenga-card-radius:18px;--tenga-card-surface:#fff;--tenga-card-soft:#fafaf8;--tenga-card-shadow:0 1px 2px rgba(23,32,51,.025),0 12px 36px rgba(23,32,51,.045);--tenga-card-shadow-hover:0 2px 4px rgba(23,32,51,.035),0 18px 44px rgba(23,32,51,.065)}
+:root{--tenga-card-radius:var(--tenga-radius-card);--tenga-card-surface:var(--tenga-surface);--tenga-card-soft:var(--tenga-surface-soft);--tenga-card-shadow:var(--tenga-shadow-surface);--tenga-card-shadow-hover:var(--tenga-shadow-hover)}
 .card,.ts-card,.ts-kpi-card,.kpi-card,.stat-card,.tool-card,.hq-section-card,.dashboard-card,.metric-card,.summary-card,.audience-card,.problem-card,.ecosystem,.ecosystem-group,.careers-why-card,.careers-role-card,.careers-value,.brand-card,.brand-card-v2,.product-card,.phone-card,.rc-stats article,.rc-panel,.pay-status-card{border:0!important;border-top:0!important;background-clip:padding-box}
 .problem-card::before,.ts-glass-card::before,.ts-role-card::before,.volts-formula-card::before,.rc-stats article::before,.hq-empty-state::before{display:none!important}
 .ts-glass-card,.ts-role-card,.frd-signal-card,.sim-scenario-card,.wallet-balance-card,.dc-card{border-color:transparent!important}

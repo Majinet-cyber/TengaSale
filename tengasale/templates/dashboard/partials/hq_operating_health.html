@@ -1,0 +1,12 @@
+{% load ts_filters %}
+    <section class="hq-command-section" aria-labelledby="health-title">
+      <div class="hq-command-section__head"><div><span>Business</span><h2 id="health-title">Operating health</h2></div></div>
+      <div class="hq-command-health">
+        <a class="hq-health-card--applications" href="{% url 'hq_applications' %}"><i class="bi bi-files"></i><span>Applications</span><strong>{{ sales_today }}</strong><small>submitted today</small></a>
+        <a class="hq-health-card--collections" href="{% url 'hq_payment_collections' %}"><i class="bi bi-arrow-down-circle"></i><span>Collections today</span><strong title="{{ collections_today|mwk }}">{{ collections_today|mwk_short }}</strong><small>{% if collections_today %}Confirmed payments{% else %}No payments recorded yet{% endif %}</small></a>
+        <a class="hq-health-card--contracts" href="{% url 'hq_portfolio' %}"><i class="bi bi-phone"></i><span>Active financing</span><strong>{{ active_contracts_count }} device{{ active_contracts_count|pluralize }}</strong><small>live contracts</small></a>
+        <a class="hq-health-card--risk {% if overdue_contracts_count %}has-alert{% endif %}" href="{% url 'hq_payment_collections' %}"><i class="bi bi-exclamation-circle"></i><span>Payment exceptions</span><strong class="{% if overdue_contracts_count %}is-risk{% endif %}">{{ overdue_contracts_count }}</strong><small>{% if overdue_contracts_count %}Needs review{% else %}Payments reconciled{% endif %}</small></a>
+        <a class="hq-health-card--locks {% if lock_locked_count %}has-alert{% endif %}" href="{% url 'device_lock:hq_lock_centre' %}"><i class="bi bi-lock"></i><span>Lock status</span><strong>{{ lock_locked_count|default:'0' }} locked</strong><small>{% if lock_locked_count %}Device risk exposure{% else %}No open locks{% endif %}</small></a>
+        <a class="hq-health-card--approvals" href="{% url 'hq_applications' %}"><i class="bi bi-check2-circle"></i><span>Approval conversion</span><strong>{{ approval_rate }}%</strong><small>{{ waiting_count }} waiting</small></a>
+      </div>
+    </section>

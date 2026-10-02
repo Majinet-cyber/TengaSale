@@ -1,0 +1,561 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HQ Command Center — Tenga</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f4511e">
+    <meta name="description" content="TengaSale — Why wait. Smartphone financing made simple for Malawi.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TengaSale">
+    <link rel="manifest" href="/static/manifest.webmanifest?v=20260809c">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico?v=20260809c">
+    <link rel="icon" type="image/png" href="/static/images/icon-32.png?v=20260809c" sizes="32x32">
+    <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png?v=20260809c">
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0.3">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/css/tengasale.css?v=1.0.4">
+    <link rel="stylesheet" href="/static/css/motion.css?v=1.0.1">
+    <link rel="stylesheet" href="/static/css/premium.css?v=2.0.0">
+    <link rel="stylesheet" href="/static/css/hq-shell.css?v=1.0.2">
+    <link rel="stylesheet" href="/static/css/recommerce.css?v=1.0.0">
+    
+    <link rel="stylesheet" href="/static/css/card_hierarchy.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/operations-restraint.css?v=1.1.0">
+    <link rel="stylesheet" href="/static/css/tenga-product-system.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/tenga-card-system.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/tenga-signal.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/tenga-type-system.css?v=1.0.0">
+    <link rel="stylesheet" href="/static/css/tenga-design-system.css?v=2.0.0">
+    <link rel="stylesheet" href="/static/css/hq-sales-pulse.css?v=1.0.1" data-testid="hq-sales-pulse-theme">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+    /* ── Global top progress bar ─────────────────────────────────── */
+    #ts-top-loader {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      width: 0%;
+      background: var(--tenga-brand-orange);
+      background-size: 200% 100%;
+      z-index: 9999;
+      transition: width 0.22s ease, opacity 0.4s ease;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 0 3px 3px 0;
+    }
+    #ts-top-loader.is-loading {
+      opacity: 1;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      #ts-top-loader.is-loading {
+        animation: ts-loader-pulse 1.6s ease infinite;
+      }
+    }
+    @keyframes ts-loader-pulse {
+      0%, 100% { background-position: 200% 0; }
+      50% { background-position: 0% 0; }
+    }
+
+    /* ── Toast container ─────────────────────────────────────────── */
+    #ts-toast-container {
+      position: fixed;
+      bottom: calc(72px + env(safe-area-inset-bottom, 12px));
+      right: 16px;
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+      width: calc(100vw - 32px);
+      pointer-events: none;
+    }
+    .ts-toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.14);
+      pointer-events: all;
+      animation: ts-toast-in 0.26s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ts-toast { animation: none; }
+    }
+    @keyframes ts-toast-in {
+      from { opacity: 0; transform: translateY(16px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .ts-toast--success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .ts-toast--error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .ts-toast--info    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .ts-toast--warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    </style>
+</head>
+<body class="role-hq">
+
+<div id="ts-top-loader" aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+<div id="ts-toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<div class="app-shell">
+    <header class="tenga-topbar " data-testid="tenga-topbar">
+<div class="tenga-topbar__identity"><a href="/tengasale/hq/" class="tenga-topbar__brand" aria-label="Tenga home">
+
+<img src="/static/images/Tenga.png" alt="Tenga" class="tenga-brand tenga-brand--mark " width="40" height="32">
+</a><span class="tenga-topbar__title " >HQ</span></div>
+<div class="tenga-topbar__actions">
+<span class="tenga-country-indicator flag-pill merchant-country-chip country-pill" role="img" aria-label="Malawi" title="Malawi" data-testid="country-pill-mw"><span class="ts-country-pill__flag country-pill__flag" aria-hidden="true"><svg viewBox="0 0 20 14" width="18" height="13" xmlns="http://www.w3.org/2000/svg" style="border-radius:2px;flex-shrink:0;" aria-hidden="true">
+  <rect width="20" height="14" fill="#339E35"/>
+  <rect width="20" height="9.33" fill="#CE1126"/>
+  <rect width="20" height="4.67" fill="#000000"/>
+  <g transform="translate(10,4.9)">
+    <circle r="2.4" fill="#000000"/><circle r="1.9" fill="#CE1126"/>
+    <line x1="0" y1="-3.2" x2="0" y2="-4.2" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="2.26" y1="-2.26" x2="2.97" y2="-2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="3.2" y1="0" x2="4.2" y2="0" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="2.26" y1="2.26" x2="2.97" y2="2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="-2.26" y1="-2.26" x2="-2.97" y2="-2.97" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+    <line x1="-3.2" y1="0" x2="-4.2" y2="0" stroke="#000" stroke-width="0.6" stroke-linecap="round"/>
+  </g>
+</svg>
+</span></span>
+
+
+<a class="tenga-icon-action tenga-icon-action--whatsapp" href="https://wa.me/265999000000" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp support" title="WhatsApp support" data-testid="topbar-whatsapp"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+
+
+<a href="/notifications/" class="tenga-icon-action notification-button" aria-label="Notifications (0 unread)" title="Notifications" data-testid="topbar-notifications"><i class="bi bi-bell" aria-hidden="true"></i></a>
+<form method="post" action="/accounts/logout/" class="tenga-topbar__logout logout-form"><button class="tenga-icon-action logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></button></form>
+</div>
+
+</header>
+
+
+    
+    
+    <div class="hq-page-shell" data-testid="hq-persistent-shell">
+        
+<div class="hq-navigation">
+<nav class="tenga-segmented-nav" aria-label="HQ primary navigation">
+<a href="/tengasale/hq/" aria-current="page"><i class="bi bi-command" aria-hidden="true"></i><span>Command</span></a>
+<a href="/tengasale/hq/applications/" ><i class="bi bi-files" aria-hidden="true"></i><span>Applications</span></a>
+<a href="/tengasale/hq/portfolio/" ><i class="bi bi-graph-up" aria-hidden="true"></i><span>Portfolio</span></a>
+<a href="/tengasale/hq/payment-collections/" ><i class="bi bi-credit-card" aria-hidden="true"></i><span>Collections</span></a>
+<a href="/tengasale/hq/device-lock/" ><i class="bi bi-phone" aria-hidden="true"></i><span>Devices</span></a>
+<a href="/tengasale/hq/reports/" ><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Reports</span></a>
+</nav>
+<details class="hq-all-tools" id="hq-all-tools"><summary><i class="bi bi-grid" aria-hidden="true"></i> All tools <i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
+<div class="hq-tool-groups">
+<section class="hq-tool-group"><h3>Operate</h3>
+<a href="/tengasale/hq/" aria-current="page">Command</a>
+<a href="/tengasale/hq/applications/" >Applications</a>
+<a href="/tengasale/hq/applications/?status=active_contract" >Contracts</a>
+<a href="/tengasale/hq/deals/" >Deals Catalog</a>
+<a href="/tengasale/hq/devices/" >Devices</a>
+<a href="/tengasale/hq/device-lock/" >Device Locking</a>
+<a href="/tengasale/hq/underwriter-queue/" >Underwriters</a>
+<a href="/tengasale/hq/repossession-resale/" >Repossession &amp; Resale</a>
+<a href="/tengasale/recommerce/hq/" >Recommerce</a>
+<a href="/tengasale/hq/operations/" >Operations</a>
+<a href="/tengasale/hq/safe-operations/" >Safe operations</a>
+<a href="/tengasale/hq/auto-approval/" >Auto approval</a>
+</section>
+<section class="hq-tool-group"><h3>Portfolio &amp; finance</h3>
+<a href="/tengasale/hq/portfolio/" >Portfolio Management</a>
+<a href="/tengasale/hq/payment-collections/" >Payments / Collections</a>
+<a href="/tengasale/hq/payment-collections/?status=active" >Active Contracts</a>
+<a href="/tengasale/hq/payment-collections/?status=completed" >Completed Contracts</a>
+<a href="/tengasale/hq/reconciliation/" >Reconciliation</a>
+<a href="/tengasale/hq/reports/" >Reports / Exports</a>
+<a href="/tengasale/hq/sales-analytics/" >Sales analytics</a>
+<a href="/tengasale/hq/commissions/" >Earnings &amp; Commissions</a>
+<a href="/tengasale/hq/commission-ledger/" >Commission ledger</a>
+<a href="/tengasale/hq/merchant-payouts/" >Merchant Payouts</a>
+<a href="/tengasale/hq/staff-payouts/" >Staff payouts</a>
+<a href="/tengasale/hq/emergency-payouts/" >Emergency payouts</a>
+<a href="/tengasale/hq/payment-intelligence/" >Payment intelligence</a>
+<a href="/tengasale/hq/simulations/" >Financial Simulations</a>
+<a href="/hq/payments/" >Payment gateway</a>
+</section>
+<section class="hq-tool-group"><h3>Risk &amp; support</h3>
+<a href="/tengasale/hq/underwriter-performance/" >Underwriter performance</a>
+<a href="/tengasale/hq/qc/call-recordings/" >QC / Call recordings</a>
+<a href="/tengasale/hq/fraud-checks/" >Risk &amp; Fraud</a>
+<a href="/tengasale/hq/audit-trail/" >Audit Trail</a>
+<a href="/tengasale/hq/merchant-agreements/" >Merchant Agreements</a>
+<a href="/tengasale/hq/whatsapp-bot/" >WhatsApp Bot</a>
+<a href="/tengasale/hq/operational-notices/" >Notices &amp; Templates</a>
+<a href="/notifications/" >Notifications</a>
+<a href="/tengasale/support/" >Tech Support</a>
+<a href="/tengasale/support/tickets/" >Support tickets</a>
+<a href="/tengasale/support/tickets/new/" >Create support ticket</a>
+<a href="/tengasale/support/bugs/" >System health</a>
+</section>
+<section class="hq-tool-group"><h3>People &amp; network</h3>
+<a href="/tengasale/hq/users/" >Users &amp; Settings</a>
+<a href="/tengasale/merchant-admin/" >Merchant Admin</a>
+<a href="/tengasale/merchant-admin/leads/" >Merchant leads</a>
+
+
+
+
+
+
+
+
+
+</section>
+<section class="hq-tool-group"><h3>Saved views</h3><a href="/tengasale/hq/applications/?status=rejected">Archived / Rejected</a><a href="/tengasale/hq/audit-trail/?type=sms">SMS / Messaging</a><a href="/tengasale/hq/fraud-checks/?type=kyc">KYC / Identity</a><a href="/tengasale/hq/users/?section=settings">Settings</a></section>
+<section class="hq-tool-group"><h3>Account & developer tools</h3><a href="/home/">Role home</a><a href="/profile/settings/">Profile settings</a></section>
+</div>
+
+</details>
+</div>
+
+
+        <main class="content page-enter hq-page-content">
+        <div class="hq-content">
+    
+        
+
+        
+<div data-testid="hq-dashboard">
+  <section class="hq-command-home" aria-label="Tenga HQ command overview" data-testid="hq-command-home">
+    <header class="hq-home-greeting">
+      <div><span class="hq-home-eyebrow">Tenga HQ</span><h1>Command Center</h1><p>Here&rsquo;s what is happening across Tenga today.</p></div>
+      <span>2 Oct 2026</span>
+    </header>
+
+    <a class="hq-portfolio-hero hq-command-hero" href="/tengasale/hq/portfolio/" aria-label="View financed portfolio">
+      <span class="hq-portfolio-hero__copy"><small>Portfolio today</small><strong title="MWK 0">MWK 0</strong><em>Total financed portfolio</em></span>
+      <span class="hq-portfolio-hero__signals"><b>0 <small>financed</small></b><b>0 <small>active</small></b><b class="">0 <small>overdue</small></b><b class="">0 <small>locked</small></b></span>
+      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+    </a>
+
+    <div class="hq-primary-instruments">
+      <a class="hq-instrument hq-instrument--action" href="/tengasale/hq/operations/" data-testid="hq-primary-action-center">
+        <span class="hq-instrument__icon"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></span>
+        <span class="hq-instrument__copy"><small>ACTION CENTER</small><strong>All clear</strong><em>Nothing requires your attention</em></span>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a class="hq-instrument hq-instrument--payments" href="/tengasale/hq/payment-collections/" data-testid="hq-live-today-payments">
+        <span class="hq-instrument__icon"><i class="bi bi-arrow-down-left" aria-hidden="true"></i></span>
+        <span class="hq-instrument__copy"><small>Today&rsquo;s collections</small><strong>MWK 0</strong><em>No confirmed payments yet today</em></span>
+        <span class="hq-instrument__change "><b>No activity</b><i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+      </a>
+    </div>
+
+    
+    <section class="hq-command-section hq-action-center" aria-labelledby="action-center-title">
+      <div class="hq-command-section__head">
+        <div><span>Now</span><h2 id="action-center-title">Action center</h2></div>
+      </div>
+      <div class="hq-command-actions">
+        
+        
+        
+        
+        
+        
+        
+        <div class="hq-command-clear"><span><i class="bi bi-check2"></i></span><div><strong>All clear</strong><small>No urgent actions right now.</small></div></div>
+        
+      </div>
+    </section>
+    
+    <section class="hq-command-section" aria-labelledby="health-title">
+      <div class="hq-command-section__head"><div><span>Business</span><h2 id="health-title">Operating health</h2></div></div>
+      <div class="hq-command-health">
+        <a class="hq-health-card--applications" href="/tengasale/hq/applications/"><i class="bi bi-files"></i><span>Applications</span><strong></strong><small>submitted today</small></a>
+        <a class="hq-health-card--collections" href="/tengasale/hq/payment-collections/"><i class="bi bi-arrow-down-circle"></i><span>Collections today</span><strong title="MWK 0">MWK 0</strong><small>No payments recorded yet</small></a>
+        <a class="hq-health-card--contracts" href="/tengasale/hq/portfolio/"><i class="bi bi-phone"></i><span>Active financing</span><strong>0 devices</strong><small>live contracts</small></a>
+        <a class="hq-health-card--risk " href="/tengasale/hq/payment-collections/"><i class="bi bi-exclamation-circle"></i><span>Payment exceptions</span><strong class="">0</strong><small>Payments reconciled</small></a>
+        <a class="hq-health-card--locks " href="/tengasale/hq/device-lock/"><i class="bi bi-lock"></i><span>Lock status</span><strong>0 locked</strong><small>No open locks</small></a>
+        <a class="hq-health-card--approvals" href="/tengasale/hq/applications/"><i class="bi bi-check2-circle"></i><span>Approval conversion</span><strong>%</strong><small> waiting</small></a>
+      </div>
+    </section>
+
+
+    <section class="hq-home-card hq-home-portfolio" aria-labelledby="hq-portfolio-title">
+      <header><h2 id="hq-portfolio-title">Portfolio Overview</h2><a href="/tengasale/hq/portfolio/">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
+      <div class="hq-home-metrics">
+        <a href="/tengasale/hq/portfolio/"><i class="bi bi-phone" aria-hidden="true"></i><strong>0</strong><span>Financed</span></a>
+        <a href="/tengasale/hq/portfolio/"><i class="bi bi-activity" aria-hidden="true"></i><strong>0</strong><span>Active</span></a>
+        <a href="/tengasale/hq/device-lock/"><i class="bi bi-lock" aria-hidden="true"></i><strong>0</strong><span>Locked</span></a>
+        <a href="/tengasale/hq/payment-collections/"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><strong>0</strong><span>Overdue</span></a>
+        <a href="/tengasale/hq/portfolio/" title="MWK 0"><i class="bi bi-database" aria-hidden="true"></i><strong>MWK 0</strong><span>Value</span></a>
+      </div>
+    </section>
+
+    <div class="hq-graph-grid" data-testid="hq-live-intelligence" role="group" aria-label="HQ financial and portfolio graphs">
+      <section class="hq-home-card hq-home-performance hq-graph-card" aria-labelledby="hq-payments-title">
+        <header><div><span class="hq-card-eyebrow">Cash movement</span><h2 id="hq-payments-title">Collections<span class="visually-hidden"> &mdash; Payments Performance</span></h2><p id="hqPaymentComparisonLabel">Confirmed collections &middot; current vs previous period</p></div><div class="hq-chart-controls"><label><span class="visually-hidden">Payment chart period</span><select id="hqPaymentPeriod"><option value="1">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option></select></label></div></header>
+        <div class="hq-performance-summary"><span>Total payments<strong>MWK 0</strong></span><em>No prior-day comparison</em></div>
+        <script id="hqPaymentComparison" type="application/json">{"labels": [], "current": [], "previous": [], "trend": []}</script>
+        <div class="hq-home-chart"><canvas id="hqPaymentPerformanceChart" aria-label="Current and previous confirmed payment collections with trend line" role="img"></canvas><div class="hq-home-chart__empty" hidden>No payment activity for this period</div></div>
+        <div class="hq-chart-key"><span><i class="is-current"></i><b id="hqCurrentPeriodKey">Current 7 days</b></span><span><i class="is-previous"></i><b id="hqPreviousPeriodKey">Previous 7 days</b></span><span><i class="is-trend"></i>Trend</span></div>
+      </section>
+
+      <section class="hq-home-card hq-home-status hq-graph-card" aria-labelledby="hq-status-title">
+        <header><div><span class="hq-card-eyebrow">Portfolio state</span><h2 id="hq-status-title">Portfolio Status</h2><p>Current financed contracts</p></div><a href="/tengasale/hq/portfolio/">View full <i class="bi bi-chevron-right" aria-hidden="true"></i></a></header>
+        <div class="hq-home-status__empty"><i class="bi bi-pie-chart" aria-hidden="true"></i><strong>No financed contracts yet</strong><span>Portfolio status will appear here automatically.</span></div>
+      </section>
+    </div>
+
+    
+      <details>
+        <summary><span><i class="bi bi-graph-up"></i><strong>Portfolio intelligence</strong><small>Balance, profit, risk and collections</small></span><i class="bi bi-chevron-down"></i></summary>
+        <div class="hq-command-detail-grid"><a href="/tengasale/hq/portfolio/"><span>Outstanding balance</span><strong>Not provided</strong></a><a href="/tengasale/hq/simulations/"><span>Expected gross profit</span><strong>Not provided</strong></a><a href="/tengasale/hq/portfolio/"><span>Portfolio at risk</span><strong>%</strong></a><a href="/tengasale/hq/payment-collections/"><span>Total collected</span><strong>Not provided</strong></a></div>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-gear"></i><strong>Operations</strong><small>Merchant growth, staffing and approvals</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="/tengasale/merchant-admin/leads/">Merchant leads <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/underwriter-queue/">Underwriter operations <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/devices/">Device operations <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-wallet2"></i><strong>Finance</strong><small>Payouts, reconciliation and exposure</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="/tengasale/hq/merchant-payouts/">Merchant payouts <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/reconciliation/">Reconciliation <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/commissions/">Earnings and commissions <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-shield-check"></i><strong>Support &amp; system health</strong><small>Tickets, messaging, risk and production events</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="/tengasale/support/">Support center <i class="bi bi-chevron-right"></i></a><a href="/tengasale/support/bugs/">Bug monitor <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/fraud-checks/">Risk and fraud <i class="bi bi-chevron-right"></i></a><a href="/tengasale/hq/audit-trail/">Audit trail <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+    </section>
+
+
+    <section class="hq-home-card hq-home-operations" aria-labelledby="hq-operations-title">
+      <header><h2 id="hq-operations-title">Operations</h2></header>
+      <nav>
+        <a href="/tengasale/hq/applications/"><i class="bi bi-files" aria-hidden="true"></i><strong>Applications</strong><span> pending review</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="/tengasale/hq/portfolio/"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><strong>Contracts</strong><span>0 active &middot; 0 overdue</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="/tengasale/hq/device-lock/"><i class="bi bi-phone" aria-hidden="true"></i><strong>Devices</strong><span>0 locked</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="/tengasale/hq/repossession-resale/"><i class="bi bi-arrow-repeat" aria-hidden="true"></i><strong>Repossessions</strong><span> in progress</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        <a href="/tengasale/hq/merchant-payouts/"><i class="bi bi-wallet2" aria-hidden="true"></i><strong>Finance</strong><span> payout pending</span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+      </nav>
+    </section>
+  </section>
+
+</div>
+
+    
+        </div>
+    
+    </main>
+    
+    </div>
+    
+    
+
+    
+        
+            
+                <nav class="ts-mobile-role-nav ts-mobile-role-nav--hq" aria-label="HQ mobile navigation">
+                    <a href="/tengasale/hq/" class="ts-mobile-role-nav__item is-active" aria-current="page">
+                        <i class="bi bi-command" aria-hidden="true"></i>
+                        <span>Command</span>
+                    </a>
+                    <a href="/tengasale/hq/applications/" class="ts-mobile-role-nav__item " >
+                        <i class="bi bi-files" aria-hidden="true"></i>
+                        <span>Applications</span>
+                    </a>
+                    <a href="/tengasale/hq/portfolio/" class="ts-mobile-role-nav__item " >
+                        <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                        <span>Portfolio</span>
+                    </a>
+                    <a href="/tengasale/hq/device-lock/" class="ts-mobile-role-nav__item " >
+                        <i class="bi bi-lock" aria-hidden="true"></i>
+                        <span>Locks</span>
+                    </a>
+                    <button type="button" class="ts-mobile-role-nav__item" data-hq-more-open aria-controls="hq-more-sheet" aria-expanded="false">
+                        <i class="bi bi-three-dots" aria-hidden="true"></i>
+                        <span>More</span>
+                    </button>
+                </nav>
+                <div class="hq-more-sheet" id="hq-more-sheet" aria-hidden="true">
+                    <button class="hq-more-sheet__scrim" type="button" data-hq-more-close aria-label="Close menu"></button>
+                    <section class="hq-more-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="hq-more-title">
+                        <div class="hq-more-sheet__handle" aria-hidden="true"></div>
+                        <div class="hq-more-sheet__head"><div><span>HQ</span><h2 id="hq-more-title">All tools</h2></div><button type="button" data-hq-more-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
+                        <div class="hq-more-sheet__grid">
+                            <a href="#hq-all-tools" data-hq-more-directory><i class="bi bi-grid"></i><span>All HQ tools</span></a>
+                            <a href="/tengasale/hq/deals/"><i class="bi bi-phone"></i><span>Devices</span></a>
+                            <a href="/tengasale/hq/underwriter-queue/"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
+                            <a href="/tengasale/hq/payment-collections/"><i class="bi bi-credit-card"></i><span>Finance</span></a>
+                            <a href="/tengasale/hq/reports/"><i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span></a>
+                            <a href="/tengasale/hq/fraud-checks/"><i class="bi bi-shield-check"></i><span>Risk</span></a>
+                            <a href="/notifications/"><i class="bi bi-bell"></i><span>Notifications</span></a>
+                            <a href="/tengasale/hq/users/"><i class="bi bi-people"></i><span>Users</span></a>
+                            <a href="/profile/settings/"><i class="bi bi-gear"></i><span>Settings</span></a>
+                        </div>
+                    </section>
+                </div>
+            
+        
+    
+
+    
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/static/js/hq-command-home.js?v=3.0.0"></script>
+
+<script src="/static/js/tengasale-motion.js?v=1.2.0" defer></script>
+<script src="/static/js/mobile-select-sheet.js?v=2.0.0" defer></script>
+<script src="/static/js/premium-animations.js?v=2.0.0" defer></script>
+<script>
+  (function () {
+    var moreSheet = document.getElementById('hq-more-sheet');
+    var moreOpen = document.querySelector('[data-hq-more-open]');
+    function setMore(open) {
+      if (!moreSheet) return;
+      moreSheet.classList.toggle('is-open', open);
+      moreSheet.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if (moreOpen) moreOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('hq-more-open', open);
+    }
+    if (moreOpen) moreOpen.addEventListener('click', function () { setMore(true); var close = moreSheet.querySelector('[data-hq-more-close]'); if (close) close.focus(); });
+    document.querySelectorAll('[data-hq-more-directory]').forEach(function (link) { link.addEventListener('click', function () { setMore(false); var directory = document.getElementById('hq-all-tools'); if (directory) { directory.open = true; directory.querySelector('summary').focus(); } }); });
+    if (moreSheet) moreSheet.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { setMore(false); if (moreOpen) moreOpen.focus(); }
+      if (event.key === 'Tab' && moreSheet.classList.contains('is-open')) {
+        var items = Array.from(moreSheet.querySelectorAll('a[href],button')).filter(function (el) { return el.getClientRects().length; });
+        var first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
+    document.querySelectorAll('[data-hq-more-close]').forEach(function (el) { el.addEventListener('click', function () { setMore(false); }); });
+    /* HQ shell: add fallback class for browsers without :has() support */
+    if (document.querySelector('.hq-page-shell')) {
+      var shell = document.querySelector('.app-shell');
+      if (shell) shell.classList.add('ts-hq-shell-active');
+    }
+    var openBtn = document.querySelector('[data-hq-shell-open]');
+    var closeBtn = document.querySelector('[data-hq-shell-close]');
+    var overlay = document.querySelector('[data-hq-shell-overlay]');
+    function setOpen(open) {
+      document.body.classList.toggle('hq-shell-open', open);
+      if (openBtn) openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    if (openBtn) openBtn.addEventListener('click', function () { setOpen(true); });
+    if (closeBtn) closeBtn.addEventListener('click', function () { setOpen(false); });
+    if (overlay) overlay.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    });
+  }
+</script>
+<script>
+/* ── TengaSale global top loader ──────────────────────────────── */
+(function () {
+  var loader = document.getElementById('ts-top-loader');
+  if (!loader) return;
+
+  var width = 0;
+  var raf = null;
+  var timer = null;
+
+  function startLoader() {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    width = 15;
+    loader.style.width = width + '%';
+    loader.classList.add('is-loading');
+    loader.style.transition = 'width 0.22s ease';
+    function grow() {
+      if (width < 80) {
+        width += (80 - width) * 0.04;
+        loader.style.width = width + '%';
+        raf = requestAnimationFrame(grow);
+      }
+    }
+    raf = requestAnimationFrame(grow);
+  }
+
+  function finishLoader() {
+    cancelAnimationFrame(raf);
+    loader.style.transition = 'width 0.22s ease';
+    loader.style.width = '100%';
+    timer = setTimeout(function () {
+      loader.classList.remove('is-loading');
+      loader.style.transition = 'none';
+      loader.style.width = '0%';
+    }, 350);
+  }
+
+  /* HTMX events */
+  document.body.addEventListener('htmx:beforeRequest', startLoader);
+  document.body.addEventListener('htmx:afterRequest', finishLoader);
+  document.body.addEventListener('htmx:responseError', finishLoader);
+
+  /* Expose for manual use */
+  window.tsLoader = { start: startLoader, finish: finishLoader };
+})();
+
+/* ── TengaSale toast system ───────────────────────────────────── */
+(function () {
+  var container = document.getElementById('ts-toast-container');
+  function showToast(msg, type, durationMs) {
+    if (!container || !msg) return;
+    var toast = document.createElement('div');
+    toast.className = 'ts-toast ts-toast--' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function () {
+      toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(8px)';
+      setTimeout(function () { toast.remove(); }, 350);
+    }, durationMs || 4000);
+  }
+  window.tsToast = showToast;
+
+  /* HTMX error → friendly toast */
+  document.body.addEventListener('htmx:responseError', function (evt) {
+    var status = evt.detail && evt.detail.xhr ? evt.detail.xhr.status : '';
+    showToast('Request failed' + (status ? ' (' + status + ')' : '') + '. Please try again.', 'error');
+  });
+})();
+
+/* ── Button loading state ─────────────────────────────────────── */
+(function () {
+  document.addEventListener('htmx:beforeRequest', function (evt) {
+    var trigger = evt.detail && evt.detail.elt;
+    if (trigger && trigger.classList.contains('ts-loading-btn')) {
+      trigger.classList.add('is-loading');
+      trigger.setAttribute('aria-busy', 'true');
+    }
+  });
+  document.addEventListener('htmx:afterRequest', function (evt) {
+    var trigger = evt.detail && evt.detail.elt;
+    if (trigger && trigger.classList.contains('ts-loading-btn')) {
+      trigger.classList.remove('is-loading');
+      trigger.removeAttribute('aria-busy');
+    }
+  });
+  /* Also handle plain form submit buttons */
+  document.addEventListener('submit', function (evt) {
+    var btn = evt.target.querySelector('[type=submit].ts-loading-btn');
+    if (btn) {
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+    }
+  });
+})();
+</script>
+</body>
+</html>

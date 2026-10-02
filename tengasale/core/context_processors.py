@@ -35,9 +35,9 @@ def tengasale_support(request):
         # Brand logo assets — always True since files are committed to static/
         "tengasale_logo_exists": True,
         # Full wordmark image — used in authenticated app topbars
-        "tengasale_logo_full_url": static("images/TENGASALEe.png"),
+        "tengasale_logo_full_url": static("images/brand/tengasale-logo-full.png"),
         # Large TS brand/marketing image — public landing page brand showcase only
-        "tengasale_brand_image_url": static("images/brand/tengasale-logo-icon.png"),
+        "tengasale_brand_image_url": static("images/Tenga.png"),
         # Small logo mark — compact logo for app headers, NOT the 13MB image
         "tengasale_logo_mark_url": static("images/Tenga.png"),
         # Small 40×40 compact app icon — used in sales/portal app headers

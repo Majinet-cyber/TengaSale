@@ -11,10 +11,12 @@
     return;
   }
   if (typeof Chart === "undefined") return;
+  const tokens = getComputedStyle(document.documentElement);
+  const color = name => tokens.getPropertyValue(name).trim();
   const chartContext = canvas.getContext("2d");
   const currentGradient = chartContext.createLinearGradient(0, 0, 0, 235);
-  currentGradient.addColorStop(0, "#8d97ff");
-  currentGradient.addColorStop(1, "#6373f0");
+  currentGradient.addColorStop(0, color("--tenga-pulse-cyan"));
+  currentGradient.addColorStop(1, color("--tenga-pulse-blue"));
   const chart = new Chart(canvas, {
     type: "bar",
     data: {
@@ -22,11 +24,11 @@
       datasets: [
         { label: data.previous_label, data: data.previous, backgroundColor: "#dce3ff", borderRadius: { topLeft: 8, topRight: 8 }, barPercentage: .55, categoryPercentage: .72, maxBarThickness: 30 },
         { label: data.current_label, data: data.current, backgroundColor: currentGradient, borderRadius: { topLeft: 8, topRight: 8 }, barPercentage: .55, categoryPercentage: .72, maxBarThickness: 30 },
-        { type: "line", label: "Trend", data: data.trend, borderColor: "#ff7114", backgroundColor: "#ff7114", borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, tension: .35 }
+        { type: "line", label: "Trend", data: data.trend, borderColor: color("--tenga-pulse-cyan"), backgroundColor: color("--tenga-pulse-cyan"), borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5, tension: .35 }
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, interaction: { mode: "index", intersect: false },
+      responsive: true, maintainAspectRatio: false, animation: { duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 350 }, interaction: { mode: "index", intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.dataset.label}: MWK ${Number(item.raw).toLocaleString("en-US")}` } } },
       scales: {
         x: { grid: { display: false }, border: { display: false }, ticks: { color: "#74819a", maxRotation: 0, autoSkip: true, font: { size: 11, weight: 700 } } },

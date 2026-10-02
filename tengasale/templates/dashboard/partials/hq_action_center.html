@@ -1,0 +1,41 @@
+{% load ts_filters %}
+    <section class="hq-command-section hq-action-center" aria-labelledby="action-center-title">
+      <div class="hq-command-section__head">
+        <div><span>Now</span><h2 id="action-center-title">Action center</h2></div>
+      </div>
+      <div class="hq-command-actions">
+        {% if overdue_contracts_count %}
+        <a href="{% url 'hq_payment_collections' %}" class="hq-command-action is-critical">
+          <span class="hq-command-action__icon"><i class="bi bi-exclamation-triangle"></i></span><span><strong>{{ overdue_contracts_count }} overdue contract{{ overdue_contracts_count|pluralize }}</strong><small>Contracts past due date &mdash; review collections</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if waiting_count %}
+        <a href="{% url 'hq_applications' %}?status=pending_review" class="hq-command-action is-warning">
+          <span class="hq-command-action__icon"><i class="bi bi-inbox"></i></span><span><strong>{{ waiting_count }} application{{ waiting_count|pluralize }} waiting</strong><small>Ready for underwriter review</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if merchant_payout_pending %}
+        <a href="{% url 'hq_merchant_payouts' %}" class="hq-command-action is-warning">
+          <span class="hq-command-action__icon"><i class="bi bi-wallet2"></i></span><span><strong>Merchant payouts pending</strong><small>{{ merchant_payout_pending|mwk }} awaiting disbursement</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if open_tickets_count %}
+        <a href="{% url 'ticket_list' %}" class="hq-command-action">
+          <span class="hq-command-action__icon"><i class="bi bi-headset"></i></span><span><strong>{{ open_tickets_count }} open support ticket{{ open_tickets_count|pluralize }}</strong><small>Customer or merchant requests need response</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if awaiting_hq_count %}
+        <a href="{% url 'ma_leads' %}?status=awaiting_hq" class="hq-command-action">
+          <span class="hq-command-action__icon"><i class="bi bi-person-check"></i></span><span><strong>Awaiting HQ approval</strong><small>Merchant leads ready for a decision</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if critical_bugs_count %}
+        <a href="{% url 'bug_monitor' %}" class="hq-command-action is-critical">
+          <span class="hq-command-action__icon"><i class="bi bi-bug"></i></span><span><strong>Critical system events</strong><small>Review production health now</small></span><i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+        {% if not overdue_contracts_count and not waiting_count and not merchant_payout_pending and not open_tickets_count and not awaiting_hq_count and not critical_bugs_count %}
+        <div class="hq-command-clear"><span><i class="bi bi-check2"></i></span><div><strong>All clear</strong><small>No urgent actions right now.</small></div></div>
+        {% endif %}
+      </div>
+    </section>

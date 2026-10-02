@@ -1,0 +1,4 @@
+<header class="tenga-topbar {{ header_class }}" data-testid="tenga-topbar">
+<div class="tenga-topbar__identity"><a href="{% if home_url %}{% url home_url %}{% else %}{% url 'home' %}{% endif %}" class="tenga-topbar__brand" aria-label="Tenga home">{% include "partials/tenga_brand.html" %}</a>{% if title %}<span class="tenga-topbar__title {{ title_class }}" {% if title_testid %}data-testid="{{ title_testid }}"{% endif %}>{{ title }}</span>{% endif %}</div>
+{% if request.user.is_authenticated %}{% include "partials/tenga_topbar_actions.html" %}{% endif %}
+</header>

@@ -36,16 +36,11 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertNotIn(".approved-market-map__base{object-fit:cover", self.styles)
 
     def test_redmi_and_samsung_have_dedicated_non_overlapping_visuals(self):
-        self.assertIn('brand.includes("redmi") || brand.includes("xiaomi")', self.script)
-        self.assertIn('/static/images/phone-redmi-premium-v1.png', self.script)
-        self.assertIn('brand.includes("samsung")', self.script)
-        self.assertIn('/static/images/phone-samsung.png', self.script)
-        self.assertNotEqual(
-            "/static/images/phone-redmi-premium-v1.png",
-            "/static/images/phone-samsung.png",
-        )
-        self.assertIn('data-phone-brand="${phone.brand}"', self.script)
-        self.assertIn('data-phone-visual="${visualForPhone(phone).src}"', self.script)
+        self.assertIn("phone.image", self.script)
+        self.assertIn("phone.image_note", self.script)
+        self.assertNotIn("visualForPhone", self.script)
+        self.assertNotIn("phone-tecno-camon.png", self.script)
+
 
     def test_phone_cards_have_no_external_time_badges(self):
         for source in (self.template, self.script, self.styles):
@@ -56,7 +51,7 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
             'data-testid="phone-pricing"',
             'role="radiogroup"',
             'role="radio"',
-            'data-amount="${phone.payments[cadence]}"',
+            'data-amount="${Number(phone.payments[cadence])}"',
             'aria-checked="${cadence === "daily"}"',
             'class="phone-pricing__selected"',
             "phone.deposit",
@@ -81,15 +76,15 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertNotIn("Croseries", self.template)
 
     def test_public_brand_navigation_and_hero_why_are_locked_in(self):
-        self.assertGreaterEqual(self.template.count('<span class="brand-word">Tenga</span>'), 2)
-        self.assertEqual(self.template.count("{{ tenga_motto }}"), 2)
-        self.assertIn('class="nav-links"', self.template)
+        self.assertEqual(self.template.count("partials/tenga_brand.html"), 2)
         self.assertIn("website_careers", self.template)
         self.assertIn("{% url 'login' %}", self.template)
         self.assertIn('section class="hero section-dark"', self.template)
-        self.assertIn("A smartphone is <span>not a luxury.</span>", self.template)
-        self.assertIn("Work, payments, school and daily life now depend on a smartphone.", self.template)
-        self.assertIn("upfront cost stands in the way", self.template)
+        self.assertIn("Essential technology,", self.template)
+        self.assertIn("without the upfront barrier.", self.template)
+        for removed in ("hero-inline-stats", "metric-ribbon", "scroll-hint"):
+            self.assertNotIn(removed, self.template)
+
 
     def test_payment_preview_uses_a_real_phone_asset(self):
         self.assertIn('class="lock-device-photo"', self.template)
@@ -117,18 +112,19 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
             self.assertIn(status, footer)
 
     def test_landing_has_no_public_apply_link_or_removed_clutter(self):
-        self.assertNotIn(">Apply<", self.template)
-        self.assertIn("Trade and upgrade intentionally removed", self.template)
+        self.assertNotRegex(self.template, r'<a[^>]*>Apply</a>')
         self.assertNotIn('href="#trade-upgrade"', self.template)
         self.assertNotIn('class="calculator-section', self.template)
         self.assertEqual(self.template.count('class="map-section'), 1)
 
     def test_access_section_keeps_the_approved_headline_and_refined_copy(self):
         self.assertEqual(self.template.count('id="why"'), 1)
-        self.assertIn("data-insight-section", self.template)
-        self.assertIn("The world went digital.<br />Access did not.", self.template)
-        self.assertIn("Smartphones power modern life.", self.template)
-        self.assertNotIn("The problem is simple:", self.template)
+        self.assertIn("Get what you need now.", self.template)
+        self.assertIn("Pay for it over time.", self.template)
+        self.assertIn('id="solar"', self.template)
+        self.assertIn("Coming soon", self.template)
+        self.assertNotIn("≈78%", self.template)
+
 
     def test_bottom_application_area_is_compact_and_not_a_duplicate_form(self):
         self.assertEqual(self.template.count('id="apply"'), 1)

@@ -1,0 +1,18 @@
+{% load ts_filters %}
+      <details>
+        <summary><span><i class="bi bi-graph-up"></i><strong>Portfolio intelligence</strong><small>Balance, profit, risk and collections</small></span><i class="bi bi-chevron-down"></i></summary>
+        <div class="hq-command-detail-grid"><a href="{% url 'hq_portfolio' %}"><span>Outstanding balance</span><strong>{{ outstanding_balance|mwk }}</strong></a><a href="{% url 'hq_simulations' %}"><span>Expected gross profit</span><strong>{{ gross_profit_total|mwk }}</strong></a><a href="{% url 'hq_portfolio' %}"><span>Portfolio at risk</span><strong>{{ portfolio_at_risk }}%</strong></a><a href="{% url 'hq_payment_collections' %}"><span>Total collected</span><strong>{{ total_payments_collected|mwk }}</strong></a></div>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-gear"></i><strong>Operations</strong><small>Merchant growth, staffing and approvals</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'ma_leads' %}">Merchant leads <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_underwriter_queue' %}">Underwriter operations <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_devices' %}">Device operations <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-wallet2"></i><strong>Finance</strong><small>Payouts, reconciliation and exposure</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'hq_merchant_payouts' %}">Merchant payouts <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_reconciliation' %}">Reconciliation <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_commissions' %}">Earnings and commissions <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+      <details>
+        <summary><span><i class="bi bi-shield-check"></i><strong>Support &amp; system health</strong><small>Tickets, messaging, risk and production events</small></span><i class="bi bi-chevron-down"></i></summary>
+        <nav class="hq-command-links"><a href="{% url 'support_dashboard' %}">Support center <i class="bi bi-chevron-right"></i></a><a href="{% url 'bug_monitor' %}">Bug monitor <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_fraud_checks' %}">Risk and fraud <i class="bi bi-chevron-right"></i></a><a href="{% url 'hq_audit_trail' %}">Audit trail <i class="bi bi-chevron-right"></i></a></nav>
+      </details>
+    </section>

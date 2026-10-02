@@ -3,10 +3,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{% block site_title %}TengaSale — Smartphone Financing for Malawi{% endblock %}</title>
+  <title>{% block site_title %}Tenga — PayGo Smartphones & Essential Technology{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ff5a00">
-  <meta name="description" content="{% block site_description %}Tenga makes smartphone access clear, flexible and customer-friendly in Malawi.{% endblock %}">
+  <meta name="theme-color" content="#f4511e">
+  <meta name="description" content="{% block site_description %}Tenga provides flexible PayGo access to smartphones in Malawi, with solar home systems coming next.{% endblock %}">
   <link rel="manifest" href="{% static 'manifest.webmanifest' %}?v=20260809c">
   <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}?v=20260809c">
   <link rel="icon" type="image/png" href="{% static 'images/icon-32.png' %}?v=20260809c" sizes="32x32">
@@ -19,6 +19,7 @@
   {% block site_head %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/tenga-card-system.css' %}?v=1.0.0">
   <link rel="stylesheet" href="{% static 'css/tenga-type-system.css' %}?v=1.0.0">
+  <link rel="stylesheet" href="{% static 'css/tenga-design-system.css' %}?v=1.0.0">
 </head>
 <body class="site-body {% block site_body_class %}{% endblock %}">
 
@@ -29,19 +30,7 @@
   <div class="sitenav__inner">
     <!-- Brand / Logo — compact T icon + wordmark -->
     <a href="/" class="sitenav__brand logo-compact" aria-label="TengaSale home">
-      <img
-        src="{% static 'images/brand/tengasale-logo-full.svg' %}"
-        alt="TengaSale"
-        class="site-logo-img logo-compact-img ts-logo-wordmark"
-        width="200"
-        height="44"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-      >
-      <!-- CSS fallback shown only if SVG fails to load -->
-      <span class="sitenav__logo-fallback" style="display:none;" aria-hidden="true">
-        <img src="{% static 'images/Tenga.png' %}" alt="" class="sitenav__logo-mark ts-logo-icon">
-        <span class="logo-wordmark"><span>Tenga</span><span class="highlight">Sale</span></span>
-      </span>
+      {% include 'partials/tenga_brand.html' with image_class='site-logo-img ts-logo-icon' %}
     </a>
 
     <!-- Desktop nav links -->
@@ -49,7 +38,7 @@
       <a href="{% url 'public_home' %}#process" class="sitenav__link" role="listitem">How It Works</a>
       <a href="{% url 'website_merchant_signup' %}" class="sitenav__link" role="listitem">Merchants</a>
       <a href="{% url 'public_home' %}#phones" class="sitenav__link" role="listitem">Phones</a>
-      <a href="{% url 'public_home' %}#protection" class="sitenav__link" role="listitem">Protection</a>
+      <a href="{% url 'public_home' %}#solar" class="sitenav__link" role="listitem">Solar PayGo</a>
       <a href="{% url 'public_home' %}#faq" class="sitenav__link" role="listitem">FAQ</a>
       <a href="{% url 'website_contact' %}" class="sitenav__link" role="listitem">Support</a>
       <a href="{% url 'website_careers' %}" class="sitenav__link" role="listitem">Careers</a>
@@ -97,7 +86,7 @@
     <a href="{% url 'public_home' %}#process" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">How It Works</a>
     <a href="{% url 'website_merchant_signup' %}" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">For Merchants</a>
     <a href="{% url 'public_home' %}#phones" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Phones</a>
-    <a href="{% url 'public_home' %}#protection" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Protection</a>
+    <a href="{% url 'public_home' %}#solar" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Protection</a>
     <a href="{% url 'portal_search' %}" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Payments</a>
     <a href="{% url 'public_home' %}#faq" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">FAQ</a>
     <a href="{% url 'website_contact' %}" class="sitenav__mobile-link" onclick="this.closest('.sitenav').classList.remove('sitenav--open')">Support</a>
@@ -119,24 +108,24 @@
   <div class="sitefooter__inner">
 
     <div class="sitefooter__brand">
-      <img src="{% static 'images/Tenga.png' %}" alt="" class="sitefooter__logo ts-logo-icon" aria-hidden="true">
+      {% include 'partials/tenga_brand.html' with image_class='sitefooter__logo ts-logo-icon' %}
       <div class="sitefooter__brand-text">
         <span class="sitefooter__brand-name">TengaSale</span>
-        <span class="sitefooter__brand-tagline">Smartphone Financing for Malawi</span>
+        <span class="sitefooter__brand-tagline">PayGo for essential technology</span>
       </div>
       <p class="sitefooter__brand-desc">
-        Structured phone financing connecting customers, merchants,
-        and repayment infrastructure across Malawi.
+        PayGo access to smartphones in Malawi, with solar home systems coming next.
       </p>
     </div>
 
     <div class="sitefooter__col">
-      <div class="sitefooter__col-heading">Platform</div>
+      <div class="sitefooter__col-heading">Products &amp; platform</div>
       <a href="{% url 'portal_search' %}" class="sitefooter__link">Make a Payment</a>
       <a href="{% url 'login' %}" class="sitefooter__link">Login</a>
       <a href="{% url 'public_home' %}#process" class="sitefooter__link">How It Works</a>
       <a href="{% url 'website_merchant_signup' %}" class="sitefooter__link">For Merchants</a>
       <a href="{% url 'public_home' %}#phones" class="sitefooter__link">Phones</a>
+      <a href="{% url 'public_home' %}#solar" class="sitefooter__link">Solar PayGo</a>
       <a href="{% url 'public_home' %}#faq" class="sitefooter__link">FAQ</a>
       <a href="{% url 'website_careers' %}" class="sitefooter__link">Careers</a>
       <a href="{% url 'website_merchant_signup' %}" class="sitefooter__link">Become a Merchant</a>

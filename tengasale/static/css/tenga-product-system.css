@@ -1,27 +1,15 @@
 /* Tenga product system: quiet, financial, responsive. Loaded last by the app shell. */
 :root {
-  --tenga-bg: #f7f7f4;
-  --tenga-surface: #ffffff;
-  --tenga-surface-subtle: #fafaf8;
-  --tenga-text: #172033;
-  --tenga-muted: #687386;
-  --tenga-faint: #98a1af;
-  --tenga-border: #e6e8eb;
-  --tenga-brand: #f4511e;
-  --tenga-brand-hover: #d94316;
-  --tenga-success: #16805b;
-  --tenga-warning: #a16207;
-  --tenga-danger: #c2413b;
-  --tenga-info: #3169a8;
-  --tenga-radius-sm: 8px;
-  --tenga-radius: 12px;
-  --tenga-radius-lg: 16px;
-  --tenga-shadow: 0 1px 2px rgba(23,32,51,.04), 0 8px 28px rgba(23,32,51,.035);
-  --tenga-fast: 140ms;
-  --tenga-normal: 200ms;
-  --ts-bg: var(--tenga-bg);
+  /* Compatibility names consume the canonical design-system tokens. */
+  --tenga-bg: var(--tenga-canvas);
+  --tenga-surface-subtle: var(--tenga-surface-soft);
+  --tenga-text: var(--tenga-ink);
+  --tenga-info: var(--tenga-product-blue);
+  --tenga-radius: var(--tenga-radius-md);
+  --tenga-shadow: var(--tenga-shadow-surface);
+  --ts-bg: var(--tenga-canvas);
   --ts-card: var(--tenga-surface);
-  --ts-orange: var(--tenga-brand);
+  --ts-orange: var(--tenga-brand-orange);
 }
 
 body { background: var(--tenga-bg); color: var(--tenga-text); }

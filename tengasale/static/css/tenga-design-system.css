@@ -1,23 +1,49 @@
-/* Tenga product constitution: final shared layer for authenticated product UI. */
+/* Tenga SST: canonical brand, theme tokens and shared interaction primitives. */
 :root {
-  --tenga-brand: #f4511e;
-  --tenga-brand-hover: #d94213;
+  /* Approved existing product orange; specialist themes must alias it. */
+  --tenga-brand-orange: #f4511e;
+  --tenga-brand-orange-hover: #d94213;
+  --tenga-brand: var(--tenga-brand-orange);
+  --tenga-brand-hover: var(--tenga-brand-orange-hover);
+  --tenga-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --tenga-product-blue: #2458df;
   --tenga-product-blue-soft: #eef3ff;
+  --tenga-product-blue-hover: #1d49bd;
   --tenga-ink: #172033;
-  --tenga-muted: #596477;
+  --tenga-text-muted: #596477;
+  --tenga-muted: var(--tenga-text-muted);
+  --tenga-faint: #778195;
+  --tenga-subtle: #8b94a3;
   --tenga-canvas: #f7f6f2;
   --tenga-surface: #fff;
   --tenga-surface-soft: #fbfaf7;
+  --tenga-border: #d8dde6;
+  --tenga-control-border: var(--tenga-border);
   --tenga-success: #14845f;
+  --tenga-success-soft: #eaf7f1;
   --tenga-warning: #b66a08;
+  --tenga-warning-soft: #fff7df;
   --tenga-danger: #c43d4b;
-  --tenga-control-border: #d8dde6;
-  --tenga-focus-ring: rgba(36, 88, 223, .16);
-  --tenga-radius-sm: 10px;
+  --tenga-danger-soft: #fcecef;
+  --tenga-brand-soft: #fff1e9;
+  --tenga-focus-ring: rgba(36, 88, 223, .24);
+  --tenga-radius-control: 10px;
+  --tenga-radius-sm: var(--tenga-radius-control);
   --tenga-radius-md: 14px;
   --tenga-radius-lg: 20px;
+  --tenga-radius-card: 22px;
+  --tenga-radius-hero: 26px;
   --tenga-shadow-surface: 0 1px 2px rgba(23,32,51,.025), 0 18px 48px rgba(23,32,51,.06);
+  --tenga-shadow-hover: 0 2px 4px rgba(23,32,51,.035), 0 18px 44px rgba(23,32,51,.1);
+  --tenga-shadow-hero: 0 28px 70px rgba(32,30,99,.24);
+  --tenga-shadow-frame: 0 32px 90px rgba(6,10,32,.28);
+  --tenga-pulse-navy: #0b1026;
+  --tenga-pulse-blue: #3563ff;
+  --tenga-pulse-purple: #7657ff;
+  --tenga-pulse-cyan: #20c7e8;
+  --tenga-pulse-surface: #fffdf8;
+  --tenga-pulse-canvas: #f3f5fb;
+  --tenga-pulse-gradient: linear-gradient(135deg, var(--tenga-pulse-blue), var(--tenga-pulse-purple));
   --tenga-space-1: 4px;
   --tenga-space-2: 8px;
   --tenga-space-3: 12px;
@@ -26,7 +52,34 @@
   --tenga-space-6: 24px;
   --tenga-space-8: 32px;
   --tenga-space-10: 40px;
+  --tenga-space-12: 48px;
+  --tenga-fast: 140ms;
+  --tenga-normal: 200ms;
 }
+
+/* Brand is always an approved file, never recreated with text or CSS. */
+.tenga-brand { display: block; object-fit: contain; flex-shrink: 0; }
+.tenga-brand--mark { width: 40px; height: 32px; }
+.tenga-brand--full { width: 200px; height: auto; }
+.tenga-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:68px; padding:12px 20px; background:var(--tenga-surface); color:var(--tenga-ink); font-family:var(--tenga-font-family); box-sizing:border-box; }
+.tenga-topbar__identity { display:flex; min-width:0; align-items:center; gap:12px; }
+.tenga-topbar__brand { display:flex; min-width:44px; min-height:44px; align-items:center; justify-content:center; }
+.tenga-topbar__title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:1rem; font-weight:650; }
+.tenga-topbar__actions { display:flex; flex-shrink:0; align-items:center; gap:4px; }
+.tenga-topbar__logout { margin:0; display:flex; }
+.tenga-icon-action, .tenga-country-indicator { position:relative; display:inline-flex; flex:0 0 44px; align-items:center; justify-content:center; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; border:0; border-radius:var(--tenga-radius-control); background:transparent; color:var(--tenga-ink); font-size:20px; text-decoration:none; box-sizing:border-box; }
+.tenga-icon-action { cursor:pointer; transition:background-color var(--tenga-fast), color var(--tenga-fast); }
+.tenga-icon-action:hover { color:var(--tenga-product-blue); background:var(--tenga-product-blue-soft); }
+.tenga-icon-action--whatsapp { color:var(--tenga-success); }
+.tenga-icon-action .bi { font-size:20px; line-height:1; }
+.tenga-country-indicator .country-pill__flag { display:flex; align-items:center; justify-content:center; }
+.tenga-country-indicator svg { display:block; width:25px; height:18px; }
+.tenga-notification-count { position:absolute; top:1px; right:0; min-width:16px; padding:1px 4px; border-radius:12px; background:var(--tenga-danger); color:var(--tenga-surface); font-size:10px; line-height:14px; text-align:center; }
+:focus-visible { outline:3px solid var(--tenga-product-blue); outline-offset:3px; }
+.tenga-topbar a:focus-visible, .tenga-topbar button:focus-visible { outline:3px solid var(--tenga-product-blue); outline-offset:1px; }
+.tenga-metric, .tenga-money { font-variant-numeric:tabular-nums lining-nums; }
+@media (max-width:390px) { .tenga-topbar { gap:6px; padding-inline:12px; } .tenga-topbar__identity { gap:6px; } .tenga-topbar__actions { gap:0; } .tenga-topbar__title { font-size:.875rem; } }
+@media (prefers-reduced-motion:reduce) { .tenga-icon-action { transition:none; } }
 
 body[class^="role-"], body[class*=" role-"] { background: var(--tenga-canvas); color: var(--tenga-ink); }
 

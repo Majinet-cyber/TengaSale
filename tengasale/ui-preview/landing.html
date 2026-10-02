@@ -1,27 +1,46 @@
-{% extends "website/site_base.html" %}
-{% load static %}
 
-{% block site_title %}Tenga — PayGo Smartphones & Essential Technology{% endblock %}
-{% block site_description %}Tenga provides flexible PayGo access to smartphones in Malawi, with solar home systems coming next.{% endblock %}
-{% block site_head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tenga — PayGo Smartphones & Essential Technology</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4511e">
+  <meta name="description" content="Tenga provides flexible PayGo access to smartphones in Malawi, with solar home systems coming next.">
+  <link rel="manifest" href="/static/manifest.webmanifest?v=20260809c">
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico?v=20260809c">
+  <link rel="icon" type="image/png" href="/static/images/icon-32.png?v=20260809c" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png?v=20260809c">
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/website.css?v=1.3">
+  
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Tenga — PayGo Smartphones &amp; Essential Technology" />
   <meta property="og:description" content="Tenga provides flexible PayGo access to smartphones in Malawi, with solar home systems coming next." />
-  <meta property="og:url" content="{{ request.build_absolute_uri }}" />
-  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=7.0" />
-{% endblock %}
-{% block site_body_class %}tenga-landing-v4{% endblock %}
-{% block site_main_class %}tenga-landing-v4__main{% endblock %}
+  <meta property="og:url" content="http://localhost/" />
+  <meta property="og:image" content="http://localhost/static/images/Tenga.png?v=20260809c" />
+  <link rel="stylesheet" href="/static/css/tenga-landing-v4.css?v=7.0" />
 
-{% block site_navigation %}
+  <link rel="stylesheet" href="/static/css/tenga-card-system.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/tenga-type-system.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/tenga-design-system.css?v=1.0.0">
+</head>
+<body class="site-body tenga-landing-v4">
+
+
   <div class="noise" aria-hidden="true"></div>
   <div class="progress-bar" aria-hidden="true"><span id="pageProgress"></span></div>
 
   <header class="site-header" id="top">
     <nav class="nav shell" aria-label="Main navigation">
       <a class="brand" href="#top" aria-label="Tenga home">
-        {% include 'partials/tenga_brand.html' with image_class='brand-logo brand-logo--canonical' %}
+        
+
+<img src="/static/images/Tenga.png" alt="Tenga" class="tenga-brand tenga-brand--mark brand-logo brand-logo--canonical" width="40" height="32">
+
       </a>
 
       <div class="nav-links" id="navLinks">
@@ -30,26 +49,28 @@
         <a href="#phones">Products</a>
         <a class="mobile-only" href="#solar">Solar PayGo</a>
         <a class="desktop-only" href="#map">Map</a>
-        <a class="mobile-menu-keep" href="{% url 'website_careers' %}">Careers</a>
-        <a href="{% url 'portal_search' %}">Make a Payment</a>
+        <a class="mobile-menu-keep" href="/site/careers/">Careers</a>
+        <a href="/pay/">Make a Payment</a>
         <a href="#support">Support</a>
-        <a class="mobile-menu-keep" href="{% url 'login' %}">Login</a>
+        <a class="mobile-menu-keep" href="/accounts/login/">Login</a>
       </div>
 
       <div class="nav-actions">
-        <a class="button button-payment desktop-only" href="{% url 'portal_search' %}">Payment Gateway</a>
-        <a class="button button-primary" href="{% url 'new_application' %}">Get Started</a>
+        <a class="button button-payment desktop-only" href="/pay/">Payment Gateway</a>
+        <a class="button button-primary" href="/applications/new/">Get Started</a>
         <button class="menu-button" id="menuButton" aria-label="Open menu" aria-controls="navLinks" aria-expanded="false">
           <span></span><span></span>
         </button>
       </div>
     </nav>
   </header>
-{% endblock %}
 
-{% block site_content %}
+
+<!-- Page content -->
+<main class="tenga-landing-v4__main">
+  
 <!-- TENGA_PUBLIC_STRATEGY_SAFE_V1 -->
-    <div id="landingRouteState" data-section="{{ section|default:'' }}" hidden></div>
+    <div id="landingRouteState" data-section="" hidden></div>
     <section class="hero section-dark">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-glow glow-1" aria-hidden="true"></div>
@@ -87,7 +108,7 @@
           </div>
 
           <div class="device-stage" id="deviceStage">
-            <img class="hero-phone-photo" src="{% static 'images/phone-banking-groceries.png' %}" alt="Smartphone showing digital banking access, including a Groceries transaction" width="1024" height="1536" />
+            <img class="hero-phone-photo" src="/static/images/phone-banking-groceries.png" alt="Smartphone showing digital banking access, including a Groceries transaction" width="1024" height="1536" />
           </div>
 
         </div>
@@ -125,10 +146,10 @@
           <div><p class="kicker">Tenga PayGo · Smartphones</p><h2>Choose your phone.</h2></div>
           <p class="lead">Explore the deposit and switch between daily, weekly and monthly payments.</p>
         </div>
-        {% if public_phone_offers_are_demo %}<p class="catalogue-notice" id="catalogueNotice">Illustrative plans — final availability and pricing are confirmed during application.</p>{% endif %}
-        {{ public_phone_offers|json_script:"publicPhoneOffers" }}
-        <div class="phone-grid" id="phoneGrid" data-static-prefix="{% get_static_prefix %}" data-application-url="{% url 'new_application' %}"></div>
-        <noscript><p>Contact Tenga for available phones and payment plans, or <a href="{% url 'new_application' %}">start your application</a>.</p></noscript>
+        <p class="catalogue-notice" id="catalogueNotice">Illustrative plans — final availability and pricing are confirmed during application.</p>
+        <script id="publicPhoneOffers" type="application/json">[{"brand": "Itel", "name": "itel A50C", "spec": "64GB \u00b7 6.6-inch display", "deposit": 120000, "payments": {"daily": 2450, "weekly": 17150, "monthly": 73500}, "id": null, "is_demo": true, "status": "Illustrative plan", "logo": "/static/img/brands/itel.svg", "image": "images/phone-realistic.png", "image_alt": "Generic smartphone illustration", "image_note": "Device illustration; not a photograph of this model."}, {"brand": "Tecno", "name": "Tecno Spark 50", "spec": "128GB \u00b7 6.78-inch display", "deposit": 175000, "payments": {"daily": 3100, "weekly": 21700, "monthly": 93000}, "id": null, "is_demo": true, "status": "Illustrative plan", "logo": "/static/img/brands/tecno.svg", "image": "images/phone-realistic.png", "image_alt": "Generic smartphone illustration", "image_note": "Device illustration; not a photograph of this model."}, {"brand": "Samsung", "name": "Samsung Galaxy A15", "spec": "128GB \u00b7 6.5-inch AMOLED", "deposit": 220000, "payments": {"daily": 4250, "weekly": 29750, "monthly": 127500}, "id": null, "is_demo": true, "status": "Illustrative plan", "logo": "/static/img/brands/samsung.svg", "image": "images/phone-realistic.png", "image_alt": "Generic smartphone illustration", "image_note": "Device illustration; not a photograph of this model."}]</script>
+        <div class="phone-grid" id="phoneGrid" data-static-prefix="/static/" data-application-url="/applications/new/"></div>
+        <noscript><p>Contact Tenga for available phones and payment plans, or <a href="/applications/new/">start your application</a>.</p></noscript>
       </div>
     </section>
 
@@ -215,7 +236,7 @@
 
         <div class="protect-demo reveal reveal-delay">
           <div class="lock-device" data-testid="payment-simulation-phone">
-            <img class="lock-device-photo" src="{% static 'images/phone-realistic.png' %}" alt="" aria-hidden="true" />
+            <img class="lock-device-photo" src="/static/images/phone-realistic.png" alt="" aria-hidden="true" />
             <div class="lock-screen" id="lockUi" data-state="locked" aria-live="polite">
               <div class="lock-screen__status"><span>10:32</span><span>●●●</span></div>
               <div class="lock-screen__reminder" data-testid="on-device-lock-reminder">
@@ -247,7 +268,7 @@
 
         <div class="map-panel map-panel--approved reveal">
           <div class="approved-market-map" id="approvedMarketMap">
-            <img class="approved-market-map__base" src="{% static 'images/africa-map-approved-v4.png' %}" alt="Africa market map showing Malawi, Zambia, Zimbabwe and Kenya" />
+            <img class="approved-market-map__base" src="/static/images/africa-map-approved-v4.png" alt="Africa market map showing Malawi, Zambia, Zimbabwe and Kenya" />
             <div class="approved-mask approved-mask--zm"></div><div class="approved-mask approved-mask--mw"></div><div class="approved-mask approved-mask--zw"></div>
             <div class="approved-map-topline"><span></span>Market access live</div>
             <div class="approved-tam"><div><small><span class="approved-tam__desktop-label">Total addressable market</span><span class="approved-tam__mobile-label">Market access</span></small><b>4 markets</b></div><strong><span id="approvedTam">27.8</span>M</strong><p><span class="approved-tam__desktop-label">Phone owners not yet active online</span><span class="approved-tam__mobile-label">addressable market</span></p><div class="approved-tam__mobile-stats"><span>Population <b>114M</b></span><span>Avg gap <b>26 pts</b></span></div><footer><span id="approvedContributionLabel">Malawi contribution</span><b id="approvedContribution">8.2M</b></footer></div>
@@ -324,7 +345,7 @@
           <p class="lead">Get help with your application or payment, ask about solar, or contact us about working with Tenga.</p>
           <div class="support-direct">
             <span>Email support</span>
-            <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+            <a href="mailto:support@tenga.africa">support@tenga.africa</a>
             <p>You can also write to us directly.</p>
           </div>
           <div class="support-shortcuts" aria-label="Enquiry shortcuts">
@@ -334,36 +355,49 @@
           </div>
         </div>
 
-        <form class="support-form reveal reveal-delay" action="{% url 'website_contact' %}" method="post" id="supportForm" novalidate>
-          {% csrf_token %}
+        <form class="support-form reveal reveal-delay" action="/site/contact/" method="post" id="supportForm" novalidate>
+          
           <input type="hidden" name="originating_page" id="originatingPage" value="" />
-          <div class="support-honeypot" aria-hidden="true">{{ support_form.website }}</div>
+          <div class="support-honeypot" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" id="id_website"></div>
           <div class="form-head"><h3>Send an enquiry</h3><span>Public support</span></div>
 
-          {% if support_success %}
-            <div class="form-notice form-notice--success" role="status">
-              <strong>Thank you. Your enquiry has been sent to Tenga Support.</strong>
-              <span>The team can reply directly to the email address you provided.</span>
-            </div>
-          {% endif %}
-          {% if support_form.non_field_errors %}
-            <div class="form-notice form-notice--error" role="alert">
-              {% for error in support_form.non_field_errors %}<span>{{ error }}</span>{% endfor %}
-            </div>
-          {% endif %}
+          
+          
           <div class="support-form-row">
-            <label for="{{ support_form.full_name.id_for_label }}">{{ support_form.full_name.label }}{{ support_form.full_name }}{% for error in support_form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
-            <label for="{{ support_form.email.id_for_label }}">{{ support_form.email.label }}{{ support_form.email }}{% for error in support_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+            <label for="id_full_name">Full name<input type="text" name="full_name" autocomplete="name" placeholder="Your full name" maxlength="120" required id="id_full_name"></label>
+            <label for="id_email">Email address<input type="email" name="email" autocomplete="email" placeholder="you@example.com" maxlength="254" required id="id_email"></label>
           </div>
           <div class="support-form-row">
-            <label for="{{ support_form.phone.id_for_label }}">{{ support_form.phone.label }} <small>Optional for general enquiries</small>{{ support_form.phone }}{% for error in support_form.phone.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
-            <label for="{{ support_form.category.id_for_label }}">{{ support_form.category.label }}{{ support_form.category }}{% for error in support_form.category.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+            <label for="id_phone">Phone number <small>Optional for general enquiries</small><input type="text" name="phone" autocomplete="tel" placeholder="+265..." maxlength="40" id="id_phone"></label>
+            <label for="id_category">How can we help?<select name="category" id="id_category">
+  <option value="customer_support">Customer support</option>
+
+  <option value="new_application">New phone / application</option>
+
+  <option value="payment_help">Payment help</option>
+
+  <option value="merchant_partnership">Merchant partnership</option>
+
+  <option value="investor_media">Investor or media</option>
+
+  <option value="careers">Careers</option>
+
+  <option value="complaints">Complaints</option>
+
+  <option value="trade_in_upgrade">Trade-in / Upgrade</option>
+
+  <option value="tenga_certified">Tenga Certified enquiry</option>
+
+  <option value="general">General enquiry</option>
+
+</select></label>
           </div>
-          <label for="{{ support_form.subject.id_for_label }}">{{ support_form.subject.label }}{{ support_form.subject }}{% for error in support_form.subject.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
-          <label for="{{ support_form.message.id_for_label }}">{{ support_form.message.label }}{{ support_form.message }}{% for error in support_form.message.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
-          <label class="checkbox-line support-consent" for="{{ support_form.consent.id_for_label }}">{{ support_form.consent }}<span>{{ support_form.consent.label }}{% for error in support_form.consent.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</span></label>
+          <label for="id_subject">Subject<input type="text" name="subject" placeholder="A short summary" maxlength="160" required id="id_subject"></label>
+          <label for="id_message">Message<textarea name="message" cols="40" rows="6" placeholder="Tell us what you need help with..." maxlength="5000" minlength="20" required id="id_message">
+</textarea></label>
+          <label class="checkbox-line support-consent" for="id_consent"><input type="checkbox" name="consent" required id="id_consent"><span>I agree that Tenga may use these details to respond to my enquiry.</span></label>
           <button class="button button-payment button-large support-submit" type="submit">Send to Tenga Support</button>
-          <p class="support-fallback">Prefer email? <a href="mailto:{{ support_email }}">Write directly to {{ support_email }}</a>.</p>
+          <p class="support-fallback">Prefer email? <a href="mailto:support@tenga.africa">Write directly to support@tenga.africa</a>.</p>
         </form>
       </div>
     </section>
@@ -379,32 +413,39 @@
         <div class="apply-compact-actions">
           <p class="selected-phone" id="selectedPhone" hidden></p>
           <a class="button button-secondary" id="selectedPhoneSupport" href="#support" data-support-category="general" hidden>Ask about this phone</a>
-          <a class="button button-primary button-large" href="{% url 'new_application' %}">Get Started</a>
-          <a class="button button-payment button-large" href="{% url 'portal_search' %}">Make a payment</a>
+          <a class="button button-primary button-large" href="/applications/new/">Get Started</a>
+          <a class="button button-payment button-large" href="/pay/">Make a payment</a>
         </div>
       </div>
     </section>
-{% endblock %}
 
-{% block site_footer %}
+</main>
+
+
   <footer class="site-footer">
     <div class="shell footer-layout footer-layout--complete" data-testid="landing-footer-sitemap">
       <div class="footer-brand">
-        <a class="brand footer-brand-link" href="#top">{% include 'partials/tenga_brand.html' with image_class='brand-logo brand-logo--canonical' %}</a>
+        <a class="brand footer-brand-link" href="#top">
+
+<img src="/static/images/Tenga.png" alt="Tenga" class="tenga-brand tenga-brand--mark brand-logo brand-logo--canonical" width="40" height="32">
+</a>
         <p>PayGo access to essential technology. Smartphones today, solar home systems coming next.</p>
-        <a class="footer-email" href="mailto:{{ support_email }}">{{ support_email }}</a>
+        <a class="footer-email" href="mailto:support@tenga.africa">support@tenga.africa</a>
       </div>
-      <div class="footer-group" data-testid="footer-product"><strong>Product</strong><a href="#phones">Phones</a><a href="#solar">Solar PayGo</a><a href="#process">How it works</a><a href="{% url 'portal_search' %}">Payment gateway</a></div>
-      <div class="footer-group" data-testid="footer-support"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:{{ support_email }}">Email support</a></div>
-      <div class="footer-group" data-testid="footer-company"><strong>Company</strong><a href="#why">About Tenga</a><a href="{% url 'website_merchant_signup' %}">Become a merchant</a><a href="{% url 'website_careers' %}">Careers</a><a href="{% url 'login' %}">Login</a><a href="#support" data-support-category="investor_media">Investors &amp; media</a></div>
+      <div class="footer-group" data-testid="footer-product"><strong>Product</strong><a href="#phones">Phones</a><a href="#solar">Solar PayGo</a><a href="#process">How it works</a><a href="/pay/">Payment gateway</a></div>
+      <div class="footer-group" data-testid="footer-support"><strong>Support</strong><a href="#support" data-support-category="customer_support">Contact support</a><a href="#support" data-support-category="payment_help">Payment help</a><a href="#support" data-support-category="merchant_partnership">Merchant partnerships</a><a href="#support" data-support-category="customer_support" data-support-subject="Complaint">Complaints</a><a href="#faq">FAQ</a><a href="mailto:support@tenga.africa">Email support</a></div>
+      <div class="footer-group" data-testid="footer-company"><strong>Company</strong><a href="#why">About Tenga</a><a href="/site/merchant-signup/">Become a merchant</a><a href="/site/careers/">Careers</a><a href="/accounts/login/">Login</a><a href="#support" data-support-category="investor_media">Investors &amp; media</a></div>
       <div class="footer-group" data-testid="footer-region"><strong>Region</strong><a href="#map">Malawi — Live</a><a href="#map">Zambia — Next</a><a href="#map">Zimbabwe — Planned</a><a href="#map">Kenya — Explore</a></div>
-      <div class="footer-group" data-testid="footer-legal"><strong>Legal</strong><a href="{% url 'website_terms' %}">Terms</a><a href="{% url 'website_privacy' %}">Privacy &amp; KYC</a><a href="{% url 'website_payment_terms' %}">Payment terms</a><a href="{% url 'website_merchant_terms' %}">Merchant terms</a><a href="#protection">Device protection</a></div>
+      <div class="footer-group" data-testid="footer-legal"><strong>Legal</strong><a href="/site/terms/">Terms</a><a href="/site/privacy/">Privacy &amp; KYC</a><a href="/site/payment-terms/">Payment terms</a><a href="/site/merchant-terms/">Merchant terms</a><a href="#protection">Device protection</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> Tenga</span><span>Built in Malawi. Designed for Southern Africa.</span></div>
     </div>
   </footer>
-{% endblock %}
 
-{% block site_scripts %}
+
+
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=7.0" defer></script>
-{% endblock %}
+  <script src="/static/js/tenga-landing-v4.js?v=7.0" defer></script>
+
+
+</body>
+</html>

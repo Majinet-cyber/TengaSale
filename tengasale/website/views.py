@@ -16,8 +16,32 @@ from .forms import WebsiteEnquiryForm
 logger = logging.getLogger(__name__)
 
 
+# Approved illustrative public plans from d33c5c6 (v4 landing catalogue).
+# These are marketing examples, never DeviceDeal records or contractual quotes.
+DEMO_PUBLIC_PHONE_OFFERS = (
+    {"brand": "Itel", "name": "itel A50C", "spec": "64GB · 6.6-inch display", "deposit": 120000,
+     "payments": {"daily": 2450, "weekly": 17150, "monthly": 73500}},
+    {"brand": "Tecno", "name": "Tecno Spark 50", "spec": "128GB · 6.78-inch display", "deposit": 175000,
+     "payments": {"daily": 3100, "weekly": 21700, "monthly": 93000}},
+    {"brand": "Samsung", "name": "Samsung Galaxy A15", "spec": "128GB · 6.5-inch AMOLED", "deposit": 220000,
+     "payments": {"daily": 4250, "weekly": 29750, "monthly": 127500}},
+)
+
+
+def _demo_public_phone_offers():
+    from deals.brand_utils import get_brand_logo
+    return [
+        {**offer, "payments": dict(offer["payments"]), "id": None, "is_demo": True,
+         "status": "Illustrative plan", "logo": get_brand_logo(offer["brand"]),
+         "image": "images/phone-realistic.png",
+         "image_alt": "Generic smartphone illustration",
+         "image_note": "Device illustration; not a photograph of this model."}
+        for offer in DEMO_PUBLIC_PHONE_OFFERS
+    ]
+
+
 def _get_public_phone_offers():
-    """Expose only approved customer-facing catalogue values to the landing page."""
+    """Prefer live public deals; fall back to disclosed historical illustrative plans."""
     try:
         from deals.brand_utils import canonical_brand, get_brand_logo
         from deals.models import DeviceDeal
@@ -41,6 +65,7 @@ def _get_public_phone_offers():
             offers.append(
                 {
                     "id": deal.pk,
+                    "is_demo": False,
                     "brand": brand,
                     "name": f"{brand} {deal.model_name}" if brand.lower() not in deal.model_name.lower() else deal.model_name,
                     "spec": deal.specs,
@@ -56,10 +81,10 @@ def _get_public_phone_offers():
             )
             if len(offers) == 6:
                 break
-        return offers
+        return offers or _demo_public_phone_offers()
     except Exception:
         logger.exception("Could not load the public phone catalogue")
-        return []
+        return _demo_public_phone_offers()
 
 
 def _get_landing_stats():
@@ -122,12 +147,14 @@ def _landing_context(request, *, section="", support_form=None):
     if support_form is None:
         initial = {"category": initial_category} if initial_category in valid_categories else None
         support_form = WebsiteEnquiryForm(initial=initial)
+    offers = _get_public_phone_offers()
     return {
         "section": section,
         "support_form": support_form,
         "support_email": settings.TENGA_SUPPORT_EMAIL,
         "support_success": request.GET.get("support") == "sent",
-        "public_phone_offers": _get_public_phone_offers(),
+        "public_phone_offers": offers,
+        "public_phone_offers_are_demo": bool(offers and all(offer.get("is_demo") for offer in offers)),
     }
 
 

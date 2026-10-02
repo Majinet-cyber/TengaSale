@@ -1,0 +1,6 @@
+<div class="tenga-topbar__actions">
+{% include "includes/flag_pill.html" %}
+{% include "partials/tenga_whatsapp.html" %}
+<a href="{% url 'notifications_list' %}" class="tenga-icon-action notification-button" aria-label="Notifications ({{ unread_notification_count|default:0 }} unread)" title="Notifications" data-testid="topbar-notifications"><i class="bi bi-bell" aria-hidden="true"></i>{% if unread_notification_count %}<span class="tenga-notification-count notification-count notification-count--live">{{ unread_notification_count }}</span>{% endif %}</a>
+<form method="post" action="{% url 'logout' %}" class="tenga-topbar__logout logout-form">{% csrf_token %}<button class="tenga-icon-action logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></button></form>
+</div>

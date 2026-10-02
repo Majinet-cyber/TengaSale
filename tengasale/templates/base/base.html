@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>{% block page_title %}TengaSale | {{ tenga_motto }}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#ff5a00">
+    <meta name="theme-color" content="#f4511e">
     <meta name="description" content="TengaSale — {{ tenga_motto }} Smartphone financing made simple for Malawi.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="{% static 'css/tenga-card-system.css' %}?v=1.0.0">
     <link rel="stylesheet" href="{% static 'css/tenga-signal.css' %}?v=1.0.0">
     <link rel="stylesheet" href="{% static 'css/tenga-type-system.css' %}?v=1.0.0">
-    <link rel="stylesheet" href="{% static 'css/tenga-design-system.css' %}?v=1.0.1">
+    <link rel="stylesheet" href="{% static 'css/tenga-design-system.css' %}?v=2.0.0">
     {% if current_tengasale_role == "hq" %}<link rel="stylesheet" href="{% static 'css/hq-sales-pulse.css' %}?v=1.0.1" data-testid="hq-sales-pulse-theme">{% endif %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <style>
@@ -39,7 +39,7 @@
       top: 0; left: 0;
       height: 3px;
       width: 0%;
-      background: linear-gradient(90deg, #FF4D00, #ff7a3d, #FF4D00);
+      background: var(--tenga-brand-orange);
       background-size: 200% 100%;
       z-index: 9999;
       transition: width 0.22s ease, opacity 0.4s ease;
@@ -105,68 +105,10 @@
 <div id="ts-toast-container" aria-live="polite" aria-atomic="false"></div>
 
 <div class="app-shell">
-    {% block topbar %}
-    <header class="topbar app-topbar">
-        <div class="brand-left">
-            <a href="{% url 'home' %}" class="brand-lockup" aria-label="TengaSale home">
-                <span class="brand-lockup-fallback" style="display:flex;align-items:center;gap:8px;">
-                    <img src="{% static 'images/Tenga.png' %}?v=20260809c" alt="" class="ts-logo ts-logo-icon">
-                    <span class="brand-copy"><strong>TengaSale</strong></span>
-                </span>
-            </a>
-        </div>
-
-        {% if request.user.is_authenticated %}
-            <div class="top-actions" style="flex-shrink:0;flex-wrap:nowrap;">
-                {% if tengasale_whatsapp_link %}
-                <a
-                    class="icon-button whatsapp-button"
-                    href="{{ tengasale_whatsapp_link }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="WhatsApp support"
-                    title="WhatsApp support"
-                    data-testid="topbar-whatsapp"
-                >
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.33 4.96L2.05 22l5.25-1.38a9.93 9.93 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91A9.86 9.86 0 0 0 19.05 4.9 9.85 9.85 0 0 0 12.04 2Zm.01 18.16h-.01a8.22 8.22 0 0 1-4.19-1.15l-.3-.18-3.11.82.83-3.03-.2-.31a8.18 8.18 0 0 1-1.25-4.39c0-4.53 3.69-8.22 8.23-8.22a8.18 8.18 0 0 1 5.81 2.41 8.17 8.17 0 0 1 2.41 5.82c0 4.54-3.69 8.23-8.22 8.23Zm4.51-6.16c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.96-.14.17-.29.19-.54.07-.25-.13-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.7-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47c-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.05 0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.18 3.69.58.25 1.04.4 1.39.51.58.18 1.12.16 1.54.1.47-.07 1.46-.6 1.66-1.17.21-.58.21-1.07.14-1.17-.06-.1-.22-.16-.47-.28Z"></path>
-                    </svg>
-                </a>
-                {% endif %}
-                {% if current_user_can_use_django_admin %}
-                    <a class="icon-button admin-button" href="{% url 'admin:index' %}" aria-label="Django admin" title="Django admin">
-                        <svg aria-hidden="true" viewBox="0 0 24 24">
-                            <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.38 1.07V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.07-.38H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6A1.65 1.65 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.36.7.6 1 .24.3.63.43 1.07.43H21a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15Z"></path>
-                        </svg>
-                    </a>
-                {% endif %}
-                <a href="{% url 'notifications_list' %}" class="icon-button notification-button" aria-label="Notifications ({{ unread_notification_count }} unread)" data-testid="topbar-notifications">
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                        <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
-                    </svg>
-                    {% if unread_notification_count %}
-                        <span class="notification-count notification-count--live">{{ unread_notification_count }}</span>
-                    {% endif %}
-                </a>
-                <form method="post" action="{% url 'logout' %}" class="logout-form" style="margin:0;">
-                    {% csrf_token %}
-                    <button class="icon-button logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout">
-                        <svg aria-hidden="true" viewBox="0 0 24 24">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <path d="M16 17l5-5-5-5"></path>
-                            <path d="M21 12H9"></path>
-                        </svg>
-                    </button>
-                </form>
-            </div>
-        {% endif %}
-    </header>
-    {% endblock topbar %}
+    {% block topbar %}{% include "partials/tenga_topbar.html" with title=page_heading|default:"Home" %}{% endblock topbar %}
 
     {% with current_url=request.resolver_match.url_name %}
-    {% if current_tengasale_role == "hq" and current_url != "hq_dashboard" %}
+    {% if current_tengasale_role == "hq" %}
     <div class="hq-page-shell" data-testid="hq-persistent-shell">
         {% include "dashboard/partials/hq_sidebar.html" %}
         <main class="content page-enter hq-page-content">
@@ -188,11 +130,11 @@
         {% endif %}
 
         {% block content %}{% endblock %}
-    {% if current_tengasale_role == "hq" and current_url != "hq_dashboard" %}
+    {% if current_tengasale_role == "hq" %}
         </div>
     {% endif %}
     </main>
-    {% if current_tengasale_role == "hq" and current_url != "hq_dashboard" %}
+    {% if current_tengasale_role == "hq" %}
     </div>
     {% endif %}
     {% endwith %}
@@ -274,6 +216,7 @@
                         <div class="hq-more-sheet__handle" aria-hidden="true"></div>
                         <div class="hq-more-sheet__head"><div><span>HQ</span><h2 id="hq-more-title">All tools</h2></div><button type="button" data-hq-more-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
                         <div class="hq-more-sheet__grid">
+                            <a href="#hq-all-tools" data-hq-more-directory><i class="bi bi-grid"></i><span>All HQ tools</span></a>
                             <a href="{% url 'hq_deals' %}"><i class="bi bi-phone"></i><span>Devices</span></a>
                             <a href="{% url 'hq_underwriter_queue' %}"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
                             <a href="{% url 'hq_payment_collections' %}"><i class="bi bi-credit-card"></i><span>Finance</span></a>
@@ -312,7 +255,17 @@
       if (moreOpen) moreOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
       document.body.classList.toggle('hq-more-open', open);
     }
-    if (moreOpen) moreOpen.addEventListener('click', function () { setMore(true); });
+    if (moreOpen) moreOpen.addEventListener('click', function () { setMore(true); var close = moreSheet.querySelector('[data-hq-more-close]'); if (close) close.focus(); });
+    document.querySelectorAll('[data-hq-more-directory]').forEach(function (link) { link.addEventListener('click', function () { setMore(false); var directory = document.getElementById('hq-all-tools'); if (directory) { directory.open = true; directory.querySelector('summary').focus(); } }); });
+    if (moreSheet) moreSheet.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { setMore(false); if (moreOpen) moreOpen.focus(); }
+      if (event.key === 'Tab' && moreSheet.classList.contains('is-open')) {
+        var items = Array.from(moreSheet.querySelectorAll('a[href],button')).filter(function (el) { return el.getClientRects().length; });
+        var first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
     document.querySelectorAll('[data-hq-more-close]').forEach(function (el) { el.addEventListener('click', function () { setMore(false); }); });
     /* HQ shell: add fallback class for browsers without :has() support */
     if (document.querySelector('.hq-page-shell')) {

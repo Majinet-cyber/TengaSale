@@ -1,0 +1,5 @@
+{% if tengasale_whatsapp_link %}
+<a class="tenga-icon-action tenga-icon-action--whatsapp" href="{{ tengasale_whatsapp_link }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp support" title="WhatsApp support" data-testid="topbar-whatsapp"><i class="bi bi-whatsapp" aria-hidden="true"></i></a>
+{% else %}
+<a class="tenga-icon-action" href="{% url 'website_contact' %}" aria-label="Contact support" title="Contact support" data-testid="topbar-support"><i class="bi bi-chat-dots" aria-hidden="true"></i></a>
+{% endif %}

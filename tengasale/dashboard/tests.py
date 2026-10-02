@@ -20,41 +20,13 @@ from .portfolio_services import calculate_contract_risk, calculate_par_band, cal
 
 
 def assert_merchant_dashboard_malawi_flag(test_case, response):
-    """
-    Regression lock: merchant dashboard must show one Malawi flag and no visible MW code.
-    """
+    """The shared topbar exposes one accessible, visually flag-only country."""
     test_case.assertEqual(response.status_code, 200)
-    test_case.assertContains(
-        response,
-        'class="flag-pill merchant-country-chip country-pill"',
-        count=1,
-        msg_prefix="Exactly one Malawi country chip",
-    )
-    test_case.assertContains(response, 'title="Malawi"', msg_prefix="Malawi chip title")
-    test_case.assertContains(
-        response,
-        'viewBox="0 0 20 14"',
-        count=1,
-        msg_prefix="Malawi flag SVG (portal/_malawi_flag.html)",
-    )
-    test_case.assertContains(response, "#339E35", msg_prefix="Malawi flag green band")
-    test_case.assertContains(response, "#CE1126", msg_prefix="Malawi flag red band")
-    test_case.assertContains(response, ">Malawi<", count=1, msg_prefix="Malawi country label")
-
-    content = response.content.decode()
-    greeting_idx = content.index('class="merchant-greeting"')
-    chip_idx = content.index('class="flag-pill merchant-country-chip country-pill"', greeting_idx)
-    greeting_end = content.index("</section>", greeting_idx)
-    chip_region = content[chip_idx:greeting_end]
-    test_case.assertIn(
-        'viewBox="0 0 20 14"',
-        chip_region,
-        "Flag SVG must render inside merchant-country-chip (not a broken img or text-only MW)",
-    )
-    test_case.assertEqual(chip_region.count('viewBox="0 0 20 14"'), 1)
-    test_case.assertEqual(chip_region.count(">Malawi<"), 1)
-    test_case.assertNotIn(">MW<", chip_region, "MW text must not render inside the country chip")
-    test_case.assertNotIn("merchant-country-chip__code", chip_region)
+    test_case.assertContains(response, 'data-testid="country-pill-mw"', count=1)
+    test_case.assertContains(response, 'aria-label="Malawi"')
+    test_case.assertContains(response, 'viewBox="0 0 20 14"', count=1)
+    test_case.assertNotContains(response, ">Malawi<")
+    test_case.assertNotContains(response, ">MW<")
 
 
 class MerchantComplianceWorkflowTests(TestCase):

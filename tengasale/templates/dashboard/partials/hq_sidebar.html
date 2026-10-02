@@ -1,36 +1,13 @@
 {% with current_url=request.resolver_match.url_name %}
-<div class="hq-shell-overlay" data-hq-shell-overlay></div>
-<aside class="hq-shell-sidebar" id="hq-shell-sidebar" aria-label="HQ navigation">
-  <div class="hq-shell-sidebar__head">
-    <strong>Tenga <span style="color:#f4511e">HQ</span></strong>
-    <button type="button" data-hq-shell-close aria-label="Close HQ menu"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-  </div>
-  <nav class="hq-shell-nav">
-    <span class="hq-shell-nav__label">Operate</span>
-    <a href="{% url 'hq_dashboard' %}" class="{% if current_url == 'hq_dashboard' %}is-active{% endif %}"><i class="bi bi-command"></i><span>Command</span></a>
-    <a href="{% url 'hq_applications' %}" class="{% if current_url == 'hq_applications' %}is-active{% endif %}"><i class="bi bi-files"></i><span>Applications</span></a>
-    <a href="{% url 'hq_deals' %}" class="{% if current_url == 'hq_deals' %}is-active{% endif %}"><i class="bi bi-phone"></i><span>Deals Catalog</span></a>
-    <a href="{% url 'hq_portfolio' %}" class="{% if current_url == 'hq_portfolio' or current_url == 'hq_portfolio_investor_report' %}is-active{% endif %}"><i class="bi bi-graph-up"></i><span>Portfolio</span></a>
-    <a href="{% url 'hq_devices' %}" class="{% if current_url == 'hq_devices' %}is-active{% endif %}"><i class="bi bi-shield-lock"></i><span>Devices</span></a>
-    <a href="{% url 'device_lock:hq_lock_centre' %}" class="{% if current_url == 'hq_lock_centre' %}is-active{% endif %}"><i class="bi bi-lock"></i><span>Device Locking</span></a>
-    <span class="hq-shell-nav__label">Network</span>
-    <a href="{% url 'hq_underwriter_queue' %}" class="{% if current_url == 'hq_underwriter_queue' %}is-active{% endif %}"><i class="bi bi-person-check"></i><span>Underwriters</span></a>
-    <a href="{% url 'hq_repossession_resale' %}" class="{% if current_url == 'hq_repossession_resale' %}is-active{% endif %}"><i class="bi bi-arrow-repeat"></i><span>Repossession</span></a>
-    <a href="{% url 'recommerce:hq_overview' %}" class="{% if current_url == 'hq_overview' %}is-active{% endif %}"><i class="bi bi-recycle"></i><span>Recommerce</span></a>
-    <span class="hq-shell-nav__label">Finance</span>
-    <a href="{% url 'hq_commissions' %}" class="{% if current_url == 'hq_commissions' or current_url == 'hq_commission_ledger' %}is-active{% endif %}"><i class="bi bi-wallet2"></i><span>Earnings</span></a>
-    <a href="{% url 'hq_simulations' %}" class="{% if current_url == 'hq_simulations' %}is-active{% endif %}"><i class="bi bi-calculator"></i><span>Simulations</span></a>
-    <a href="{% url 'hq_merchant_payouts' %}" class="{% if current_url == 'hq_merchant_payouts' %}is-active{% endif %}"><i class="bi bi-cash-stack"></i><span>Merchant Payouts</span></a>
-    <a href="{% url 'hq_payment_collections' %}" class="{% if current_url == 'hq_payment_collections' %}is-active{% endif %}"><i class="bi bi-credit-card"></i><span>Payments</span></a>
-    <a href="{% url 'hq_reconciliation' %}" class="{% if current_url == 'hq_reconciliation' %}is-active{% endif %}"><i class="bi bi-check2-square"></i><span>Reconciliation</span></a>
-    <span class="hq-shell-nav__label">Control</span>
-    <a href="{% url 'hq_reports' %}" class="{% if current_url == 'hq_reports' or current_url == 'hq_sales_analytics' %}is-active{% endif %}"><i class="bi bi-file-earmark-arrow-down"></i><span>Reports</span></a>
-    <a href="{% url 'notifications_list' %}" class="{% if current_url == 'notifications_list' %}is-active{% endif %}"><i class="bi bi-bell"></i><span>Notifications</span></a>
-    <a href="{% url 'hq_whatsapp_bot' %}" class="{% if current_url == 'hq_whatsapp_bot' %}is-active{% endif %}"><i class="bi bi-chat-dots"></i><span>Messaging</span></a>
-    <a href="{% url 'hq_fraud_checks' %}" class="{% if current_url == 'hq_fraud_checks' %}is-active{% endif %}"><i class="bi bi-exclamation-triangle"></i><span>Risk &amp; Connectivity</span></a>
-    <a href="{% url 'hq_audit_trail' %}" class="{% if current_url == 'hq_audit_trail' %}is-active{% endif %}"><i class="bi bi-activity"></i><span>Audit Trail</span></a>
-    <a href="{% url 'hq_merchant_agreements' %}" class="{% if current_url == 'hq_merchant_agreements' %}is-active{% endif %}"><i class="bi bi-patch-check"></i><span>Merchant Compliance</span></a>
-    <a href="{% url 'hq_users' %}" class="{% if current_url == 'hq_users' or current_url == 'hq_user_edit' %}is-active{% endif %}"><i class="bi bi-people"></i><span>Users & Settings</span></a>
-  </nav>
-</aside>
+<div class="hq-navigation">
+<nav class="tenga-segmented-nav" aria-label="HQ primary navigation">
+<a href="{% url 'hq_dashboard' %}" {% if current_url == 'hq_dashboard' %}aria-current="page"{% endif %}><i class="bi bi-command" aria-hidden="true"></i><span>Command</span></a>
+<a href="{% url 'hq_applications' %}" {% if current_url == 'hq_applications' %}aria-current="page"{% endif %}><i class="bi bi-files" aria-hidden="true"></i><span>Applications</span></a>
+<a href="{% url 'hq_portfolio' %}" {% if current_url == 'hq_portfolio' %}aria-current="page"{% endif %}><i class="bi bi-graph-up" aria-hidden="true"></i><span>Portfolio</span></a>
+<a href="{% url 'hq_payment_collections' %}" {% if current_url == 'hq_payment_collections' %}aria-current="page"{% endif %}><i class="bi bi-credit-card" aria-hidden="true"></i><span>Collections</span></a>
+<a href="{% url 'device_lock:hq_lock_centre' %}" {% if current_url == 'hq_lock_centre' %}aria-current="page"{% endif %}><i class="bi bi-phone" aria-hidden="true"></i><span>Devices</span></a>
+<a href="{% url 'hq_reports' %}" {% if current_url == 'hq_reports' %}aria-current="page"{% endif %}><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Reports</span></a>
+</nav>
+<details class="hq-all-tools" id="hq-all-tools"><summary><i class="bi bi-grid" aria-hidden="true"></i> All tools <i class="bi bi-chevron-down" aria-hidden="true"></i></summary>{% include "dashboard/partials/hq_tool_directory.html" %}</details>
+</div>
 {% endwith %}

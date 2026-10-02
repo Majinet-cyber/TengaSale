@@ -1,44 +1,20 @@
-
 const phoneOffersNode = document.getElementById("publicPhoneOffers");
 const PHONE_OFFERS = phoneOffersNode ? JSON.parse(phoneOffersNode.textContent) : [];
-const BRAND_COLORS = {
-  Tecno: { glow: "#ddebff", grad: "linear-gradient(135deg,#1868ff,#17c8ff)", accent: "#49d9ff", a: "#193b78", b: "#1f2146" },
-  Itel: { glow: "#ffe4e4", grad: "linear-gradient(135deg,#ff7a5c,#ff3232)", accent: "#ff7a5c", a: "#56204a", b: "#1f2146" },
-  Samsung: { glow: "#def7f1", grad: "linear-gradient(135deg,#2fd8a4,#2d7bff)", accent: "#4bdcab", a: "#163a43", b: "#2a3c91" },
-  "Redmi/Xiaomi": { glow: "#f2e2ff", grad: "linear-gradient(135deg,#8d63ff,#ff74a2)", accent: "#ff6ca6", a: "#171b35", b: "#7a4cff" }
-};
-
 const money = value => `MWK ${new Intl.NumberFormat("en-US").format(value)}`;
-const cadenceButtons = [...document.querySelectorAll(".cadence-button")];
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const phoneGrid = document.getElementById("phoneGrid");
-const deviceSelect = document.getElementById("deviceSelect");
 const pageProgress = document.getElementById("pageProgress");
 const header = document.querySelector(".site-header");
-const calculatorPhone = document.getElementById("calculatorPhone");
-const calculatorDeposit = document.getElementById("calculatorDeposit");
-
-let activeCadence = "daily";
 
 function renderPhones() {
   if (!phoneGrid) return;
-  if (!PHONE_OFFERS.length) {
-    phoneGrid.innerHTML = '<p class="catalogue-empty">Current phone plans are being updated. Continue to the application for confirmed availability.</p>';
-    return;
-  }
-  const visualForPhone = phone => {
-    const brand = phone.brand.toLowerCase();
-    if (brand.includes("redmi") || brand.includes("xiaomi")) return { src: "/static/images/phone-redmi-premium-v1.png", mood: "redmi" };
-    if (brand.includes("samsung")) return { src: "/static/images/phone-samsung.png", mood: "ice" };
-    if (brand.includes("itel")) return { src: "/static/images/phone-realistic.png", mood: "midnight" };
-    if (brand.includes("tecno")) return { src: "/static/images/phone-tecno-camon.png", mood: "aurora" };
-    return { src: "/static/images/phone-school.png", mood: "studio" };
-  };
+  const staticUrl = path => path.startsWith("/") || /^https?:\/\//.test(path) ? path : `${phoneGrid.dataset.staticPrefix}${path}`;
   phoneGrid.innerHTML = PHONE_OFFERS.map((phone, index) => {
     const hasPricing = Number(phone.deposit) > 0 && ["daily", "weekly", "monthly"].every(cadence => Number(phone.payments?.[cadence]) > 0);
     const pricing = hasPricing ? `
         <div class="phone-pricing" data-testid="phone-pricing">
-          <div class="phone-pricing__selector" role="radiogroup" aria-label="Payment rhythm">
-            ${["daily", "weekly", "monthly"].map(cadence => `<button type="button" role="radio" class="phone-pricing__rhythm${cadence === "daily" ? " active" : ""}" data-cadence="${cadence}" data-amount="${phone.payments[cadence]}" aria-checked="${cadence === "daily"}">${cadence}</button>`).join("")}
+          <div class="phone-pricing__selector" role="radiogroup" aria-label="Payment schedule for ${escapeHtml(phone.name)}">
+            ${["daily", "weekly", "monthly"].map(cadence => `<button type="button" role="radio" class="phone-pricing__rhythm${cadence === "daily" ? " active" : ""}" data-cadence="${cadence}" data-amount="${Number(phone.payments[cadence])}" aria-checked="${cadence === "daily"}" tabindex="${cadence === "daily" ? "0" : "-1"}">${cadence}</button>`).join("")}
           </div>
           <div class="phone-pricing__selected" aria-live="polite"><strong>${money(phone.payments.daily)}</strong><span>per day</span></div>
           <div class="phone-pricing__deposit"><span>Deposit</span><strong>${money(phone.deposit)}</strong></div>
@@ -46,90 +22,66 @@ function renderPhones() {
         <div class="phone-pricing phone-pricing--unavailable" data-testid="phone-pricing-unavailable">
           <span>Payment plan</span><strong>Pricing available during application</strong>
         </div>`;
+    const visual = phone.image ? `<img class="catalogue-phone-photo" src="${escapeHtml(staticUrl(phone.image))}" alt="${escapeHtml(phone.image_alt || phone.name)}" loading="lazy" width="205" height="260">` : '<div class="css-phone" aria-hidden="true"><div class="css-screen"></div></div>';
     return `
-    <article class="phone-card reveal visible" data-phone-brand="${phone.brand}" style="
-      --soft-glow:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).glow};
-      --grad:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).grad};
-      --accent:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).accent};
-      --screen-a:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).a};
-      --screen-b:${(BRAND_COLORS[phone.brand] || BRAND_COLORS.Tecno).b};
-    ">
-      <div class="phone-visual">
-        <div class="phone-orb"></div>
-        <img class="catalogue-phone-photo catalogue-phone-photo--${visualForPhone(phone).mood}" data-phone-visual="${visualForPhone(phone).src}" src="${visualForPhone(phone).src}" alt="${phone.name}">
-      </div>
+    <article class="phone-card reveal visible" data-phone-brand="${escapeHtml(phone.brand)}" data-is-demo="${Boolean(phone.is_demo)}">
+      <div class="phone-visual">${visual}</div>
       <div class="phone-body">
-        <div class="phone-top">
-          <div>
-            <span class="phone-brand" aria-label="${phone.brand}">
-              <img src="${phone.logo}" alt="" width="96" height="28">
-            </span>
-            <h3>${phone.name}</h3>
-            <div class="spec">${phone.spec}</div>
-          </div>
-          <span>${phone.status}</span>
-        </div>
+        <div class="phone-top"><div>
+          <span class="phone-brand">${phone.logo ? `<img src="${escapeHtml(staticUrl(phone.logo))}" alt="${escapeHtml(phone.brand)}" width="96" height="28">` : escapeHtml(phone.brand)}</span>
+          <h3>${escapeHtml(phone.name)}</h3><div class="spec">${escapeHtml(phone.spec)}</div>
+        </div></div>
+        ${phone.image_note ? `<p class="phone-image-note">${escapeHtml(phone.image_note)}</p>` : ""}
         ${pricing}
-        <button class="card-button" type="button" data-device="${phone.name}">Choose ${phone.name}</button>
+        ${phone.is_demo ? '<p class="phone-plan-note">Illustrative plan · Final pricing confirmed during application.</p>' : ""}
+        <button class="card-button button" type="button" data-phone-index="${index}">Choose ${escapeHtml(phone.name)}</button>
       </div>
-    </article>
-  `;
+    </article>`;
   }).join("");
 
-  document.querySelectorAll(".card-button").forEach(button => {
+  phoneGrid.querySelectorAll(".card-button").forEach(button => {
     button.addEventListener("click", () => {
-      if (deviceSelect) deviceSelect.value = button.dataset.device;
-      if (calculatorPhone) calculatorPhone.value = button.dataset.device;
+      const phone = PHONE_OFFERS[Number(button.dataset.phoneIndex)];
+      const selection = document.getElementById("selectedPhone");
+      const supportLink = document.getElementById("selectedPhoneSupport");
+      selection.textContent = `Interested in the ${phone.name}? Ask us about this phone or start an application.`;
+      selection.hidden = false;
+      supportLink.hidden = false;
+      supportLink.dataset.supportSubject = `Phone enquiry: ${phone.name}`;
       document.getElementById("apply").scrollIntoView({ behavior: "smooth" });
     });
   });
 
-  document.querySelectorAll(".phone-pricing__selector").forEach(selector => {
-    selector.addEventListener("click", event => {
-      const button = event.target.closest(".phone-pricing__rhythm");
-      if (!button) return;
-      const pricing = selector.closest(".phone-pricing");
-      selector.querySelectorAll(".phone-pricing__rhythm").forEach(item => {
+  phoneGrid.querySelectorAll(".phone-pricing__selector").forEach(selector => {
+    const buttons = [...selector.querySelectorAll(".phone-pricing__rhythm")];
+    const selectCadence = button => {
+      buttons.forEach(item => {
         const selected = item === button;
         item.classList.toggle("active", selected);
         item.setAttribute("aria-checked", String(selected));
+        item.tabIndex = selected ? 0 : -1;
       });
+      const pricing = selector.closest(".phone-pricing");
       pricing.querySelector(".phone-pricing__selected strong").textContent = money(Number(button.dataset.amount));
-      pricing.querySelector(".phone-pricing__selected span").textContent = `per ${button.dataset.cadence.replace("daily", "day").replace("weekly", "week").replace("monthly", "month")}`;
+      const unit = { daily: "day", weekly: "week", monthly: "month" }[button.dataset.cadence];
+      pricing.querySelector(".phone-pricing__selected span").textContent = `per ${unit}`;
+    };
+    selector.addEventListener("click", event => {
+      const button = event.target.closest(".phone-pricing__rhythm");
+      if (button) selectCadence(button);
+    });
+    selector.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const current = buttons.findIndex(button => button.getAttribute("aria-checked") === "true");
+      const step = ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1;
+      const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (current + step + buttons.length) % buttons.length;
+      selectCadence(buttons[next]);
+      buttons[next].focus();
     });
   });
 }
-
-function populateDeviceSelect() {
-  if (deviceSelect) deviceSelect.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
-  if (calculatorPhone) calculatorPhone.innerHTML = PHONE_OFFERS.map(phone => `<option value="${phone.name}">${phone.name}</option>`).join("");
-}
-function updateCalculator() {
-  if (!calculatorPhone || !calculatorDeposit) return;
-  const phone = PHONE_OFFERS.find(item => item.name === calculatorPhone.value) || PHONE_OFFERS[0];
-  if (!phone) return;
-  calculatorDeposit.innerHTML = `<option value="${phone.deposit}">${money(phone.deposit)}</option>`;
-  document.getElementById("calculatorModel").textContent = phone.name;
-  document.getElementById("calculatorSpec").textContent = phone.spec;
-  document.getElementById("calculatorStatus").textContent = phone.status;
-  document.getElementById("calculatorDepositValue").textContent = money(phone.deposit);
-  document.getElementById("calculatorPaymentLabel").textContent = `${activeCadence.charAt(0).toUpperCase() + activeCadence.slice(1)} payment`;
-  document.getElementById("calculatorPaymentValue").textContent = money(phone.payments[activeCadence]);
-  if (deviceSelect) deviceSelect.value = phone.name;
-}
-populateDeviceSelect();
 renderPhones();
-updateCalculator();
-calculatorPhone?.addEventListener("change", updateCalculator);
-
-cadenceButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    activeCadence = button.dataset.cadence;
-    cadenceButtons.forEach(item => item.classList.toggle("active", item === button));
-    renderPhones();
-    updateCalculator();
-  });
-});
 
 function onScroll() {
   const scrollY = window.scrollY;
@@ -263,81 +215,6 @@ if (supportForm?.querySelector(".field-error, .form-notice--error")) {
   document.getElementById("support")?.scrollIntoView({ behavior: "auto" });
 }
 
-
-// subtle auto-drift on the metric ribbon for a more alive feel
-const ribbon = document.querySelector('.metric-ribbon');
-if (ribbon && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
-  let drift = 0;
-  let dir = 1;
-  setInterval(() => {
-    if (window.innerWidth > 800) return; // manual on mobile
-    drift += dir * 120;
-    if (drift > ribbon.scrollWidth - ribbon.clientWidth - 40) dir = -1;
-    if (drift < 0) dir = 1;
-    ribbon.scrollTo({left: Math.max(0, drift), behavior: 'smooth'});
-  }, 2800);
-}
-
-(() => {
-  const root = document.querySelector(".tenga-loop-section");
-  if (!root) return;
-  const brand = root.querySelector("#loopBrand");
-  const model = root.querySelector("#loopModel");
-  const condition = root.querySelector("#loopCondition");
-  const device = root.querySelector("#loopDevice");
-  const cta = root.querySelector("#loopCta");
-  const summary = root.querySelector("#loopUseSummary");
-  const useButtons = [...root.querySelectorAll(".tenga-loop-use")];
-  if (!brand || !model || !condition || !device || !cta || !summary || !useButtons.length) return;
-  const catalogue = PHONE_OFFERS.length ? PHONE_OFFERS : [{ brand: "Other", name: "Device not listed" }];
-  const brands = [...new Set(catalogue.map(item => item.brand))];
-  let selectedUse = "deposit";
-
-  const outcomes = {
-    deposit: { title: "Check trade-in eligibility", text: "Tenga Support can help with your next step.", label: "Check Eligibility", category: "trade_in_upgrade" },
-    swap: { title: "Talk to Tenga", text: "Ask Tenga Support about available options.", label: "Talk to Tenga", category: "trade_in_upgrade" },
-    cash: { title: "Explore Tenga Certified", text: "Ask about certified device availability.", label: "Ask about availability", category: "tenga_certified" }
-  };
-
-  function populateModels() {
-    const matches = catalogue.filter(item => item.brand === brand.value);
-    model.innerHTML = matches.map(item => `<option value="${item.name}">${item.name}</option>`).join("");
-    updateDevice();
-  }
-
-  function updateDevice() {
-    device.textContent = `${model.value || "Device not listed"} · ${condition.value}`;
-  }
-
-  function selectOutcome(button) {
-    selectedUse = button.dataset.loopUse;
-    useButtons.forEach(item => item.classList.toggle("active", item === button));
-    const outcome = outcomes[selectedUse];
-    summary.querySelector("strong").textContent = outcome.title;
-    summary.querySelector("p").textContent = outcome.text;
-    cta.textContent = outcome.label;
-    cta.href = "#support";
-  }
-
-  brand.innerHTML = brands.map(name => `<option value="${name}">${name}</option>`).join("");
-  brand.addEventListener("change", populateModels);
-  model.addEventListener("change", updateDevice);
-  condition.addEventListener("change", updateDevice);
-  useButtons.forEach(button => button.addEventListener("click", () => selectOutcome(button)));
-  cta.addEventListener("click", event => {
-    const outcome = outcomes[selectedUse];
-    event.preventDefault();
-    const categoryField = document.getElementById("id_category");
-    const subjectField = document.getElementById("id_subject");
-    const messageField = document.getElementById("id_message");
-    if (categoryField) categoryField.value = outcome.category;
-    if (subjectField && !subjectField.value) subjectField.value = outcome.title;
-    if (messageField && !messageField.value) messageField.value = "I would like Tenga to contact me about trade-in and upgrade eligibility.";
-    document.getElementById("support")?.scrollIntoView({ behavior: "smooth" });
-    window.setTimeout(() => document.getElementById("id_full_name")?.focus(), 550);
-  });
-  populateModels();
-})();
 
 (() => {
   const root = document.getElementById("approvedMarketMap");

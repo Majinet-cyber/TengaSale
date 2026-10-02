@@ -1,0 +1,83 @@
+{% with current_url=request.resolver_match.url_name %}
+<div class="hq-tool-groups">
+<section class="hq-tool-group"><h3>Operate</h3>
+<a href="{% url 'hq_dashboard' %}" {% if current_url == 'hq_dashboard' %}aria-current="page"{% endif %}>Command</a>
+<a href="{% url 'hq_applications' %}" {% if current_url == 'hq_applications' %}aria-current="page"{% endif %}>Applications</a>
+<a href="{% url 'hq_applications' %}?status=active_contract" {% if current_url == 'hq_applications' %}aria-current="page"{% endif %}>Contracts</a>
+<a href="{% url 'hq_deals' %}" {% if current_url == 'hq_deals' %}aria-current="page"{% endif %}>Deals Catalog</a>
+<a href="{% url 'hq_devices' %}" {% if current_url == 'hq_devices' %}aria-current="page"{% endif %}>Devices</a>
+<a href="{% url 'device_lock:hq_lock_centre' %}" {% if current_url == 'hq_lock_centre' %}aria-current="page"{% endif %}>Device Locking</a>
+<a href="{% url 'hq_underwriter_queue' %}" {% if current_url == 'hq_underwriter_queue' %}aria-current="page"{% endif %}>Underwriters</a>
+<a href="{% url 'hq_repossession_resale' %}" {% if current_url == 'hq_repossession_resale' %}aria-current="page"{% endif %}>Repossession &amp; Resale</a>
+<a href="{% url 'recommerce:hq_overview' %}" {% if current_url == 'hq_overview' %}aria-current="page"{% endif %}>Recommerce</a>
+<a href="{% url 'hq_operations' %}" {% if current_url == 'hq_operations' %}aria-current="page"{% endif %}>Operations</a>
+<a href="{% url 'hq_safe_operations' %}" {% if current_url == 'hq_safe_operations' %}aria-current="page"{% endif %}>Safe operations</a>
+<a href="{% url 'hq_auto_approval' %}" {% if current_url == 'hq_auto_approval' %}aria-current="page"{% endif %}>Auto approval</a>
+</section>
+<section class="hq-tool-group"><h3>Portfolio &amp; finance</h3>
+<a href="{% url 'hq_portfolio' %}" {% if current_url == 'hq_portfolio' %}aria-current="page"{% endif %}>Portfolio Management</a>
+<a href="{% url 'hq_payment_collections' %}" {% if current_url == 'hq_payment_collections' %}aria-current="page"{% endif %}>Payments / Collections</a>
+<a href="{% url 'hq_payment_collections' %}?status=active" {% if current_url == 'hq_payment_collections' %}aria-current="page"{% endif %}>Active Contracts</a>
+<a href="{% url 'hq_payment_collections' %}?status=completed" {% if current_url == 'hq_payment_collections' %}aria-current="page"{% endif %}>Completed Contracts</a>
+<a href="{% url 'hq_reconciliation' %}" {% if current_url == 'hq_reconciliation' %}aria-current="page"{% endif %}>Reconciliation</a>
+<a href="{% url 'hq_reports' %}" {% if current_url == 'hq_reports' %}aria-current="page"{% endif %}>Reports / Exports</a>
+<a href="{% url 'hq_sales_analytics' %}" {% if current_url == 'hq_sales_analytics' %}aria-current="page"{% endif %}>Sales analytics</a>
+<a href="{% url 'hq_commissions' %}" {% if current_url == 'hq_commissions' %}aria-current="page"{% endif %}>Earnings &amp; Commissions</a>
+<a href="{% url 'hq_commission_ledger' %}" {% if current_url == 'hq_commission_ledger' %}aria-current="page"{% endif %}>Commission ledger</a>
+<a href="{% url 'hq_merchant_payouts' %}" {% if current_url == 'hq_merchant_payouts' %}aria-current="page"{% endif %}>Merchant Payouts</a>
+<a href="{% url 'hq_staff_payouts' %}" {% if current_url == 'hq_staff_payouts' %}aria-current="page"{% endif %}>Staff payouts</a>
+<a href="{% url 'hq_emergency_payouts' %}" {% if current_url == 'hq_emergency_payouts' %}aria-current="page"{% endif %}>Emergency payouts</a>
+<a href="{% url 'hq_payment_intelligence' %}" {% if current_url == 'hq_payment_intelligence' %}aria-current="page"{% endif %}>Payment intelligence</a>
+<a href="{% url 'hq_simulations' %}" {% if current_url == 'hq_simulations' %}aria-current="page"{% endif %}>Financial Simulations</a>
+<a href="{% url 'payments:home' %}" {% if current_url == 'home' %}aria-current="page"{% endif %}>Payment gateway</a>
+</section>
+<section class="hq-tool-group"><h3>Risk &amp; support</h3>
+<a href="{% url 'hq_underwriter_performance' %}" {% if current_url == 'hq_underwriter_performance' %}aria-current="page"{% endif %}>Underwriter performance</a>
+<a href="{% url 'hq_call_recording_qc' %}" {% if current_url == 'hq_call_recording_qc' %}aria-current="page"{% endif %}>QC / Call recordings</a>
+<a href="{% url 'hq_fraud_checks' %}" {% if current_url == 'hq_fraud_checks' %}aria-current="page"{% endif %}>Risk &amp; Fraud</a>
+<a href="{% url 'hq_audit_trail' %}" {% if current_url == 'hq_audit_trail' %}aria-current="page"{% endif %}>Audit Trail</a>
+<a href="{% url 'hq_merchant_agreements' %}" {% if current_url == 'hq_merchant_agreements' %}aria-current="page"{% endif %}>Merchant Agreements</a>
+<a href="{% url 'hq_whatsapp_bot' %}" {% if current_url == 'hq_whatsapp_bot' %}aria-current="page"{% endif %}>WhatsApp Bot</a>
+<a href="{% url 'hq_operational_notices' %}" {% if current_url == 'hq_operational_notices' %}aria-current="page"{% endif %}>Notices &amp; Templates</a>
+<a href="{% url 'notifications_list' %}" {% if current_url == 'notifications_list' %}aria-current="page"{% endif %}>Notifications</a>
+<a href="{% url 'support_dashboard' %}" {% if current_url == 'support_dashboard' %}aria-current="page"{% endif %}>Tech Support</a>
+<a href="{% url 'ticket_list' %}" {% if current_url == 'ticket_list' %}aria-current="page"{% endif %}>Support tickets</a>
+<a href="{% url 'ticket_create' %}" {% if current_url == 'ticket_create' %}aria-current="page"{% endif %}>Create support ticket</a>
+<a href="{% url 'bug_monitor' %}" {% if current_url == 'bug_monitor' %}aria-current="page"{% endif %}>System health</a>
+</section>
+<section class="hq-tool-group"><h3>People &amp; network</h3>
+<a href="{% url 'hq_users' %}" {% if current_url == 'hq_users' %}aria-current="page"{% endif %}>Users &amp; Settings</a>
+<a href="{% url 'ma_dashboard' %}" {% if current_url == 'ma_dashboard' %}aria-current="page"{% endif %}>Merchant Admin</a>
+<a href="{% url 'ma_leads' %}" {% if current_url == 'ma_leads' %}aria-current="page"{% endif %}>Merchant leads</a>
+{% if 'staff_roles' in staff_module_keys %}
+<a href="{% url 'staff_dashboard' %}" {% if current_url == 'staff_dashboard' %}aria-current="page"{% endif %}>Founder / Staff Dashboard</a>
+{% endif %}
+{% if 'staff_roles' in staff_module_keys %}
+<a href="{% url 'hq_staff_roles' %}" {% if current_url == 'hq_staff_roles' %}aria-current="page"{% endif %}>Staff &amp; Roles</a>
+{% endif %}
+{% if 'volts' in staff_module_keys %}
+<a href="{% url 'hq_volts_engine' %}" {% if current_url == 'hq_volts_engine' %}aria-current="page"{% endif %}>Volts Engine</a>
+{% endif %}
+{% if 'equity' in staff_module_keys %}
+<a href="{% url 'hq_founder_equity' %}" {% if current_url == 'hq_founder_equity' %}aria-current="page"{% endif %}>Founder Equity</a>
+{% endif %}
+{% if 'discipline' in staff_module_keys %}
+<a href="{% url 'hq_discipline_governance' %}" {% if current_url == 'hq_discipline_governance' %}aria-current="page"{% endif %}>Discipline Governance</a>
+{% endif %}
+{% if 'kpis' in staff_module_keys %}
+<a href="{% url 'hq_kpi_dashboard' %}" {% if current_url == 'hq_kpi_dashboard' %}aria-current="page"{% endif %}>KPI Scorecards</a>
+{% endif %}
+{% if 'payouts' in staff_module_keys %}
+<a href="{% url 'hq_payout_approvals' %}" {% if current_url == 'hq_payout_approvals' %}aria-current="page"{% endif %}>Payout Approvals</a>
+{% endif %}
+{% if 'staff_documents' in staff_module_keys %}
+<a href="{% url 'hq_staff_documents' %}" {% if current_url == 'hq_staff_documents' %}aria-current="page"{% endif %}>Staff Documents</a>
+{% endif %}
+{% if 'staff_documents' in staff_module_keys %}
+<a href="{% url 'hq_executive_signatures' %}" {% if current_url == 'hq_executive_signatures' %}aria-current="page"{% endif %}>CEO Signatures</a>
+{% endif %}
+</section>
+<section class="hq-tool-group"><h3>Saved views</h3><a href="{% url 'hq_applications' %}?status=rejected">Archived / Rejected</a><a href="{% url 'hq_audit_trail' %}?type=sms">SMS / Messaging</a><a href="{% url 'hq_fraud_checks' %}?type=kyc">KYC / Identity</a><a href="{% url 'hq_users' %}?section=settings">Settings</a></section>
+<section class="hq-tool-group"><h3>Account & developer tools</h3><a href="{% url 'home' %}">Role home</a><a href="{% url 'profile_settings' %}">Profile settings</a>{% if current_user_can_use_django_admin %}<a href="{% url 'admin:index' %}">Django Admin</a>{% endif %}{% if show_developer_preview %}<a href="{% url 'hq_merchant_preview' %}">Merchant Preview</a><a href="{% url 'hq_underwriter_preview' %}">Underwriter Preview</a>{% endif %}</section>
+</div>
+{% endwith %}

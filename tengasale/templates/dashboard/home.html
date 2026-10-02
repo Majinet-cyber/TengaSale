@@ -15,99 +15,7 @@
   padding: 0 16px calc(100px + env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
 }
-.merchant-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  min-height: 76px;
-  margin: 0 -16px;
-  padding: calc(14px + env(safe-area-inset-top, 0)) 16px 14px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-}
-.merchant-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #101828;
-  font-weight: 800;
-  font-size: 14px;
-  text-decoration: none;
-}
-.merchant-dashboard-shell .merchant-brand-name {
-  display: inline-flex !important;
-}
-.merchant-brand-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: #ff5a00;
-}
-.merchant-brand-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.merchant-brand-icon--fallback::after {
-  content: "T";
-  color: #fff;
-  font-size: 14px;
-  font-weight: 900;
-}
-.topbar-page-title {
-  justify-self: center;
-  color: #101828;
-  font-size: 15px;
-  font-weight: 800;
-}
-.merchant-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.merchant-header-btn {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border: 0;
-  border-radius: 16px;
-  background: transparent;
-  color: #475467;
-  cursor: pointer;
-  text-decoration: none;
-  font-size: 17px;
-}
-.merchant-header-btn:hover {
-  background: #f3f4f6;
-  color: #101828;
-}
-.merchant-header-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: #dc2626;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 800;
-}
-.merchant-logout-form {
-  margin: 0;
-}
+.tenga-topbar--merchant { position:sticky; top:0; z-index:40; margin-inline:-16px; }
 .merchant-greeting {
   display: flex;
   align-items: flex-start;
@@ -408,42 +316,7 @@
 {% block content %}
 <div class="merchant-dashboard-shell ops-shell" data-tenga-component="TengaAppShell">
   <div class="merchant-shell ops-main">
-    <header class="merchant-header topbar mobile-topbar" aria-label="TengaSale merchant header">
-      <a href="{% url 'merchant_dashboard' %}" class="merchant-brand" aria-label="TengaSale home">
-        <span class="merchant-brand-icon" aria-hidden="true">
-          <img src="{% static 'images/Tenga.png' %}?v=20260809c" alt="TengaSale" width="28" height="28"
-               onerror="this.style.display='none';this.parentElement.classList.add('merchant-brand-icon--fallback');">
-        </span>
-        <span class="merchant-brand-name"><span>TengaSale</span></span>
-      </a>
-
-      <span class="topbar-page-title" data-testid="merchant-page-title">Home</span>
-
-      <div class="merchant-header-actions">
-        <a class="merchant-header-btn"
-           href="{{ tengasale_whatsapp_link|default:'#' }}"
-           target="_blank" rel="noopener noreferrer"
-           aria-label="WhatsApp support" title="WhatsApp support"
-           data-testid="topbar-whatsapp">
-          <i class="bi bi-whatsapp" aria-hidden="true"></i>
-        </a>
-        <a href="{% url 'notifications_list' %}"
-           class="merchant-header-btn merchant-header-btn--notify"
-           aria-label="Notifications{% if unread_notification_count %} ({{ unread_notification_count }} unread){% endif %}"
-           data-testid="topbar-notifications">
-          <i class="bi bi-bell" aria-hidden="true"></i>
-          {% if unread_notification_count %}
-            <span class="merchant-header-badge">{{ unread_notification_count }}</span>
-          {% endif %}
-        </a>
-        <form method="post" action="{% url 'logout' %}" class="merchant-logout-form">
-          {% csrf_token %}
-          <button type="submit" class="merchant-header-btn" aria-label="Log out" title="Log out" data-testid="topbar-logout">
-            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-          </button>
-        </form>
-      </div>
-    </header>
+    {% include "partials/tenga_topbar.html" with home_url="merchant_dashboard" title="Home" title_class="topbar-page-title" title_testid="merchant-page-title" header_class="tenga-topbar--merchant" %}
 
     <section class="merchant-greeting" aria-label="Greeting">
       <div>
@@ -456,7 +329,7 @@
           {% endif %}
         {% endwith %}
       </div>
-      {% include "includes/flag_pill.html" %}
+
     </section>
 
     {% with merchant=request.user.merchant_set.first %}

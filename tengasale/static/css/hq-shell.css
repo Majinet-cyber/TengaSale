@@ -1,163 +1,4 @@
-/* HQ shell layout — stable fixed sidebar for all HQ subpages */
-:root {
-  --hq-sidebar-width: 240px;
-  --hq-topbar-height: 64px;
-  --ts-orange: #FF4D00;
-  --ts-card: #ffffff;
-  --ts-bg: #f8fafc;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   CRITICAL: Override narrow mobile app-shell for HQ subpages.
-   The base app-shell has max-width:520px which breaks the fixed
-   240px sidebar layout on desktop. These rules unshackle it.
-   ═══════════════════════════════════════════════════════════════════ */
-.app-shell:has(.hq-page-shell),
-.app-shell.ts-hq-shell-active {
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
-  box-shadow: none !important;
-  background: var(--ts-bg) !important;
-  border-radius: 0 !important;
-}
-
-/* Topbar must render above the fixed sidebar on HQ subpages */
-.app-shell:has(.hq-page-shell) .app-topbar,
-.app-shell.ts-hq-shell-active .app-topbar {
-  z-index: 60 !important; /* above sidebar z-index 40 */
-  position: sticky !important;
-  top: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.hq-page-shell {
-  min-height: 100vh;
-  background: var(--ts-bg);
-  overflow-x: hidden;
-}
-
-.hq-shell-sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  width: var(--hq-sidebar-width);
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: calc(var(--hq-topbar-height) + 8px) 12px 24px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(226, 232, 240, 0.92);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.72);
-  z-index: 40;
-  box-sizing: border-box;
-}
-
-.hq-page-shell .hq-page-content,
-.hq-main {
-  margin-left: var(--hq-sidebar-width);
-  min-height: 100vh;
-  overflow-x: hidden;
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  padding: 0;
-  background: var(--ts-bg);
-  box-sizing: border-box;
-}
-
-.hq-page-shell .hq-page-content > .hq-content,
-.hq-main > .hq-content {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.hq-page-shell .hq-page-content.content,
-.hq-main.content {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
-}
-
-.hq-shell-nav { display: flex; flex-direction: column; gap: 3px; }
-.hq-shell-nav__label {
-  margin: 14px 8px 5px;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #94a3b8;
-}
-.hq-shell-nav a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: #475569;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 800;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.14s ease;
-}
-.hq-shell-nav a i { width: 16px; color: #94a3b8; }
-.hq-shell-nav a:hover,
-.hq-shell-nav a:focus-visible {
-  background: rgba(255, 255, 255, 0.95);
-  color: #0f172a;
-  transform: translateY(-1px);
-  outline: none;
-}
-.hq-shell-nav a.is-active {
-  background: #fff7ed;
-  color: #c2410c;
-  box-shadow: inset 0 0 0 1px rgba(255, 77, 0, 0.16);
-}
-.hq-shell-nav a.is-active i { color: var(--ts-orange); }
-
-.hq-shell-sidebar__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 4px 8px 14px;
-  color: #0f172a;
-  font-size: 13px;
-}
-.hq-shell-sidebar__head button {
-  display: none;
-  border: 0;
-  background: #f1f5f9;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  color: #475569;
-}
-
-.hq-shell-menu-btn {
-  display: none;
-  position: fixed;
-  left: 12px;
-  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-  z-index: 82;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 999px;
-  padding: 9px 12px;
-  gap: 7px;
-  align-items: center;
-  color: #0f172a;
-  font-size: 12px;
-  font-weight: 900;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
-}
-.hq-shell-overlay { display: none; }
-
+/* Legacy shared card, modal and loading utilities. HQ layout is in hq-sales-pulse.css. */
 .ts-card {
   background: var(--ts-card);
   border: 1px solid rgba(226, 232, 240, 0.92);
@@ -204,14 +45,14 @@
   padding: 8px 16px;
   border: none;
   border-radius: 10px;
-  background: var(--ts-orange);
+  background: var(--tenga-brand-orange);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.14s ease, background 0.14s ease;
 }
-.ts-button-primary:hover { background: #d93f00; }
+.ts-button-primary:hover { background: var(--tenga-brand-orange-hover); }
 .ts-button-primary:active { transform: scale(0.98); }
 .ts-button-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -353,30 +194,6 @@ body.ts-modal-open { overflow: hidden; }
   .hq-shell-nav a,
   .ts-card-hover,
   .ts-button-primary { animation: none; transition: none; }
-}
-
-@media (max-width: 1024px) {
-  .hq-page-shell .hq-page-content,
-  .hq-main { margin-left: 0; }
-  .hq-shell-menu-btn { display: inline-flex; }
-  .hq-shell-sidebar {
-    top: 0;
-    width: min(300px, 86vw);
-    transform: translateX(-104%);
-    transition: transform 0.22s ease;
-    box-shadow: 20px 0 60px rgba(15, 23, 42, 0.24);
-    z-index: 90;
-  }
-  .hq-shell-sidebar__head button { display: inline-grid; place-items: center; }
-  .hq-shell-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 85;
-    background: rgba(15, 23, 42, 0.38);
-  }
-  body.hq-shell-open { overflow: hidden; }
-  body.hq-shell-open .hq-shell-sidebar { transform: translateX(0); }
-  body.hq-shell-open .hq-shell-overlay { display: block; }
 }
 
 .dc-modal { z-index: 1100; }
