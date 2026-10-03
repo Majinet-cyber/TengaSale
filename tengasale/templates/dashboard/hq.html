@@ -18,12 +18,12 @@
 
     <div class="hq-primary-instruments">
       <a class="hq-instrument hq-instrument--action" href="{% url 'hq_operations' %}" data-testid="hq-primary-action-center">
-        <span class="hq-instrument__icon"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></span>
+        <span class="hq-instrument__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 5v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5l8-3Z"/><path d="M12 7v6m0 4h.01"/></svg></span>
         <span class="hq-instrument__copy"><small>ACTION CENTER</small><strong>{% if action_items_count %}{{ action_items_count }} item{{ action_items_count|pluralize }} need attention{% else %}All clear{% endif %}</strong><em>{% if action_items_count %}Review and resolve critical items{% else %}Nothing requires your attention{% endif %}</em></span>
         <i class="bi bi-chevron-right" aria-hidden="true"></i>
       </a>
       <a class="hq-instrument hq-instrument--payments" href="{% url 'hq_payment_collections' %}" data-testid="hq-live-today-payments">
-        <span class="hq-instrument__icon"><i class="bi bi-arrow-down-left" aria-hidden="true"></i></span>
+        <span class="hq-instrument__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18m0-8v8h8"/></svg></span>
         <span class="hq-instrument__copy"><small>Today&rsquo;s collections</small><strong>{{ collections_today|mwk }}</strong><em>{% if payments_today_count %}{{ payments_today_count }} confirmed payment{{ payments_today_count|pluralize }}{% else %}No confirmed payments yet today{% endif %}</em></span>
         <span class="hq-instrument__change {% if payments_change_pct != None and payments_change_pct < 0 %}is-down{% endif %}">{% if payments_change_pct != None %}<b>{% if payments_change_pct >= 0 %}<i class="bi bi-arrow-up" aria-hidden="true"></i>{% else %}<i class="bi bi-arrow-down" aria-hidden="true"></i>{% endif %} {{ payments_change_pct }}%</b><small>vs yesterday</small>{% elif collections_today %}<b>New today</b>{% else %}<b>No activity</b>{% endif %}<i class="bi bi-chevron-right" aria-hidden="true"></i></span>
       </a>
@@ -79,5 +79,5 @@
 {% block page_footer %}{% endblock %}
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="{% static 'js/hq-command-home.js' %}?v=3.0.0"></script>
+<script src="{% static 'js/hq-command-home.js' %}?v=3.1.0"></script>
 {% endblock %}

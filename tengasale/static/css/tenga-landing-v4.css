@@ -744,7 +744,7 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
 .tenga-landing-v4 .lock-ui h3{position:relative;z-index:1}
 .tenga-landing-v4 section[id]{scroll-margin-top:calc(var(--header) + 18px)}
 .tenga-landing-v4 .hero{min-height:0}
-.tenga-landing-v4 .hero-layout{min-height:640px}
+.tenga-landing-v4 .hero-layout{min-height:560px}
 .tenga-landing-v4 .why-section{padding:104px 0 72px}
 .tenga-landing-v4 .process-section{padding:88px 0 104px}
 .tenga-landing-v4 .phone-card,
@@ -922,3 +922,11 @@ input:focus,select:focus{border-color:rgba(255,107,0,.55);box-shadow:0 0 0 4px r
   .tenga-landing-v4 .footer-layout--minimal{display:grid;gap:18px}
   .tenga-landing-v4 .footer-layout--minimal .footer-meta{display:grid;gap:6px;text-align:left}
 }
+
+/* Hero content is present on first paint; scale the product visual to the viewport. */
+.tenga-landing-v4 .hero-visual{min-height:470px}
+.tenga-landing-v4 .device-stage{height:470px}
+.tenga-landing-v4 .hero-phone-photo{width:320px;height:470px;max-height:470px}
+@media (min-width:1024px) and (max-width:1050px){.tenga-landing-v4 .hero-layout{grid-template-columns:1.05fr .95fr;text-align:left}.tenga-landing-v4 .hero-copy{align-items:flex-start}.tenga-landing-v4 .hero-visual{min-height:440px}.tenga-landing-v4 .device-stage{height:440px}.tenga-landing-v4 .hero-phone-photo{width:300px;height:440px;max-height:440px}}
+@media (max-width:1023px){.tenga-landing-v4 .hero-layout{min-height:0}.tenga-landing-v4 .hero-visual{min-height:400px;transform:none;margin:0}.tenga-landing-v4 .device-stage{height:400px}.tenga-landing-v4 .hero-phone-photo{width:270px;height:400px;max-height:400px}}
+@media (max-width:560px){.tenga-landing-v4 .hero-layout{padding-block:28px 16px}.tenga-landing-v4 .hero-visual{min-height:320px;margin:-12px 0 -20px}.tenga-landing-v4 .device-stage{width:100%;height:320px}.tenga-landing-v4 .hero-phone-photo{width:220px;height:320px;max-height:320px}}

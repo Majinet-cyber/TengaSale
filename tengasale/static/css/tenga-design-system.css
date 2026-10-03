@@ -72,6 +72,7 @@
 .tenga-icon-action:hover { color:var(--tenga-product-blue); background:var(--tenga-product-blue-soft); }
 .tenga-icon-action--whatsapp { color:var(--tenga-success); }
 .tenga-icon-action .bi { font-size:20px; line-height:1; }
+.tenga-icon-action svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .tenga-country-indicator .country-pill__flag { display:flex; align-items:center; justify-content:center; }
 .tenga-country-indicator svg { display:block; width:25px; height:18px; }
 .tenga-notification-count { position:absolute; top:1px; right:0; min-width:16px; padding:1px 4px; border-radius:12px; background:var(--tenga-danger); color:var(--tenga-surface); font-size:10px; line-height:14px; text-align:center; }

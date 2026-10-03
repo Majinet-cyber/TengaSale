@@ -9,7 +9,7 @@
   <meta property="og:description" content="Tenga provides flexible PayGo access to smartphones in Malawi, with solar home systems coming next." />
   <meta property="og:url" content="{{ request.build_absolute_uri }}" />
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/Tenga.png' %}?v=20260809c" />
-  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=7.0" />
+  <link rel="stylesheet" href="{% static 'css/tenga-landing-v4.css' %}?v=8.0" />
 {% endblock %}
 {% block site_body_class %}tenga-landing-v4{% endblock %}
 {% block site_main_class %}tenga-landing-v4__main{% endblock %}
@@ -58,12 +58,12 @@
       <div class="hero-orbit orbit-2" aria-hidden="true"></div>
 
       <div class="shell hero-layout">
-        <div class="hero-copy reveal">
+        <div class="hero-copy">
           <div class="hero-badge"><span class="live-dot"></span> Live in Malawi. Built for Southern Africa.</div>
           <p class="kicker">PayGo for everyday life</p>
-          <h1>Essential technology,<br />without the upfront barrier.</h1>
+          <h1>Phones and power,<br />paid over time.</h1>
           <p class="hero-text">
-            Tenga makes smartphones easier to access today, with solar home systems coming through Tenga PayGo. Clear deposits. Flexible mobile-money payments. Built for real household cash flow.
+            Tenga helps households access smartphones without paying the full cost upfront. Start with a deposit and pay over time through mobile money. Solar Home Systems are coming next through Tenga PayGo.
           </p>
 
           <div class="hero-actions">
@@ -73,7 +73,7 @@
 
         </div>
 
-        <div class="hero-visual reveal reveal-delay">
+        <div class="hero-visual">
           <div class="hero-card hero-card-top">
             <span>Deposit</span>
             <strong>Know your deposit</strong>
@@ -406,5 +406,5 @@
 
 {% block site_scripts %}
   <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><div><strong>Received</strong><small>We will be in touch.</small></div></div>
-  <script src="{% static 'js/tenga-landing-v4.js' %}?v=7.0" defer></script>
+  <script src="{% static 'js/tenga-landing-v4.js' %}?v=8.0" defer></script>
 {% endblock %}

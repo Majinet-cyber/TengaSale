@@ -331,10 +331,9 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Home")
         self.assertContains(response, "NEW APPLICATION")
         self.assertContains(response, "Applications")
-        self.assertNotContains(response, 'data-testid="topbar-whatsapp"')
         self.assertContains(response, 'aria-label="WhatsApp support"')
-        self.assertContains(response, 'bi-whatsapp')
-        self.assertContains(response, 'bi-bell')
+        self.assertContains(response, 'data-testid="topbar-whatsapp"')
+        self.assertContains(response, 'data-testid="topbar-notifications"')
         self.assertContains(response, 'aria-label="Log out"')
         self.assertContains(response, "merchant-shell")
         self.assertContains(response, "merchant-dashboard-shell")
@@ -390,10 +389,10 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Applications")
         self.assertContains(response, "Portfolio Overview")
         self.assertContains(response, "Seller Quality")
-        self.assertContains(response, "Earnings Summary")
+        self.assertContains(response, "Earnings")
         self.assertContains(response, "Active")
         self.assertContains(response, "Completed")
-        self.assertContains(response, "Archived / Rejected")
+        self.assertContains(response, "Archived")
         self.assertNotContains(response, "Tools")
         self.assertNotContains(response, "My Earnings")
         self.assertNotContains(response, "Payments")
@@ -480,7 +479,7 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Django Admin")
         self.assertContains(response, "Users")
         self.assertContains(response, "Applications")
-        self.assertContains(response, "Analytics")
+        self.assertContains(response, "Sales analytics")
         self.assertContains(response, "Reports")
         self.assertNotContains(response, "Deals Management")
         self.assertNotContains(response, "New Application")
@@ -522,16 +521,16 @@ class HomePageTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Sidebar container
-        self.assertContains(response, 'id="hq-sidebar"')
-        self.assertContains(response, 'class="hq-layout"')
+        self.assertContains(response, 'id="hq-all-tools"')
+        self.assertContains(response, 'class="hq-navigation"')
         # Essential sidebar links
-        self.assertContains(response, 'hq-sidebar-link')
-        self.assertContains(response, 'Overview')
+        self.assertContains(response, 'tenga-segmented-nav')
+        self.assertContains(response, 'Command')
         self.assertContains(response, 'Applications')
         self.assertContains(response, 'Finance')
         # Portal links
-        self.assertContains(response, 'Merchant Admin')
-        self.assertContains(response, 'Tech Support')
+        self.assertContains(response, 'Merchant')
+        self.assertContains(response, 'Support')
 
     def test_hq_dashboard_main_content_not_hidden_behind_sidebar(self):
         """Desktop HQ layout must reserve sidebar width so main content is not covered."""
@@ -541,10 +540,10 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="hq-dash hq-main"')
+        self.assertContains(response, 'class="hq-page-shell"')
         self.assertContains(response, 'data-testid="hq-dashboard"')
-        self.assertContains(response, "grid-template-columns")
-        self.assertContains(response, "--hq-sidebar-width: 260px")
+        self.assertContains(response, "tenga-segmented-nav")
+        self.assertNotContains(response, "--hq-sidebar-width: 260px")
 
     def test_hq_dashboard_overview_cards_render(self):
         self.create_user("hq-cards", "HQ")
@@ -568,7 +567,7 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("merchant_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "merchant-brand-icon")
+        self.assertContains(response, "tenga-topbar__brand")
         self.assertContains(response, 'data-testid="merchant-page-title"')
         self.assertContains(response, ">Home<")
 
@@ -591,12 +590,11 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Portfolio Health")
-        self.assertContains(response, "hq-chart-frame--donut")
-        self.assertContains(response, "hq-chart-frame hq-chart-frame--pipeline")
-        self.assertContains(response, "hq-chart-frame--financial")
-        self.assertContains(response, "No portfolio activity yet")
-        self.assertContains(response, "Recovery Value")
+        self.assertContains(response, "Portfolio Overview")
+        self.assertContains(response, 'id="hqPaymentPerformanceChart"')
+        self.assertContains(response, 'id="hqPaymentPeriod"')
+        self.assertContains(response, "No payment activity for this period")
+        self.assertContains(response, "Repossession")
         self.assertContains(response, "Repossession &amp; Resale")
         self.assertContains(response, reverse("hq_repossession_resale"))
         self.assertContains(response, "Financial Simulations")

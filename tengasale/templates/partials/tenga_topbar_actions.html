@@ -1,6 +1,6 @@
 <div class="tenga-topbar__actions">
 {% include "includes/flag_pill.html" %}
 {% include "partials/tenga_whatsapp.html" %}
-<a href="{% url 'notifications_list' %}" class="tenga-icon-action notification-button" aria-label="Notifications ({{ unread_notification_count|default:0 }} unread)" title="Notifications" data-testid="topbar-notifications"><i class="bi bi-bell" aria-hidden="true"></i>{% if unread_notification_count %}<span class="tenga-notification-count notification-count notification-count--live">{{ unread_notification_count }}</span>{% endif %}</a>
-<form method="post" action="{% url 'logout' %}" class="tenga-topbar__logout logout-form">{% csrf_token %}<button class="tenga-icon-action logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></button></form>
+<a href="{% url 'notifications_list' %}" class="tenga-icon-action notification-button" aria-label="Notifications ({{ unread_notification_count|default:0 }} unread)" title="Notifications" data-testid="topbar-notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg>{% if unread_notification_count %}<span class="tenga-notification-count notification-count notification-count--live">{{ unread_notification_count }}</span>{% endif %}</a>
+<form method="post" action="{% url 'logout' %}" class="tenga-topbar__logout logout-form">{% csrf_token %}<button class="tenga-icon-action logout-button" type="submit" aria-label="Log out" title="Log out" data-testid="topbar-logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6M14 8l4 4-4 4M8 12h10"/></svg></button></form>
 </div>

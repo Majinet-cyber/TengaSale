@@ -80,8 +80,8 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
         self.assertIn("website_careers", self.template)
         self.assertIn("{% url 'login' %}", self.template)
         self.assertIn('section class="hero section-dark"', self.template)
-        self.assertIn("Essential technology,", self.template)
-        self.assertIn("without the upfront barrier.", self.template)
+        self.assertIn("Phones and power,", self.template)
+        self.assertIn("paid over time.", self.template)
         for removed in ("hero-inline-stats", "metric-ribbon", "scroll-hint"):
             self.assertNotIn(removed, self.template)
 
@@ -112,7 +112,7 @@ class LandingPageRegressionGuardTests(SimpleTestCase):
             self.assertIn(status, footer)
 
     def test_landing_has_no_public_apply_link_or_removed_clutter(self):
-        self.assertNotRegex(self.template, r'<a[^>]*>Apply</a>')
+        self.assertNotRegex(self.template, r'<a[^>]*href=["\']/?apply["\'][^>]*>')
         self.assertNotIn('href="#trade-upgrade"', self.template)
         self.assertNotIn('class="calculator-section', self.template)
         self.assertEqual(self.template.count('class="map-section'), 1)

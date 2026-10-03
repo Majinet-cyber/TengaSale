@@ -52,3 +52,9 @@ htmlcov/
 .env.local
 .env.*
 !.env.example
+
+# Local UI validation artifacts
+tengasale/ui-preview/
+tengasale/ui-preview.py
+tengasale/ui-browser.cjs
+tengasale/ui-*-visual.cjs

@@ -22,7 +22,7 @@ function renderPhones() {
         <div class="phone-pricing phone-pricing--unavailable" data-testid="phone-pricing-unavailable">
           <span>Payment plan</span><strong>Pricing available during application</strong>
         </div>`;
-    const visual = phone.image ? `<img class="catalogue-phone-photo" src="${escapeHtml(staticUrl(phone.image))}" alt="${escapeHtml(phone.image_alt || phone.name)}" loading="lazy" width="205" height="260">` : '<div class="css-phone" aria-hidden="true"><div class="css-screen"></div></div>';
+    const visual = `<img class="catalogue-phone-photo" src="${escapeHtml(staticUrl(phone.image || 'images/phone-realistic.png'))}" alt="${escapeHtml(phone.image_alt || 'Generic smartphone product illustration')}" loading="lazy" width="205" height="260">`;
     return `
     <article class="phone-card reveal visible" data-phone-brand="${escapeHtml(phone.brand)}" data-is-demo="${Boolean(phone.is_demo)}">
       <div class="phone-visual">${visual}</div>

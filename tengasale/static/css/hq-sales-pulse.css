@@ -1,7 +1,7 @@
 /* HQ composition: consumes the Tenga SST. No page-local token definitions. */
-body.role-hq { margin:0; padding:24px; background:var(--tenga-pulse-navy); color:var(--tenga-ink); }
+body.role-hq { margin:0; padding:32px; background:var(--tenga-pulse-navy); color:var(--tenga-ink); }
 /* Legacy app-shell geometry is isolated here; content follows normal document scroll. */
-body.role-hq .app-shell { width:min(100%,1440px); max-width:1440px; min-height:calc(100vh - 48px); height:auto; margin:0 auto; overflow:visible; border:0; border-radius:var(--tenga-radius-hero); background:var(--tenga-pulse-surface); box-shadow:var(--tenga-shadow-frame); }
+body.role-hq .app-shell { width:min(100%,1280px); max-width:1280px; min-height:calc(100vh - 64px); height:auto; margin:0 auto; overflow:visible; border:0; border-radius:var(--tenga-radius-hero); background:var(--tenga-pulse-surface); box-shadow:var(--tenga-shadow-frame); }
 body.role-hq .tenga-topbar { border-radius:var(--tenga-radius-hero) var(--tenga-radius-hero) 0 0; background:var(--tenga-pulse-surface); }
 body.role-hq .hq-page-shell { display:block; min-width:0; background:var(--tenga-pulse-canvas); border-radius:0 0 var(--tenga-radius-hero) var(--tenga-radius-hero); }
 body.role-hq .hq-page-shell .hq-page-content { margin:0; min-width:0; width:100%; max-width:none; min-height:0; height:auto; padding:0; background:transparent; overflow:visible; }
@@ -84,3 +84,6 @@ body.role-hq :is(.btn-primary,.button-primary,.ts-button-primary) { background:v
 @media(max-width:767px) { body.role-hq { padding:0; background:var(--tenga-pulse-canvas); } body.role-hq .app-shell { min-height:100vh; border-radius:0; box-shadow:none; } body.role-hq .tenga-topbar { border-radius:0; } body.role-hq .hq-page-shell .hq-page-content > .hq-content { padding-bottom:100px; } .tenga-segmented-nav { grid-template-columns:repeat(3,minmax(0,1fr)); } .hq-command-health { grid-template-columns:repeat(2,minmax(0,1fr)); } .hq-command-actions { grid-template-columns:1fr; } .hq-command-detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:390px) { .hq-tool-groups { grid-template-columns:1fr; } .hq-command-health { gap:10px; } .hq-command-health a { padding:16px; } .hq-command-health strong { font-size:20px; overflow-wrap:anywhere; } }
 @media(prefers-reduced-motion:reduce) { body.role-hq *,body.role-hq *::before,body.role-hq *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+.hq-instrument__icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hq-instrument--action .hq-instrument__icon{background:var(--tenga-product-blue-soft);color:var(--tenga-product-blue)}

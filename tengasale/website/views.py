@@ -77,6 +77,9 @@ def _get_public_phone_offers():
                     },
                     "status": deal.get_stock_status_display(),
                     "logo": logo,
+                    "image": "images/phone-realistic.png",
+                    "image_alt": "Generic smartphone product illustration",
+                    "image_note": "Device illustration; model appearance may differ.",
                 }
             )
             if len(offers) == 6:

@@ -29,7 +29,7 @@ class PublicSiteTests(TestCase):
     def test_landing_page_loads(self):
         response = self.client.get(reverse("website_landing"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "TengaSale")
+        self.assertContains(response, "Tenga")
 
     def test_landing_page_has_make_payment_link(self):
         response = self.client.get(reverse("website_landing"))
@@ -87,13 +87,10 @@ class PublicSiteTests(TestCase):
 
     def test_landing_has_local_market_flags_and_accurate_statuses(self):
         response = self.client.get(reverse("website_landing"))
-        for country in ("malawi", "zambia", "zimbabwe"):
-            self.assertContains(response, f"img/flags/{country}.svg")
-        self.assertContains(response, "Flag of Malawi")
-        self.assertContains(response, "Flag of Zambia")
-        self.assertContains(response, "Flag of Zimbabwe")
-        self.assertEqual(response.content.decode().count("<small>Live</small>"), 1)
-        self.assertEqual(response.content.decode().count("<small>Next</small>"), 2)
+        self.assertContains(response, "images/africa-map-approved-v4.png")
+        for country in ("malawi", "zambia", "zimbabwe", "kenya"):
+            self.assertContains(response, f'data-market="{country}"')
+        self.assertContains(response, "Malawi live. Zambia next. Zimbabwe planned. Kenya in exploration.")
 
     def test_tenga_loop_sits_between_phones_and_fair_protection(self):
         response = self.client.get(reverse("website_landing"))
@@ -302,7 +299,7 @@ class LandingPageUIRegressionTests(TestCase):
     def test_v4_landing_preserves_required_copy_and_internal_payment_route(self):
         response = self.client.get("/")
         self.assertNotContains(response, "2× monthly income")
-        self.assertContains(response, "Essential technology,")
+        self.assertContains(response, "Phones and power,")
         self.assertContains(response, reverse("portal_search"))
         self.assertNotContains(response, "https://pay.tengasale.africa")
         self.assertContains(response, "css/tenga-landing-v4.css")
@@ -400,8 +397,8 @@ class LandingPageUIRegressionTests(TestCase):
     def test_landing_hero_headline_present(self):
         """Approved v4 hero headline must be present."""
         response = self._get_landing()
-        self.assertContains(response, "Essential technology,")
-        self.assertContains(response, "without the upfront barrier.")
+        self.assertContains(response, "Phones and power,")
+        self.assertContains(response, "paid over time.")
 
     def test_landing_how_it_works_section_present(self):
         """The approved v4 process section must be present."""
@@ -496,7 +493,7 @@ class PublicSupportEnquiryTests(TestCase):
         self.assertContains(response, 'id="supportForm"')
         self.assertContains(response, "support@tenga.africa")
         self.assertContains(response, "mailto:support@tenga.africa")
-        self.assertEqual(response.content.decode().count('class="faq-item"'), 9)
+        self.assertEqual(response.content.decode().count('class="faq-item"'), 8)
         self.assertNotContains(response, "Direct form delivery is not configured here")
 
     @override_settings(TENGA_SUPPORT_EMAIL_DELIVERY_ENABLED=False)
