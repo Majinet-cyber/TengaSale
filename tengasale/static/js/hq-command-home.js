@@ -4,20 +4,20 @@
   const payloadNode = document.getElementById("hqPaymentComparison");
   if (!canvas || !payloadNode) return;
   const data = JSON.parse(payloadNode.textContent);
-  const hasData = [...data.current, ...data.previous].some(value => Number(value) > 0);
-  if (!hasData) {
-    canvas.hidden = true;
-    canvas.parentElement.querySelector(".hq-home-chart__empty").hidden = false;
-    return;
-  }
-  if (typeof Chart === "undefined") return;
+  // The server provides consecutive 30-day windows. Shorter comparisons use
+  // the immediately preceding days, which can be within the current window.
+  const history = [...data.previous, ...data.current];
+  const emptyState = canvas.parentElement.querySelector(".hq-home-chart__empty");
+  const summary = canvas.closest(".hq-home-performance");
+  const totalNode = summary.querySelector(".hq-performance-summary strong");
+  const changeNode = summary.querySelector(".hq-performance-summary em");
   const tokens = getComputedStyle(document.documentElement);
   const color = name => tokens.getPropertyValue(name).trim();
   const chartContext = canvas.getContext("2d");
   const currentGradient = chartContext.createLinearGradient(0, 0, 0, 235);
   currentGradient.addColorStop(0, color("--tenga-pulse-cyan"));
   currentGradient.addColorStop(1, color("--tenga-pulse-blue"));
-  const chart = new Chart(canvas, {
+  const chart = typeof Chart === "undefined" ? null : new Chart(canvas, {
     type: "bar",
     data: {
       labels: data.labels,
@@ -42,14 +42,32 @@
   const previousKey = document.getElementById("hqPreviousPeriodKey");
   const applyPeriod = () => {
     const days = Number(period.value);
-    chart.data.labels = data.labels.slice(-days);
-    chart.data.datasets[0].data = data.previous.slice(-days);
-    chart.data.datasets[1].data = data.current.slice(-days);
-    chart.data.datasets[2].data = data.trend.slice(-days);
+    const current = history.slice(-days);
+    const previous = history.slice(-2 * days, -days);
+    const currentLabel = days === 1 ? "Today" : `Current ${days} days`;
+    const previousLabel = days === 1 ? "Yesterday" : `Previous ${days} days`;
+    const total = current.reduce((sum, value) => sum + Number(value), 0);
+    const previousTotal = previous.reduce((sum, value) => sum + Number(value), 0);
+    const hasData = [...current, ...previous].some(value => Number(value) > 0);
+    canvas.hidden = !chart || !hasData;
+    emptyState.hidden = Boolean(chart && hasData);
+    emptyState.textContent = hasData ? "Chart unavailable. Total collections are shown above." : "No payment activity for this period";
+    totalNode.textContent = `MWK ${total.toLocaleString("en-US")}`;
+    changeNode.textContent = previousTotal > 0
+      ? `${((total - previousTotal) / previousTotal * 100).toLocaleString("en-US", { maximumFractionDigits: 1 })}% vs ${previousLabel.toLowerCase()}`
+      : `No ${previousLabel.toLowerCase()} comparison`;
     comparisonLabel.textContent = `${period.options[period.selectedIndex].text} · current vs previous equivalent period`;
-    currentKey.textContent = days === 1 ? "Today" : `Current ${days} days`;
-    previousKey.textContent = days === 1 ? "Yesterday" : `Previous ${days} days`;
-    chart.update();
+    currentKey.textContent = currentLabel;
+    previousKey.textContent = previousLabel;
+    if (chart) {
+      chart.data.labels = data.labels.slice(-days);
+      chart.data.datasets[0].data = previous;
+      chart.data.datasets[0].label = previousLabel;
+      chart.data.datasets[1].data = current;
+      chart.data.datasets[1].label = currentLabel;
+      chart.data.datasets[2].data = data.trend.slice(-days);
+      chart.update();
+    }
   };
   period.addEventListener("change", applyPeriod);
   applyPeriod();

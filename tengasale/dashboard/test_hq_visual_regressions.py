@@ -89,3 +89,15 @@ class HQSharedShellRenderingTests(TestCase):
         response = self.client.get(reverse("hq_dashboard"))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response.url)
+
+    def test_authenticated_homes_have_one_shared_country_and_action_group(self):
+        for role, path in (("hq", "/tengasale/hq/"), ("merchant", "/tengasale/merchant/"), ("underwriter", "/sales/")):
+            with self.subTest(role=role):
+                user = get_user_model().objects.create_user(username="shared-header-" + role)
+                assign_role(user, role)
+                self.client.force_login(user)
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                for marker in ("country-pill-mw", "topbar-whatsapp", "topbar-notifications", "topbar-logout"):
+                    self.assertContains(response, f'data-testid="{marker}"', count=1)
+                self.assertNotContains(response, ">Malawi<")

@@ -1,4 +1,5 @@
 {% load ts_filters %}
+<section class="hq-command-details" aria-label="Portfolio, finance and operations">
       <details>
         <summary><span><i class="bi bi-graph-up"></i><strong>Portfolio intelligence</strong><small>Balance, profit, risk and collections</small></span><i class="bi bi-chevron-down"></i></summary>
         <div class="hq-command-detail-grid"><a href="{% url 'hq_portfolio' %}"><span>Outstanding balance</span><strong>{{ outstanding_balance|mwk }}</strong></a><a href="{% url 'hq_simulations' %}"><span>Expected gross profit</span><strong>{{ gross_profit_total|mwk }}</strong></a><a href="{% url 'hq_portfolio' %}"><span>Portfolio at risk</span><strong>{{ portfolio_at_risk }}%</strong></a><a href="{% url 'hq_payment_collections' %}"><span>Total collected</span><strong>{{ total_payments_collected|mwk }}</strong></a></div>
